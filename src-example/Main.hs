@@ -18,14 +18,12 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Text as T
 import Data.Text (Text)
 import Development.Shake
-import Dhall.TH
 import GHC.Generics (Generic)
 import Lucid
 import qualified Neuron.Zettelkasten as Z
 import Path
 import Rib (IsRoute, MMark)
 import qualified Rib
-import qualified Rib.Parser.Dhall as Dhall
 import qualified Rib.Parser.MMark as MMark
 
 -- | Route corresponding to each generated static page.
@@ -54,13 +52,6 @@ instance IsRoute Route where
         ArticleRoute_Index ->
           pure [relfile|index.html|]
 
--- | The "Config" type generated from the Dhall type.
---
--- Use `Rib.Parser.Dhall` to parse it (see below).
-makeHaskellTypes
-  [ SingleConstructor "Config" "Config" "./src-dhall/Config.dhall"
-  ]
-
 -- | Main entry point to our generator.
 --
 -- `Rib.run` handles CLI arguments, and takes three parameters here.
@@ -79,13 +70,8 @@ generateSite :: Action ()
 generateSite = do
   -- Copy over the static files
   Rib.buildStaticFiles [[relfile|static/**|]]
-  -- Read the site config
-  config :: Config <-
-    Dhall.parse
-      [[relfile|src-dhall/Config.dhall|]]
-      [relfile|config.dhall|]
   let writeHtmlRoute :: Route a -> a -> Action ()
-      writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage config r
+      writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
   -- Build individual sources, generating .html for each.
   articles <-
     Rib.forEvery [[relfile|*.md|]] $ \srcPath -> do
@@ -97,8 +83,8 @@ generateSite = do
   writeHtmlRoute Route_Index ()
 
 -- | Define your site HTML here
-renderPage :: Config -> Route a -> a -> Html ()
-renderPage config route val = with html_ [lang_ "en"] $ do
+renderPage :: Route a -> a -> Html ()
+renderPage route val = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
     title_ $ routeTitle
@@ -126,7 +112,7 @@ renderPage config route val = with html_ [lang_ "en"] $ do
   where
     routeTitle :: Html ()
     routeTitle = case route of
-      Route_Index -> toHtml $ siteTitle config
+      Route_Index -> "Neuron sample site"
       Route_Article (ArticleRoute_Article _) -> toHtml $ title $ getMeta val
       Route_Article ArticleRoute_Index -> "Articles"
     renderMarkdown =
