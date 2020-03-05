@@ -6,7 +6,7 @@ maintainer: your@email
 author: Your Name
 category: Web
 
-library 
+library
   hs-source-dirs: src 
   default-language: Haskell2010
   ghc-options:
@@ -15,12 +15,12 @@ library
     -Wincomplete-uni-patterns
   exposed-modules:
     Neuron.Zettelkasten
+    Neuron.Zettelkasten.Route
   other-modules:
     Neuron.Zettelkasten.Store
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Meta
     Neuron.Zettelkasten.Graph
-    Neuron.Zettelkasten.Route
     Neuron.Zettelkasten.Type
   build-depends:
     base,

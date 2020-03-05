@@ -1,6 +1,12 @@
 # neuron
 
-Weblogs are old school. Here comes Zettelkasten. :skull:
+Haskell meets Zettelkasten, for your plain-text delight.
+
+**Design goals**
+
+- A Haskell library for managing and rendering Zettelkasten notes
+- Generate static site HTML
+- Weblog adapter on top
 
 ## Prerequisites
 
@@ -27,16 +33,4 @@ To build and run the site:
 bin/run
 ```
 
-This launches a web server at http://localhost:8080 serving the statically
-generated content. Changing either `Main.hs` or the content in `./content` reloads everything.
-
-## Use a custom rib and port
-
-You might have a local checkout of rib with certain modifications. And you might
-want to run ghcid with the server running at a different port. Both of this can
-achieved using the following command:
-
-```bash
-# Assuming rib is cloned at ../rib
-nix-shell --arg rib ../rib --run 'ghcid -T ":main serve -p 9876" --restart=src-dhall'
-```
+This launches a web server at http://localhost:8080 serving the statically generated content. Changing either the sources or the content in `./content` reloads everything.
