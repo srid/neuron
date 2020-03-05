@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Self.Zettelkasten.Meta
+module Neuron.Zettelkasten.Meta
   ( Meta (..),
     getMeta,
   )

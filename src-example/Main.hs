@@ -21,6 +21,7 @@ import Development.Shake
 import Dhall.TH
 import GHC.Generics (Generic)
 import Lucid
+import qualified Neuron.Zettelkasten as Z
 import Path
 import Rib (IsRoute, MMark)
 import qualified Rib

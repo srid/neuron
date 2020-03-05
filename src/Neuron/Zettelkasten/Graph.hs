@@ -9,7 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Graph of zettels.
-module Self.Zettelkasten.Graph where
+module Neuron.Zettelkasten.Graph where
 
 import qualified Algebra.Graph.AdjacencyMap as AM
 import qualified Algebra.Graph.AdjacencyMap.Algorithm as Algo
@@ -18,10 +18,10 @@ import qualified Algebra.Graph.NonEmpty.AdjacencyMap as NEAM
 import qualified Data.Map.Strict as Map
 import Data.Tree (Forest, Tree (..))
 import Development.Shake (Action)
+import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Store (ZettelStore)
+import Neuron.Zettelkasten.Type
 import Relude
-import Self.Zettelkasten.ID
-import Self.Zettelkasten.Store (ZettelStore)
-import Self.Zettelkasten.Type
 
 type ZettelGraph = LAM.AdjacencyMap [Connection] ZettelID
 

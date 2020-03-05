@@ -9,7 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Zettel ID
-module Self.Zettelkasten.ID
+module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     Connection (..),
     connectionScheme,

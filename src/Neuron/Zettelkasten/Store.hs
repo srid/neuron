@@ -9,16 +9,16 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Graph of zettels.
-module Self.Zettelkasten.Store where
+module Neuron.Zettelkasten.Store where
 
 import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
+import Neuron.Zettelkasten.ID
+import qualified Neuron.Zettelkasten.Meta as Meta
+import Neuron.Zettelkasten.Type
 import Path
 import Relude
 import qualified Rib.Parser.MMark as RibMMark
-import Self.Zettelkasten.ID
-import qualified Self.Zettelkasten.Meta as Meta
-import Self.Zettelkasten.Type
 
 type ZettelStore = Map ZettelID Zettel
 

@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Self.Zettelkasten.Type where
+module Neuron.Zettelkasten.Type where
 
+import Neuron.Zettelkasten.ID
 import Relude
-import Self.Zettelkasten.ID
 import Text.MMark (MMark)
 
 data Zettel

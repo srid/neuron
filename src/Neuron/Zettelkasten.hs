@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Self.Zettelkasten
+module Neuron.Zettelkasten
   ( generateSite,
     commandParser,
     run,
@@ -20,15 +20,15 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Data.Time
 import Development.Shake (Action)
+import qualified Neuron.Zettelkasten.Graph as Z
+import qualified Neuron.Zettelkasten.Route as Z
+import qualified Neuron.Zettelkasten.Store as Z
 import Options.Applicative
 import Path
 import Path.IO
 import Relude
 import qualified Rib
 import qualified Rib.App
-import qualified Self.Zettelkasten.Graph as Z
-import qualified Self.Zettelkasten.Route as Z
-import qualified Self.Zettelkasten.Store as Z
 import System.Directory (listDirectory)
 import qualified System.FilePattern as FP
 import Text.Printf

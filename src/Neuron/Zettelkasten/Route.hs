@@ -12,7 +12,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Zettel ID
-module Self.Zettelkasten.Route where
+module Neuron.Zettelkasten.Route where
 
 import Clay ((?), Css, em, px, sym, sym2)
 import qualified Clay as C
@@ -20,13 +20,13 @@ import Data.Foldable (maximum)
 import qualified Data.Set as Set
 import Data.Tree (Tree (..))
 import Lucid
+import Neuron.Zettelkasten.Graph
+import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Store
+import Neuron.Zettelkasten.Type
 import Path
 import Relude
 import Rib (IsRoute (..), routeUrlRel)
-import Self.Zettelkasten.Graph
-import Self.Zettelkasten.ID
-import Self.Zettelkasten.Store
-import Self.Zettelkasten.Type
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Extension, Inline (..))
