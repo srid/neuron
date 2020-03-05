@@ -215,7 +215,7 @@ style monoFont = do
     C.h3 ? do
       C.fontColor C.slategray
       C.fontWeight C.bold
-      sym C.margin $ px 0
+      C.margin (px 0) (px 0) (em 0.4) (px 0)
     C.code ? do
       C.backgroundColor "#eee"
       sym C.borderRadius $ px 3
