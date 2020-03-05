@@ -1,0 +1,8 @@
+dist
+dist-*
+.ghc.environment.*
+result
+.shake
+
+dest/*
+!b/.gitkeep
