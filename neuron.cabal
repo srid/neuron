@@ -16,11 +16,11 @@ library
   exposed-modules:
     Neuron.Zettelkasten
     Neuron.Zettelkasten.Route
-  other-modules:
     Neuron.Zettelkasten.Store
+    Neuron.Zettelkasten.Graph
+  other-modules:
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Meta
-    Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Type
   build-depends:
     base,
