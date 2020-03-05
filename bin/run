@@ -1,2 +1,2 @@
 #!/bin/sh -xe
-nix-shell --run 'ghcid -c "cabal new-repl neuron-example" -T ":main serve"'
+nix-shell --run 'ghcid -c "cabal new-repl neuron-example" -T ":main rib serve"'

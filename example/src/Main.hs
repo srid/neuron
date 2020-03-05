@@ -20,27 +20,20 @@ import Data.Text (Text)
 import Development.Shake
 import GHC.Generics (Generic)
 import Lucid
--- import qualified Neuron.Zettelkasten as Z
+import qualified Neuron.Zettelkasten as Z
 import Path
 import Rib (IsRoute, MMark)
 import qualified Rib
 import qualified Rib.Parser.MMark as MMark
 
--- | Route corresponding to each generated static page.
---
--- The `a` parameter specifies the data (typically Markdown document) used to
--- generated the final page text.
 data Route a where
   Route_Index :: Route ()
   Route_Article :: ArticleRoute a -> Route a
 
--- | You may even have sub routes.
 data ArticleRoute a where
   ArticleRoute_Index :: ArticleRoute [(Route MMark, MMark)]
   ArticleRoute_Article :: Path Rel File -> ArticleRoute MMark
 
--- | The `IsRoute` instance allows us to determine the target .html path for
--- each route. This affects what `routeUrl` will return.
 instance IsRoute Route where
   routeFile = \case
     Route_Index ->
@@ -52,20 +45,9 @@ instance IsRoute Route where
         ArticleRoute_Index ->
           pure [relfile|index.html|]
 
--- | Main entry point to our generator.
---
--- `Rib.run` handles CLI arguments, and takes three parameters here.
---
--- 1. Directory `content`, from which static files will be read.
--- 2. Directory `dest`, under which target files will be generated.
--- 3. Shake action to run.
---
--- In the shake action you would expect to use the utility functions
--- provided by Rib to do the actual generation of your static site.
 main :: IO ()
-main = Rib.run [reldir|example/content|] [reldir|example/dest|] generateSite
+main = Z.run [reldir|example/content|] [reldir|example/dest|] generateSite
 
--- | Shake action for generating the static site
 generateSite :: Action ()
 generateSite = do
   -- Copy over the static files
@@ -82,7 +64,6 @@ generateSite = do
   writeHtmlRoute (Route_Article ArticleRoute_Index) articles
   writeHtmlRoute Route_Index ()
 
--- | Define your site HTML here
 renderPage :: Route a -> a -> Html ()
 renderPage route val = with html_ [lang_ "en"] $ do
   head_ $ do
@@ -118,7 +99,6 @@ renderPage route val = with html_ [lang_ "en"] $ do
     renderMarkdown =
       MMark.render . either (error . T.unpack) id . MMark.parsePure "<none>"
 
--- | Define your site CSS here
 pageStyle :: Css
 pageStyle = "div#thesite" ? do
   C.margin (em 4) (pc 20) (em 1) (pc 20)
