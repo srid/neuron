@@ -1,6 +1,6 @@
-# rib-sample
+# neuron
 
-Sample site for the [Rib](https://github.com/srid/rib) static site generator
+Weblogs are old school. Here comes Zettelkasten. :skull:
 
 ## Prerequisites
 
