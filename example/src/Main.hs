@@ -20,7 +20,7 @@ import Data.Text (Text)
 import Development.Shake
 import GHC.Generics (Generic)
 import Lucid
-import qualified Neuron.Zettelkasten as Z
+-- import qualified Neuron.Zettelkasten as Z
 import Path
 import Rib (IsRoute, MMark)
 import qualified Rib
@@ -63,7 +63,7 @@ instance IsRoute Route where
 -- In the shake action you would expect to use the utility functions
 -- provided by Rib to do the actual generation of your static site.
 main :: IO ()
-main = Rib.run [reldir|content|] [reldir|dest|] generateSite
+main = Rib.run [reldir|example/content|] [reldir|example/dest|] generateSite
 
 -- | Shake action for generating the static site
 generateSite :: Action ()
