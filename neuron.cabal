@@ -6,14 +6,43 @@ maintainer: your@email
 author: Your Name
 category: Web
 
-executable neuron
+library 
+  hs-source-dirs: src 
+  default-language: Haskell2010
+  ghc-options:
+      -Wall
+      -Wincomplete-record-updates
+      -Wincomplete-uni-patterns
+  build-depends:
+      base,
+      aeson,
+      clay -any,
+      containers,
+      directory,
+      exceptions,
+      lucid -any,
+      optparse-applicative,
+      path,
+      path-io,
+      relude,
+      rib ^>=0.8,
+      shake -any,
+      time,
+      text,
+      mmark,
+      modern-uri,
+      foldl,
+      filepattern,
+      algebraic-graphs >= 0.5
+
+executable neuron-example
     main-is: Main.hs
-    hs-source-dirs: src
+    hs-source-dirs: src-example
     default-language: Haskell2010
     ghc-options:
-        -Wall
-        -Wincomplete-record-updates
-        -Wincomplete-uni-patterns
+      -Wall
+      -Wincomplete-record-updates
+      -Wincomplete-uni-patterns
     build-depends:
         base,
         aeson,
@@ -24,3 +53,4 @@ executable neuron
         rib ^>=0.8,
         shake,
         text,
+        neuron
