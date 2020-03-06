@@ -10,7 +10,6 @@
 
 module Main where
 
-import Clay ((?), Css, em, pc, px, sym)
 import qualified Clay as C
 import Development.Shake
 import Lucid
@@ -36,18 +35,15 @@ renderPage :: Z.Route s g a -> (s, g) -> Html ()
 renderPage route val = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
-    title_ "Z"
-    style_ [type_ "text/css"] $ C.render pageStyle
+    meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
+    title_ $ toHtml $ maybe siteTitle (<> " - " <> siteTitle) $
+      Z.routeTitle (fst val) route
+    stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
+    style_ [type_ "text/css"] $ C.render Z.style
   body_ $ do
-    Z.renderRoute route val
-
-pageStyle :: Css
-pageStyle = "div#thesite" ? do
-  C.margin (em 4) (pc 20) (em 1) (pc 20)
-  ".header" ? do
-    C.marginBottom $ em 2
-  "li.pages" ? do
-    C.listStyleType C.none
-    C.marginTop $ em 1
-    "b" ? C.fontSize (em 1.2)
-    "p" ? sym C.margin (px 0)
+    div_ [class_ "ui text container"] $ do
+      br_ mempty
+      Z.renderRoute route val
+  where
+    siteTitle = "Example Zettelkasten"
+    stylesheet x = link_ [rel_ "stylesheet", href_ x]

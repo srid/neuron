@@ -26,7 +26,8 @@ import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
 import Path
 import Relude
-import Rib (IsRoute (..), routeUrlRel)
+import Rib (IsRoute (..))
+import qualified Rib
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Extension, Inline (..))
@@ -47,9 +48,6 @@ renderRoute :: Route store graph a -> (store, graph) -> Html ()
 renderRoute r (store, graph) = do
   case r of
     Route_Index -> do
-      div_ [class_ "ui segment inbox"] $ do
-        div_ [class_ "ui header"] $
-          a_ [href_ "https://keep.google.com/u/0/#home"] "Fleeting notes"
       div_ [class_ "zettels"] $ do
         -- cluster
         forM_ (reverse $ clusters graph) $ \zettels -> do
@@ -81,7 +79,7 @@ renderRoute r (store, graph) = do
         ul_ $ renderForest LinkTheme_Default store graph forest
     Route_Zettel zid -> do
       let Zettel {..} = lookupStore zid store
-      div_ [class_ "pusher note-view"] $ do
+      div_ [class_ "zettel-view"] $ do
         div_ [class_ "ui raised segment"] $ do
           h1_ [class_ "header"] $ toHtml zettelTitle
           MMark.render $ MMark.useExtension (zettelLinkExt store) zettelContent
@@ -155,7 +153,7 @@ data LinkTheme
 renderZettelLink :: Monad m => LinkTheme -> ZettelStore -> ZettelID -> HtmlT m ()
 renderZettelLink ltheme store zid = do
   let Zettel {..} = lookupStore zid store
-      zurl = routeUrlRel $ Route_Zettel zid
+      zurl = Rib.routeUrlRel $ Route_Zettel zid
   case ltheme of
     LinkTheme_Default -> do
       span_ [class_ "zettel-link"] $ do
@@ -172,12 +170,12 @@ renderZettelLink ltheme store zid = do
           span_ [class_ "zettel-link-title"] $ do
             toHtml zettelTitle
 
-style :: Text -> Css
-style monoFont = do
+style :: Css
+style = do
   let linkColor = C.mediumaquamarine
       linkTitleColor = C.auto
   "span.zettel-link span.zettel-link-idlink a" ? do
-    C.fontFamily [fromString . toString $ monoFont] [C.monospace]
+    C.fontFamily [] [C.monospace]
     C.fontWeight C.bold
     C.color linkColor
   "span.zettel-link span.zettel-link-idlink a:hover" ? do
@@ -187,14 +185,7 @@ style monoFont = do
     C.paddingLeft $ em 0.3
     C.fontWeight C.bold
     C.color linkTitleColor
-  "div.ui.sidebar" ? do
-    C.ul ? do
-      sym C.padding $ em 0
-      C.paddingLeft $ em 0.4
-      C.listStyleType C.none
-      C.li ? do
-        sym C.padding $ em 0
-  "div.note-view" ? do
+  "div.zettel-view" ? do
     C.ul ? do
       C.paddingLeft $ em 1.5
       C.listStyleType C.square
