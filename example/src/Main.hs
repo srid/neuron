@@ -17,6 +17,7 @@ import qualified Neuron.Zettelkasten as Z
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
+import qualified Neuron.Zettelkasten.View as Z
 import Path
 import qualified Rib
 

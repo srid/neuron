@@ -18,10 +18,12 @@ library
     Neuron.Zettelkasten.Route
     Neuron.Zettelkasten.Store
     Neuron.Zettelkasten.Graph
+    Neuron.Zettelkasten.View
   other-modules:
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Meta
     Neuron.Zettelkasten.Type
+    Neuron.Zettelkasten.Link
   build-depends:
     base,
     aeson,
