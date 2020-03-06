@@ -14,9 +14,7 @@ import qualified Clay as C
 import Development.Shake
 import Lucid
 import qualified Neuron.Zettelkasten as Z
-import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.Route as Z
-import qualified Neuron.Zettelkasten.Store as Z
 import qualified Neuron.Zettelkasten.View as Z
 import Path
 import qualified Rib
@@ -26,11 +24,8 @@ main = Z.run [reldir|example/content|] [reldir|example/dest|] generateSite
 
 generateSite :: Action ()
 generateSite = do
-  -- Copy over the static files
-  Rib.buildStaticFiles [[relfile|static/**|]]
-  let writeHtmlRoute :: Z.Route Z.ZettelStore Z.ZettelGraph () -> (Z.ZettelStore, Z.ZettelGraph) -> Action ()
-      writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
-  Z.generateSite writeHtmlRoute [[relfile|notes/*.md|]]
+  let writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
+  Z.generateSite writeHtmlRoute [[relfile|*.md|]]
 
 renderPage :: Z.Route s g a -> (s, g) -> Html ()
 renderPage route val = with html_ [lang_ "en"] $ do

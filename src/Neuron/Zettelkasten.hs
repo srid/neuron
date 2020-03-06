@@ -82,8 +82,8 @@ generateSite writeHtmlRoute' zettelsPat = do
 newZettelFile :: Path Rel Dir -> Text -> IO String
 newZettelFile inputDir ztitle = do
   zId <- zettelNextIdForToday
-  baseName <- parseRelFile $ toString $ zId <> ".md"
-  let srcPath = inputDir </> notesDir </> baseName
+  zettelFileName <- parseRelFile $ toString $ zId <> ".md"
+  let srcPath = inputDir </> zettelFileName
   doesFileExist srcPath >>= \case
     True ->
       fail $ "File already exists: " <> show srcPath
@@ -94,8 +94,8 @@ newZettelFile inputDir ztitle = do
     zettelNextIdForToday :: IO Text
     zettelNextIdForToday = do
       zIdPartial <- dayIndex . toText . formatTime defaultTimeLocale "%y%W%a" <$> getCurrentTime
-      noteFiles <- listDirectory $ toFilePath $ inputDir </> notesDir
-      let nums :: [Int] = sort $ catMaybes $ fmap readMaybe $ catMaybes $ catMaybes $ fmap (fmap listToMaybe . FP.match (toString zIdPartial <> "*.md")) $ noteFiles
+      zettelFiles <- listDirectory $ toFilePath $ inputDir
+      let nums :: [Int] = sort $ catMaybes $ fmap readMaybe $ catMaybes $ catMaybes $ fmap (fmap listToMaybe . FP.match (toString zIdPartial <> "*.md")) zettelFiles
       case fmap last (nonEmpty nums) of
         Just lastNum ->
           pure $ zIdPartial <> toText @String (printf "%02d" $ lastNum + 1)
@@ -110,5 +110,3 @@ newZettelFile inputDir ztitle = do
             . T.replace "Fri" "5"
             . T.replace "Sat" "6"
             . T.replace "Sun" "7"
-    notesDir :: Path Rel Dir
-    notesDir = [reldir|notes|]
