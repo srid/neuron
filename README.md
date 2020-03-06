@@ -1,11 +1,19 @@
 # neuron
 
-Haskell meets Zettelkasten, for your plain-text delight.
+neuron is a system for managing your plain-text Zettelkasten notes. 
 
-**Design goals**
+**Features**
 
-- A Haskell library for managing and rendering Zettelkasten notes
-- Generate static site HTML
+- Static site generation of notes, for easy browsing
+  - Graph-based automatic category tree view
+- CLI for creating new zettel
+- Exposed Haskell library to build your own system
+
+See `./example`.
+
+**Roadmap**
+
+- Nix-based nvim for searching and editing Zettels
 - Weblog adapter on top
 
 ## Prerequisites
@@ -25,12 +33,10 @@ nix-env -iA cachix -f https://cachix.org/api/v1/install
 cachix use srid
 ```
 
-## Running
+## Running example
 
-To build and run the site:
+To build and run the example:
 
 ```bash
-bin/run
+bin/run-example
 ```
-
-This launches a web server at http://localhost:8080 serving the statically generated content. Changing either the sources or the content in `./content` reloads everything.

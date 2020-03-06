@@ -5,4 +5,5 @@ result
 .shake
 
 dest/*
+example/dest/*
 !b/.gitkeep
