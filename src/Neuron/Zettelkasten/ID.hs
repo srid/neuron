@@ -30,6 +30,9 @@ import qualified Text.MMark.Extension as Ext
 import qualified Text.URI as URI
 import Text.URI.QQ (scheme)
 
+-- Short Zettel ID encoding datetime.
+--
+-- Based on https://old.reddit.com/r/Zettelkasten/comments/fa09zw/shorter_zettel_ids/
 newtype ZettelID = ZettelID {unZettelID :: Text}
   deriving (Eq, Show, Ord)
 

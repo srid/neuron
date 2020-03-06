@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Graph of zettels.
+-- | Zettel store datastructure
 module Neuron.Zettelkasten.Store where
 
 import qualified Data.Map.Strict as Map

@@ -11,7 +11,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Zettel ID
+-- | Special Zettel links in Markdown
 module Neuron.Zettelkasten.Link where
 
 import Lucid

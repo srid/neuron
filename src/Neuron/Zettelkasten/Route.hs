@@ -11,7 +11,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Zettel ID
+-- | Zettel site's routes
 module Neuron.Zettelkasten.Route where
 
 import Neuron.Zettelkasten.Graph

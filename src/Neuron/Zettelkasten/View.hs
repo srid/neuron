@@ -11,7 +11,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Zettel ID
+-- | HTML & CSS
 module Neuron.Zettelkasten.View where
 
 import Clay ((?), Css, em, px, sym, sym2)
