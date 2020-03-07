@@ -55,7 +55,7 @@ indexZettelID = ZettelID "OVERVIEW"
 
 dfsForestFor :: Maybe (ZettelID -> Bool) -> ZettelID -> ZettelGraph -> Forest ZettelID
 dfsForestFor f' fromZid =
-  obviateRootUnlessForest fromZid . Algo.dfsForestFrom [fromZid] . LAM.skeleton . maybe id (LAM.induce . g) f'
+  Algo.dfsForestFrom [fromZid] . LAM.skeleton . maybe id (LAM.induce . g) f'
   where
     -- Apply filter `f'` whilst unconditionally allowing the `fromZid` zettel.
     g f zid = or [zid == fromZid, f zid]

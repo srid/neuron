@@ -17,6 +17,7 @@ module Neuron.Zettelkasten.View where
 import Clay hiding (reverse, s)
 import qualified Clay as C
 import Data.Foldable (maximum)
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Tree (Tree (..))
 import Lucid
@@ -59,8 +60,9 @@ renderIndex (store, graph) = do
         forM_ cyc $ \zid ->
           li_ $ renderZettelLink LinkTheme_Default store zid
         hr_ mempty
-      Right (Set.fromList -> allZids) -> do
-        let danglingZids = allZids `Set.difference` categorizedZids
+      Right _sortedZettels -> do
+        let allZids = Set.fromList $ Map.keys store
+            danglingZids = allZids `Set.difference` categorizedZids
         unless (null danglingZids) $ do
           h2_ "Dangling zettels"
           ul_
