@@ -13,11 +13,7 @@ import Development.Shake
 import Lucid
 -- TODO: Don't expose every module
 import qualified Neuron.Zettelkasten as Z
-import qualified Neuron.Zettelkasten.Graph as Z
-import qualified Neuron.Zettelkasten.Link.View as Z
 import qualified Neuron.Zettelkasten.Route as Z
-import qualified Neuron.Zettelkasten.Store as Z
-import qualified Neuron.Zettelkasten.Type as Z
 import qualified Neuron.Zettelkasten.View as Z
 import Path
 import Relude
@@ -27,13 +23,10 @@ import Rib.Extra.CSS (googleFonts, stylesheet)
 import Text.Pandoc.Highlighting (styleToCss, tango)
 
 data Route a where
-  Route_Index :: Route (Z.ZettelStore, Z.ZettelGraph)
   Route_Zettel :: Z.Route s g () -> Route (s, g)
 
 instance IsRoute Route where
   routeFile = \case
-    Route_Index ->
-      pure [relfile|index.html|]
     Route_Zettel r ->
       Rib.routeFile r
 
@@ -45,14 +38,11 @@ main = Z.run (thisDir </> [reldir|content|]) (thisDir </> [reldir|dest|]) genera
 generateSite :: Action ()
 generateSite = do
   let writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
-  val <- Z.generateSite (writeHtmlRoute . Route_Zettel) [[relfile|*.md|]]
-  writeHtmlRoute Route_Index val
+  void $ Z.generateSite (writeHtmlRoute . Route_Zettel) [[relfile|*.md|]]
 
 routeTitle :: a -> Route a -> Text
 routeTitle val =
   maybe siteTitle (<> " - " <> siteTitle) . \case
-    Route_Index ->
-      Nothing
     Route_Zettel r ->
       Z.routeTitle (fst val) r
   where
@@ -74,23 +64,6 @@ renderPage route val = with html_ [lang_ "en"] $ do
     div_ [class_ "ui text container", id_ "thesite"] $ do
       br_ mempty
       case route of
-        Route_Index -> do
-          h1_ [class_ "header"] $ toHtml $ routeTitle val route
-          p_ $ i_ $ "A rewrite of www.srid.ca using Zettelkasten principles."
-          div_ [class_ "ui warning message"] $
-            p_ "This site is a work in progress. Its content is currently incomplete."
-          let (s, g) = val
-          h2_ "Pinned"
-          ul_ $ Z.renderForest (Z.LinkTheme_Menu Nothing) s g $
-            Z.dfsForestFor (Just $ Z.hasTag "pinned" . flip Z.lookupStore s) Z.indexZettelID g
-          h2_ "Chronological"
-          ul_ $ Z.renderForest Z.LinkTheme_Default s g $
-            Z.dfsForestFor (Just $ Z.hasTag "chrono" . flip Z.lookupStore s) Z.indexZettelID g
-          hr_ mempty
-          p_ $ do
-            "Refer to the zettel index for a complete list zettels: "
-            a_ [href_ $ Rib.routeUrl (Route_Zettel Z.Route_Index)] $ do
-              "Zettel Index"
         Route_Zettel r ->
           Z.renderRoute r val
 
