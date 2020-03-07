@@ -16,6 +16,7 @@ module Neuron.Zettelkasten.Link where
 
 import Lucid
 import Neuron.Zettelkasten.ID
+import qualified Neuron.Zettelkasten.Meta as Meta
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
@@ -55,14 +56,22 @@ renderZettelLink :: Monad m => LinkTheme -> ZettelStore -> ZettelID -> HtmlT m (
 renderZettelLink ltheme store zid = do
   let Zettel {..} = lookupStore zid store
       zurl = Rib.routeUrlRel $ Route_Zettel zid
+      ztagsM = Meta.tags =<< Meta.getMeta zettelContent
   case ltheme of
     LinkTheme_Default -> do
+      -- Special consistent styling for Zettel links
+      -- Uses ZettelID as link text. Title is displayed aside.
       span_ [class_ "zettel-link"] $ do
         span_ [class_ "zettel-link-idlink"] $ do
           a_ [href_ zurl] $ toHtml zid
         span_ [class_ "zettel-link-title"] $ do
           toHtml $ zettelTitle
+        whenJust ztagsM $ \ztags ->
+          forM_ ztags $ \ztag ->
+            span_ [class_ "ui label"] $ toHtml ztag
     LinkTheme_Menu ignoreZid -> do
+      -- A normal looking link.
+      -- Zettel's title is the link text.
       if zid == ignoreZid
         then div_ [class_ "zettel-link item active", title_ $ unZettelID zid] $ do
           span_ [class_ "zettel-link-title"] $ do
