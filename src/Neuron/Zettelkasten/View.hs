@@ -39,6 +39,7 @@ renderRoute r val = do
 
 renderIndex :: (ZettelStore, ZettelGraph) -> Html ()
 renderIndex (store, graph) = do
+  h1_ [class_ "header"] $ "Zettel Index"
   div_ [class_ "zettels"] $ do
     -- cluster
     forM_ (reverse $ clusters graph) $ \zettels -> do

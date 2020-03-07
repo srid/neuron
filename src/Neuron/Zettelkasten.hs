@@ -69,13 +69,14 @@ runWith srcDir dstDir act = \case
 generateSite ::
   (Z.Route Z.ZettelStore Z.ZettelGraph () -> (Z.ZettelStore, Z.ZettelGraph) -> Action ()) ->
   [Path Rel File] ->
-  Action ()
+  Action (Z.ZettelStore, Z.ZettelGraph)
 generateSite writeHtmlRoute' zettelsPat = do
   zettelStore <- Z.mkZettelStore =<< Rib.forEvery zettelsPat pure
   zettelGraph <- Z.mkZettelGraph zettelStore
   let writeHtmlRoute r = writeHtmlRoute' r (zettelStore, zettelGraph)
   (writeHtmlRoute . Z.Route_Zettel) `mapM_` Map.keys zettelStore
   writeHtmlRoute Z.Route_Index
+  pure (zettelStore, zettelGraph)
 
 -- | Create a new zettel file and return its slug
 -- TODO: refactor this

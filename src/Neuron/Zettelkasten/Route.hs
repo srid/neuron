@@ -29,7 +29,7 @@ data Route store graph a where
 instance IsRoute (Route store graph) where
   routeFile = \case
     Route_Index ->
-      pure [relfile|index.html|]
+      pure [relfile|z-index.html|]
     Route_Zettel (unZettelID -> zid) ->
       parseRelFile $ toString zid <> ".html"
 

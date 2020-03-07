@@ -11,18 +11,33 @@
 
 module Main where
 
-import Clay hiding (style, type_)
+import Clay hiding (s, style, type_)
 import qualified Clay as C
 import Development.Shake
 import Lucid
 import qualified Neuron.Zettelkasten as Z
+import qualified Neuron.Zettelkasten.Graph as Z
+import qualified Neuron.Zettelkasten.Link as Z
 import qualified Neuron.Zettelkasten.Route as Z
+import qualified Neuron.Zettelkasten.Store as Z
 import qualified Neuron.Zettelkasten.View as Z
 import Path
 import Relude
 import qualified Rib
+import Rib (IsRoute)
 import Rib.Extra.CSS (googleFonts, stylesheet)
 import Text.Pandoc.Highlighting (styleToCss, tango)
+
+data Route a where
+  Route_Index :: Route (Z.ZettelStore, Z.ZettelGraph)
+  Route_Zettel :: Z.Route s g () -> Route (s, g)
+
+instance IsRoute Route where
+  routeFile = \case
+    Route_Index ->
+      pure [relfile|index.html|]
+    Route_Zettel r ->
+      Rib.routeFile r
 
 main :: IO ()
 main = Z.run (thisDir </> [reldir|content|]) (thisDir </> [reldir|dest|]) generateSite
@@ -32,16 +47,26 @@ main = Z.run (thisDir </> [reldir|content|]) (thisDir </> [reldir|dest|]) genera
 generateSite :: Action ()
 generateSite = do
   let writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
-  Z.generateSite writeHtmlRoute [[relfile|*.md|]]
+  val <- Z.generateSite (writeHtmlRoute . Route_Zettel) [[relfile|*.md|]]
+  writeHtmlRoute Route_Index val
 
-renderPage :: Z.Route s g a -> (s, g) -> Html ()
+routeTitle :: a -> Route a -> Text
+routeTitle val =
+  maybe siteTitle (<> " - " <> siteTitle) . \case
+    Route_Index ->
+      Nothing
+    Route_Zettel r ->
+      Z.routeTitle (fst val) r
+  where
+    siteTitle = "Example Zettelkasten"
+
+renderPage :: Route a -> a -> Html ()
 renderPage route val = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
     meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
     -- TODO: open graph
-    title_ $ toHtml $ maybe siteTitle (<> " - " <> siteTitle) $
-      Z.routeTitle (fst val) route
+    title_ $ toHtml $ routeTitle val route
     stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
     stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
     style_ [type_ "text/css"] $ styleToCss tango
@@ -50,9 +75,18 @@ renderPage route val = with html_ [lang_ "en"] $ do
   body_ $ do
     div_ [class_ "ui text container", id_ "thesite"] $ do
       br_ mempty
-      Z.renderRoute route val
-  where
-    siteTitle = "Example Zettelkasten"
+      case route of
+        Route_Index -> do
+          h1_ [class_ "header"] $ toHtml $ routeTitle val route
+          let (s, g) = val
+              -- TODO: filter by tag
+              forest = Z.dfsForest Z.indexZettelID g
+          ul_ $ Z.renderForest Z.LinkTheme_Default s g forest
+          hr_ mempty
+          a_ [href_ $ Rib.routeUrl (Route_Zettel Z.Route_Index)] $ do
+            "Zettel Index"
+        Route_Zettel r ->
+          Z.renderRoute r val
 
 headerFont :: Text
 headerFont = "Oswald"
