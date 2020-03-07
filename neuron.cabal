@@ -20,6 +20,8 @@ library
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.View
     Neuron.Zettelkasten.Link
+    Neuron.Zettelkasten.Link.View
+    Neuron.Zettelkasten.Link.Action
     Neuron.Zettelkasten.Meta
     Neuron.Zettelkasten.Type
   other-modules:

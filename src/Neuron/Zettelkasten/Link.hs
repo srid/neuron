@@ -14,69 +14,12 @@
 -- | Special Zettel links in Markdown
 module Neuron.Zettelkasten.Link where
 
-import qualified Data.Map.Strict as Map
-import Lucid
-import Neuron.Zettelkasten.ID
-import qualified Neuron.Zettelkasten.Meta as Meta
-import Neuron.Zettelkasten.Route
+import Neuron.Zettelkasten.Link.Action
+import Neuron.Zettelkasten.Link.View
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Type
 import Relude
-import qualified Rib
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Extension, Inline (..))
-import qualified Text.URI as URI
-
-data LinkAction
-  = LinkAction_ConnectZettel Connection
-  | -- | Render a list (or should it be tree?) of links to queries zettels
-    -- TODO: Should this automatically establish a connection in graph??
-    LinkAction_QueryZettels [Query]
-  deriving (Eq, Show)
-
-data Query
-  = ByTag Text
-  deriving (Eq, Show)
-
-linkActionFromUri :: URI.URI -> Maybe LinkAction
-linkActionFromUri uri = case fmap URI.unRText (URI.uriScheme uri) of
-  Just "z" ->
-    Just $ LinkAction_ConnectZettel Folgezettel
-  Just "zcf" ->
-    Just $ LinkAction_ConnectZettel OrdinaryConnection
-  Just "zquery" ->
-    Just $ LinkAction_QueryZettels $ queryFromUri uri
-  _ ->
-    Nothing
-
-queryFromUri :: URI.URI -> [Query]
-queryFromUri uri =
-  flip fmap (URI.uriQuery uri) $ \case
-    URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-      case key of
-        "tag" -> ByTag val
-        _ -> error $ "Invalid zquery key: " <> key
-    _ -> error "Query flag not supported"
-
-runQuery :: ZettelStore -> [Query] -> [ZettelID]
-runQuery store queries =
-  Map.keys $ flip Map.filter store $ \zettel ->
-    and $ matchQuery zettel <$> queries
-  where
-    matchQuery Zettel {..} = \case
-      ByTag tag -> tag `elem` (fromMaybe [] $ Meta.tags =<< Meta.getMeta zettelContent)
-
-linkActionRender :: Monad m => ZettelStore -> NonEmpty Inline -> URI.URI -> LinkAction -> HtmlT m ()
-linkActionRender store inner _uri = \case
-  LinkAction_ConnectZettel _conn -> do
-    -- The inner link text is supposed to be the zettel ID
-    let zid = parseZettelID $ Ext.asPlainText inner
-    renderZettelLink LinkTheme_Default store zid
-  LinkAction_QueryZettels q -> do
-    p_ $ toHtml @Text $ show q
-    ul_ $ do
-      forM_ (runQuery store q) $ \zid -> do
-        li_ $ renderZettelLink LinkTheme_Default store zid
 
 -- | MMark extension to transform `z:/` links in Markdown
 linkActionExt :: ZettelStore -> Extension
@@ -85,41 +28,9 @@ linkActionExt store =
     inline@(Link inner uri _title) ->
       case linkActionFromUri uri of
         Just lact ->
-          linkActionRender store inner uri lact
+          let mlink = MarkdownLink (Ext.asPlainText inner) uri
+           in linkActionRender store mlink lact
         Nothing ->
           f inline
     inline ->
       f inline
-
-data LinkTheme
-  = LinkTheme_Default
-  | LinkTheme_Menu (Maybe ZettelID)
-  deriving (Eq, Show, Ord)
-
-renderZettelLink :: Monad m => LinkTheme -> ZettelStore -> ZettelID -> HtmlT m ()
-renderZettelLink ltheme store zid = do
-  let Zettel {..} = lookupStore zid store
-      zurl = Rib.routeUrlRel $ Route_Zettel zid
-      ztagsM = Meta.tags =<< Meta.getMeta zettelContent
-  case ltheme of
-    LinkTheme_Default -> do
-      -- Special consistent styling for Zettel links
-      -- Uses ZettelID as link text. Title is displayed aside.
-      span_ [class_ "zettel-link"] $ do
-        span_ [class_ "zettel-link-idlink"] $ do
-          a_ [href_ zurl] $ toHtml zid
-        span_ [class_ "zettel-link-title"] $ do
-          toHtml $ zettelTitle
-        whenJust ztagsM $ \ztags ->
-          forM_ ztags $ \ztag ->
-            span_ [class_ "ui label"] $ toHtml ztag
-    LinkTheme_Menu ignoreZid -> do
-      -- A normal looking link.
-      -- Zettel's title is the link text.
-      if Just zid == ignoreZid
-        then div_ [class_ "zettel-link item active", title_ $ unZettelID zid] $ do
-          span_ [class_ "zettel-link-title"] $ do
-            b_ $ toHtml zettelTitle
-        else a_ [class_ "zettel-link item", href_ zurl, title_ $ unZettelID zid] $ do
-          span_ [class_ "zettel-link-title"] $ do
-            toHtml zettelTitle

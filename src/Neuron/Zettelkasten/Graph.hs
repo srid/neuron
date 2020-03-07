@@ -19,6 +19,7 @@ import qualified Data.Map.Strict as Map
 import Data.Tree (Forest, Tree (..))
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Link.Action (extractLinks, linkActionConnections)
 import Neuron.Zettelkasten.Store (ZettelStore)
 import Neuron.Zettelkasten.Type
 import Relude
@@ -31,7 +32,8 @@ mkZettelGraph store = do
   -- Determine edges from links
   let es :: [([Connection], ZettelID, ZettelID)] =
         flip concatMap (Map.elems store) $ \Zettel {..} ->
-          zettelIDsFromMMark zettelContent <&> \(c, z2) -> ([c], zettelID, z2)
+          (linkActionConnections store `concatMap` extractLinks zettelContent)
+            <&> \(c, z2) -> ([c], zettelID, z2)
   -- TODO: Include all connections; show cf in "Connections" section
   -- But use Folgezettel only in index's topSort
   -- TODO: Handle conflicts. Link repeating but with different connection type

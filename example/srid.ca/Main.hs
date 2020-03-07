@@ -14,7 +14,7 @@ import Lucid
 -- TODO: Don't expose every module
 import qualified Neuron.Zettelkasten as Z
 import qualified Neuron.Zettelkasten.Graph as Z
-import qualified Neuron.Zettelkasten.Link as Z
+import qualified Neuron.Zettelkasten.Link.View as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
 import qualified Neuron.Zettelkasten.Type as Z

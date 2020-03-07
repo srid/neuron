@@ -12,6 +12,7 @@
 module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     Connection (..),
+    ZettelConnection,
     connectionScheme,
     parseZettelID,
     mkZettelID,
@@ -35,6 +36,8 @@ import Text.URI.QQ (scheme)
 -- Based on https://old.reddit.com/r/Zettelkasten/comments/fa09zw/shorter_zettel_ids/
 newtype ZettelID = ZettelID {unZettelID :: Text}
   deriving (Eq, Show, Ord)
+
+type ZettelConnection = (Connection, ZettelID)
 
 -- | Represent the connection between zettels
 data Connection
