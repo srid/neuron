@@ -53,7 +53,7 @@ indexZettelID = ZettelID "OVERVIEW"
 
 dfsForestFor :: Maybe (ZettelID -> Bool) -> ZettelID -> ZettelGraph -> Forest ZettelID
 dfsForestFor f' fromZid =
-  obviateRoot fromZid . Algo.dfsForestFrom [fromZid] . LAM.skeleton . maybe id (LAM.induce . g) f'
+  obviateRootUnlessForest fromZid . Algo.dfsForestFrom [fromZid] . LAM.skeleton . maybe id (LAM.induce . g) f'
   where
     -- Apply filter `f'` whilst unconditionally allowing the `fromZid` zettel.
     g f zid = or [zid == fromZid, f zid]
@@ -66,11 +66,13 @@ dfsForestBackwards :: ZettelID -> ZettelGraph -> Forest ZettelID
 dfsForestBackwards fromZid =
   dfsForest fromZid . LAM.transpose
 
-obviateRoot :: (Show a, Eq a) => a -> [Tree a] -> [Tree a]
-obviateRoot root = \case
+-- | If the input is a tree with the given root node, return its children (as
+-- forest). Otherwise return the input as is.
+obviateRootUnlessForest :: (Show a, Eq a) => a -> [Tree a] -> [Tree a]
+obviateRootUnlessForest root = \case
   [Node v ts] ->
     if v == root
       then ts
       else error "Root mismatch"
   nodes ->
-    error $ "Expected single root tree, but got: " <> show ((\(Node v _) -> v) <$> nodes)
+    nodes
