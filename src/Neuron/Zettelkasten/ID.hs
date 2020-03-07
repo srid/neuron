@@ -45,6 +45,7 @@ data Connection
     OrdinaryConnection
   deriving (Eq, Show, Enum, Bounded)
 
+-- TODO: avoid DRY with Link.hs
 connectionScheme :: Connection -> URI.RText l
 connectionScheme = \case
   Folgezettel -> [scheme|z|]
