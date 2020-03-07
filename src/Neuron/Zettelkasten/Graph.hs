@@ -34,7 +34,7 @@ mkZettelGraph store = do
           zettelIDsFromMMark zettelContent <&> \(c, z2) -> ([c], zettelID, z2)
   -- TODO: Include all connections; show cf in "Connections" section
   -- But use Folgezettel only in index's topSort
-  -- TODO: Handle confligs. LInk repeating but with different connection type
+  -- TODO: Handle conflicts. Link repeating but with different connection type
   pure $ LAM.edges $ filter (\(cs, _, _) -> not $ OrdinaryConnection `elem` cs) es
 
 -- | Return the backlinks to the given zettel
@@ -51,11 +51,17 @@ topSort = Algo.topSort . LAM.skeleton
 indexZettelID :: ZettelID
 indexZettelID = ZettelID "OVERVIEW"
 
+dfsForestFor :: Maybe (ZettelID -> Bool) -> ZettelID -> ZettelGraph -> Forest ZettelID
+dfsForestFor f fromZid =
+  obviateRoot fromZid . Algo.dfsForestFrom [fromZid] . LAM.skeleton . maybe id LAM.induce f
+
 dfsForest :: ZettelID -> ZettelGraph -> Forest ZettelID
-dfsForest fromZid = obviateRoot fromZid . Algo.dfsForestFrom [fromZid] . LAM.skeleton
+dfsForest =
+  dfsForestFor Nothing
 
 dfsForestBackwards :: ZettelID -> ZettelGraph -> Forest ZettelID
-dfsForestBackwards fromZid = obviateRoot fromZid . Algo.dfsForestFrom [fromZid] . LAM.skeleton . LAM.transpose
+dfsForestBackwards fromZid =
+  dfsForest fromZid . LAM.transpose
 
 obviateRoot :: (Show a, Eq a) => a -> [Tree a] -> [Tree a]
 obviateRoot root = \case
