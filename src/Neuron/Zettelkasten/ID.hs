@@ -43,7 +43,7 @@ data Connection
     Folgezettel
   | -- | Any other ordinary connection (eg: "See also")
     OrdinaryConnection
-  deriving (Eq, Enum, Bounded)
+  deriving (Eq, Show, Enum, Bounded)
 
 connectionScheme :: Connection -> URI.RText l
 connectionScheme = \case

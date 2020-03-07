@@ -22,7 +22,7 @@ import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link (LinkTheme (..), renderZettelLink, zettelLinkExt)
+import Neuron.Zettelkasten.Link (LinkTheme (..), linkActionExt, renderZettelLink)
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
@@ -76,7 +76,7 @@ renderZettel (store, graph) zid = do
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segment"] $ do
       h1_ [class_ "header"] $ toHtml zettelTitle
-      MMark.render $ MMark.useExtension (zettelLinkExt store) zettelContent
+      MMark.render $ MMark.useExtension (linkActionExt store) zettelContent
     div_ [class_ "ui inverted teal stacked segment connections"] $ do
       div_ $ b_ "Connections"
       div_ [class_ "ui two column grid"] $ do
