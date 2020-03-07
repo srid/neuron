@@ -9,7 +9,7 @@ neuron is a system for managing your plain-text [Zettelkasten](https://writingco
 - CLI for creating new zettel
 - Exposed Haskell library to build your own system
 
-See `./example`.
+See `./example/srid.ca` for (work in progress) real-world example.
 
 **Roadmap**
 
