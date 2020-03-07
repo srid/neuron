@@ -40,3 +40,13 @@ To build and run the example:
 ```bash
 bin/run-example
 ```
+
+## Guide
+
+`TODO` Write a nice guide (using neuron itself) to using neuron, including topics like:
+
+- [ ] ZettelID (timestamp based, or custom text)
+- [ ] Zettel graph and tree filtering
+- [ ] Zettel link schemes: z://, zcf://
+  - [ ] Zettel query: zquery://
+- [ ] zettel CLI to make new zettels
