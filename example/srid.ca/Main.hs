@@ -22,6 +22,7 @@ import Path
 import Relude
 import qualified Rib
 import Rib.Extra.CSS (googleFonts, stylesheet)
+import Text.Pandoc.Highlighting (styleToCss, tango)
 
 main :: IO ()
 main = Z.run (thisDir </> [reldir|content|]) (thisDir </> [reldir|dest|]) generateSite
@@ -41,10 +42,11 @@ renderPage route val = with html_ [lang_ "en"] $ do
     -- TODO: open graph
     title_ $ toHtml $ maybe siteTitle (<> " - " <> siteTitle) $
       Z.routeTitle (fst val) route
-    stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@3.4.2/dist/semantic.min.css"
+    stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
     stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
-    googleFonts $ [headerFont, bodyFont, monoFont]
+    style_ [type_ "text/css"] $ styleToCss tango
     style_ [type_ "text/css"] $ C.render style
+    googleFonts $ [headerFont, bodyFont, monoFont]
   body_ $ do
     div_ [class_ "ui text container", id_ "thesite"] $ do
       br_ mempty
@@ -69,3 +71,9 @@ style = "div#thesite" ? do
   "h1, h2, h3, h4, h5, h6" ? do
     C.fontFamily [headerFont] [C.sansSerif]
   Z.style
+  -- TODO: Move these to neuron's css
+  "div.connections" ? do
+    "a" ? do
+      C.important $ color white
+    "a:hover" ? do
+      C.opacity 0.5

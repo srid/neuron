@@ -65,4 +65,5 @@ executable sridca
     shake,
     text,
     neuron,
-    relude
+    relude,
+    pandoc

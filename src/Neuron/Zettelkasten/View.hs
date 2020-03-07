@@ -14,7 +14,7 @@
 -- | HTML & CSS
 module Neuron.Zettelkasten.View where
 
-import Clay ((?), Css, em, px, sym, sym2)
+import Clay hiding (reverse, s)
 import qualified Clay as C
 import Data.Foldable (maximum)
 import qualified Data.Set as Set
@@ -68,7 +68,7 @@ renderRoute r (store, graph) = do
         div_ [class_ "ui raised segment"] $ do
           h1_ [class_ "header"] $ toHtml zettelTitle
           MMark.render $ MMark.useExtension (zettelLinkExt store) zettelContent
-        div_ [class_ "connections"] $ do
+        div_ [class_ "ui inverted teal stacked segment connections"] $ do
           div_ $ b_ "Connections"
           div_ [class_ "ui two column grid"] $ do
             div_ [class_ "column"] $ do
@@ -135,12 +135,25 @@ style = do
       C.fontColor C.slategray
       C.fontWeight C.bold
       C.margin (px 0) (px 0) (em 0.4) (px 0)
-    C.code ? do
-      C.backgroundColor "#eee"
-      sym C.borderRadius $ px 3
-      sym2 C.padding (px 0) (px 3)
+    codeStyle
     blockquoteStyle
+  "div.connections" ? do
+    mempty
   where
+    codeStyle = do
+      C.code ? do
+        sym margin auto
+        fontSize $ pct 90
+      "code, pre, tt" ? do
+        fontFamily ["SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [monospace]
+      pre ? do
+        sym padding $ em 0.5
+      "div.source-code" ? do
+        marginLeft auto
+        marginRight auto
+        maxWidth $ pct 80
+        pre ? do
+          backgroundColor "#f8f8f8"
     -- https://css-tricks.com/snippets/css/simple-and-nice-blockquote-styling/
     blockquoteStyle = do
       C.blockquote ? do
