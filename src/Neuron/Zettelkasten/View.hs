@@ -30,70 +30,79 @@ import Relude
 import qualified Text.MMark as MMark
 
 renderRoute :: Route store graph a -> (store, graph) -> Html ()
-renderRoute r (store, graph) = do
+renderRoute r val = do
   case r of
-    Route_Index -> do
-      div_ [class_ "zettels"] $ do
-        -- cluster
-        forM_ (reverse $ clusters graph) $ \zettels -> do
-          when (length zettels > 1) $ do
-            h2_ "Cluster"
-            hr_ mempty
-            forM_ zettels $ \zid ->
-              li_ $ do
-                renderZettelLink LinkTheme_Default store zid
-        let forest = dfsForest indexZettelID graph
-            categorizedZids = Set.fromList $ concatMap toList forest
-        -- cycles and dangling checks
-        case topSort graph of
-          Left (toList -> cyc) -> div_ [class_ "ui piled segment"] $ do
-            h2_ "Cycle detected"
-            forM_ cyc $ \zid ->
+    Route_Index ->
+      renderIndex val
+    Route_Zettel zid ->
+      renderZettel val zid
+
+renderIndex :: (ZettelStore, ZettelGraph) -> Html ()
+renderIndex (store, graph) = do
+  div_ [class_ "zettels"] $ do
+    -- cluster
+    forM_ (reverse $ clusters graph) $ \zettels -> do
+      when (length zettels > 1) $ do
+        h2_ "Cluster"
+        hr_ mempty
+        forM_ zettels $ \zid ->
+          li_ $ do
+            renderZettelLink LinkTheme_Default store zid
+    let forest = dfsForest indexZettelID graph
+        categorizedZids = Set.fromList $ concatMap toList forest
+    -- cycles and dangling checks
+    case topSort graph of
+      Left (toList -> cyc) -> div_ [class_ "ui piled segment"] $ do
+        h2_ "Cycle detected"
+        forM_ cyc $ \zid ->
+          li_ $ renderZettelLink LinkTheme_Default store zid
+        hr_ mempty
+      Right (Set.fromList -> allZids) -> do
+        let danglingZids = allZids `Set.difference` categorizedZids
+        unless (null danglingZids) $ do
+          h2_ "Dangling zettels"
+          ul_
+            $ forM_ danglingZids
+            $ \zid ->
               li_ $ renderZettelLink LinkTheme_Default store zid
-            hr_ mempty
-          Right (Set.fromList -> allZids) -> do
-            let danglingZids = allZids `Set.difference` categorizedZids
-            unless (null danglingZids) $ do
-              h2_ "Dangling zettels"
-              ul_
-                $ forM_ danglingZids
-                $ \zid ->
-                  li_ $ renderZettelLink LinkTheme_Default store zid
-        -- tree
-        h2_ "Tree"
-        ul_ $ renderForest LinkTheme_Default store graph forest
-    Route_Zettel zid -> do
-      let Zettel {..} = lookupStore zid store
-      div_ [class_ "zettel-view"] $ do
-        div_ [class_ "ui raised segment"] $ do
-          h1_ [class_ "header"] $ toHtml zettelTitle
-          MMark.render $ MMark.useExtension (zettelLinkExt store) zettelContent
-        div_ [class_ "ui inverted teal stacked segment connections"] $ do
-          div_ $ b_ "Connections"
-          div_ [class_ "ui two column grid"] $ do
-            div_ [class_ "column"] $ do
-              let forest = dfsForest zid graph
-              ul_ $ renderForest (LinkTheme_Menu zid) store graph forest
-            div_ [class_ "column"] $ do
-              let forestB = dfsForestBackwards zid graph
-              ul_ $ renderForest (LinkTheme_Menu zid) store graph forestB
+    -- tree
+    h2_ "Tree"
+    ul_ $ renderForest LinkTheme_Default store graph forest
+
+renderZettel :: (ZettelStore, ZettelGraph) -> ZettelID -> Html ()
+renderZettel (store, graph) zid = do
+  let Zettel {..} = lookupStore zid store
+  div_ [class_ "zettel-view"] $ do
+    div_ [class_ "ui raised segment"] $ do
+      h1_ [class_ "header"] $ toHtml zettelTitle
+      MMark.render $ MMark.useExtension (zettelLinkExt store) zettelContent
+    div_ [class_ "ui inverted teal stacked segment connections"] $ do
+      div_ $ b_ "Connections"
+      div_ [class_ "ui two column grid"] $ do
+        div_ [class_ "column"] $ do
+          let forest = dfsForest zid graph
+          ul_ $ renderForest (LinkTheme_Menu zid) store graph forest
+        div_ [class_ "column"] $ do
+          let forestB = dfsForestBackwards zid graph
+          ul_ $ renderForest (LinkTheme_Menu zid) store graph forestB
+
+renderForest :: LinkTheme -> ZettelStore -> ZettelGraph -> [Tree ZettelID] -> Html ()
+renderForest ltheme s g trees =
+  forM_ (sortForest trees) $ \(Node zid subtrees) ->
+    li_ $ do
+      renderZettelLink ltheme s zid
+      when (ltheme == LinkTheme_Default) $ do
+        " "
+        case backlinks zid g of
+          [] -> unless (zid == indexZettelID) $ div_ [class_ "ui red label"] "DANGLING"
+          [_] -> mempty
+          conns ->
+            forM_ conns $ \zid2 -> do
+              let z2 = lookupStore zid2 s
+              i_ [class_ "fas fa-link", title_ $ unZettelID zid2 <> " " <> zettelTitle z2] mempty
+      when (length subtrees > 0) $ do
+        ul_ $ renderForest ltheme s g subtrees
   where
-    renderForest :: LinkTheme -> ZettelStore -> ZettelGraph -> [Tree ZettelID] -> Html ()
-    renderForest ltheme s g trees =
-      forM_ (sortForest trees) $ \(Node zid subtrees) ->
-        li_ $ do
-          renderZettelLink ltheme s zid
-          when (ltheme == LinkTheme_Default) $ do
-            " "
-            case backlinks zid g of
-              [] -> unless (zid == indexZettelID) $ div_ [class_ "ui red label"] "DANGLING"
-              [_] -> mempty
-              conns ->
-                forM_ conns $ \zid2 -> do
-                  let z2 = lookupStore zid2 s
-                  i_ [class_ "fas fa-link", title_ $ unZettelID zid2 <> " " <> zettelTitle z2] mempty
-          when (length subtrees > 0) $ do
-            ul_ $ renderForest ltheme s g subtrees
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
 
