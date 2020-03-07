@@ -64,4 +64,5 @@ executable sridca
     rib ^>=0.8,
     shake,
     text,
-    neuron
+    neuron,
+    relude

@@ -105,6 +105,7 @@ style = do
     C.fontFamily [] [C.monospace]
     C.fontWeight C.bold
     C.color linkColor
+    C.textDecoration C.none
   "span.zettel-link span.zettel-link-idlink a:hover" ? do
     C.backgroundColor linkColor
     C.color C.white
