@@ -6,3 +6,7 @@ This is our main Zettelkasten "Index" note, which links to the various overview 
 
 * [2009401](z://first-note)
 * [haskell-nix](z://)
+
+## Chronological
+
+* [2002201](z://free-monad)

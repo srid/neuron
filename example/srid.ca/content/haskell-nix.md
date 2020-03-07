@@ -2,6 +2,8 @@
 title: "Nix recipes for Haskellers"
 description: How to develop Haskell projects using Nix
 category: 'Programming'
+tags:
+  - pinned
 ---
 
 The goal of this article is to get you comfortable managing simple [Haskell](https://www.haskell.org/) programs and projects using the **Nix** package manager without going too much into the details.
