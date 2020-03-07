@@ -49,7 +49,7 @@ topSort :: ZettelGraph -> Either (NonEmpty ZettelID) [ZettelID]
 topSort = Algo.topSort . LAM.skeleton
 
 indexZettelID :: ZettelID
-indexZettelID = ZettelID "INDEX"
+indexZettelID = ZettelID "OVERVIEW"
 
 dfsForest :: ZettelID -> ZettelGraph -> Forest ZettelID
 dfsForest fromZid = obviateRoot fromZid . Algo.dfsForestFrom [fromZid] . LAM.skeleton

@@ -86,7 +86,7 @@ renderRoute r (store, graph) = do
           when (ltheme == LinkTheme_Default) $ do
             " "
             case backlinks zid g of
-              [] -> unless (zid == ZettelID "INDEX") $ div_ [class_ "ui red label"] "DANGLING"
+              [] -> unless (zid == indexZettelID) $ div_ [class_ "ui red label"] "DANGLING"
               [_] -> mempty
               conns ->
                 forM_ conns $ \zid2 -> do
