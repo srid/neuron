@@ -20,10 +20,10 @@ library
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.View
     Neuron.Zettelkasten.Link
-  other-modules:
-    Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Meta
     Neuron.Zettelkasten.Type
+  other-modules:
+    Neuron.Zettelkasten.ID
   build-depends:
     base,
     aeson,

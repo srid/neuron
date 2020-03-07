@@ -4,6 +4,7 @@
 module Neuron.Zettelkasten.Type where
 
 import Neuron.Zettelkasten.ID
+import qualified Neuron.Zettelkasten.Meta as Z
 import Relude
 import Text.MMark (MMark)
 
@@ -19,3 +20,7 @@ instance Eq Zettel where
 
 instance Ord Zettel where
   compare = compare `on` zettelID
+
+hasTag :: Text -> Zettel -> Bool
+hasTag t =
+  isJust . (find (== t) <=< Z.tags <=< Z.getMeta) . zettelContent

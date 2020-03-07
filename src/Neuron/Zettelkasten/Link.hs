@@ -49,7 +49,7 @@ zettelLinkExt store =
 
 data LinkTheme
   = LinkTheme_Default
-  | LinkTheme_Menu ZettelID
+  | LinkTheme_Menu (Maybe ZettelID)
   deriving (Eq, Show, Ord)
 
 renderZettelLink :: Monad m => LinkTheme -> ZettelStore -> ZettelID -> HtmlT m ()
@@ -72,7 +72,7 @@ renderZettelLink ltheme store zid = do
     LinkTheme_Menu ignoreZid -> do
       -- A normal looking link.
       -- Zettel's title is the link text.
-      if zid == ignoreZid
+      if Just zid == ignoreZid
         then div_ [class_ "zettel-link item active", title_ $ unZettelID zid] $ do
           span_ [class_ "zettel-link-title"] $ do
             b_ $ toHtml zettelTitle
