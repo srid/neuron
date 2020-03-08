@@ -23,7 +23,6 @@ import Path
 import Relude
 
 -- Short Zettel ID encoding `Day` and a numeric index (on that day).
--- TODO: Currenty this allows arbitrary text. Maybe use Either Text (Date, Int)?
 --
 -- Based on https://old.reddit.com/r/Zettelkasten/comments/fa09zw/shorter_zettel_ids/
 newtype ZettelID = ZettelID {unZettelID :: Text}
