@@ -31,8 +31,10 @@ linkActionRender store MarkdownLink {..} = \case
     renderZettelLink LinkTheme_Default store zid
   LinkAction_QueryZettels _conn linkTheme q -> do
     p_ $ toHtml @Text $ show q
+    let sortZettels = sortOn $ bool unZettelID (show . zettelIDDate) $ linkTheme == LinkTheme_WithDate
+        zettels = sortZettels $ runQuery store q
     ul_ $ do
-      forM_ (runQuery store q) $ \zid -> do
+      forM_ zettels $ \zid -> do
         li_ $ renderZettelLink linkTheme store zid
 
 renderZettelLink :: forall m. Monad m => LinkTheme -> ZettelStore -> ZettelID -> HtmlT m ()
