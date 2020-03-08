@@ -72,7 +72,7 @@ renderIndex (store, graph) = do
               li_ $ renderZettelLink LinkTheme_Default store zid
     -- tree
     h2_ "Tree"
-    ul_ $ renderForest LinkTheme_Default store graph forest
+    ul_ $ renderForest Nothing LinkTheme_Default store graph forest
 
 renderZettel :: (ZettelStore, ZettelGraph) -> ZettelID -> Html ()
 renderZettel (store, graph) zid = do
@@ -86,27 +86,32 @@ renderZettel (store, graph) zid = do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           let forest = dfsForest zid graph
-          ul_ $ renderForest (LinkTheme_Simple $ Just zid) store graph forest
+              -- Limit the tree depth on index zettel only.
+              maxDepth = if zid == indexZettelID then Just 3 else Nothing
+          ul_ $ renderForest maxDepth (LinkTheme_Simple $ Just zid) store graph forest
         div_ [class_ "column"] $ do
           let forestB = dfsForestBackwards zid graph
-          ul_ $ renderForest (LinkTheme_Simple $ Just zid) store graph forestB
+          ul_ $ renderForest Nothing (LinkTheme_Simple $ Just zid) store graph forestB
 
-renderForest :: LinkTheme -> ZettelStore -> ZettelGraph -> [Tree ZettelID] -> Html ()
-renderForest ltheme s g trees =
-  forM_ (sortForest trees) $ \(Node zid subtrees) ->
-    li_ $ do
-      renderZettelLink ltheme s zid
-      when (ltheme == LinkTheme_Default) $ do
-        " "
-        case backlinks zid g of
-          [] -> unless (zid == indexZettelID) $ div_ [class_ "ui red label"] "DANGLING"
-          [_] -> mempty
-          conns ->
-            forM_ conns $ \zid2 -> do
-              let z2 = lookupStore zid2 s
-              i_ [class_ "fas fa-link", title_ $ unZettelID zid2 <> " " <> zettelTitle z2] mempty
-      when (length subtrees > 0) $ do
-        ul_ $ renderForest ltheme s g subtrees
+renderForest :: Maybe Int -> LinkTheme -> ZettelStore -> ZettelGraph -> [Tree ZettelID] -> Html ()
+renderForest maxLevel ltheme s g trees =
+  case maxLevel of
+    Just 0 -> mempty
+    _ -> do
+      forM_ (sortForest trees) $ \(Node zid subtrees) ->
+        li_ $ do
+          renderZettelLink ltheme s zid
+          when (ltheme == LinkTheme_Default) $ do
+            " "
+            case backlinks zid g of
+              [] -> unless (zid == indexZettelID) $ div_ [class_ "ui red label"] "DANGLING"
+              [_] -> mempty
+              conns ->
+                forM_ conns $ \zid2 -> do
+                  let z2 = lookupStore zid2 s
+                  i_ [class_ "fas fa-link", title_ $ unZettelID zid2 <> " " <> zettelTitle z2] mempty
+          when (length subtrees > 0) $ do
+            ul_ $ renderForest ((\n -> n - 1) <$> maxLevel) ltheme s g subtrees
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
