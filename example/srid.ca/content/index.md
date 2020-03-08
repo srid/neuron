@@ -6,11 +6,13 @@ Welcome to the personal home page of **Sridhar Ratnakumar**, a passionate [Haske
 
 ![](https://srid.keybase.pub/me-small.jpeg)
 
-## Pinned posts
+## Topics
 
-[.](zquery://search?tag=pinned)
+* [2009701](z://health)
+* [2009702](z://personal)
+* [2009703](z://haskell)
 
-## Chronological posts
+## Timeline
 
 [.](zquery://search?tag=chrono&linkTheme=withDate)
 

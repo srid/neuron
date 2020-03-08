@@ -51,8 +51,8 @@ linkActionFromUri uri = case fmap URI.unRText (URI.uriScheme uri) of
   Just "zcf" ->
     Just $ LinkAction_ConnectZettel OrdinaryConnection
   Just "zquery" ->
-    -- NOTE: Just assuming folgezettel for now. Will need to allow this to be customized eventually.
-    Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
+    -- NOTE: Just assuming ordinary connection for now. Will need to allow this to be customized eventually.
+    Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
   _ ->
     Nothing
 
