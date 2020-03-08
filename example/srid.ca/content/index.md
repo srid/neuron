@@ -10,7 +10,7 @@ NOTE: This site is a work in progress.
 
 ## Pinned posts
 
-[.](zquery://search?tag=pinned)
+[.](zquery://search?tag=pinned&linkTheme=simple)
 
 ## Chronological posts
 

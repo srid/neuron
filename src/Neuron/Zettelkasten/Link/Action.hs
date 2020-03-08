@@ -29,7 +29,7 @@ import qualified Text.URI as URI
 
 data LinkTheme
   = LinkTheme_Default
-  | LinkTheme_Menu (Maybe ZettelID)
+  | LinkTheme_Simple (Maybe ZettelID)
   | LinkTheme_WithDate
   deriving (Eq, Show, Ord)
 
@@ -74,7 +74,7 @@ linkThemeFromUri uri =
         "linkTheme" ->
           case val of
             "default" -> Just LinkTheme_Default
-            "menu" -> Just $ LinkTheme_Menu Nothing
+            "simple" -> Just $ LinkTheme_Simple Nothing
             "withDate" -> Just LinkTheme_WithDate
             _ -> error $ "Unknown link theme: " <> val
         _ -> Nothing

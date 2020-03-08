@@ -86,10 +86,10 @@ renderZettel (store, graph) zid = do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           let forest = dfsForest zid graph
-          ul_ $ renderForest (LinkTheme_Menu $ Just zid) store graph forest
+          ul_ $ renderForest (LinkTheme_Simple $ Just zid) store graph forest
         div_ [class_ "column"] $ do
           let forestB = dfsForestBackwards zid graph
-          ul_ $ renderForest (LinkTheme_Menu $ Just zid) store graph forestB
+          ul_ $ renderForest (LinkTheme_Simple $ Just zid) store graph forestB
 
 renderForest :: LinkTheme -> ZettelStore -> ZettelGraph -> [Tree ZettelID] -> Html ()
 renderForest ltheme s g trees =
