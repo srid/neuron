@@ -81,7 +81,7 @@ renderZettel (store, graph) zid = do
       h1_ [class_ "header"] $ toHtml zettelTitle
       MMark.render $ MMark.useExtension (linkActionExt store) zettelContent
     div_ [class_ "ui inverted teal stacked segment connections"] $ do
-      div_ $ b_ "Connections"
+      div_ $ b_ "Zettel Connections"
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           let forest = dfsForest zid graph
@@ -151,7 +151,10 @@ style = do
     codeStyle
     blockquoteStyle
   "div.connections" ? do
-    mempty
+    "a" ? do
+      C.important $ color white
+    "a:hover" ? do
+      C.opacity 0.5
   where
     codeStyle = do
       C.code ? do

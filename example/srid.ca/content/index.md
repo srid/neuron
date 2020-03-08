@@ -1,8 +1,12 @@
 ---
-title: Home
+title: Sridhar Ratnakumar
 ---
 
-This is our main Zettelkasten "Index" note, which links to the various overview zettels. It will be treated specially by the site generator.
+Welcome to the personal home page of **Sridhar Ratnakumar**, a passionate [Haskeller](https://www.haskell.org/) and an [actualist](https://www.actualists.org/). You may contact me on [Keybase](https://keybase.io/srid) or take a look at [my résumé]( https://srid.keybase.pub/resume.pdf).
+
+![](https://srid.keybase.pub/me-small.jpeg)
+
+NOTE: This site is a work in progress.
 
 ## Pinned posts
 

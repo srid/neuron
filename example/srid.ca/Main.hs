@@ -44,9 +44,12 @@ routeTitle :: a -> Route a -> Text
 routeTitle val =
   maybe siteTitle (<> " - " <> siteTitle) . \case
     Route_Zettel r ->
-      Z.routeTitle (fst val) r
+      let tit = Z.routeTitle (fst val) r
+       in if tit == Just siteTitle
+            then Nothing
+            else tit
   where
-    siteTitle = "Srid's new website"
+    siteTitle = "Sridhar Ratnakumar"
 
 renderPage :: Route a -> a -> Html ()
 renderPage route val = with html_ [lang_ "en"] $ do
@@ -84,9 +87,4 @@ style = "div#thesite" ? do
   "h1, h2, h3, h4, h5, h6" ? do
     C.fontFamily [headerFont] [C.sansSerif]
   Z.style
-  -- TODO: Move these to neuron's css
-  "div.connections" ? do
-    "a" ? do
-      C.important $ color white
-    "a:hover" ? do
-      C.opacity 0.5
+-- TODO: Move these to neuron's css
