@@ -45,16 +45,20 @@ data Query
   deriving (Eq, Show)
 
 linkActionFromUri :: URI.URI -> Maybe LinkAction
-linkActionFromUri uri = case fmap URI.unRText (URI.uriScheme uri) of
-  Just "z" ->
-    Just $ LinkAction_ConnectZettel Folgezettel
-  Just "zcf" ->
-    Just $ LinkAction_ConnectZettel OrdinaryConnection
-  Just "zquery" ->
-    -- NOTE: Just assuming ordinary connection for now. Will need to allow this to be customized eventually.
-    Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
-  _ ->
-    Nothing
+linkActionFromUri uri =
+  -- NOTE: We should probably drop the 'cf' variants in favour of specifying
+  -- the connection type as a query param or something.
+  case fmap URI.unRText (URI.uriScheme uri) of
+    Just "z" ->
+      Just $ LinkAction_ConnectZettel Folgezettel
+    Just "zcf" ->
+      Just $ LinkAction_ConnectZettel OrdinaryConnection
+    Just "zquery" ->
+      Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
+    Just "zcfquery" ->
+      Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
+    _ ->
+      Nothing
 
 queryFromUri :: URI.URI -> [Query]
 queryFromUri uri =

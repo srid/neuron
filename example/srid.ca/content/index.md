@@ -14,7 +14,7 @@ Welcome to the personal home page of **Sridhar Ratnakumar**, a passionate [Haske
 
 ## Timeline
 
-[.](zquery://search?tag=chrono&linkTheme=withDate)
+[.](zcfquery://search?tag=chrono&linkTheme=withDate)
 
 ---
 For a complete index of all zettels, see [z-index](/z-index.html).
