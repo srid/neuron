@@ -4,5 +4,5 @@ dist-*
 result
 .shake
 
-example/*/dest/*
+example/*/dest
 !b/.gitkeep
