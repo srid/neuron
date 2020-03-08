@@ -82,15 +82,16 @@ renderZettel (store, graph) zid = do
       h1_ [class_ "header"] $ toHtml zettelTitle
       MMark.render $ MMark.useExtension (linkActionExt store) zettelContent
     div_ [class_ "ui inverted teal stacked segment connections"] $ do
-      div_ $ b_ "Zettel Connections"
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
-          let forest = dfsForest zid graph
+          div_ [class_ "ui header"] "Connections"
+          let forest = obviateRootUnlessForest zid $ dfsForest zid graph
               -- Limit the tree depth on index zettel only.
               maxDepth = if zid == indexZettelID then Just 3 else Nothing
           ul_ $ renderForest maxDepth (LinkTheme_Simple $ Just zid) store graph forest
         div_ [class_ "column"] $ do
-          let forestB = dfsForestBackwards zid graph
+          div_ [class_ "ui header"] "Navigate up"
+          let forestB = obviateRootUnlessForest zid $ dfsForestBackwards zid graph
           ul_ $ renderForest Nothing (LinkTheme_Simple $ Just zid) store graph forestB
 
 renderForest :: Maybe Int -> LinkTheme -> ZettelStore -> ZettelGraph -> [Tree ZettelID] -> Html ()
