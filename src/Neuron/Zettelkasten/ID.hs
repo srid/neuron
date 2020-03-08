@@ -13,6 +13,7 @@ module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     Connection (..),
     ZettelConnection,
+    zettelIDDate,
     connectionScheme,
     parseZettelID,
     mkZettelID,
@@ -22,6 +23,9 @@ where
 
 import Control.Foldl (Fold (..))
 import qualified Data.Set as Set
+import qualified Data.Text as T
+import Data.Time.Calendar
+import Data.Time.Format
 import Lucid
 import Path
 import Relude
@@ -36,6 +40,32 @@ import Text.URI.QQ (scheme)
 -- Based on https://old.reddit.com/r/Zettelkasten/comments/fa09zw/shorter_zettel_ids/
 newtype ZettelID = ZettelID {unZettelID :: Text}
   deriving (Eq, Show, Ord)
+
+-- TODO: sync/DRY with zettelNextIdForToday
+zettelIDDate :: ZettelID -> Day
+zettelIDDate =
+  parseTimeOrError False defaultTimeLocale "%y%W%a"
+    . toString
+    . uncurry mappend
+    . second (dayFromIndex . readMaybe . toString)
+    . (T.dropEnd 1 &&& T.takeEnd 1)
+    . T.dropEnd 2
+    . unZettelID
+  where
+    dayFromIndex :: Maybe Int -> Text
+    dayFromIndex = \case
+      Just n ->
+        case n of
+          1 -> "Mon"
+          2 -> "Tue"
+          3 -> "Wed"
+          4 -> "Thu"
+          5 -> "Fri"
+          6 -> "Sat"
+          7 -> "Sun"
+          _ -> error "> 7"
+      Nothing ->
+        error "Bad day"
 
 type ZettelConnection = (Connection, ZettelID)
 

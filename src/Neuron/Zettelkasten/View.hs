@@ -24,7 +24,8 @@ import Lucid
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link (linkActionExt)
-import Neuron.Zettelkasten.Link.View (LinkTheme (..), renderZettelLink)
+import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
+import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type

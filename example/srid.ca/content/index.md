@@ -14,7 +14,7 @@ NOTE: This site is a work in progress.
 
 ## Chronological posts
 
-[.](zquery://search?tag=chrono)
+[.](zquery://search?tag=chrono&linkTheme=withDate)
 
 ---
 For a complete index of all zettels, see [z-index](/z-index.html).

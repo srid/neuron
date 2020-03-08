@@ -27,11 +27,17 @@ import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Inline (..))
 import qualified Text.URI as URI
 
+data LinkTheme
+  = LinkTheme_Default
+  | LinkTheme_Menu (Maybe ZettelID)
+  | LinkTheme_WithDate
+  deriving (Eq, Show, Ord)
+
 data LinkAction
   = LinkAction_ConnectZettel Connection
   | -- | Render a list (or should it be tree?) of links to queries zettels
     -- TODO: Should this automatically establish a connection in graph??
-    LinkAction_QueryZettels Connection [Query]
+    LinkAction_QueryZettels Connection LinkTheme [Query]
   deriving (Eq, Show)
 
 data Query
@@ -46,18 +52,32 @@ linkActionFromUri uri = case fmap URI.unRText (URI.uriScheme uri) of
     Just $ LinkAction_ConnectZettel OrdinaryConnection
   Just "zquery" ->
     -- NOTE: Just assuming folgezettel for now. Will need to allow this to be customized eventually.
-    Just $ LinkAction_QueryZettels Folgezettel $ queryFromUri uri
+    Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
   _ ->
     Nothing
 
 queryFromUri :: URI.URI -> [Query]
 queryFromUri uri =
-  flip fmap (URI.uriQuery uri) $ \case
+  flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
       case key of
-        "tag" -> ByTag val
-        _ -> error $ "Invalid zquery key: " <> key
-    _ -> error "Query flag not supported"
+        "tag" -> Just $ ByTag val
+        _ -> Nothing
+    _ -> Nothing
+
+linkThemeFromUri :: URI.URI -> Maybe LinkTheme
+linkThemeFromUri uri =
+  listToMaybe $ flip mapMaybe (URI.uriQuery uri) $ \case
+    URI.QueryFlag _ -> Nothing
+    URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
+      case key of
+        "linkTheme" ->
+          case val of
+            "default" -> Just LinkTheme_Default
+            "menu" -> Just $ LinkTheme_Menu Nothing
+            "withDate" -> Just LinkTheme_WithDate
+            _ -> error $ "Unknown link theme: " <> val
+        _ -> Nothing
 
 runQuery :: ZettelStore -> [Query] -> [ZettelID]
 runQuery store queries =
@@ -80,7 +100,7 @@ linkActionConnections store MarkdownLink {..} =
     Just (LinkAction_ConnectZettel conn) ->
       let zid = parseZettelID markdownLinkText
        in [(conn, zid)]
-    Just (LinkAction_QueryZettels conn q) ->
+    Just (LinkAction_QueryZettels conn _linkTheme q) ->
       (conn,) <$> runQuery store q
     Nothing ->
       []
