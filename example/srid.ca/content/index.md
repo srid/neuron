@@ -6,8 +6,6 @@ Welcome to the personal home page of **Sridhar Ratnakumar**, a passionate [Haske
 
 ![](https://srid.keybase.pub/me-small.jpeg)
 
-NOTE: This site is a work in progress.
-
 ## Pinned posts
 
 [.](zquery://search?tag=pinned&linkTheme=simple)

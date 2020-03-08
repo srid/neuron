@@ -41,6 +41,7 @@ main = Z.run (thisDir </> [reldir|content|]) (thisDir </> [reldir|dest|]) genera
 
 generateSite :: Action ()
 generateSite = do
+  Rib.buildStaticFiles [[relfile|static/**|]]
   let writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
   void $ Z.generateSite (writeHtmlRoute . Route_Zettel) [[relfile|*.md|]]
   -- TODO: base url?
@@ -100,5 +101,10 @@ style = "div#thesite" ? do
     C.lineHeight $ pct 150
   "h1, h2, h3, h4, h5, h6" ? do
     C.fontFamily [headerFont] [C.sansSerif]
+  "img" ? do
+    C.maxWidth $ pct 50
+    C.display C.block
+    C.marginLeft C.auto
+    C.marginRight C.auto
   Z.style
 -- TODO: Move these to neuron's css
