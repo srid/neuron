@@ -44,8 +44,18 @@ generateSite = do
   Rib.buildStaticFiles [[relfile|static/**|]]
   let writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
   void $ Z.generateSite (writeHtmlRoute . Route_Zettel) [[relfile|*.md|]]
-  -- TODO: base url?
-  writeHtmlRoute (Route_Redirect [relfile|tidbits/dhall-toml-free-monad.html|]) "/2002201.html"
+  forM_ oldLinkRedirects $ \(oldPath, newUrlRel) ->
+    writeHtmlRoute (Route_Redirect oldPath) newUrlRel
+  where
+    oldLinkRedirects =
+      [ ([relfile|tidbits/dhall-toml-free-monad.html|], "/2002201.html"),
+        ([relfile|haskell-nix.html|], "/1948201.html"),
+        ([relfile|lasik.html|], "/1911401.html"),
+        ([relfile|conflicts.html|], "/1930301.html"),
+        ([relfile|calisthenics.html|], "/1915701.html"),
+        ([relfile|carnivore-diet.html|], "/1918401.html"),
+        ([relfile|sous-vide.html|], "/1919301.html")
+      ]
 
 routeTitle :: a -> Route a -> Text
 routeTitle val =
