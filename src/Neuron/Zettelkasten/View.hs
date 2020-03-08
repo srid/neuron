@@ -87,7 +87,7 @@ renderZettel (store, graph) zid = do
           div_ [class_ "ui header"] "Connections"
           let forest = obviateRootUnlessForest zid $ dfsForest zid graph
               -- Limit the tree depth on index zettel only.
-              maxDepth = if zid == indexZettelID then Just 3 else Nothing
+              maxDepth = if zid == indexZettelID then Just 2 else Nothing
           ul_ $ renderForest maxDepth (LinkTheme_Simple $ Just zid) store graph forest
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Navigate up"

@@ -4,6 +4,8 @@ title: Sridhar Ratnakumar
 
 Welcome to the personal home page of **Sridhar Ratnakumar**, a passionate [Haskeller](https://www.haskell.org/) and an [actualist](https://www.actualists.org/). You may contact me on [Keybase Chat](https://keybase.io/srid) or take a look at [my résumé]( https://srid.keybase.pub/resume.pdf).
 
+This entire site is modeled based on the [Zettelkasten](https://writingcooperative.com/zettelkasten-how-one-german-scholar-was-so-freakishly-productive-997e4e0ca125) note taking method, and implemented using [neuron](https://github.com/srid/neuron).
+
 ![](https://srid.keybase.pub/me-small.jpeg)
 
 ## Topics
