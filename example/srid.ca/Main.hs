@@ -24,11 +24,15 @@ import Text.Pandoc.Highlighting (styleToCss, tango)
 
 data Route a where
   Route_Zettel :: Z.Route s g () -> Route (s, g)
+  -- | Redirect to an URL
+  Route_Redirect :: Path Rel File -> Route Text
 
 instance IsRoute Route where
   routeFile = \case
     Route_Zettel r ->
       Rib.routeFile r
+    Route_Redirect fp ->
+      pure fp
 
 main :: IO ()
 main = Z.run (thisDir </> [reldir|content|]) (thisDir </> [reldir|dest|]) generateSite
@@ -39,6 +43,8 @@ generateSite :: Action ()
 generateSite = do
   let writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
   void $ Z.generateSite (writeHtmlRoute . Route_Zettel) [[relfile|*.md|]]
+  -- TODO: base url?
+  writeHtmlRoute (Route_Redirect [relfile|tidbits/dhall-toml-free-monad.html|]) "/2002201.html"
 
 routeTitle :: a -> Route a -> Text
 routeTitle val =
@@ -48,6 +54,8 @@ routeTitle val =
        in if tit == Just siteTitle
             then Nothing
             else tit
+    Route_Redirect _ ->
+      Nothing
   where
     siteTitle = "Sridhar Ratnakumar"
 
@@ -56,19 +64,25 @@ renderPage route val = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
     meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
-    -- TODO: open graph
-    title_ $ toHtml $ routeTitle val route
-    stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
-    stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
-    style_ [type_ "text/css"] $ styleToCss tango
-    style_ [type_ "text/css"] $ C.render style
-    googleFonts $ [headerFont, bodyFont, monoFont]
+    case route of
+      Route_Redirect _ ->
+        meta_ [httpEquiv_ "Refresh", content_ $ "0; url=" <> val]
+      _ -> do
+        -- TODO: open graph
+        title_ $ toHtml $ routeTitle val route
+        stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
+        stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
+        style_ [type_ "text/css"] $ styleToCss tango
+        style_ [type_ "text/css"] $ C.render style
+        googleFonts $ [headerFont, bodyFont, monoFont]
   body_ $ do
     div_ [class_ "ui text container", id_ "thesite"] $ do
       br_ mempty
       case route of
         Route_Zettel r ->
           Z.renderRoute r val
+        Route_Redirect _ ->
+          mempty
 
 headerFont :: Text
 headerFont = "Oswald"
