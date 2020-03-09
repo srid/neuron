@@ -30,6 +30,7 @@ import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
 import Relude
+import Rib.Extra.CSS (mozillaKbdStyle)
 import qualified Text.MMark as MMark
 
 renderRoute :: Route store graph a -> (store, graph) -> Html ()
@@ -157,6 +158,7 @@ style = do
       C.margin (px 0) (px 0) (em 0.4) (px 0)
     codeStyle
     blockquoteStyle
+    kbd ? mozillaKbdStyle
   "div.connections" ? do
     "a" ? do
       C.important $ color white
