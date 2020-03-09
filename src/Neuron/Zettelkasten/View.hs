@@ -14,7 +14,7 @@
 -- | HTML & CSS
 module Neuron.Zettelkasten.View where
 
-import Clay hiding (reverse, s)
+import Clay hiding (reverse, s, type_)
 import qualified Clay as C
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
@@ -31,17 +31,27 @@ import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
 import Relude
 import Rib.Extra.CSS (mozillaKbdStyle)
-import qualified Text.MMark as MMark
+import qualified Rib.Parser.MMark as MMark
+import Text.MMark (useExtension)
+import Text.Pandoc.Highlighting (styleToCss, tango)
 
-renderRoute :: Route store graph a -> (store, graph) -> Html ()
-renderRoute r val = do
+renderRouteHead :: Monad m => Site -> Route store graph a -> store -> HtmlT m ()
+renderRouteHead site r val = do
+  meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
+  meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
+  title_ $ toHtml $ routeTitle site val r
+  toHtml $ routeOpenGraph site val r
+  style_ [type_ "text/css"] $ styleToCss tango
+
+renderRouteBody :: Monad m => Route store graph a -> (store, graph) -> HtmlT m ()
+renderRouteBody r val = do
   case r of
     Route_Index ->
       renderIndex val
     Route_Zettel zid ->
       renderZettel val zid
 
-renderIndex :: (ZettelStore, ZettelGraph) -> Html ()
+renderIndex :: Monad m => (ZettelStore, ZettelGraph) -> HtmlT m ()
 renderIndex (store, graph) = do
   h1_ [class_ "header"] $ "Zettel Index"
   div_ [class_ "zettels"] $ do
@@ -75,13 +85,13 @@ renderIndex (store, graph) = do
     h2_ "Tree"
     ul_ $ renderForest Nothing LinkTheme_Default store graph forest
 
-renderZettel :: (ZettelStore, ZettelGraph) -> ZettelID -> Html ()
+renderZettel :: Monad m => (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segment"] $ do
       h1_ [class_ "header"] $ toHtml zettelTitle
-      MMark.render $ MMark.useExtension (linkActionExt store) zettelContent
+      MMark.render $ useExtension (linkActionExt store) zettelContent
     div_ [class_ "ui inverted teal stacked segment connections"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
@@ -95,7 +105,14 @@ renderZettel (store, graph) zid = do
           let forestB = obviateRootUnlessForest zid $ dfsForestBackwards zid graph
           ul_ $ renderForest Nothing (LinkTheme_Simple $ Just zid) store graph forestB
 
-renderForest :: Maybe Int -> LinkTheme -> ZettelStore -> ZettelGraph -> [Tree ZettelID] -> Html ()
+renderForest ::
+  Monad m =>
+  Maybe Int ->
+  LinkTheme ->
+  ZettelStore ->
+  ZettelGraph ->
+  [Tree ZettelID] ->
+  HtmlT m ()
 renderForest maxLevel ltheme s g trees =
   case maxLevel of
     Just 0 -> mempty
