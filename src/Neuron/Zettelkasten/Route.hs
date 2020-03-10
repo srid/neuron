@@ -12,6 +12,7 @@
 -- | Zettel site's routes
 module Neuron.Zettelkasten.Route where
 
+import qualified Data.Text as T
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Store
@@ -73,7 +74,10 @@ routeOpenGraph Site {..} store r =
   OpenGraph
     { _openGraph_title = routeTitle' store r,
       _openGraph_siteName = siteTitle,
-      _openGraph_description = Nothing, -- TODO: ??
+      _openGraph_description = case r of
+        Route_Index -> Just siteDescription
+        Route_Zettel (flip lookupStore store -> Zettel {..}) ->
+          T.take 300 <$> MMark.getFirstParagraphText zettelContent,
       _openGraph_author = siteAuthor,
       _openGraph_type = case r of
         Route_Index -> "website"
