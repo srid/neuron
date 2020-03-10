@@ -35,6 +35,7 @@ library
     exceptions,
     lucid -any,
     optparse-applicative,
+    pandoc,
     path,
     path-io,
     relude,
@@ -68,4 +69,5 @@ executable sridca
     text,
     neuron,
     relude,
-    pandoc
+    pandoc,
+    modern-uri
