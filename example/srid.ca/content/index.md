@@ -8,15 +8,10 @@ This entire site is modeled based on the [Zettelkasten](https://writingcooperati
 
 ![](https://srid.keybase.pub/me-small.jpeg)
 
-## Topics
-
-* [2009701](z://health)
-* [2009702](z://personal)
-* [2009703](z://haskell)
-
 ## Timeline
+
+Published zettels under [2009701](z://health), [2009702](z://personal) and [2009703](z://haskell):
 
 [.](zcfquery://search?tag=chrono&linkTheme=withDate)
 
----
 For a complete index of all zettels, see [z-index](/z-index.html).
