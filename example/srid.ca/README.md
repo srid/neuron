@@ -1,3 +1,3 @@
-# Source for www.srid.ca (redux)
+# Source for srid.ca
 
-I'm rewriting srid.ca to be based on Zettelkasten. 
+This is a real-world example of neuron, the code behind author's personal website: [www.srid.ca](https://www.srid.ca).
