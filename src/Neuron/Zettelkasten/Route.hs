@@ -78,12 +78,13 @@ routeOpenGraph Site {..} store r =
         Route_Index -> Just siteDescription
         Route_Zettel (flip lookupStore store -> Zettel {..}) ->
           T.take 300 <$> MMark.getFirstParagraphText zettelContent,
-      _openGraph_author = siteAuthor,
+      _openGraph_author = Just siteAuthor,
       _openGraph_type = case r of
-        Route_Index -> "website"
-        Route_Zettel _ -> "article",
+        Route_Index -> Just OGType_Website
+        Route_Zettel _ -> Just $ OGType_Article (Article Nothing Nothing Nothing Nothing mempty),
       _openGraph_image = case r of
         Route_Index -> Nothing
         Route_Zettel (flip lookupStore store -> Zettel {..}) ->
-          flip URI.relativeTo siteBaseUrl =<< MMark.getFirstImg zettelContent
+          flip URI.relativeTo siteBaseUrl =<< MMark.getFirstImg zettelContent,
+      _openGraph_url = Nothing
     }
