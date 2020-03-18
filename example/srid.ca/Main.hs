@@ -50,9 +50,9 @@ generateSite = do
   let site :: Z.Site =
         Z.Site
           { Z.siteTitle = "Sridhar Ratnakumar",
-            Z.siteAuthor = "Sridhar Ratnakumar",
-            Z.siteDescription = "Personal homepage of Srid",
-            Z.siteBaseUrl = siteUri
+            Z.siteAuthor = Just "Sridhar Ratnakumar",
+            Z.siteDescription = Just "Personal homepage of Srid",
+            Z.siteBaseUrl = Just siteUri
           }
       writeHtmlRoute :: Route a -> a -> Action ()
       writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage site r

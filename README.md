@@ -1,5 +1,7 @@
 # neuron
 
+**NOTE**: Not yet ready for public use.
+
 neuron is a system for managing your plain-text [Zettelkasten](https://writingcooperative.com/zettelkasten-how-one-german-scholar-was-so-freakishly-productive-997e4e0ca125) notes. 
 
 **Features**

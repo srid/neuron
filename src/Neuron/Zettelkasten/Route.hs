@@ -33,9 +33,9 @@ data Site
   = Site
       { -- | Title of the zettelkasten site
         siteTitle :: Text,
-        siteAuthor :: Text,
-        siteDescription :: Text,
-        siteBaseUrl :: URI.URI
+        siteAuthor :: Maybe Text,
+        siteDescription :: Maybe Text,
+        siteBaseUrl :: Maybe URI.URI
       }
   deriving (Eq, Show)
 
@@ -75,16 +75,18 @@ routeOpenGraph Site {..} store r =
     { _openGraph_title = routeTitle' store r,
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
-        Route_Index -> Just siteDescription
+        Route_Index -> siteDescription
         Route_Zettel (flip lookupStore store -> Zettel {..}) ->
           T.take 300 <$> MMark.getFirstParagraphText zettelContent,
-      _openGraph_author = Just siteAuthor,
+      _openGraph_author = siteAuthor,
       _openGraph_type = case r of
         Route_Index -> Just OGType_Website
         Route_Zettel _ -> Just $ OGType_Article (Article Nothing Nothing Nothing Nothing mempty),
       _openGraph_image = case r of
         Route_Index -> Nothing
-        Route_Zettel (flip lookupStore store -> Zettel {..}) ->
-          flip URI.relativeTo siteBaseUrl =<< MMark.getFirstImg zettelContent,
+        Route_Zettel (flip lookupStore store -> Zettel {..}) -> do
+          img <- MMark.getFirstImg zettelContent
+          baseUrl <- siteBaseUrl
+          URI.relativeTo img baseUrl,
       _openGraph_url = Nothing
     }
