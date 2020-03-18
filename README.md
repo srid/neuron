@@ -11,7 +11,7 @@ neuron is a system for managing your plain-text [Zettelkasten](https://writingco
 - CLI for creating new zettel
 - Exposed Haskell library to build your own system
 
-See `./example/srid.ca` for (work in progress) real-world example.
+See [srid.ca](https://github.com/srid/srid.ca) for a real-world example.
 
 **Roadmap**
 
@@ -33,14 +33,6 @@ Optionally, enable the [Nix cache](https://srid.cachix.org/) if you would like t
 nix-env -iA cachix -f https://cachix.org/api/v1/install
 # Enable nix cache for rib
 cachix use srid
-```
-
-## Running example
-
-To build and run the example:
-
-```bash
-bin/run-example
 ```
 
 ## Guide

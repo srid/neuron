@@ -1,2 +1,0 @@
-#!/bin/sh -xe
-nix-shell --run 'ghcid -c "cabal new-repl sridca" -T ":main rib serve"'
