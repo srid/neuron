@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -29,9 +30,17 @@ import Path.IO
 import Relude
 import qualified Rib
 import qualified Rib.App
-import System.Directory (listDirectory)
+import qualified System.Directory as Dir -- TODO: not needed
+import System.FilePath (dropTrailingPathSeparator)
 import qualified System.FilePattern as FP
 import Text.Printf
+
+data App
+  = App
+      { notesDir :: FilePath,
+        cmd :: Command
+      }
+  deriving (Eq, Show)
 
 data Command
   = -- | Create a new zettel file
@@ -39,26 +48,39 @@ data Command
   | Rib Rib.App.Command
   deriving (Eq, Show)
 
-commandParser :: Parser Command
+commandParser :: Parser App
 commandParser =
-  hsubparser $
-    mconcat
-      [ command "new" $ info newCommand $ progDesc "Create a new zettel",
-        command "rib" $ fmap Rib $ info Rib.App.commandParser $ progDesc "Call rib"
-      ]
+  App
+    <$> argument str (metavar "NOTESDIR")
+    <*> cmdParser
   where
+    cmdParser =
+      hsubparser $
+        mconcat
+          [ command "new" $ info newCommand $ progDesc "Create a new zettel",
+            command "rib" $ fmap Rib $ info Rib.App.commandParser $ progDesc "Call rib"
+          ]
     newCommand =
       New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
 
-run :: Path Rel Dir -> Path Rel Dir -> Action () -> IO ()
-run srcDir dstDir act = runWith srcDir dstDir act =<< execParser opts
+run :: Action () -> IO ()
+run act = do
+  App {..} <- execParser opts
+  inputDir <- parseAbsDir =<< Dir.canonicalizePath notesDir
+  outputDir <- directoryAside inputDir ".output"
+  runWith inputDir outputDir act cmd
   where
     opts =
       info
         (commandParser <**> helper)
         (fullDesc <> progDesc "Zettelkasten based on Rib")
+    directoryAside :: Path Abs Dir -> String -> IO (Path Abs Dir)
+    directoryAside fp suffix = do
+      let baseName = dropTrailingPathSeparator $ toFilePath $ dirname fp
+      newDir <- parseRelDir $ baseName <> suffix
+      pure $ parent fp </> newDir
 
-runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> Command -> IO ()
+runWith :: Path Abs Dir -> Path Abs Dir -> Action () -> Command -> IO ()
 runWith srcDir dstDir act = \case
   New tit -> do
     s <- newZettelFile srcDir tit
@@ -80,7 +102,7 @@ generateSite writeHtmlRoute' zettelsPat = do
 
 -- | Create a new zettel file and return its slug
 -- TODO: refactor this
-newZettelFile :: Path Rel Dir -> Text -> IO String
+newZettelFile :: Path b Dir -> Text -> IO String
 newZettelFile inputDir ztitle = do
   zId <- zettelNextIdForToday
   zettelFileName <- parseRelFile $ toString $ zId <> ".md"
@@ -95,7 +117,7 @@ newZettelFile inputDir ztitle = do
     zettelNextIdForToday :: IO Text
     zettelNextIdForToday = do
       zIdPartial <- dayIndex . toText . formatTime defaultTimeLocale "%y%W%a" <$> getCurrentTime
-      zettelFiles <- listDirectory $ toFilePath $ inputDir
+      zettelFiles <- Dir.listDirectory $ toFilePath $ inputDir
       let nums :: [Int] = sort $ catMaybes $ fmap readMaybe $ catMaybes $ catMaybes $ fmap (fmap listToMaybe . FP.match (toString zIdPartial <> "*.md")) zettelFiles
       case fmap last (nonEmpty nums) of
         Just lastNum ->

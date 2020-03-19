@@ -47,6 +47,7 @@ library
     modern-uri,
     foldl,
     filepattern,
+    filepath,
     algebraic-graphs >= 0.5
 
 executable neuron
