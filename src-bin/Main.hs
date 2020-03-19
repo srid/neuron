@@ -21,9 +21,8 @@ import Relude
 import qualified Rib
 import Rib.Extra.CSS (googleFonts, stylesheet)
 
--- TODO: content/dest should be taken as command line arguments.
 main :: IO ()
-main = Z.run [reldir|content|] [reldir|dest|] generateSite
+main = Z.run generateSite
 
 generateSite :: Action ()
 generateSite = do
