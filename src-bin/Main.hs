@@ -29,7 +29,7 @@ generateSite = do
   Rib.buildStaticFiles [[relfile|static/**|]]
   let site :: Z.Site =
         Z.Site
-          { Z.siteTitle = "My Zettelkasten",
+          { Z.siteTitle = "Neuron",
             Z.siteAuthor = Nothing,
             Z.siteDescription = Nothing,
             Z.siteBaseUrl = Nothing
