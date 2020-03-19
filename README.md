@@ -28,14 +28,15 @@ cachix use srid
 
 ## Running
 
-- Use your own notes, or get the "content" directory from [srid.ca](https://github.com/srid/srid.ca) for demonstration.
-- Run `nix-build` to build the "neuron" executable
-- Run `./result/bin/neuron /path/to/content/dir rib serve`
+To run neuron, you will need a directory that holds all your zettel files. This repo comes up with sample zettelkasten at `./guide`, and you may create your own based on that one.
 
-This should generate HTML, and spin up a web server at http://localhost:8080 where you can view your Zettelkasten.
+- Run `nix-build` to build the "neuron" executable
+- Run `./result/bin/neuron ./guide rib serve`
+
+This should generate HTML for the guide zettelkasten in this repo, and spin up a web server at http://localhost:8080 where you can view it.
 
 ### Creating new zettels
 
 ```
-vim $(./result/bin/neuron /path/to/content/dir new "Some title")
+vim $(./result/bin/neuron ./guide new "Some title")
 ```

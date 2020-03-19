@@ -4,5 +4,4 @@ dist-*
 result
 .shake
 
-example/*/dest
-!b/.gitkeep
+guide.output
