@@ -1,0 +1,20 @@
+name: "CI"
+on:
+  pull_request:
+  push:
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: cachix/install-nix-action@v7
+    # This also runs nix-build.
+    - uses: cachix/cachix-action@v4
+      with:
+        name: srid
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+        # Only needed for private caches
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
