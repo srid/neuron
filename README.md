@@ -40,3 +40,7 @@ This should generate HTML for the guide zettelkasten in this repo, and spin up a
 ```
 vim $(./result/bin/neuron ./guide new "Some title")
 ```
+
+## Documentation
+
+See [neuron.srid.ca](https://neuron.srid.ca/) for a full guide to neuron.
