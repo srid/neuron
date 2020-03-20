@@ -1,13 +1,13 @@
 # neuron
 
-neuron is a system for managing your plain-text [Zettelkasten](https://writingcooperative.com/zettelkasten-how-one-german-scholar-was-so-freakishly-productive-997e4e0ca125) notes. 
+neuron is a system for managing your plain-text [Zettelkasten](https://neuron.srid.ca/2011401.html) notes. 
 
 **Features**
 
-- Static site generation of notes, for easy browsing
-  - Graph-based automatic category tree view
-- CLI for creating new zettel
-- Use the `neuron` executable to work with a directory of your notes, or extend in Haskell using the neuron library.
+- Extended Markdown for easy linking between zettels
+- Web interface (auto generated static site)
+- Graph view of zettels (organic category tree)
+- CLI for creating new zettels with automatic ID
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ cachix use srid
 
 ## Running
 
-To run neuron, you will need a directory that holds all your zettel files. This repo comes up with sample zettelkasten at `./guide`, and you may create your own based on that one.
+To run neuron, you will need a directory that holds all your zettel notes. This repo comes with a sample zettelkasten at `./guide`.
 
 - Run `nix-build` to build the "neuron" executable
 - Run `./result/bin/neuron ./guide rib serve`
