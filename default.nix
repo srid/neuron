@@ -5,7 +5,10 @@ let
   ribRevision = "43950d766ea3ee8faf6e4248ab2a56e98924b7d1";
 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
-  neuronRoot = gitignoreSource ./.;
+  excludeContent = path: typ: 
+    let d = baseNameOf (toString path);
+    in !(d == "guide" && typ == "directory");
+  neuronRoot = (import <nixpkgs> {}).lib.cleanSourceWith { filter = excludeContent; src = gitignoreSource ./.; };
 in {
 # Rib library source to use
   rib ? builtins.fetchTarball "https://github.com/srid/rib/archive/${ribRevision}.tar.gz"
