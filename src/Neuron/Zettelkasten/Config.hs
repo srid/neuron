@@ -33,7 +33,7 @@ getConfig = do
     configPath = [relfile|neuron.dhall|]
     defaultConfig =
       Config
-        { siteTitle = "My Zettelkasten",
+        { siteTitle = "Neuron Zettelkasten",
           author = mempty,
           siteBaseUrl = mempty
         }
