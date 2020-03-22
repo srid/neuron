@@ -41,6 +41,7 @@ renderRouteHead config r val = do
   meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
   meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
   title_ $ toHtml $ routeTitle config val r
+  link_ [rel_ "shortcut icon", href_ "https://raw.githubusercontent.com/srid/neuron/master/assets/logo.ico"]
   toHtml $ routeOpenGraph config val r
   style_ [type_ "text/css"] $ styleToCss tango
 
