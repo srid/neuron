@@ -1,3 +1,5 @@
+<img width="10%" src="./assets/logo.svg">
+
 # neuron
 
 neuron is a system for managing your plain-text [Zettelkasten](https://neuron.srid.ca/2011401.html) notes. 
