@@ -14,6 +14,7 @@ import Development.Shake
 import Lucid
 -- TODO: Don't expose every module
 import qualified Neuron.Zettelkasten as Z
+import qualified Neuron.Zettelkasten.Config as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.View as Z
 import Path
@@ -27,21 +28,15 @@ main = Z.run generateSite
 generateSite :: Action ()
 generateSite = do
   Rib.buildStaticFiles [[relfile|static/**|]]
-  let site :: Z.Site =
-        Z.Site
-          { Z.siteTitle = "Neuron",
-            Z.siteAuthor = Nothing,
-            Z.siteDescription = Nothing,
-            Z.siteBaseUrl = Nothing
-          }
-      writeHtmlRoute :: Z.Route s g () -> (s, g) -> Action ()
-      writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage site r
+  config <- Z.getConfig
+  let writeHtmlRoute :: Z.Route s g () -> (s, g) -> Action ()
+      writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage config r
   void $ Z.generateSite writeHtmlRoute [[relfile|*.md|]]
 
-renderPage :: Z.Site -> Z.Route s g () -> (s, g) -> Html ()
-renderPage site r val = html_ [lang_ "en"] $ do
+renderPage :: Z.Config -> Z.Route s g () -> (s, g) -> Html ()
+renderPage config r val = html_ [lang_ "en"] $ do
   head_ $ do
-    Z.renderRouteHead site r (fst val)
+    Z.renderRouteHead config r (fst val)
     stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
     stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
     style_ [type_ "text/css"] $ C.render style
