@@ -21,6 +21,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Tree (Tree (..))
 import Lucid
+import Neuron.Zettelkasten.Config
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link (linkActionExt)
@@ -35,12 +36,12 @@ import qualified Rib.Parser.MMark as MMark
 import Text.MMark (useExtension)
 import Text.Pandoc.Highlighting (styleToCss, tango)
 
-renderRouteHead :: Monad m => Site -> Route store graph a -> store -> HtmlT m ()
-renderRouteHead site r val = do
+renderRouteHead :: Monad m => Config -> Route store graph a -> store -> HtmlT m ()
+renderRouteHead config r val = do
   meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
   meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
-  title_ $ toHtml $ routeTitle site val r
-  toHtml $ routeOpenGraph site val r
+  title_ $ toHtml $ routeTitle config val r
+  toHtml $ routeOpenGraph config val r
   style_ [type_ "text/css"] $ styleToCss tango
 
 renderRouteBody :: Monad m => Route store graph a -> (store, graph) -> HtmlT m ()

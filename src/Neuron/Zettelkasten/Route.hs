@@ -13,6 +13,7 @@
 module Neuron.Zettelkasten.Route where
 
 import qualified Data.Text as T
+import Neuron.Zettelkasten.Config
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Store
@@ -28,17 +29,6 @@ data Route store graph a where
   Route_Index :: Route ZettelStore ZettelGraph ()
   Route_Zettel :: ZettelID -> Route ZettelStore ZettelGraph ()
 
--- | Site properties
-data Site
-  = Site
-      { -- | Title of the zettelkasten site
-        siteTitle :: Text,
-        siteAuthor :: Maybe Text,
-        siteDescription :: Maybe Text,
-        siteBaseUrl :: Maybe URI.URI
-      }
-  deriving (Eq, Show)
-
 instance IsRoute (Route store graph) where
   routeFile = \case
     Route_Index ->
@@ -53,8 +43,8 @@ routeName = \case
   Route_Zettel zid -> unZettelID zid
 
 -- | Return full title for a route
-routeTitle :: Site -> store -> Route store graph a -> Text
-routeTitle Site {..} store =
+routeTitle :: Config -> store -> Route store graph a -> Text
+routeTitle Config {..} store =
   withSuffix siteTitle . routeTitle' store
   where
     withSuffix suffix x =
@@ -69,16 +59,16 @@ routeTitle' store = \case
   Route_Zettel (flip lookupStore store -> Zettel {..}) ->
     zettelTitle
 
-routeOpenGraph :: Site -> store -> Route store graph a -> OpenGraph
-routeOpenGraph Site {..} store r =
+routeOpenGraph :: Config -> store -> Route store graph a -> OpenGraph
+routeOpenGraph Config {..} store r =
   OpenGraph
     { _openGraph_title = routeTitle' store r,
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
-        Route_Index -> siteDescription
+        Route_Index -> Just "Zettelkasten Index"
         Route_Zettel (flip lookupStore store -> Zettel {..}) ->
           T.take 300 <$> MMark.getFirstParagraphText zettelContent,
-      _openGraph_author = siteAuthor,
+      _openGraph_author = author,
       _openGraph_type = case r of
         Route_Index -> Just OGType_Website
         Route_Zettel _ -> Just $ OGType_Article (Article Nothing Nothing Nothing Nothing mempty),
@@ -86,7 +76,7 @@ routeOpenGraph Site {..} store r =
         Route_Index -> Nothing
         Route_Zettel (flip lookupStore store -> Zettel {..}) -> do
           img <- MMark.getFirstImg zettelContent
-          baseUrl <- siteBaseUrl
+          baseUrl <- URI.mkURI =<< siteBaseUrl
           URI.relativeTo img baseUrl,
       _openGraph_url = Nothing
     }

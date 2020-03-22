@@ -24,6 +24,7 @@ library
     Neuron.Zettelkasten.Link.Action
     Neuron.Zettelkasten.Meta
     Neuron.Zettelkasten.Type
+    Neuron.Zettelkasten.Config
   other-modules:
     Neuron.Zettelkasten.ID
   build-depends:
@@ -48,7 +49,8 @@ library
     foldl,
     filepattern,
     filepath,
-    algebraic-graphs >= 0.5
+    algebraic-graphs >= 0.5,
+    dhall
 
 executable neuron
   hs-source-dirs: src-bin
