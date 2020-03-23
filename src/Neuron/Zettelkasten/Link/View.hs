@@ -54,13 +54,12 @@ renderZettelLink ltheme store zid = do
       renderDefault zid
     LinkTheme_WithDate -> do
       renderDefault $ show @Text $ zettelIDDate zid
-    LinkTheme_Simple ignoreZid -> do
-      -- A normal looking link.
-      -- Zettel's title is the link text.
-      if Just zid == ignoreZid
-        then div_ [class_ "zettel-link item active", title_ $ unZettelID zid] $ do
-          span_ [class_ "zettel-link-title"] $ do
-            b_ $ toHtml zettelTitle
-        else a_ [class_ "zettel-link item", href_ zurl, title_ $ unZettelID zid] $ do
-          span_ [class_ "zettel-link-title"] $ do
-            toHtml zettelTitle
+    LinkTheme_Simple -> do
+      renderZettelLinkSimpleWith zurl (unZettelID zid) zettelTitle
+
+-- | Render a normal looking zettel link with a custom body.
+renderZettelLinkSimpleWith :: forall m a. (Monad m, ToHtml a) => Text -> Text -> a -> HtmlT m ()
+renderZettelLinkSimpleWith url title body =
+  a_ [class_ "zettel-link item", href_ url, title_ title] $ do
+    span_ [class_ "zettel-link-title"] $ do
+      toHtml body
