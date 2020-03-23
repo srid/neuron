@@ -58,7 +58,7 @@ renderZettelLink ltheme store zid = do
       renderZettelLinkSimpleWith zurl (unZettelID zid) zettelTitle
 
 -- | Render a normal looking zettel link with a custom body.
-renderZettelLinkSimpleWith :: forall a m. (Monad m, ToHtml a) => Text -> Text -> a -> HtmlT m ()
+renderZettelLinkSimpleWith :: forall m a. (Monad m, ToHtml a) => Text -> Text -> a -> HtmlT m ()
 renderZettelLinkSimpleWith url title body =
   a_ [class_ "zettel-link item", href_ url, title_ title] $ do
     span_ [class_ "zettel-link-title"] $ do

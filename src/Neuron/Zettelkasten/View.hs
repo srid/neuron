@@ -88,10 +88,7 @@ renderIndex (store, graph) = do
     h2_ "Tree"
     ul_ $ renderForest Nothing LinkTheme_Default store graph forest
 
-zIndexLabel :: Text
-zIndexLabel = "z-index"
-
-renderZettel :: Monad m => (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
+renderZettel :: forall m. Monad m => (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
   div_ [class_ "zettel-view"] $ do
@@ -111,10 +108,8 @@ renderZettel (store, graph) zid = do
           let forestB = obviateRootUnlessForest zid $ dfsForestBackwards zid graph
           ul_ $ do
             renderForest Nothing LinkTheme_Simple store graph forestB
-      div_ [class_ "ui two column grid"] $ do
-        div_ [class_ "column"] $ do
-          div_ [class_ "ui header"] "Others"
-          renderZettelLinkSimpleWith (Rib.routeUrl Route_Index) zIndexLabel zIndexLabel
+          div_ [class_ "ui section divider"] mempty
+          renderZettelLinkSimpleWith @m @Text (Rib.routeUrl Route_Index) "z-index" "All Zettels"
 
 renderForest ::
   Monad m =>
