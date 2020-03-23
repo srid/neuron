@@ -105,7 +105,11 @@ renderZettel (store, graph) zid = do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Navigate up"
           let forestB = obviateRootUnlessForest zid $ dfsForestBackwards zid graph
-          ul_ $ renderForest Nothing (LinkTheme_Simple $ Just zid) store graph forestB
+          ul_ $ do
+            li_ $ do
+              a_ [class_ "zettel-link item", href_ "/z-index.html", title_ "z-index"] $ do
+                span_ [class_ "zettel-link-title"] "z-index"
+            renderForest Nothing (LinkTheme_Simple $ Just zid) store graph forestB
 
 renderForest ::
   Monad m =>
