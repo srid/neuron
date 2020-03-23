@@ -26,7 +26,7 @@ import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link (linkActionExt)
 import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
-import Neuron.Zettelkasten.Link.View (renderZettelLink, renderLink)
+import Neuron.Zettelkasten.Link.View (renderZettelLink, renderZettelLinkSimpleWith)
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
@@ -104,16 +104,16 @@ renderZettel (store, graph) zid = do
           let forest = obviateRootUnlessForest zid $ dfsForest zid graph
               -- Limit the tree depth on index zettel only.
               maxDepth = if zid == indexZettelID then Just 2 else Nothing
-          ul_ $ renderForest maxDepth (LinkTheme_Simple $ Just zid) store graph forest
+          ul_ $ renderForest maxDepth LinkTheme_Simple store graph forest
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Navigate up"
           let forestB = obviateRootUnlessForest zid $ dfsForestBackwards zid graph
           ul_ $ do
-            renderForest Nothing (LinkTheme_Simple $ Just zid) store graph forestB
+            renderForest Nothing LinkTheme_Simple store graph forestB
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Others"
-          renderLink "/z-index.html" zIndexLabel zIndexLabel
+          renderZettelLinkSimpleWith "/z-index.html" zIndexLabel zIndexLabel
 
 renderForest ::
   Monad m =>
