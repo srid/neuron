@@ -31,6 +31,7 @@ import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
 import Relude
+import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
 import qualified Rib.Parser.MMark as MMark
 import Text.MMark (useExtension)
@@ -113,7 +114,7 @@ renderZettel (store, graph) zid = do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Others"
-          renderZettelLinkSimpleWith "/z-index.html" zIndexLabel zIndexLabel
+          renderZettelLinkSimpleWith (Rib.routeUrl Route_Index) zIndexLabel zIndexLabel
 
 renderForest ::
   Monad m =>
