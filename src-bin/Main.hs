@@ -61,7 +61,7 @@ style = "div#thesite" ? do
   C.fontFamily [bodyFont] [C.serif]
   "p" ? do
     C.lineHeight $ pct 150
-  "h1, h2, h3, h4, h5, h6" ? do
+  "h1, h2, h3, h4, h5, h6, .ui.header" ? do
     C.fontFamily [headerFont] [C.sansSerif]
   "img" ? do
     C.maxWidth $ pct 50
