@@ -14,3 +14,17 @@ neuron is a system for managing your plain-text [Zettelkasten](https://neuron.sr
 ## Getting started
 
 See [neuron.srid.ca](https://neuron.srid.ca/) for the full guide to installing and using neuron.
+
+## Developing
+
+When modifying `src/Neuron`, use ghcid as instructed as follows to monitor compile errors:
+
+```bash
+nix-shell --run ghcid
+```
+
+You can test your changes by running it on the `./guide` zettelkasten as follows:
+
+```bash
+nix-shell --run 'ghcid -c "cabal new-repl exe:neuron" -T ":main ./guide rib serve"'
+```
