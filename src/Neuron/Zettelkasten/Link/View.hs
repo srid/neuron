@@ -58,9 +58,17 @@ renderZettelLink ltheme store zid = do
       -- A normal looking link.
       -- Zettel's title is the link text.
       if Just zid == ignoreZid
-        then div_ [class_ "zettel-link item active", title_ $ unZettelID zid] $ do
-          span_ [class_ "zettel-link-title"] $ do
-            b_ $ toHtml zettelTitle
-        else a_ [class_ "zettel-link item", href_ zurl, title_ $ unZettelID zid] $ do
-          span_ [class_ "zettel-link-title"] $ do
-            toHtml zettelTitle
+        then renderActiveLink (unZettelID zid) zettelTitle
+        else renderLink zurl (unZettelID zid) zettelTitle
+
+renderLink :: forall a m. (Monad m, ToHtml a) => Text -> Text -> a -> HtmlT m ()
+renderLink url title label =
+  a_ [class_ "zettel-link item", href_ url, title_ title] $ do
+    span_ [class_ "zettel-link-title"] $ do
+      toHtml label
+
+renderActiveLink :: forall a m. (Monad m, ToHtml a) => Text -> a -> HtmlT m ()
+renderActiveLink title label =
+  div_ [class_ "zettel-link item active", title_ title] $ do
+    span_ [class_ "zettel-link-title"] $ do
+      b_ $ toHtml label

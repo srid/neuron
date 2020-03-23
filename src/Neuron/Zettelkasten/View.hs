@@ -26,7 +26,7 @@ import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link (linkActionExt)
 import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
-import Neuron.Zettelkasten.Link.View (renderZettelLink)
+import Neuron.Zettelkasten.Link.View (renderZettelLink, renderLink)
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
@@ -87,6 +87,9 @@ renderIndex (store, graph) = do
     h2_ "Tree"
     ul_ $ renderForest Nothing LinkTheme_Default store graph forest
 
+zIndexLabel :: Text
+zIndexLabel = "z-index"
+
 renderZettel :: Monad m => (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
@@ -106,10 +109,11 @@ renderZettel (store, graph) zid = do
           div_ [class_ "ui header"] "Navigate up"
           let forestB = obviateRootUnlessForest zid $ dfsForestBackwards zid graph
           ul_ $ do
-            li_ $ do
-              a_ [class_ "zettel-link item", href_ "/z-index.html", title_ "z-index"] $ do
-                span_ [class_ "zettel-link-title"] "z-index"
             renderForest Nothing (LinkTheme_Simple $ Just zid) store graph forestB
+      div_ [class_ "ui two column grid"] $ do
+        div_ [class_ "column"] $ do
+          div_ [class_ "ui header"] "Others"
+          renderLink "/z-index.html" zIndexLabel zIndexLabel
 
 renderForest ::
   Monad m =>
