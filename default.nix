@@ -33,8 +33,8 @@ let
     inherit root name additional-packages; 
     source-overrides = {
       neuron = neuronRoot;
-      # which = builtins.fetchTarball "https://github.com/obsidiansystems/which/archive/3cf0bfb.tar.gz";
-      which = ../which;
+      # Until https://github.com/obsidiansystems/which/pull/6 is merged
+      which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97a4e03ba2c0971f52c8af503fdf56ef9ba.tar.gz";
     } // source-overrides;
   };
 in if pkgs.lib.inNixShell 
