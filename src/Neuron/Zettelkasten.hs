@@ -5,6 +5,7 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -33,7 +34,15 @@ import qualified Rib.App
 import qualified System.Directory as Dir -- TODO: not needed
 import System.FilePath (dropTrailingPathSeparator)
 import qualified System.FilePattern as FP
+import System.Posix.Process
+import System.Which
 import Text.Printf
+
+fzf :: FilePath
+fzf = $(staticWhich "fzf")
+
+rg :: FilePath
+rg = $(staticWhich "rg")
 
 data App
   = App
@@ -45,6 +54,8 @@ data App
 data Command
   = -- | Create a new zettel file
     New Text
+  | -- TODO: Take --full-text/-f for full-text search, rather than title only.
+    Search
   | Rib Rib.App.Command
   deriving (Eq, Show)
 
@@ -58,10 +69,13 @@ commandParser =
       hsubparser $
         mconcat
           [ command "new" $ info newCommand $ progDesc "Create a new zettel",
+            command "search" $ info searchCommand $ progDesc "Search zettels and print the matching filepath",
             command "rib" $ fmap Rib $ info Rib.App.commandParser $ progDesc "Call rib"
           ]
     newCommand =
       New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
+    searchCommand =
+      pure Search
 
 run :: Action () -> IO ()
 run act = do
@@ -82,10 +96,18 @@ run act = do
 
 runWith :: Path Abs Dir -> Path Abs Dir -> Action () -> Command -> IO ()
 runWith srcDir dstDir act = \case
-  New tit -> do
-    s <- newZettelFile srcDir tit
-    putStrLn s
-  Rib c -> Rib.App.runWith srcDir dstDir act c
+  New tit ->
+    putStrLn =<< newZettelFile srcDir tit
+  Search -> do
+    -- WIP
+    -- Printing for debug
+    putStrLn fzf
+    -- We must use the low-level execvp (via the unix package's `executeFile`)
+    -- here, such that the new process replaces the current one. fzf won't work
+    -- otherwise.
+    void $ executeFile fzf False [] Nothing
+  Rib cmd ->
+    Rib.App.runWith srcDir dstDir act cmd
 
 -- | Generate the Zettelkasten site
 generateSite ::
