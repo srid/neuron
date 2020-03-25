@@ -25,26 +25,11 @@ let
   additional-packages = pkgs:
   [ (pkgs.callPackage ./src-script/neuron-search { inherit pkgs; })
   ];
-  neuron = import rib { 
+in import rib { 
     inherit root name additional-packages; 
     source-overrides = {
       neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
-      which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97a4e03ba2c0971f52c8af503fdf56ef9ba.tar.gz";
+      which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97.tar.gz";
     } // source-overrides;
-  };
-in if pkgs.lib.inNixShell 
-  # Defer to rib's use of `developPackage` if in nix-shell
-  then neuron  
-  # Wrap the final derivation with its runtime dependencies, so that
-  # staticWhich will work on the user's machine.
-  else pkgs.stdenv.mkDerivation {
-    name = "neuron";
-    propagatedBuildInputs = additional-packages pkgs;
-    unpackPhase = "true";
-    installPhase = ''
-      mkdir -p $out/bin
-      ln -s ${neuron}/bin/neuron $out/bin/neuron
-      '';
   }
-
