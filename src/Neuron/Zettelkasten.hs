@@ -32,7 +32,7 @@ import Relude
 import qualified Rib
 import qualified Rib.App
 import qualified System.Directory as Dir -- TODO: not needed
-import System.FilePath (dropTrailingPathSeparator)
+import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
 import qualified System.FilePattern as FP
 import System.Posix.Process
 import System.Which
@@ -59,7 +59,7 @@ data Command
 commandParser :: Parser App
 commandParser =
   App
-    <$> argument str (metavar "NOTESDIR")
+    <$> argument (fmap addTrailingPathSeparator str) (metavar "NOTESDIR")
     <*> cmdParser
   where
     cmdParser =
@@ -75,36 +75,36 @@ commandParser =
       pure Search
 
 run :: Action () -> IO ()
-run act = do
-  App {..} <- execParser opts
-  inputDir <- parseAbsDir =<< Dir.canonicalizePath notesDir
-  outputDir <- directoryAside inputDir ".output"
-  runWith inputDir outputDir act cmd
+run act =
+  runWith act =<< execParser opts
   where
     opts =
       info
         (commandParser <**> helper)
         (fullDesc <> progDesc "Zettelkasten based on Rib")
+
+runWith :: Action () -> App -> IO ()
+runWith act App {..} = do
+  inputDir <- parseAbsDir =<< Dir.canonicalizePath notesDir
+  outputDir <- directoryAside inputDir ".output"
+  case cmd of
+    New tit ->
+      putStrLn =<< newZettelFile inputDir tit
+    Search ->
+      execScript neuronSearchScript [notesDir]
+    Rib ribCmd ->
+      Rib.App.runWith inputDir outputDir act ribCmd
+  where
+    execScript scriptPath args =
+      -- We must use the low-level execvp (via the unix package's `executeFile`)
+      -- here, such that the new process replaces the current one. fzf won't work
+      -- otherwise.
+      void $ executeFile scriptPath False args Nothing
     directoryAside :: Path Abs Dir -> String -> IO (Path Abs Dir)
     directoryAside fp suffix = do
       let baseName = dropTrailingPathSeparator $ toFilePath $ dirname fp
       newDir <- parseRelDir $ baseName <> suffix
       pure $ parent fp </> newDir
-
-runWith :: Path Abs Dir -> Path Abs Dir -> Action () -> Command -> IO ()
-runWith srcDir dstDir act = \case
-  New tit ->
-    putStrLn =<< newZettelFile srcDir tit
-  Search ->
-    runScript neuronSearchScript [toFilePath srcDir]
-  Rib cmd ->
-    Rib.App.runWith srcDir dstDir act cmd
-  where
-    runScript scriptPath args = do
-      -- We must use the low-level execvp (via the unix package's `executeFile`)
-      -- here, such that the new process replaces the current one. fzf won't work
-      -- otherwise.
-      void $ executeFile scriptPath False args Nothing
 
 -- | Generate the Zettelkasten site
 generateSite ::
