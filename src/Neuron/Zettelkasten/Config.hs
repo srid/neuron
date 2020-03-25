@@ -31,9 +31,11 @@ getConfig = do
     False -> pure defaultConfig
   where
     configPath = [relfile|neuron.dhall|]
+    defaultConfig :: Config
     defaultConfig =
       Config
         { siteTitle = "Neuron Zettelkasten",
           author = mempty,
-          siteBaseUrl = mempty
+          siteBaseUrl = mempty,
+          editUrl = mempty
         }

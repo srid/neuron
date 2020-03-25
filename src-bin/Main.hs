@@ -45,7 +45,7 @@ renderPage config r val = html_ [lang_ "en"] $ do
   body_ $ do
     div_ [class_ "ui text container", id_ "thesite"] $ do
       br_ mempty
-      Z.renderRouteBody r val
+      Z.renderRouteBody config r val
 
 headerFont :: Text
 headerFont = "Oswald"

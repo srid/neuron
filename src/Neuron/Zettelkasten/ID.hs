@@ -12,21 +12,32 @@ module Neuron.Zettelkasten.ID
     zettelIDDate,
     parseZettelID,
     mkZettelID,
+    zettelNextIdForToday,
+    zettelIDSourceFileName,
   )
 where
 
 import qualified Data.Text as T
-import Data.Time.Calendar
-import Data.Time.Format
+import Data.Time
 import Lucid
 import Path
 import Relude
+import System.Directory (listDirectory)
+import qualified System.FilePattern as FP
+import Text.Printf
 
 -- Short Zettel ID encoding `Day` and a numeric index (on that day).
 --
 -- Based on https://old.reddit.com/r/Zettelkasten/comments/fa09zw/shorter_zettel_ids/
 newtype ZettelID = ZettelID {unZettelID :: Text}
   deriving (Eq, Show, Ord)
+
+instance ToHtml ZettelID where
+  toHtmlRaw = toHtml
+  toHtml = toHtml . unZettelID
+
+zettelIDSourceFileName :: ZettelID -> Text
+zettelIDSourceFileName zid = unZettelID zid <> ".md"
 
 -- TODO: sync/DRY with zettelNextIdForToday
 zettelIDDate :: ZettelID -> Day
@@ -54,9 +65,25 @@ zettelIDDate =
       Nothing ->
         error "Bad day"
 
-instance ToHtml ZettelID where
-  toHtmlRaw = toHtml
-  toHtml = toHtml . unZettelID
+zettelNextIdForToday :: Path b Dir -> IO ZettelID
+zettelNextIdForToday inputDir = ZettelID <$> do
+  zIdPartial <- dayIndex . toText . formatTime defaultTimeLocale "%y%W%a" <$> getCurrentTime
+  zettelFiles <- listDirectory $ toFilePath $ inputDir
+  let nums :: [Int] = sort $ catMaybes $ fmap readMaybe $ catMaybes $ catMaybes $ fmap (fmap listToMaybe . FP.match (toString zIdPartial <> "*.md")) zettelFiles
+  case fmap last (nonEmpty nums) of
+    Just lastNum ->
+      pure $ zIdPartial <> toText @String (printf "%02d" $ lastNum + 1)
+    Nothing ->
+      pure $ zIdPartial <> "01"
+  where
+    dayIndex =
+      T.replace "Mon" "1"
+        . T.replace "Tue" "2"
+        . T.replace "Wed" "3"
+        . T.replace "Thu" "4"
+        . T.replace "Fri" "5"
+        . T.replace "Sat" "6"
+        . T.replace "Sun" "7"
 
 -- TODO: Actually parse and validate
 parseZettelID :: Text -> ZettelID

@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -23,10 +24,10 @@ import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Zettelkasten.Config
 import Neuron.Zettelkasten.Graph
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)
 import Neuron.Zettelkasten.Link (linkActionExt)
 import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
-import Neuron.Zettelkasten.Link.View (renderZettelLink, renderZettelLinkSimpleWith)
+import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
@@ -46,13 +47,13 @@ renderRouteHead config r val = do
   toHtml $ routeOpenGraph config val r
   style_ [type_ "text/css"] $ styleToCss tango
 
-renderRouteBody :: Monad m => Route store graph a -> (store, graph) -> HtmlT m ()
-renderRouteBody r val = do
+renderRouteBody :: Monad m => Config -> Route store graph a -> (store, graph) -> HtmlT m ()
+renderRouteBody config r val = do
   case r of
     Route_Index ->
       renderIndex val
     Route_Zettel zid ->
-      renderZettel val zid
+      renderZettel config val zid
 
 renderIndex :: Monad m => (ZettelStore, ZettelGraph) -> HtmlT m ()
 renderIndex (store, graph) = do
@@ -88,14 +89,14 @@ renderIndex (store, graph) = do
     h2_ "Tree"
     ul_ $ renderForest Nothing LinkTheme_Default store graph forest
 
-renderZettel :: forall m. Monad m => (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
-renderZettel (store, graph) zid = do
+renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
+renderZettel Config {..} (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segment"] $ do
       h1_ [class_ "header"] $ toHtml zettelTitle
       MMark.render $ useExtension (linkActionExt store) zettelContent
-    div_ [class_ "ui inverted teal stacked segment connections"] $ do
+    div_ [class_ "ui inverted teal top attached segment connections"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
@@ -108,8 +109,20 @@ renderZettel (store, graph) zid = do
           let forestB = obviateRootUnlessForest zid $ dfsForestBackwards zid graph
           ul_ $ do
             renderForest Nothing LinkTheme_Simple store graph forestB
-          div_ [class_ "ui section divider"] mempty
-          renderZettelLinkSimpleWith @m @Text (Rib.routeUrl Route_Index) "z-index" "All Zettels"
+    div_ [class_ "ui inverted black bottom attached footer segment"] $ do
+      div_ [class_ "ui three column grid"] $ do
+        div_ [class_ "center aligned column"] $ do
+          a_ [href_ "/", title_ "/"] $ fa "fas fa-home"
+        div_ [class_ "center aligned column"] $ do
+          whenJust editUrl $ \urlPrefix ->
+            a_ [href_ $ urlPrefix <> zettelIDSourceFileName zid, title_ "Edit this Zettel"] $ fa "fas fa-edit"
+        div_ [class_ "center aligned column"] $ do
+          a_ [href_ (Rib.routeUrl Route_Index), title_ "All Zettels (z-index)"] $
+            fa "fas fa-tree"
+
+-- | Font awesome element
+fa :: Monad m => Text -> HtmlT m ()
+fa k = with i_ [class_ k] mempty
 
 renderForest ::
   Monad m =>
@@ -187,6 +200,9 @@ style = do
       C.important $ color white
     "a:hover" ? do
       C.opacity 0.5
+  ".footer" ? do
+    "a" ? do
+      C.color white
   where
     codeStyle = do
       C.code ? do

@@ -1,1 +1,9 @@
-{ siteTitle : Text, author : Optional Text, siteBaseUrl : Optional Text }
+{ siteTitle :
+    Text
+, author :
+    Optional Text
+, siteBaseUrl :
+    Optional Text
+, editUrl :
+    Optional Text
+}

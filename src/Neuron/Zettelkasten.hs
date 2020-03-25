@@ -19,10 +19,9 @@ module Neuron.Zettelkasten
 where
 
 import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
-import Data.Time
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as Z
+import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
 import Options.Applicative
@@ -31,12 +30,10 @@ import Path.IO
 import Relude
 import qualified Rib
 import qualified Rib.App
-import qualified System.Directory as Dir -- TODO: not needed
+import qualified System.Directory as Directory
 import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
-import qualified System.FilePattern as FP
 import System.Posix.Process
 import System.Which
-import Text.Printf
 
 neuronSearchScript :: FilePath
 neuronSearchScript = $(staticWhich "neuron-search")
@@ -85,7 +82,7 @@ run act =
 
 runWith :: Action () -> App -> IO ()
 runWith act App {..} = do
-  inputDir <- parseAbsDir =<< Dir.canonicalizePath notesDir
+  inputDir <- parseAbsDir =<< Directory.canonicalizePath notesDir
   outputDir <- directoryAside inputDir ".output"
   case cmd of
     New tit ->
@@ -123,8 +120,8 @@ generateSite writeHtmlRoute' zettelsPat = do
 -- TODO: refactor this
 newZettelFile :: Path b Dir -> Text -> IO String
 newZettelFile inputDir ztitle = do
-  zId <- zettelNextIdForToday
-  zettelFileName <- parseRelFile $ toString $ zId <> ".md"
+  zId <- Z.zettelNextIdForToday inputDir
+  zettelFileName <- parseRelFile $ toString $ Z.zettelIDSourceFileName zId
   let srcPath = inputDir </> zettelFileName
   doesFileExist srcPath >>= \case
     True ->
@@ -133,22 +130,3 @@ newZettelFile inputDir ztitle = do
       writeFile (toFilePath srcPath) $ "---\ntitle: " <> toString ztitle <> "\n---\n\n"
       pure $ toFilePath srcPath
   where
-    zettelNextIdForToday :: IO Text
-    zettelNextIdForToday = do
-      zIdPartial <- dayIndex . toText . formatTime defaultTimeLocale "%y%W%a" <$> getCurrentTime
-      zettelFiles <- Dir.listDirectory $ toFilePath $ inputDir
-      let nums :: [Int] = sort $ catMaybes $ fmap readMaybe $ catMaybes $ catMaybes $ fmap (fmap listToMaybe . FP.match (toString zIdPartial <> "*.md")) zettelFiles
-      case fmap last (nonEmpty nums) of
-        Just lastNum ->
-          pure $ zIdPartial <> toText @String (printf "%02d" $ lastNum + 1)
-        Nothing ->
-          pure $ zIdPartial <> "01"
-      where
-        dayIndex =
-          T.replace "Mon" "1"
-            . T.replace "Tue" "2"
-            . T.replace "Wed" "3"
-            . T.replace "Thu" "4"
-            . T.replace "Fri" "5"
-            . T.replace "Sat" "6"
-            . T.replace "Sun" "7"
