@@ -22,12 +22,17 @@ in {
 }:
 
 let 
+  neuronSearchScript = pkgs.writeShellScriptBin "neuron-search"
+    ''
+      set -euo pipefail
+      ${pkgs.ripgrep}/bin/rg --no-heading --no-line-number --sort path "title:" *.md \
+        | ${pkgs.fzf}/bin/fzf --tac --no-sort -d ':' -n 3.. \
+          --preview '${pkgs.bat}/bin/bat --style=plain --color=always {1}' \
+          --bind 'ctrl-j:execute(xdg-open https://localhost:8080/(echo {1} | ${pkgs.gnused}/bin/sed "s/\.md/.html/g"))+abort' \
+        | ${pkgs.gawk}/bin/awk -F: '{printf "%s", $1}'
+    '';
   additional-packages = pkgs: with pkgs; 
-  [ fzf
-    bat
-    ripgrep
-    gawk
-    gnused
+  [ neuronSearchScript
   ];
   neuron = import rib { 
     inherit root name additional-packages; 
@@ -38,7 +43,7 @@ let
     } // source-overrides;
   };
 in if pkgs.lib.inNixShell 
-  # Defer to rib's use of `developPackage`
+  # Defer to rib's use of `developPackage` if in nix-shell
   then neuron  
   # Wrap the final derivation with its runtime dependencies, so that
   # staticWhich will work on the user's machine.

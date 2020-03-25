@@ -38,11 +38,8 @@ import System.Posix.Process
 import System.Which
 import Text.Printf
 
-fzf :: FilePath
-fzf = $(staticWhich "fzf")
-
-rg :: FilePath
-rg = $(staticWhich "rg")
+neuronSearchScript :: FilePath
+neuronSearchScript = $(staticWhich "neuron-search")
 
 data App
   = App
@@ -98,16 +95,17 @@ runWith :: Path Abs Dir -> Path Abs Dir -> Action () -> Command -> IO ()
 runWith srcDir dstDir act = \case
   New tit ->
     putStrLn =<< newZettelFile srcDir tit
-  Search -> do
-    -- WIP
-    -- Printing for debug
-    putStrLn fzf
-    -- We must use the low-level execvp (via the unix package's `executeFile`)
-    -- here, such that the new process replaces the current one. fzf won't work
-    -- otherwise.
-    void $ executeFile fzf False [] Nothing
+  Search ->
+    runScript neuronSearchScript
   Rib cmd ->
     Rib.App.runWith srcDir dstDir act cmd
+  where
+    runScript scriptPath = do
+      setCurrentDir srcDir
+      -- We must use the low-level execvp (via the unix package's `executeFile`)
+      -- here, such that the new process replaces the current one. fzf won't work
+      -- otherwise.
+      void $ executeFile scriptPath False [] Nothing
 
 -- | Generate the Zettelkasten site
 generateSite ::
