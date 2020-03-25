@@ -26,5 +26,5 @@ nix-shell --run ghcid
 You can test your changes by running it on the `./guide` zettelkasten as follows:
 
 ```bash
-nix-shell --run 'ghcid -c "cabal new-repl exe:neuron" -T ":main ./guide rib serve"'
+bin/run-guide
 ```
