@@ -50,7 +50,9 @@ library
     filepattern,
     filepath,
     algebraic-graphs >= 0.5,
-    dhall
+    dhall,
+    which,
+    unix
 
 executable neuron
   hs-source-dirs: src-bin
