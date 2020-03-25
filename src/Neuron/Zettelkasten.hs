@@ -51,7 +51,7 @@ data App
 data Command
   = -- | Create a new zettel file
     New Text
-  | -- TODO: Add to guide documentation; Recommend `| xargs -r nvim`
+  | -- | Search a zettel by title
     Search
   | Rib Rib.App.Command
   deriving (Eq, Show)
