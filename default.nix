@@ -2,7 +2,7 @@ let
   # To upgrade rib, go to https://github.com/srid/rib/commits/master, select the
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
-  ribRevision = "40c8f8d06e09637f7858c0d069954ff00e10c6a2";
+  ribRevision = "79f05ab318c223a922e61abf6373f0f9710995ae";
 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
   pkgs = import <nixpkgs> {};
@@ -22,8 +22,9 @@ in {
 }:
 
 let 
+  neuronSearchScript = pkgs.callPackage ./src-script/neuron-search { inherit pkgs; };
   additional-packages = pkgs:
-  [ (pkgs.callPackage ./src-script/neuron-search { inherit pkgs; })
+  [ neuronSearchScript
   ];
 in import rib { 
     inherit root name additional-packages; 
@@ -32,4 +33,13 @@ in import rib {
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
       which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97.tar.gz";
     } // source-overrides;
+    overrides = self: super: with pkgs.haskell.lib; {
+      # We must add neuron-search as a runtime dependency to the 'neuron'
+      # Haskell package so that other apps `import`ing this defafult.nix would
+      # know where to find when building the neuron library dependency through
+      # cabal (instead of directly via nix).
+      neuron = super.neuron.overrideDerivation (drv: {
+        propagatedBuildInputs = drv.propagatedBuildInputs ++ [neuronSearchScript];
+      });
+    };
   }
