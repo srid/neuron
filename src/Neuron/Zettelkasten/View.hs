@@ -196,6 +196,8 @@ style = do
         fontFamily ["SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [monospace]
       pre ? do
         sym padding $ em 0.5
+        C.overflow auto
+        C.maxWidth $ pct 100
       "div.source-code" ? do
         marginLeft auto
         marginRight auto
