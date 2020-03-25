@@ -96,16 +96,15 @@ runWith srcDir dstDir act = \case
   New tit ->
     putStrLn =<< newZettelFile srcDir tit
   Search ->
-    runScript neuronSearchScript
+    runScript neuronSearchScript [toFilePath srcDir]
   Rib cmd ->
     Rib.App.runWith srcDir dstDir act cmd
   where
-    runScript scriptPath = do
-      setCurrentDir srcDir
+    runScript scriptPath args = do
       -- We must use the low-level execvp (via the unix package's `executeFile`)
       -- here, such that the new process replaces the current one. fzf won't work
       -- otherwise.
-      void $ executeFile scriptPath False [] Nothing
+      void $ executeFile scriptPath False args Nothing
 
 -- | Generate the Zettelkasten site
 generateSite ::

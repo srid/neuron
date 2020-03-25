@@ -25,6 +25,9 @@ let
   neuronSearchScript = pkgs.writeShellScriptBin "neuron-search"
     ''
       set -euo pipefail
+      NOTESDIR=''${1}
+      cd ''${NOTESDIR}
+      echo -n ''${NOTESDIR}
       ${pkgs.ripgrep}/bin/rg --no-heading --no-line-number --sort path "title:" *.md \
         | ${pkgs.fzf}/bin/fzf --tac --no-sort -d ':' -n 3.. \
           --preview '${pkgs.bat}/bin/bat --style=plain --color=always {1}' \
