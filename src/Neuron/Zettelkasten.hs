@@ -30,7 +30,6 @@ import Path.IO
 import Relude
 import qualified Rib
 import qualified Rib.App
-import qualified System.Directory as Directory
 import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
 import System.Posix.Process
 import System.Which
@@ -82,7 +81,7 @@ run act =
 
 runWith :: Action () -> App -> IO ()
 runWith act App {..} = do
-  inputDir <- parseAbsDir =<< Directory.canonicalizePath notesDir
+  inputDir <- parseRelDir notesDir
   outputDir <- directoryAside inputDir ".output"
   case cmd of
     New tit ->
@@ -97,7 +96,7 @@ runWith act App {..} = do
       -- here, such that the new process replaces the current one. fzf won't work
       -- otherwise.
       void $ executeFile scriptPath False args Nothing
-    directoryAside :: Path Abs Dir -> String -> IO (Path Abs Dir)
+    directoryAside :: Path Rel Dir -> String -> IO (Path Rel Dir)
     directoryAside fp suffix = do
       let baseName = dropTrailingPathSeparator $ toFilePath $ dirname fp
       newDir <- parseRelDir $ baseName <> suffix
