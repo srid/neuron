@@ -13,6 +13,8 @@ import qualified Clay as C
 import Development.Shake
 import Lucid
 -- TODO: Don't expose every module
+
+import Main.Utf8
 import qualified Neuron.Zettelkasten as Z
 import qualified Neuron.Zettelkasten.Config as Z
 import qualified Neuron.Zettelkasten.Route as Z
@@ -23,7 +25,7 @@ import qualified Rib
 import Rib.Extra.CSS (googleFonts, stylesheet)
 
 main :: IO ()
-main = Z.run generateSite
+main = withUtf8 $ Z.run generateSite
 
 generateSite :: Action ()
 generateSite = do

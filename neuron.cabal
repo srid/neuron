@@ -70,4 +70,5 @@ executable neuron
     neuron,
     shake,
     clay,
-    lucid
+    lucid,
+    with-utf8
