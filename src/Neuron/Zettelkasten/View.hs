@@ -18,8 +18,6 @@ module Neuron.Zettelkasten.View where
 import Clay hiding (reverse, s, type_)
 import qualified Clay as C
 import Data.Foldable (maximum)
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Zettelkasten.Config
@@ -59,34 +57,24 @@ renderIndex :: Monad m => (ZettelStore, ZettelGraph) -> HtmlT m ()
 renderIndex (store, graph) = do
   h1_ [class_ "header"] $ "Zettel Index"
   div_ [class_ "zettels"] $ do
-    -- cluster
-    forM_ (reverse $ clusters graph) $ \zettels -> do
-      when (length zettels > 1) $ do
-        h2_ "Cluster"
-        hr_ mempty
-        forM_ zettels $ \zid ->
-          li_ $ do
-            renderZettelLink LinkTheme_Default store zid
-    let forest = dfsForest indexZettelID graph
-        categorizedZids = Set.fromList $ concatMap toList forest
-    -- cycles and dangling checks
+    let forest = dfsForest Nothing graph
+    -- Cycle detection.
     case topSort graph of
-      Left (toList -> cyc) -> div_ [class_ "ui piled segment"] $ do
+      Left (toList -> cyc) -> div_ [class_ "ui orange segment"] $ do
         h2_ "Cycle detected"
         forM_ cyc $ \zid ->
           li_ $ renderZettelLink LinkTheme_Default store zid
-        hr_ mempty
-      Right _sortedZettels -> do
-        let allZids = Set.fromList $ Map.keys store
-            danglingZids = allZids `Set.difference` categorizedZids
-        unless (null danglingZids) $ do
-          h2_ "Dangling zettels"
-          ul_
-            $ forM_ danglingZids
-            $ \zid ->
-              li_ $ renderZettelLink LinkTheme_Default store zid
-    -- tree
-    h2_ "Tree"
+      _ -> mempty
+    -- Forest of zettels, beginning with mother vertices.
+    p_ $ do
+      "Below is the Zettel graph rendered as a forest. "
+      "Its top-level zettels represent the 'mother vertices' (i.e., no backlinks) of the graph. "
+      case length forest of
+        1 -> "There is one top-level zettel."
+        n -> do
+          "There are "
+          toHtml $ show @Text n
+          " top-level zettels."
     ul_ $ renderForest Nothing LinkTheme_Default store graph forest
 
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
@@ -100,10 +88,8 @@ renderZettel Config {..} (store, graph) zid = do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
-          let forest = obviateRootUnlessForest zid $ dfsForest zid graph
-              -- Limit the tree depth on index zettel only.
-              maxDepth = if zid == indexZettelID then Just 2 else Nothing
-          ul_ $ renderForest maxDepth LinkTheme_Simple store graph forest
+          let forest = obviateRootUnlessForest zid $ dfsForest (Just zid) graph
+          ul_ $ renderForest (Just 2) LinkTheme_Simple store graph forest
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Navigate up"
           let forestB = obviateRootUnlessForest zid $ dfsForestBackwards zid graph
@@ -142,12 +128,12 @@ renderForest maxLevel ltheme s g trees =
           when (ltheme == LinkTheme_Default) $ do
             " "
             case backlinks zid g of
-              [] -> unless (zid == indexZettelID) $ div_ [class_ "ui red label"] "DANGLING"
-              [_] -> mempty
-              conns ->
+              conns@(_ : _ : _) ->
+                -- Has two or more backlinks
                 forM_ conns $ \zid2 -> do
                   let z2 = lookupStore zid2 s
                   i_ [class_ "fas fa-link", title_ $ unZettelID zid2 <> " " <> zettelTitle z2] mempty
+              _ -> mempty
           when (length subtrees > 0) $ do
             ul_ $ renderForest ((\n -> n - 1) <$> maxLevel) ltheme s g subtrees
   where

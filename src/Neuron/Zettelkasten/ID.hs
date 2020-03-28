@@ -104,4 +104,4 @@ data Connection
     Folgezettel
   | -- | Any other ordinary connection (eg: "See also")
     OrdinaryConnection
-  deriving (Eq, Show, Enum, Bounded)
+  deriving (Eq, Ord, Show, Enum, Bounded)

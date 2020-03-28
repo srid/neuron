@@ -14,7 +14,6 @@ module Neuron.Zettelkasten.Graph where
 import qualified Algebra.Graph.AdjacencyMap as AM
 import qualified Algebra.Graph.AdjacencyMap.Algorithm as Algo
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
-import qualified Algebra.Graph.NonEmpty.AdjacencyMap as NEAM
 import qualified Data.Map.Strict as Map
 import Data.Tree (Forest, Tree (..))
 import Development.Shake (Action)
@@ -34,39 +33,35 @@ mkZettelGraph store = do
         flip concatMap (Map.elems store) $ \Zettel {..} ->
           (linkActionConnections store `concatMap` extractLinks zettelContent)
             <&> \(c, z2) -> ([c], zettelID, z2)
-  -- TODO: Include all connections; show cf in "Connections" section
-  -- But use Folgezettel only in index's topSort
   -- TODO: Handle conflicts. Link repeating but with different connection type
-  pure $ LAM.edges $ filter (\(cs, _, _) -> not $ OrdinaryConnection `elem` cs) es
+  pure $ LAM.edges $
+    -- TODO: Include all connections; show cf in "Connections" section
+    filter (\(cs, _, _) -> not $ OrdinaryConnection `elem` cs) es
 
 -- | Return the backlinks to the given zettel
 backlinks :: ZettelID -> ZettelGraph -> [ZettelID]
 backlinks zid =
   toList . LAM.preSet zid
 
-clusters :: ZettelGraph -> [NonEmpty ZettelID]
-clusters = fmap NEAM.vertexList1 . AM.vertexList . Algo.scc . LAM.skeleton
-
 topSort :: ZettelGraph -> Either (NonEmpty ZettelID) [ZettelID]
 topSort = Algo.topSort . LAM.skeleton
 
-indexZettelID :: ZettelID
-indexZettelID = ZettelID "index"
-
-dfsForestFor :: Maybe (ZettelID -> Bool) -> ZettelID -> ZettelGraph -> Forest ZettelID
-dfsForestFor f' fromZid =
-  Algo.dfsForestFrom [fromZid] . LAM.skeleton . maybe id (LAM.induce . g) f'
+-- | Computer the dfsForest from either the given zettel or from all mother
+-- vertices.
+dfsForest :: Maybe ZettelID -> ZettelGraph -> Forest ZettelID
+dfsForest fromZid g =
+  Algo.dfsForestFrom startingZids $ LAM.skeleton g
   where
-    -- Apply filter `f'` whilst unconditionally allowing the `fromZid` zettel.
-    g f zid = or [zid == fromZid, f zid]
-
-dfsForest :: ZettelID -> ZettelGraph -> Forest ZettelID
-dfsForest =
-  dfsForestFor Nothing
+    startingZids = maybe motherVertices pure fromZid
+    motherVertices =
+      mapMaybe (\(v, es) -> if null es then Just v else Nothing)
+        $ AM.adjacencyList
+        $ LAM.skeleton
+        $ LAM.transpose g
 
 dfsForestBackwards :: ZettelID -> ZettelGraph -> Forest ZettelID
 dfsForestBackwards fromZid =
-  dfsForest fromZid . LAM.transpose
+  dfsForest (Just fromZid) . LAM.transpose
 
 -- | If the input is a tree with the given root node, return its children (as
 -- forest). Otherwise return the input as is.
