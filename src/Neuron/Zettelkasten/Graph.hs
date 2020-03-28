@@ -16,7 +16,6 @@ import qualified Algebra.Graph.AdjacencyMap.Algorithm as Algo
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import qualified Data.Map.Strict as Map
 import Data.Tree (Forest, Tree (..))
-import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Action (extractLinks, linkActionConnections)
 import Neuron.Zettelkasten.Store (ZettelStore)
@@ -26,21 +25,9 @@ import Relude
 type ZettelGraph = LAM.AdjacencyMap [Connection] ZettelID
 
 -- | Build the entire Zettel graph from the given list of note files.
-mkZettelGraph :: ZettelStore -> Action ZettelGraph
-mkZettelGraph store = do
-  -- TODO: Handle conflicts in edge monoid operation (same link but with
-  -- different connection type), and consequently use a sensible type other
-  -- than list.
-  let vertices :: [ZettelID] = zettelID <$> Map.elems store
-      edges :: [([Connection], ZettelID, ZettelID)] =
-        -- Determine edges by scanning the links in the Zettel markdown
-        flip concatMap (Map.elems store) $ \Zettel {..} ->
-          (linkActionConnections store `concatMap` extractLinks zettelContent)
-            <&> \(c, z2) -> ([c], zettelID, z2)
-  pure $
-    LAM.overlay
-      (LAM.vertices vertices)
-      (LAM.edges $ filter connectionWhitelist edges)
+mkZettelGraph :: ZettelStore -> ZettelGraph
+mkZettelGraph store =
+  mkGraphFrom (Map.elems store) zettelID zettelEdges connectionWhitelist
   where
     -- Exclude ordinary connection when building the graph
     --
@@ -48,8 +35,41 @@ mkZettelGraph store = do
     -- building category forests. This way we can still show ordinary
     -- connetions in places (eg: a "backlinks" section) where they are
     -- relevant. See #34
-    connectionWhitelist (cs, _, _) =
+    connectionWhitelist cs =
       not $ OrdinaryConnection `elem` cs
+    -- Get the outgoing edges from this zettel
+    --
+    -- TODO: Handle conflicts in edge monoid operation (same link but with
+    -- different connection type), and consequently use a sensible type other
+    -- than list.
+    zettelEdges :: Zettel -> [([Connection], ZettelID)]
+    zettelEdges Zettel {..} =
+      let outgoingLinks = linkActionConnections store `concatMap` extractLinks zettelContent
+       in first pure <$> outgoingLinks
+    -- Build a graph from a list objects that contains information about the
+    -- corresponding vertex as well as the outgoing edges.
+    mkGraphFrom ::
+      (Eq e, Monoid e, Ord v) =>
+      -- | List of objects corresponding to vertexes
+      [a] ->
+      -- | Make vertex from an object
+      (a -> v) ->
+      -- | Outgoing edges, and their vertex, for an object
+      (a -> [(e, v)]) ->
+      -- | A function to filter relevant edges
+      (e -> Bool) ->
+      LAM.AdjacencyMap e v
+    mkGraphFrom xs vertexFor edgesFor edgeWhitelist =
+      let vertices =
+            vertexFor <$> xs
+          edges =
+            flip concatMap xs $ \x ->
+              edgesFor x
+                <&> \(edge, v2) ->
+                  (edge, vertexFor x, v2)
+       in LAM.overlay
+            (LAM.vertices vertices)
+            (LAM.edges $ filter (\(e, _, _) -> edgeWhitelist e) edges)
 
 -- | Return the backlinks to the given zettel
 backlinks :: ZettelID -> ZettelGraph -> [ZettelID]

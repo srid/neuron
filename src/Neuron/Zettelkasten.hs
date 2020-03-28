@@ -109,7 +109,7 @@ generateSite ::
   Action (Z.ZettelStore, Z.ZettelGraph)
 generateSite writeHtmlRoute' zettelsPat = do
   zettelStore <- Z.mkZettelStore =<< Rib.forEvery zettelsPat pure
-  zettelGraph <- Z.mkZettelGraph zettelStore
+  let zettelGraph = Z.mkZettelGraph zettelStore
   let writeHtmlRoute r = writeHtmlRoute' r (zettelStore, zettelGraph)
   (writeHtmlRoute . Z.Route_Zettel) `mapM_` Map.keys zettelStore
   writeHtmlRoute Z.Route_Index
