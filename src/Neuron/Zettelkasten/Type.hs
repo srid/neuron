@@ -1,12 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Type where
 
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Meta as Z
-import Relude
+import Relude hiding (show)
 import Text.MMark (MMark)
+import Text.Show (Show (show))
 
 data Zettel
   = Zettel
@@ -20,6 +22,9 @@ instance Eq Zettel where
 
 instance Ord Zettel where
   compare = compare `on` zettelID
+
+instance Show Zettel where
+  show Zettel {..} = "Zettel:" <> show zettelID
 
 hasTag :: Text -> Zettel -> Bool
 hasTag t =
