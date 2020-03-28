@@ -103,7 +103,7 @@ renderZettel Config {..} (store, graph) zid = do
           whenJust editUrl $ \urlPrefix ->
             a_ [href_ $ urlPrefix <> zettelIDSourceFileName zid, title_ "Edit this Zettel"] $ fa "fas fa-edit"
         div_ [class_ "center aligned column"] $ do
-          a_ [href_ (Rib.routeUrl Route_Index), title_ "All Zettels (z-index)"] $
+          a_ [href_ (Rib.routeUrlRel Route_Index), title_ "All Zettels (z-index)"] $
             fa "fas fa-tree"
 
 -- | Font awesome element
