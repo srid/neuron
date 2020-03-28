@@ -28,20 +28,27 @@ type ZettelGraph = LAM.AdjacencyMap [Connection] ZettelID
 -- | Build the entire Zettel graph from the given list of note files.
 mkZettelGraph :: ZettelStore -> Action ZettelGraph
 mkZettelGraph store = do
+  -- TODO: Handle conflicts in edge monoid operation (same link but with
+  -- different connection type), and consequently use a sensible type other
+  -- than list.
   let vertices :: [ZettelID] = zettelID <$> Map.elems store
       edges :: [([Connection], ZettelID, ZettelID)] =
         -- Determine edges by scanning the links in the Zettel markdown
         flip concatMap (Map.elems store) $ \Zettel {..} ->
           (linkActionConnections store `concatMap` extractLinks zettelContent)
             <&> \(c, z2) -> ([c], zettelID, z2)
-  -- TODO: Handle conflicts (same link but with different connection type)
   pure $
     LAM.overlay
       (LAM.vertices vertices)
-      (LAM.edges $ filter connectionBlacklist edges)
+      (LAM.edges $ filter connectionWhitelist edges)
   where
-    -- TODO: Include all connections; show cf in "Connections" section
-    connectionBlacklist (cs, _, _) =
+    -- Exclude ordinary connection when building the graph
+    --
+    -- TODO: Build the graph with all connections, but induce a subgraph when
+    -- building category forests. This way we can still show ordinary
+    -- connetions in places (eg: a "backlinks" section) where they are
+    -- relevant. See #34
+    connectionWhitelist (cs, _, _) =
       not $ OrdinaryConnection `elem` cs
 
 -- | Return the backlinks to the given zettel
