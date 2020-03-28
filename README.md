@@ -28,3 +28,5 @@ You can test your changes by running it on the `./guide` zettelkasten as follows
 ```bash
 bin/run-guide
 ```
+
+This command will also automatically recompile and restart when you change any of the Haskell source files.
