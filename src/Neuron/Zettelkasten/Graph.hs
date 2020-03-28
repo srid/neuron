@@ -28,15 +28,21 @@ type ZettelGraph = LAM.AdjacencyMap [Connection] ZettelID
 -- | Build the entire Zettel graph from the given list of note files.
 mkZettelGraph :: ZettelStore -> Action ZettelGraph
 mkZettelGraph store = do
-  -- Determine edges from links
-  let es :: [([Connection], ZettelID, ZettelID)] =
+  let vertices :: [ZettelID] = zettelID <$> Map.elems store
+      edges :: [([Connection], ZettelID, ZettelID)] =
+        -- Determine edges by scanning the links in the Zettel markdown
         flip concatMap (Map.elems store) $ \Zettel {..} ->
           (linkActionConnections store `concatMap` extractLinks zettelContent)
             <&> \(c, z2) -> ([c], zettelID, z2)
-  -- TODO: Handle conflicts. Link repeating but with different connection type
-  pure $ LAM.edges $
+  -- TODO: Handle conflicts (same link but with different connection type)
+  pure $
+    LAM.overlay
+      (LAM.vertices vertices)
+      (LAM.edges $ filter connectionBlacklist edges)
+  where
     -- TODO: Include all connections; show cf in "Connections" section
-    filter (\(cs, _, _) -> not $ OrdinaryConnection `elem` cs) es
+    connectionBlacklist (cs, _, _) =
+      not $ OrdinaryConnection `elem` cs
 
 -- | Return the backlinks to the given zettel
 backlinks :: ZettelID -> ZettelGraph -> [ZettelID]
