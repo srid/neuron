@@ -30,6 +30,7 @@ import Path.IO
 import Relude
 import qualified Rib
 import qualified Rib.App
+import qualified System.Directory as Directory
 import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
 import System.Posix.Process
 import System.Which
@@ -81,22 +82,28 @@ run act =
 
 runWith :: Action () -> App -> IO ()
 runWith act App {..} = do
-  inputDir <- parseRelDir notesDir
+  notesDirAbs <- Directory.makeAbsolute notesDir
+  inputDir <- parseAbsDir notesDirAbs
   outputDir <- directoryAside inputDir ".output"
   case cmd of
     New tit ->
       putStrLn =<< newZettelFile inputDir tit
     Search ->
       execScript neuronSearchScript [notesDir]
-    Rib ribCmd ->
-      Rib.App.runWith inputDir outputDir act ribCmd
+    Rib ribCmd -> do
+      -- CD to the parent of notes directory, because Rib API takes only
+      -- relative path
+      withCurrentDir (parent inputDir) $ do
+        inputDirRel <- makeRelativeToCurrentDir inputDir
+        outputDirRel <- makeRelativeToCurrentDir outputDir
+        Rib.App.runWith inputDirRel outputDirRel act ribCmd
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
       -- here, such that the new process replaces the current one. fzf won't work
       -- otherwise.
       void $ executeFile scriptPath False args Nothing
-    directoryAside :: Path Rel Dir -> String -> IO (Path Rel Dir)
+    directoryAside :: Path Abs Dir -> String -> IO (Path Abs Dir)
     directoryAside fp suffix = do
       let baseName = dropTrailingPathSeparator $ toFilePath $ dirname fp
       newDir <- parseRelDir $ baseName <> suffix
