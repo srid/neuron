@@ -47,30 +47,6 @@ mkZettelGraph store =
     zettelEdges Zettel {..} =
       let outgoingLinks = linkActionConnections store `concatMap` extractLinks zettelContent
        in first pure <$> outgoingLinks
-    -- Build a graph from a list objects that contains information about the
-    -- corresponding vertex as well as the outgoing edges.
-    mkGraphFrom ::
-      (Eq e, Monoid e, Ord v) =>
-      -- | List of objects corresponding to vertexes
-      [a] ->
-      -- | Make vertex from an object
-      (a -> v) ->
-      -- | Outgoing edges, and their vertex, for an object
-      (a -> [(e, v)]) ->
-      -- | A function to filter relevant edges
-      (e -> Bool) ->
-      LAM.AdjacencyMap e v
-    mkGraphFrom xs vertexFor edgesFor edgeWhitelist =
-      let vertices =
-            vertexFor <$> xs
-          edges =
-            flip concatMap xs $ \x ->
-              edgesFor x
-                <&> \(edge, v2) ->
-                  (edge, vertexFor x, v2)
-       in LAM.overlay
-            (LAM.vertices vertices)
-            (LAM.edges $ filter (\(e, _, _) -> edgeWhitelist e) edges)
 
 -- | Return the backlinks to the given zettel
 backlinks :: ZettelID -> ZettelGraph -> [ZettelID]
@@ -80,49 +56,56 @@ backlinks zid =
 topSort :: ZettelGraph -> Either (NonEmpty ZettelID) [ZettelID]
 topSort = Algo.topSort . LAM.skeleton
 
--- WIP, needs refactoring
-mothers :: ZettelGraph -> [NonEmpty ZettelID]
-mothers g =
-  go [] (motherVertices $ LAM.skeleton g) $ LAM.skeleton g
-  where
-    go acc ms g' =
-      case ms of
-        [] -> acc
-        v : vs ->
-          let reach = Algo.reachable v $ toUndirected g'
-              rest = Set.difference (Set.fromList vs) (Set.fromList reach)
-              covered = Set.intersection (Set.fromList vs) (Set.fromList reach)
-           in go ((v :| Set.toList covered) : acc) (Set.toList rest) g'
-    toUndirected h = AM.overlay h $ AM.transpose h
-    motherVertices :: AM.AdjacencyMap ZettelID -> [ZettelID]
-    motherVertices g' =
-      mapMaybe (\(v, es) -> if null es then Just v else Nothing)
-        $ AM.adjacencyList
-        $ AM.transpose g'
+-- | Get the graph without the "index" zettel.
+-- This is unused, but left for posterity.
+withoutIndex :: ZettelGraph -> ZettelGraph
+withoutIndex = LAM.induce ((/= "index") . unZettelID)
 
--- | Computer the dfsForest from either the given zettel or from all mother
--- vertices.
-dfsForest :: Maybe ZettelID -> ZettelGraph -> Forest ZettelID
-dfsForest fromZid g =
-  dfsForest' startingZids g
-  where
-    startingZids = maybe motherVertices (:| []) fromZid
-    motherVertices =
-      fromMaybe (error "No mother vertices; cyclic graph?")
-        $ nonEmpty
-        $ mapMaybe (\(v, es) -> if null es then Just v else Nothing)
-        $ AM.adjacencyList
-        $ LAM.skeleton
-        $ LAM.transpose g
+zettelClusters :: ZettelGraph -> [NonEmpty ZettelID]
+zettelClusters = mothers . LAM.skeleton
 
--- WIP, needs merge with dfsForest
-dfsForest' :: NonEmpty ZettelID -> ZettelGraph -> Forest ZettelID
-dfsForest' (toList -> zids) g =
+-- | Compute the dfsForest from the given zettels.
+dfsForestFrom :: [ZettelID] -> ZettelGraph -> Forest ZettelID
+dfsForestFrom zids g =
   Algo.dfsForestFrom zids $ LAM.skeleton g
 
+-- | Compute the dfsForest ending in the given zettel.
+--
+-- Return the forest flipped, such that the given zettel is the root.
 dfsForestBackwards :: ZettelID -> ZettelGraph -> Forest ZettelID
 dfsForestBackwards fromZid =
-  dfsForest (Just fromZid) . LAM.transpose
+  dfsForestFrom [fromZid] . LAM.transpose
+
+-- -------------
+-- Graph Helpers
+-- -------------
+
+-- | Get the clusters in a graph, as a list of the mother vertices in each
+-- cluster.
+mothers :: Ord a => AM.AdjacencyMap a -> [NonEmpty a]
+mothers g =
+  go [] $ motherVertices g
+  where
+    go acc = \case
+      [] -> acc
+      v : (Set.fromList -> vs) ->
+        let reach = reachableUndirected v g
+            covered = vs `Set.intersection` reach
+            rest = vs `Set.difference` reach
+         in go ((v :| Set.toList covered) : acc) (Set.toList rest)
+
+-- | Get the vertexes reachable (regardless of direction) from the given vertex.
+reachableUndirected :: Ord a => a -> AM.AdjacencyMap a -> Set a
+reachableUndirected v =
+  Set.fromList . Algo.reachable v . toUndirected
+  where
+    toUndirected g = AM.overlay g $ AM.transpose g
+
+motherVertices :: Ord a => AM.AdjacencyMap a -> [a]
+motherVertices =
+  mapMaybe (\(v, es) -> if null es then Just v else Nothing)
+    . AM.adjacencyList
+    . AM.transpose
 
 -- | If the input is a tree with the given root node, return its children (as
 -- forest). Otherwise return the input as is.
@@ -134,3 +117,28 @@ obviateRootUnlessForest root = \case
       else error "Root mismatch"
   nodes ->
     nodes
+
+-- Build a graph from a list objects that contains information about the
+-- corresponding vertex as well as the outgoing edges.
+mkGraphFrom ::
+  (Eq e, Monoid e, Ord v) =>
+  -- | List of objects corresponding to vertexes
+  [a] ->
+  -- | Make vertex from an object
+  (a -> v) ->
+  -- | Outgoing edges, and their vertex, for an object
+  (a -> [(e, v)]) ->
+  -- | A function to filter relevant edges
+  (e -> Bool) ->
+  LAM.AdjacencyMap e v
+mkGraphFrom xs vertexFor edgesFor edgeWhitelist =
+  let vertices =
+        vertexFor <$> xs
+      edges =
+        flip concatMap xs $ \x ->
+          edgesFor x
+            <&> \(edge, v2) ->
+              (edge, vertexFor x, v2)
+   in LAM.overlay
+        (LAM.vertices vertices)
+        (LAM.edges $ filter (\(e, _, _) -> edgeWhitelist e) edges)

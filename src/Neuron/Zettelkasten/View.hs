@@ -15,7 +15,7 @@
 -- | HTML & CSS
 module Neuron.Zettelkasten.View where
 
-import Clay hiding (head, id, reverse, s, type_)
+import Clay hiding (head, id, ms, reverse, s, type_)
 import qualified Clay as C
 import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
@@ -64,18 +64,18 @@ renderIndex (store, graph) = do
         forM_ cyc $ \zid ->
           li_ $ renderZettelLink LinkTheme_Default store zid
       _ -> mempty
-    let clusters = sortMothers $ mothers graph
+    let clusters = sortMothers $ zettelClusters graph
     p_ $ do
       "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten graph. "
       "Each cluster is rendered as a forest, with their roots (mother zettels) highlighted."
     forM_ clusters $ \zids ->
       div_ [class_ "ui piled segment"] $ do
-        let forest = dfsForest' zids graph
+        let forest = dfsForestFrom zids graph
         -- Forest of zettels, beginning with mother vertices.
         ul_ $ renderForest True Nothing LinkTheme_Default store graph forest
   where
-    -- Sort mothers with newer zettels appearing first.
-    sortMothers = reverse . sortOn maximum
+    -- Sort clusters with newer mother zettels appearing first.
+    sortMothers ms = reverse $ sortOn maximum $ fmap (reverse . sort . toList) ms
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
@@ -91,7 +91,7 @@ renderZettel Config {..} (store, graph) zid = do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
-          let forest = obviateRootUnlessForest zid $ dfsForest (Just zid) graph
+          let forest = obviateRootUnlessForest zid $ dfsForestFrom [zid] graph
           ul_ $ renderForest True (Just 2) LinkTheme_Simple store graph forest
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Navigate up"
