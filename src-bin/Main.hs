@@ -46,7 +46,6 @@ renderPage config r val = html_ [lang_ "en"] $ do
     with (script_ mempty) [id_ "MathJax-script", src_ "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", async_ ""]
   body_ $ do
     div_ [class_ "ui text container", id_ "thesite"] $ do
-      br_ mempty
       Z.renderRouteBody config r val
 
 headerFont :: Text
@@ -61,6 +60,8 @@ monoFont = "Roboto Mono"
 style :: Css
 style = "div#thesite" ? do
   C.fontFamily [bodyFont] [C.serif]
+  C.paddingTop $ em 1
+  C.paddingBottom $ em 1
   "p" ? do
     C.lineHeight $ pct 150
   "h1, h2, h3, h4, h5, h6, .ui.header" ? do
