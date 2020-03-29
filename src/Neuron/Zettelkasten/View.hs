@@ -57,7 +57,6 @@ renderIndex :: Monad m => (ZettelStore, ZettelGraph) -> HtmlT m ()
 renderIndex (store, graph) = do
   h1_ [class_ "header"] $ "Zettel Index"
   div_ [class_ "zettels"] $ do
-    let forest = dfsForest Nothing graph
     -- Cycle detection.
     case topSort graph of
       Left (toList -> cyc) -> div_ [class_ "ui orange segment"] $ do
@@ -65,17 +64,22 @@ renderIndex (store, graph) = do
         forM_ cyc $ \zid ->
           li_ $ renderZettelLink LinkTheme_Default store zid
       _ -> mempty
-    -- Forest of zettels, beginning with mother vertices.
-    p_ $ do
-      "Below is the Zettel graph rendered as a forest. "
-      "Its top-level zettels represent the 'mother vertices' (i.e., no backlinks) of the graph. "
-      case length forest of
-        1 -> "There is one top-level zettel."
-        n -> do
-          "There are "
-          toHtml $ show @Text n
-          " top-level zettels."
-    ul_ $ renderForest Nothing LinkTheme_Default store graph forest
+    let clusters = mothers graph
+    p_ $ "There are " <> show (length clusters) <> " clusters in the Zettelkasten."
+    forM_ clusters $ \zids -> do
+      h2_ "Cluster"
+      let forest = dfsForest' zids graph
+      -- Forest of zettels, beginning with mother vertices.
+      p_ $ do
+        "Here is this Zettel sub-graph cluster rendered as a forest. "
+        "Its top-level zettels represent the 'mother vertices' (i.e., no backlinks) of the sub-graph. "
+        case length forest of
+          1 -> "There is one top-level zettel."
+          n -> do
+            "There are "
+            toHtml $ show @Text n
+            " top-level zettels."
+      ul_ $ renderForest Nothing LinkTheme_Default store graph forest
 
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel Config {..} (store, graph) zid = do

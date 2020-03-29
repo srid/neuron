@@ -15,6 +15,7 @@ import qualified Algebra.Graph.AdjacencyMap as AM
 import qualified Algebra.Graph.AdjacencyMap.Algorithm as Algo
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Action (extractLinks, linkActionConnections)
@@ -79,11 +80,31 @@ backlinks zid =
 topSort :: ZettelGraph -> Either (NonEmpty ZettelID) [ZettelID]
 topSort = Algo.topSort . LAM.skeleton
 
+-- WIP, needs refactoring
+mothers :: ZettelGraph -> [[ZettelID]]
+mothers g =
+  go [] (motherVertices $ LAM.skeleton g) $ LAM.skeleton g
+  where
+    go acc ms g' =
+      case ms of
+        [] -> acc
+        v : vs ->
+          let reach = Algo.reachable v $ toUndirected g'
+              rest = Set.difference (Set.fromList vs) (Set.fromList reach)
+              covered = Set.intersection (Set.fromList vs) (Set.fromList reach)
+           in go ((v : Set.toList covered) : acc) (Set.toList rest) g'
+    toUndirected h = AM.overlay h $ AM.transpose h
+    motherVertices :: AM.AdjacencyMap ZettelID -> [ZettelID]
+    motherVertices g' =
+      mapMaybe (\(v, es) -> if null es then Just v else Nothing)
+        $ AM.adjacencyList
+        $ AM.transpose g'
+
 -- | Computer the dfsForest from either the given zettel or from all mother
 -- vertices.
 dfsForest :: Maybe ZettelID -> ZettelGraph -> Forest ZettelID
 dfsForest fromZid g =
-  Algo.dfsForestFrom startingZids $ LAM.skeleton g
+  dfsForest' startingZids g
   where
     startingZids = maybe motherVertices pure fromZid
     motherVertices =
@@ -91,6 +112,11 @@ dfsForest fromZid g =
         $ AM.adjacencyList
         $ LAM.skeleton
         $ LAM.transpose g
+
+-- WIP, needs merge with dfsForest
+dfsForest' :: [ZettelID] -> ZettelGraph -> Forest ZettelID
+dfsForest' zids g =
+  Algo.dfsForestFrom zids $ LAM.skeleton g
 
 dfsForestBackwards :: ZettelID -> ZettelGraph -> Forest ZettelID
 dfsForestBackwards fromZid =
