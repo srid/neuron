@@ -81,7 +81,7 @@ topSort :: ZettelGraph -> Either (NonEmpty ZettelID) [ZettelID]
 topSort = Algo.topSort . LAM.skeleton
 
 -- WIP, needs refactoring
-mothers :: ZettelGraph -> [[ZettelID]]
+mothers :: ZettelGraph -> [NonEmpty ZettelID]
 mothers g =
   go [] (motherVertices $ LAM.skeleton g) $ LAM.skeleton g
   where
@@ -92,7 +92,7 @@ mothers g =
           let reach = Algo.reachable v $ toUndirected g'
               rest = Set.difference (Set.fromList vs) (Set.fromList reach)
               covered = Set.intersection (Set.fromList vs) (Set.fromList reach)
-           in go ((v : Set.toList covered) : acc) (Set.toList rest) g'
+           in go ((v :| Set.toList covered) : acc) (Set.toList rest) g'
     toUndirected h = AM.overlay h $ AM.transpose h
     motherVertices :: AM.AdjacencyMap ZettelID -> [ZettelID]
     motherVertices g' =
@@ -106,16 +106,18 @@ dfsForest :: Maybe ZettelID -> ZettelGraph -> Forest ZettelID
 dfsForest fromZid g =
   dfsForest' startingZids g
   where
-    startingZids = maybe motherVertices pure fromZid
+    startingZids = maybe motherVertices (:| []) fromZid
     motherVertices =
-      mapMaybe (\(v, es) -> if null es then Just v else Nothing)
+      fromMaybe (error "No mother vertices; cyclic graph?")
+        $ nonEmpty
+        $ mapMaybe (\(v, es) -> if null es then Just v else Nothing)
         $ AM.adjacencyList
         $ LAM.skeleton
         $ LAM.transpose g
 
 -- WIP, needs merge with dfsForest
-dfsForest' :: [ZettelID] -> ZettelGraph -> Forest ZettelID
-dfsForest' zids g =
+dfsForest' :: NonEmpty ZettelID -> ZettelGraph -> Forest ZettelID
+dfsForest' (toList -> zids) g =
   Algo.dfsForestFrom zids $ LAM.skeleton g
 
 dfsForestBackwards :: ZettelID -> ZettelGraph -> Forest ZettelID

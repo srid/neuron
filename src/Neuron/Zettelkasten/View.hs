@@ -15,7 +15,7 @@
 -- | HTML & CSS
 module Neuron.Zettelkasten.View where
 
-import Clay hiding (id, reverse, s, type_)
+import Clay hiding (head, id, reverse, s, type_)
 import qualified Clay as C
 import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
@@ -64,8 +64,7 @@ renderIndex (store, graph) = do
         forM_ cyc $ \zid ->
           li_ $ renderZettelLink LinkTheme_Default store zid
       _ -> mempty
-    -- TODO: sort clusters by their recent mother vertex (reverse sort)
-    let clusters = mothers graph
+    let clusters = sortMothers $ mothers graph
     p_ $ do
       "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten graph. "
       "Each cluster is rendered as a forest, with their roots (mother zettels) highlighted."
@@ -75,6 +74,8 @@ renderIndex (store, graph) = do
         -- Forest of zettels, beginning with mother vertices.
         ul_ $ renderForest True Nothing LinkTheme_Default store graph forest
   where
+    -- Sort mothers with newer zettels appearing first.
+    sortMothers = reverse . sortOn maximum
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
