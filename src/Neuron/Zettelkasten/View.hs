@@ -15,7 +15,7 @@
 -- | HTML & CSS
 module Neuron.Zettelkasten.View where
 
-import Clay hiding (reverse, s, type_)
+import Clay hiding (id, reverse, s, type_)
 import qualified Clay as C
 import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
@@ -56,7 +56,7 @@ renderRouteBody config r val = do
 renderIndex :: Monad m => (ZettelStore, ZettelGraph) -> HtmlT m ()
 renderIndex (store, graph) = do
   h1_ [class_ "header"] $ "Zettel Index"
-  div_ [class_ "zettels"] $ do
+  div_ [class_ "z-index"] $ do
     -- Cycle detection.
     case topSort graph of
       Left (toList -> cyc) -> div_ [class_ "ui orange segment"] $ do
@@ -64,22 +64,20 @@ renderIndex (store, graph) = do
         forM_ cyc $ \zid ->
           li_ $ renderZettelLink LinkTheme_Default store zid
       _ -> mempty
+    -- TODO: sort clusters by their recent mother vertex (reverse sort)
     let clusters = mothers graph
-    p_ $ "There are " <> show (length clusters) <> " clusters in the Zettelkasten."
-    forM_ clusters $ \zids -> do
-      h2_ "Cluster"
-      let forest = dfsForest' zids graph
-      -- Forest of zettels, beginning with mother vertices.
-      p_ $ do
-        "Here is this Zettel sub-graph cluster rendered as a forest. "
-        "Its top-level zettels represent the 'mother vertices' (i.e., no backlinks) of the sub-graph. "
-        case length forest of
-          1 -> "There is one top-level zettel."
-          n -> do
-            "There are "
-            toHtml $ show @Text n
-            " top-level zettels."
-      ul_ $ renderForest Nothing LinkTheme_Default store graph forest
+    p_ $ do
+      "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten graph. "
+      "Each cluster is rendered as a forest, with their roots (mother zettels) highlighted."
+    forM_ clusters $ \zids ->
+      div_ [class_ "ui piled segment"] $ do
+        let forest = dfsForest' zids graph
+        -- Forest of zettels, beginning with mother vertices.
+        ul_ $ renderForest True Nothing LinkTheme_Default store graph forest
+  where
+    countNounBe noun nounPlural = \case
+      1 -> "is 1 " <> noun
+      n -> "are " <> show n <> " " <> nounPlural
 
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel Config {..} (store, graph) zid = do
@@ -93,12 +91,12 @@ renderZettel Config {..} (store, graph) zid = do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
           let forest = obviateRootUnlessForest zid $ dfsForest (Just zid) graph
-          ul_ $ renderForest (Just 2) LinkTheme_Simple store graph forest
+          ul_ $ renderForest True (Just 2) LinkTheme_Simple store graph forest
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Navigate up"
           let forestB = obviateRootUnlessForest zid $ dfsForestBackwards zid graph
           ul_ $ do
-            renderForest Nothing LinkTheme_Simple store graph forestB
+            renderForest True Nothing LinkTheme_Simple store graph forestB
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
       div_ [class_ "ui three column grid"] $ do
         div_ [class_ "center aligned column"] $ do
@@ -116,19 +114,21 @@ fa k = with i_ [class_ k] mempty
 
 renderForest ::
   Monad m =>
+  Bool ->
   Maybe Int ->
   LinkTheme ->
   ZettelStore ->
   ZettelGraph ->
   [Tree ZettelID] ->
   HtmlT m ()
-renderForest maxLevel ltheme s g trees =
+renderForest isRoot maxLevel ltheme s g trees =
   case maxLevel of
     Just 0 -> mempty
     _ -> do
       forM_ (sortForest trees) $ \(Node zid subtrees) ->
-        li_ $ do
-          renderZettelLink ltheme s zid
+        li_ [class_ $ bool "" "root" isRoot] $ do
+          (bool id (div_ [class_ $ bool "" "ui black label" $ ltheme == LinkTheme_Default]) isRoot) $
+            renderZettelLink ltheme s zid
           when (ltheme == LinkTheme_Default) $ do
             " "
             case backlinks zid g of
@@ -139,7 +139,7 @@ renderForest maxLevel ltheme s g trees =
                   i_ [class_ "fas fa-link", title_ $ unZettelID zid2 <> " " <> zettelTitle z2] mempty
               _ -> mempty
           when (length subtrees > 0) $ do
-            ul_ $ renderForest ((\n -> n - 1) <$> maxLevel) ltheme s g subtrees
+            ul_ $ renderForest False ((\n -> n - 1) <$> maxLevel) ltheme s g subtrees
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
@@ -160,6 +160,14 @@ style = do
     C.paddingLeft $ em 0.3
     C.fontWeight C.bold
     C.color linkTitleColor
+  "li.root > div.ui.label" ? do
+    C.fontSize $ em 1 -- Undo semantic-ui label's font size change
+  "li.root > div > .zettel-link > .zettel-link-idlink > a" ? do
+    mempty -- C.important $ C.color white
+  "div.z-index" ? do
+    C.ul ? do
+      C.listStyleType C.square
+      C.paddingLeft $ em 1.5
   "div.zettel-view" ? do
     C.ul ? do
       C.paddingLeft $ em 1.5
