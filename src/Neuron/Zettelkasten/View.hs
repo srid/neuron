@@ -127,8 +127,11 @@ renderForest isRoot maxLevel ltheme s g trees =
     Just 0 -> mempty
     _ -> do
       forM_ (sortForest trees) $ \(Node zid subtrees) ->
-        li_ [class_ $ bool "" "root" isRoot] $ do
-          (bool id (div_ [class_ $ bool "" "ui black label" $ ltheme == LinkTheme_Default]) isRoot) $
+        li_ $ do
+          let zettelDiv =
+                div_
+                  [class_ $ bool "" "ui black label" $ ltheme == LinkTheme_Default]
+          bool id zettelDiv isRoot $
             renderZettelLink ltheme s zid
           when (ltheme == LinkTheme_Default) $ do
             " "
@@ -161,10 +164,6 @@ style = do
     C.paddingLeft $ em 0.3
     C.fontWeight C.bold
     C.color linkTitleColor
-  "li.root > div.ui.label" ? do
-    C.fontSize $ em 1 -- Undo semantic-ui label's font size change
-  "li.root > div > .zettel-link > .zettel-link-idlink > a" ? do
-    mempty -- C.important $ C.color white
   "div.z-index" ? do
     C.ul ? do
       C.listStyleType C.square
