@@ -13,19 +13,6 @@ common library-common
     -Wall
     -Wincomplete-record-updates
     -Wincomplete-uni-patterns
-  exposed-modules:
-    Neuron.Zettelkasten
-    Neuron.Zettelkasten.Route
-    Neuron.Zettelkasten.Store
-    Neuron.Zettelkasten.Graph
-    Neuron.Zettelkasten.View
-    Neuron.Zettelkasten.Link
-    Neuron.Zettelkasten.Link.View
-    Neuron.Zettelkasten.Link.Action
-    Neuron.Zettelkasten.Meta
-    Neuron.Zettelkasten.Type
-    Neuron.Zettelkasten.Config
-    Neuron.Zettelkasten.ID
   build-depends:
     base,
     aeson,
@@ -55,9 +42,6 @@ common library-common
 
 library
   import: library-common
-  -- NOTE: We knowingly violate DRY, and repeat these from common stanza,
-  -- because otherwise when using neuron as a library (eg: in srid.ca) these
-  -- modules are not automatically exposed.
   exposed-modules:
     Neuron.Zettelkasten
     Neuron.Zettelkasten.Route
