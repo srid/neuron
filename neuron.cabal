@@ -25,7 +25,6 @@ common library-common
     Neuron.Zettelkasten.Meta
     Neuron.Zettelkasten.Type
     Neuron.Zettelkasten.Config
-  other-modules:
     Neuron.Zettelkasten.ID
   build-depends:
     base,
@@ -56,6 +55,23 @@ common library-common
 
 library
   import: library-common
+  -- NOTE: We knowingly violate DRY, and repeat these from common stanza,
+  -- because otherwise when using neuron as a library (eg: in srid.ca) these
+  -- modules are not automatically exposed.
+  exposed-modules:
+    Neuron.Zettelkasten
+    Neuron.Zettelkasten.Route
+    Neuron.Zettelkasten.Store
+    Neuron.Zettelkasten.Graph
+    Neuron.Zettelkasten.View
+    Neuron.Zettelkasten.Link
+    Neuron.Zettelkasten.Link.View
+    Neuron.Zettelkasten.Link.Action
+    Neuron.Zettelkasten.Meta
+    Neuron.Zettelkasten.Type
+    Neuron.Zettelkasten.Config
+    Neuron.Zettelkasten.ID
+
 
 executable neuron
   -- We include library modules here, so that ghcid knows to reload when they change.
@@ -71,3 +87,4 @@ executable neuron
     clay,
     lucid,
     with-utf8
+
