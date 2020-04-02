@@ -19,8 +19,6 @@ module Neuron.Zettelkasten
 where
 
 import qualified Data.Map.Strict as Map
-import qualified Data.Text as Text
-import qualified Data.Text.IO as Text
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
@@ -51,7 +49,7 @@ data App
 
 data QueryOptions
   = QueryOptions
-      { queryHideTitles :: Bool
+      { queryOnlyIDs :: Bool
       }
   deriving (Eq, Show)
 
@@ -82,7 +80,7 @@ commandParser =
     newCommand =
       New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
     queryCommand =
-      Query <$> (QueryOptions <$> switch (long "hide-titles"))
+      Query <$> (QueryOptions <$> switch (long "only-ids" <> help "Show only the IDs of the matched zettels"))
             <*> many (Z.ByTag <$> option str (long "tag" <> short 't'))
     searchCommand =
       pure Search
@@ -112,9 +110,9 @@ runWith act App {..} = do
       let ids = Z.runQuery store queries
           zettels = flip Z.lookupStore store <$> ids
           output Z.Zettel{..}
-            | queryHideTitles = show id
-            | otherwise       = "[" <> Text.pack (show zettelID) <> "] " <> zettelTitle
-      mapM_ (Text.putStrLn . output) zettels
+            | queryOnlyIDs = Z.unZettelID zettelID
+            | otherwise    = "[" <> Z.unZettelID zettelID <> "] " <> zettelTitle
+      mapM_ (putTextLn . output) zettels
     -- CD to the parent of notes directory, because Rib API takes only
     -- relative path
     Rib ribCmd ->  withCurrentDir (parent inputDir) $ do
