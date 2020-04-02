@@ -23,10 +23,10 @@ When modifying `src/Neuron`, use ghcid as instructed as follows to monitor compi
 nix-shell --run ghcid
 ```
 
-You can test your changes by running it on the `./guide` zettelkasten as follows:
+You can test your changes by running it on the `./guide` (or any) zettelkasten as follows:
 
 ```bash
-bin/run-guide
+bin/run ./guide
 ```
 
 This command will also automatically recompile and restart when you change any of the Haskell source files.
