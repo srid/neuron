@@ -19,6 +19,7 @@ module Neuron.Zettelkasten
 where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as Z
@@ -26,6 +27,7 @@ import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
 import qualified Neuron.Zettelkasten.Link.Action as Z
+import qualified Neuron.Zettelkasten.Type as Z
 import Options.Applicative
 import Path
 import Path.IO
@@ -47,13 +49,19 @@ data App
       }
   deriving (Eq, Show)
 
+data QueryOptions
+  = QueryOptions
+      { queryHideTitles :: Bool
+      }
+  deriving (Eq, Show)
+
 data Command
   = -- | Create a new zettel file
     New Text
   | -- | Search a zettel by title
     Search
     -- | Query a zettelkasten and prints all macthing zettel IDs
-  | Query [Z.Query]
+  | Query QueryOptions [Z.Query]
   | Rib Rib.App.Command
   deriving (Eq, Show)
 
@@ -74,7 +82,8 @@ commandParser =
     newCommand =
       New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
     queryCommand =
-      Query <$> many (Z.ByTag <$> option str (long "tag" <> short 't'))
+      Query <$> (QueryOptions <$> switch (long "hide-titles"))
+            <*> many (Z.ByTag <$> option str (long "tag" <> short 't'))
     searchCommand =
       pure Search
 
@@ -97,10 +106,15 @@ runWith act App {..} = do
       putStrLn =<< newZettelFile inputDir tit
     Search ->
       execScript neuronSearchScript [notesDir]
-    Query queries -> do
+    Query QueryOptions{..} queries -> do
       paths <- snd <$> listDirRel inputDir
       store <- Z.mkZettelStoreIO inputDir paths
-      mapM_ (Text.putStrLn . Z.unZettelID) (Z.runQuery store queries)
+      let ids = Z.runQuery store queries
+          zettels = flip Z.lookupStore store <$> ids
+          output Z.Zettel{..}
+            | queryHideTitles = show id
+            | otherwise       = "[" <> Text.pack (show zettelID) <> "] " <> zettelTitle
+      mapM_ (Text.putStrLn . output) zettels
     -- CD to the parent of notes directory, because Rib API takes only
     -- relative path
     Rib ribCmd ->  withCurrentDir (parent inputDir) $ do
