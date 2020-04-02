@@ -36,7 +36,7 @@ common library-common
     filepattern,
     filepath,
     algebraic-graphs >= 0.5,
-    dhall,
+    dhall >= 1.30,
     which,
     unix
 

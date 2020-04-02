@@ -2,7 +2,7 @@ let
   # To upgrade rib, go to https://github.com/srid/rib/commits/master, select the
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
-  ribRevision = "2b64f56ef18e5a3efc8cfde50b7c28efb89cfbf1";
+  ribRevision = "f068383";
 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
   pkgs = import <nixpkgs> {};
@@ -32,7 +32,6 @@ in import rib {
       neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
       which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97.tar.gz";
-      with-utf8 = builtins.fetchTarball "https://github.com/serokell/haskell-with-utf8/archive/v1.0.0.0.tar.gz";
     } // source-overrides;
     overrides = self: super: with pkgs.haskell.lib; {
       # We must add neuron-search as a runtime dependency to the 'neuron'

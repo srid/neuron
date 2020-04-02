@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,6 +13,7 @@
 module Neuron.Zettelkasten.Config where
 
 import Development.Shake (Action)
+import Dhall
 import Dhall.TH
 import Path
 import Path.IO (doesFileExist)
@@ -22,6 +24,10 @@ import qualified Rib.Parser.Dhall as Dhall
 makeHaskellTypes
   [ SingleConstructor "Config" "Config" "./src-dhall/Neuron.dhall"
   ]
+
+deriving instance Generic Config
+
+deriving instance FromDhall Config
 
 getConfig :: Action Config
 getConfig = do
