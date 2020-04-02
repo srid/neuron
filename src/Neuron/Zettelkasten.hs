@@ -19,13 +19,13 @@ module Neuron.Zettelkasten
 where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Aeson.Text as Aeson
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
-import qualified Neuron.Zettelkasten.Link.Action as Z
-import qualified Neuron.Zettelkasten.Type as Z
+import qualified Neuron.Zettelkasten.Query as Z
 import Options.Applicative
 import Path
 import Path.IO
@@ -47,19 +47,13 @@ data App
       }
   deriving (Eq, Show)
 
-data QueryOptions
-  = QueryOptions
-      { queryOnlyIDs :: Bool
-      }
-  deriving (Eq, Show)
-
 data Command
   = -- | Create a new zettel file
     New Text
   | -- | Search a zettel by title
     Search
     -- | Query a zettelkasten and prints all macthing zettel IDs
-  | Query QueryOptions [Z.Query]
+  | Query [Z.Query]
   | Rib Rib.App.Command
   deriving (Eq, Show)
 
@@ -80,8 +74,7 @@ commandParser =
     newCommand =
       New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
     queryCommand =
-      Query <$> (QueryOptions <$> switch (long "only-ids" <> help "Show only the IDs of the matched zettels"))
-            <*> many (Z.ByTag <$> option str (long "tag" <> short 't'))
+      Query <$> many (Z.ByTag <$> option str (long "tag" <> short 't'))
     searchCommand =
       pure Search
 
@@ -104,15 +97,11 @@ runWith act App {..} = do
       putStrLn =<< newZettelFile inputDir tit
     Search ->
       execScript neuronSearchScript [notesDir]
-    Query QueryOptions{..} queries -> do
+    Query queries -> do
       paths <- snd <$> listDirRel inputDir
       store <- Z.mkZettelStoreIO inputDir paths
-      let ids = Z.runQuery store queries
-          zettels = flip Z.lookupStore store <$> ids
-          output Z.Zettel{..}
-            | queryOnlyIDs = Z.unZettelID zettelID
-            | otherwise    = "[" <> Z.unZettelID zettelID <> "] " <> zettelTitle
-      mapM_ (putTextLn . output) zettels
+      let matches = Z.runQuery store queries
+      mapM_ (putLTextLn . Aeson.encodeToLazyText) matches
     -- CD to the parent of notes directory, because Rib API takes only
     -- relative path
     Rib ribCmd ->  withCurrentDir (parent inputDir) $ do
