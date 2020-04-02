@@ -11,26 +11,30 @@
 -- | Zettelkasten config
 module Neuron.Zettelkasten.Config where
 
-import Development.Shake (Action)
+import Development.Shake (Action, readFile')
+import Dhall (auto, input)
 import Dhall.TH
 import Path
 import Path.IO (doesFileExist)
 import Relude
 import qualified Rib
-import qualified Rib.Parser.Dhall as Dhall
 
 makeHaskellTypes
-  [ SingleConstructor "Config" "Config" "./src-dhall/Neuron.dhall"
+  [ SingleConstructor "Config" "Config" "./src-dhall/Config/Type.dhall"
   ]
 
 getConfig :: Action Config
 getConfig = do
   inputDir <- Rib.ribInputDir
-  doesFileExist (inputDir </> configPath) >>= \case
-    True -> Dhall.parse [] configPath
+  let configPath = inputDir </> configFile
+  doesFileExist configPath >>= \case
+    True -> do
+      config <- readFile' $ toFilePath configPath
+      let configFull = "let Neuron = ./src-dhall/Neuron.dhall in " <> config
+      liftIO $ input auto (toText configFull)
     False -> pure defaultConfig
   where
-    configPath = [relfile|neuron.dhall|]
+    configFile = [relfile|neuron.dhall|]
     defaultConfig :: Config
     defaultConfig =
       Config

@@ -1,9 +1,1 @@
-{ siteTitle :
-    Text
-, author :
-    Optional Text
-, siteBaseUrl :
-    Optional Text
-, editUrl :
-    Optional Text
-}
+{ Type = ./Config/Type.dhall, default = ./Config/Default.dhall }
