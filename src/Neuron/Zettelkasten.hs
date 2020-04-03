@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -96,7 +97,7 @@ run act =
         (fullDesc <> progDesc "Zettelkasten based on Rib")
 
 runWith :: Action () -> App -> IO ()
-runWith act App {..} = do
+runWith ribAction App {..} = do
   notesDirAbs <- Directory.makeAbsolute notesDir
   inputDir <- parseAbsDir notesDirAbs
   outputDir <- directoryAside inputDir ".output"
@@ -106,24 +107,28 @@ runWith act App {..} = do
     Search ->
       execScript neuronSearchScript [notesDir]
     Query queries -> do
-      -- TODO: This should include only *.md files.
-      zettelPaths <- snd <$> listDirRel inputDir
-      store <- Z.mkZettelStoreIO inputDir zettelPaths
-      let matches = Z.runQuery store queries
-      mapM_ (putLTextLn . Aeson.encodeToLazyText) matches
+      runRibOneOffShake inputDir outputDir $ do
+        store <- Z.mkZettelStore =<< Rib.forEvery [[relfile|*.md|]] pure
+        let matches = Z.runQuery store queries
+        mapM_ (putLTextLn . Aeson.encodeToLazyText) matches
     Rib ribCmd ->
-      -- CD to the parent of notes directory, because Rib API takes only
-      -- relative path
-      withCurrentDir (parent inputDir) $ do
-        inputDirRel <- makeRelativeToCurrentDir inputDir
-        outputDirRel <- makeRelativeToCurrentDir outputDir
-        Rib.App.runWith inputDirRel outputDirRel act ribCmd
+      runRib inputDir outputDir ribCmd ribAction
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
       -- here, such that the new process replaces the current one. fzf won't work
       -- otherwise.
       void $ executeFile scriptPath False args Nothing
+    -- Run an one-off shake action through rib
+    runRibOneOffShake inputDir outputDir =
+      runRib inputDir outputDir Rib.App.OneOff
+    runRib inputDir outputDir ribCmd act =
+      -- CD to the parent of notes directory, because Rib API takes only
+      -- relative path
+      withCurrentDir (parent inputDir) $ do
+        inputDirRel <- makeRelativeToCurrentDir inputDir
+        outputDirRel <- makeRelativeToCurrentDir outputDir
+        Rib.App.runWith inputDirRel outputDirRel act ribCmd
     directoryAside :: Path Abs Dir -> String -> IO (Path Abs Dir)
     directoryAside fp suffix = do
       let baseName = dropTrailingPathSeparator $ toFilePath $ dirname fp
