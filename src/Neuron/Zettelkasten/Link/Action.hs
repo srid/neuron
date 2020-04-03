@@ -15,12 +15,10 @@
 module Neuron.Zettelkasten.Link.Action where
 
 import Control.Foldl (Fold (..))
-import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Neuron.Zettelkasten.ID
-import qualified Neuron.Zettelkasten.Meta as Meta
+import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Type
 import Relude
 import Text.MMark (MMark, runScanner)
 import qualified Text.MMark.Extension as Ext
@@ -38,10 +36,6 @@ data LinkAction
   | -- | Render a list (or should it be tree?) of links to queries zettels
     -- TODO: Should this automatically establish a connection in graph??
     LinkAction_QueryZettels Connection LinkTheme [Query]
-  deriving (Eq, Show)
-
-data Query
-  = ByTag Text
   deriving (Eq, Show)
 
 linkActionFromUri :: URI.URI -> Maybe LinkAction
@@ -83,14 +77,6 @@ linkThemeFromUri uri =
             _ -> error $ "Unknown link theme: " <> val
         _ -> Nothing
 
-runQuery :: ZettelStore -> [Query] -> [ZettelID]
-runQuery store queries =
-  Map.keys $ flip Map.filter store $ \zettel ->
-    and $ matchQuery zettel <$> queries
-  where
-    matchQuery Zettel {..} = \case
-      ByTag tag -> tag `elem` (fromMaybe [] $ Meta.tags =<< Meta.getMeta zettelContent)
-
 data MarkdownLink
   = MarkdownLink
       { markdownLinkText :: Text,
@@ -105,7 +91,7 @@ linkActionConnections store MarkdownLink {..} =
       let zid = parseZettelID markdownLinkText
        in [(conn, zid)]
     Just (LinkAction_QueryZettels conn _linkTheme q) ->
-      (conn,) <$> runQuery store q
+      (conn,) . matchID <$> runQuery store q
     Nothing ->
       []
 

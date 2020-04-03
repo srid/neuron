@@ -19,11 +19,15 @@ module Neuron.Zettelkasten
 where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Aeson.Text as Aeson
+import qualified Text.URI as URI
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
+import qualified Neuron.Zettelkasten.Query as Z
+import qualified Neuron.Zettelkasten.Link.Action as Z
 import Options.Applicative
 import Path
 import Path.IO
@@ -50,6 +54,8 @@ data Command
     New Text
   | -- | Search a zettel by title
     Search
+    -- | Query a zettelkasten and prints all macthing zettel IDs
+  | Query [Z.Query]
   | Rib Rib.App.Command
   deriving (Eq, Show)
 
@@ -64,10 +70,14 @@ commandParser =
         mconcat
           [ command "new" $ info newCommand $ progDesc "Create a new zettel",
             command "search" $ info searchCommand $ progDesc "Search zettels and print the matching filepath",
+            command "query" $ info queryCommand $ progDesc "Query a zettelkasten and print the IDs of all matching zettels",
             command "rib" $ fmap Rib $ info Rib.App.commandParser $ progDesc "Call rib"
           ]
     newCommand =
       New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
+    queryCommand =
+      fmap Query $ (many (Z.ByTag <$> option str (long "tag" <> short 't')))
+        <|> (Z.queryFromUri . fromMaybe URI.emptyURI . URI.mkURI <$> option str (long "uri" <> short 'u'))
     searchCommand =
       pure Search
 
@@ -90,10 +100,14 @@ runWith act App {..} = do
       putStrLn =<< newZettelFile inputDir tit
     Search ->
       execScript neuronSearchScript [notesDir]
-    Rib ribCmd -> do
-      -- CD to the parent of notes directory, because Rib API takes only
-      -- relative path
-      withCurrentDir (parent inputDir) $ do
+    Query queries -> do
+      paths <- snd <$> listDirRel inputDir
+      store <- Z.mkZettelStoreIO inputDir paths
+      let matches = Z.runQuery store queries
+      mapM_ (putLTextLn . Aeson.encodeToLazyText) matches
+    -- CD to the parent of notes directory, because Rib API takes only
+    -- relative path
+    Rib ribCmd ->  withCurrentDir (parent inputDir) $ do
         inputDirRel <- makeRelativeToCurrentDir inputDir
         outputDirRel <- makeRelativeToCurrentDir outputDir
         Rib.App.runWith inputDirRel outputDirRel act ribCmd

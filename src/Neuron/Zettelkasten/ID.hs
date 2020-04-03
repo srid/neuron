@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Zettel ID
@@ -19,6 +20,7 @@ where
 
 import qualified Data.Text as T
 import Data.Time
+import Data.Aeson (ToJSON)
 import Lucid
 import Path
 import Relude
@@ -30,7 +32,7 @@ import Text.Printf
 --
 -- Based on https://old.reddit.com/r/Zettelkasten/comments/fa09zw/shorter_zettel_ids/
 newtype ZettelID = ZettelID {unZettelID :: Text}
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, ToJSON)
 
 instance ToHtml ZettelID where
   toHtmlRaw = toHtml
