@@ -11,7 +11,6 @@
 -- | Queries to the Zettel store
 module Neuron.Zettelkasten.Query where
 
--- import qualified Data.Set as Set
 import Data.Aeson
 import qualified Data.Map.Strict as Map
 import Neuron.Zettelkasten.ID
@@ -20,13 +19,9 @@ import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
 import Relude
 
--- import Text.MMark (MMark, runScanner)
--- import qualified Text.MMark.Extension as Ext
--- import Text.MMark.Extension (Inline (..))
--- import qualified Text.URI as URI
-
--- | LinksTo ZettelID
--- | LinksFrom ZettelID
+-- TODO: Support querying connections, a la:
+--   LinksTo ZettelID
+--   LinksFrom ZettelID
 data Query
   = ByTag Text
   deriving (Eq, Show)
@@ -36,8 +31,6 @@ data Match
       { matchID :: ZettelID,
         matchTitle :: Text,
         matchTags :: [Text]
-        -- , matchLinks     :: [ZettelID]
-        -- , matchBackLinks :: [ZettelID]
       }
 
 -- TODO: Use generic deriving use field label modifier.
