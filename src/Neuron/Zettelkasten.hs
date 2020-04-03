@@ -56,7 +56,8 @@ data Command
     Search
   | -- | Run a query against the Zettelkasten
     Query [Z.Query]
-  | Rib Rib.App.Command
+  | -- | Delegate to Rib's command parser
+    Rib Rib.App.Command
   deriving (Eq, Show)
 
 commandParser :: Parser App
@@ -74,14 +75,16 @@ commandParser =
             command "rib" $ fmap Rib $ info Rib.App.commandParser $ progDesc "Run a rib command"
           ]
     newCommand =
-      New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
+      fmap New $
+        argument str (metavar "TITLE" <> help "Title of the new Zettel")
     queryCommand =
       fmap Query $
         (many (Z.ByTag <$> option str (long "tag" <> short 't')))
-          -- FIXME: Instead of fromMaybe, fail on bad URIs
-          <|> (Z.queryFromUri . fromMaybe URI.emptyURI . URI.mkURI <$> option str (long "uri" <> short 'u'))
+          <|> (Z.queryFromUri . mkURIMust <$> option str (long "uri" <> short 'u'))
     searchCommand =
       pure Search
+    mkURIMust =
+      either (error . toText . displayException) id . URI.mkURI
 
 run :: Action () -> IO ()
 run act =
