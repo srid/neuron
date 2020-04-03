@@ -1,6 +1,8 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
@@ -8,7 +10,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten
   ( generateSite,
@@ -35,8 +36,10 @@ import Relude
 import qualified Rib
 import qualified Rib.App
 import qualified System.Directory as Directory
+import qualified System.Exit as Exit
 import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
 import System.Posix.Process
+import qualified System.Posix.Env as Env
 import System.Which
 import qualified Text.URI as URI
 
@@ -50,9 +53,12 @@ data App
       }
   deriving (Eq, Show)
 
+data NewCommand = NewCommand { title :: Text, edit :: Bool }
+    deriving (Eq, Show)
+
 data Command
   = -- | Create a new zettel file
-    New Text
+    New NewCommand
   | -- | Search a zettel by title
     Search
   | -- | Run a query against the Zettelkasten
@@ -75,9 +81,12 @@ commandParser =
             command "query" $ info queryCommand $ progDesc "Run a query against the zettelkasten",
             command "rib" $ fmap Rib $ info Rib.App.commandParser $ progDesc "Run a rib command"
           ]
-    newCommand =
-      fmap New $
-        argument str (metavar "TITLE" <> help "Title of the new Zettel")
+    newCommand = do
+      edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created file in $EDITOR")
+
+      title <- argument str (metavar "TITLE" <> help "Title of the new Zettel")
+
+      return (New NewCommand{..})
     queryCommand =
       fmap Query $
         (many (Z.ByTag <$> option str (long "tag" <> short 't')))
@@ -102,8 +111,8 @@ runWith ribAction App {..} = do
   inputDir <- parseAbsDir notesDirAbs
   outputDir <- directoryAside inputDir ".output"
   case cmd of
-    New tit ->
-      putStrLn =<< newZettelFile inputDir tit
+    New newCommand ->
+      newZettelFile inputDir newCommand
     Search ->
       execScript neuronSearchScript [notesDir]
     Query queries -> do
@@ -150,8 +159,8 @@ generateSite writeHtmlRoute' zettelsPat = do
 
 -- | Create a new zettel file and return its slug
 -- TODO: refactor this
-newZettelFile :: Path b Dir -> Text -> IO String
-newZettelFile inputDir ztitle = do
+newZettelFile :: Path b Dir -> NewCommand -> IO ()
+newZettelFile inputDir NewCommand{..} = do
   zId <- Z.zettelNextIdForToday inputDir
   zettelFileName <- parseRelFile $ toString $ Z.zettelIDSourceFileName zId
   let srcPath = inputDir </> zettelFileName
@@ -159,5 +168,23 @@ newZettelFile inputDir ztitle = do
     True ->
       fail $ "File already exists: " <> show srcPath
     False -> do
-      writeFile (toFilePath srcPath) $ "---\ntitle: " <> toString ztitle <> "\n---\n\n"
-      pure $ toFilePath srcPath
+      writeFile (toFilePath srcPath) $ "---\ntitle: " <> toString title <> "\n---\n\n"
+
+      let path = toFilePath srcPath
+
+      if edit
+        then do
+          maybeEditor <- Env.getEnv "EDITOR"
+
+          editor <- case maybeEditor of
+            Nothing -> do
+              putStrLn "Set the EDITOR environment variable"
+
+              Exit.exitFailure
+
+            Just editor -> do
+              return editor
+
+          executeFile editor True [ path ] Nothing
+        else do
+          putStrLn path
