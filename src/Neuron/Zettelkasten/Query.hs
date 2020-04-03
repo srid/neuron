@@ -40,6 +40,7 @@ data Match
         -- , matchBackLinks :: [ZettelID]
       }
 
+-- TODO: Use generic deriving use field label modifier.
 instance ToJSON Match where
   toJSON Match {..} =
     object

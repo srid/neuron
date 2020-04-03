@@ -28,7 +28,6 @@ import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
--- import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Type
 import Relude
 import qualified Rib

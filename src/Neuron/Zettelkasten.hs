@@ -54,7 +54,7 @@ data Command
     New Text
   | -- | Search a zettel by title
     Search
-  | -- | Query a zettelkasten and prints all macthing zettel IDs
+  | -- | Run a query against the Zettelkasten
     Query [Z.Query]
   | Rib Rib.App.Command
   deriving (Eq, Show)
@@ -70,14 +70,15 @@ commandParser =
         mconcat
           [ command "new" $ info newCommand $ progDesc "Create a new zettel",
             command "search" $ info searchCommand $ progDesc "Search zettels and print the matching filepath",
-            command "query" $ info queryCommand $ progDesc "Query a zettelkasten and print the IDs of all matching zettels",
-            command "rib" $ fmap Rib $ info Rib.App.commandParser $ progDesc "Call rib"
+            command "query" $ info queryCommand $ progDesc "Run a query against the zettelkasten",
+            command "rib" $ fmap Rib $ info Rib.App.commandParser $ progDesc "Run a rib command"
           ]
     newCommand =
       New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
     queryCommand =
       fmap Query $
         (many (Z.ByTag <$> option str (long "tag" <> short 't')))
+          -- FIXME: Instead of fromMaybe, fail on bad URIs
           <|> (Z.queryFromUri . fromMaybe URI.emptyURI . URI.mkURI <$> option str (long "uri" <> short 'u'))
     searchCommand =
       pure Search
@@ -102,16 +103,18 @@ runWith act App {..} = do
     Search ->
       execScript neuronSearchScript [notesDir]
     Query queries -> do
-      paths <- snd <$> listDirRel inputDir
-      store <- Z.mkZettelStoreIO inputDir paths
+      -- TODO: This should include only *.md files.
+      zettelPaths <- snd <$> listDirRel inputDir
+      store <- Z.mkZettelStoreIO inputDir zettelPaths
       let matches = Z.runQuery store queries
       mapM_ (putLTextLn . Aeson.encodeToLazyText) matches
-    -- CD to the parent of notes directory, because Rib API takes only
-    -- relative path
-    Rib ribCmd -> withCurrentDir (parent inputDir) $ do
-      inputDirRel <- makeRelativeToCurrentDir inputDir
-      outputDirRel <- makeRelativeToCurrentDir outputDir
-      Rib.App.runWith inputDirRel outputDirRel act ribCmd
+    Rib ribCmd ->
+      -- CD to the parent of notes directory, because Rib API takes only
+      -- relative path
+      withCurrentDir (parent inputDir) $ do
+        inputDirRel <- makeRelativeToCurrentDir inputDir
+        outputDirRel <- makeRelativeToCurrentDir outputDir
+        Rib.App.runWith inputDirRel outputDirRel act ribCmd
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
