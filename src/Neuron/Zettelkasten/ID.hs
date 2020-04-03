@@ -1,8 +1,8 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Zettel ID
@@ -18,9 +18,9 @@ module Neuron.Zettelkasten.ID
   )
 where
 
+import Data.Aeson (ToJSON)
 import qualified Data.Text as T
 import Data.Time
-import Data.Aeson (ToJSON)
 import Lucid
 import Path
 import Relude

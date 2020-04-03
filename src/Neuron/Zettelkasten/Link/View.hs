@@ -16,8 +16,8 @@ module Neuron.Zettelkasten.Link.View where
 
 import Lucid
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Link.Action
+import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Route (Route (..))
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type

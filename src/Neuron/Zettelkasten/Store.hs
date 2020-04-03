@@ -12,6 +12,7 @@
 module Neuron.Zettelkasten.Store where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Text.IO as Text
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Meta as Meta
@@ -19,7 +20,6 @@ import Neuron.Zettelkasten.Type
 import Path
 import Relude
 import qualified Rib.Parser.MMark as RibMMark
-import qualified Data.Text.IO as Text
 
 type ZettelStore = Map ZettelID Zettel
 
@@ -39,7 +39,7 @@ mkZettelStore :: [Path Rel File] -> Action ZettelStore
 mkZettelStore = mkZettelStoreWith RibMMark.parse
 
 mkZettelStoreIO :: Path Abs Dir -> [Path Rel File] -> IO ZettelStore
-mkZettelStoreIO inputDir = mkZettelStoreWith $ \ file -> do
+mkZettelStoreIO inputDir = mkZettelStoreWith $ \file -> do
   let path = toFilePath $ inputDir </> file
   src <- Text.readFile path
   case RibMMark.parsePure path src of

@@ -18,16 +18,15 @@ module Neuron.Zettelkasten
   )
 where
 
-import qualified Data.Map.Strict as Map
 import qualified Data.Aeson.Text as Aeson
-import qualified Text.URI as URI
+import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
+import qualified Neuron.Zettelkasten.Link.Action as Z
+import qualified Neuron.Zettelkasten.Query as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
-import qualified Neuron.Zettelkasten.Query as Z
-import qualified Neuron.Zettelkasten.Link.Action as Z
 import Options.Applicative
 import Path
 import Path.IO
@@ -38,6 +37,7 @@ import qualified System.Directory as Directory
 import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
 import System.Posix.Process
 import System.Which
+import qualified Text.URI as URI
 
 neuronSearchScript :: FilePath
 neuronSearchScript = $(staticWhich "neuron-search")
@@ -54,8 +54,8 @@ data Command
     New Text
   | -- | Search a zettel by title
     Search
-    -- | Query a zettelkasten and prints all macthing zettel IDs
-  | Query [Z.Query]
+  | -- | Query a zettelkasten and prints all macthing zettel IDs
+    Query [Z.Query]
   | Rib Rib.App.Command
   deriving (Eq, Show)
 
@@ -76,8 +76,9 @@ commandParser =
     newCommand =
       New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
     queryCommand =
-      fmap Query $ (many (Z.ByTag <$> option str (long "tag" <> short 't')))
-        <|> (Z.queryFromUri . fromMaybe URI.emptyURI . URI.mkURI <$> option str (long "uri" <> short 'u'))
+      fmap Query $
+        (many (Z.ByTag <$> option str (long "tag" <> short 't')))
+          <|> (Z.queryFromUri . fromMaybe URI.emptyURI . URI.mkURI <$> option str (long "uri" <> short 'u'))
     searchCommand =
       pure Search
 
@@ -107,10 +108,10 @@ runWith act App {..} = do
       mapM_ (putLTextLn . Aeson.encodeToLazyText) matches
     -- CD to the parent of notes directory, because Rib API takes only
     -- relative path
-    Rib ribCmd ->  withCurrentDir (parent inputDir) $ do
-        inputDirRel <- makeRelativeToCurrentDir inputDir
-        outputDirRel <- makeRelativeToCurrentDir outputDir
-        Rib.App.runWith inputDirRel outputDirRel act ribCmd
+    Rib ribCmd -> withCurrentDir (parent inputDir) $ do
+      inputDirRel <- makeRelativeToCurrentDir inputDir
+      outputDirRel <- makeRelativeToCurrentDir outputDir
+      Rib.App.runWith inputDirRel outputDirRel act ribCmd
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
@@ -149,4 +150,3 @@ newZettelFile inputDir ztitle = do
     False -> do
       writeFile (toFilePath srcPath) $ "---\ntitle: " <> toString ztitle <> "\n---\n\n"
       pure $ toFilePath srcPath
-  where

@@ -11,39 +11,42 @@
 -- | Queries to the Zettel store
 module Neuron.Zettelkasten.Query where
 
-import qualified Data.Map.Strict as Map
 -- import qualified Data.Set as Set
 import Data.Aeson
+import qualified Data.Map.Strict as Map
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Meta as Meta
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
 import Relude
+
 -- import Text.MMark (MMark, runScanner)
 -- import qualified Text.MMark.Extension as Ext
 -- import Text.MMark.Extension (Inline (..))
 -- import qualified Text.URI as URI
 
+-- | LinksTo ZettelID
+-- | LinksFrom ZettelID
 data Query
   = ByTag Text
-  -- | LinksTo ZettelID
-  -- | LinksFrom ZettelID
   deriving (Eq, Show)
 
 data Match
   = Match
-      { matchID        :: ZettelID
-      , matchTitle     :: Text
-      , matchTags      :: [Text]
-      -- , matchLinks     :: [ZettelID]
-      -- , matchBackLinks :: [ZettelID]
+      { matchID :: ZettelID,
+        matchTitle :: Text,
+        matchTags :: [Text]
+        -- , matchLinks     :: [ZettelID]
+        -- , matchBackLinks :: [ZettelID]
       }
 
 instance ToJSON Match where
-  toJSON Match {..} = object
-    [ "id"    .= toJSON matchID
-    , "title" .= matchTitle
-    , "tags"  .= matchTags ]
+  toJSON Match {..} =
+    object
+      [ "id" .= toJSON matchID,
+        "title" .= matchTitle,
+        "tags" .= matchTags
+      ]
 
 matchQuery :: Match -> Query -> Bool
 matchQuery Match {..} = \case
@@ -52,13 +55,15 @@ matchQuery Match {..} = \case
 extractMatch :: Zettel -> Maybe Match
 extractMatch Zettel {..} = do
   Meta.Meta {..} <- Meta.getMeta zettelContent
-  pure Match
-    { matchID    = zettelID
-    , matchTitle = zettelTitle
-    , matchTags  = fromMaybe [] tags
-    }
+  pure
+    Match
+      { matchID = zettelID,
+        matchTitle = zettelTitle,
+        matchTags = fromMaybe [] tags
+      }
 
 runQuery :: ZettelStore -> [Query] -> [Match]
 runQuery store queries =
-    flip filter database $ \ match -> and $ matchQuery match <$> queries
-  where database = catMaybes $ extractMatch <$> Map.elems store
+  flip filter database $ \match -> and $ matchQuery match <$> queries
+  where
+    database = catMaybes $ extractMatch <$> Map.elems store
