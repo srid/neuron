@@ -110,7 +110,7 @@ runWith ribAction App {..} = do
       runRibOneOffShake inputDir outputDir $ do
         store <- Z.mkZettelStore =<< Rib.forEvery [[relfile|*.md|]] pure
         let matches = Z.runQuery store queries
-        mapM_ (putLTextLn . Aeson.encodeToLazyText) matches
+        putLTextLn $ Aeson.encodeToLazyText $ matches
     Rib ribCmd ->
       runRib inputDir outputDir ribCmd ribAction
   where
