@@ -20,12 +20,14 @@ where
 
 import qualified Data.Map.Strict as Map
 import qualified Data.Aeson.Text as Aeson
+import qualified Text.URI as URI
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
 import qualified Neuron.Zettelkasten.Query as Z
+import qualified Neuron.Zettelkasten.Link.Action as Z
 import Options.Applicative
 import Path
 import Path.IO
@@ -74,7 +76,8 @@ commandParser =
     newCommand =
       New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
     queryCommand =
-      Query <$> many (Z.ByTag <$> option str (long "tag" <> short 't'))
+      fmap Query $ (many (Z.ByTag <$> option str (long "tag" <> short 't')))
+        <|> (Z.queryFromUri . fromMaybe URI.emptyURI . URI.mkURI <$> option str (long "uri" <> short 'u'))
     searchCommand =
       pure Search
 
