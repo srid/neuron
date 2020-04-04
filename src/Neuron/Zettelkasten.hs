@@ -36,9 +36,7 @@ import Relude
 import qualified Rib
 import qualified Rib.App
 import qualified System.Directory as Directory
-import qualified System.Exit as Exit
 import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
-import qualified System.IO as IO
 import qualified System.Posix.Env as Env
 import System.Posix.Process
 import System.Which
@@ -171,12 +169,14 @@ newZettelFile inputDir NewCommand {..} = do
       let path = toFilePath srcPath
       putStrLn path
       when edit $ do
-        maybeEditor <- Env.getEnv "EDITOR"
-        editor <- case maybeEditor of
+        getEnvNonEmpty "EDITOR" >>= \case
           Nothing -> do
-            IO.hPutStrLn IO.stderr "Set the EDITOR environment variable"
-            IO.hPutStrLn IO.stderr ""
-            Exit.exitFailure
+            die "\nCan't open file; you must set the EDITOR environment variable"
           Just editor -> do
-            return editor
-        executeFile editor True [path] Nothing
+            executeFile editor True [path] Nothing
+  where
+    getEnvNonEmpty name =
+      Env.getEnv name >>= \case
+        Nothing -> pure Nothing
+        Just "" -> pure Nothing
+        Just v -> pure $ Just v
