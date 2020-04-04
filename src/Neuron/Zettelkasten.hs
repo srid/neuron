@@ -169,17 +169,14 @@ newZettelFile inputDir NewCommand {..} = do
     False -> do
       writeFile (toFilePath srcPath) $ "---\ntitle: " <> toString title <> "\n---\n\n"
       let path = toFilePath srcPath
-      if edit
-        then do
-          maybeEditor <- Env.getEnv "EDITOR"
-          editor <- case maybeEditor of
-            Nothing -> do
-              IO.hPutStrLn IO.stderr "Set the EDITOR environment variable"
-              IO.hPutStrLn IO.stderr ""
-              putStrLn path
-              Exit.exitFailure
-            Just editor -> do
-              return editor
-          executeFile editor True [path] Nothing
-        else do
-          putStrLn path
+      putStrLn path
+      when edit $ do
+        maybeEditor <- Env.getEnv "EDITOR"
+        editor <- case maybeEditor of
+          Nothing -> do
+            IO.hPutStrLn IO.stderr "Set the EDITOR environment variable"
+            IO.hPutStrLn IO.stderr ""
+            Exit.exitFailure
+          Just editor -> do
+            return editor
+        executeFile editor True [path] Nothing
