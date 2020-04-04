@@ -37,6 +37,7 @@ import qualified Rib
 import qualified Rib.App
 import qualified System.Directory as Directory
 import qualified System.Exit as Exit
+import qualified System.IO as IO
 import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
 import System.Posix.Process
 import qualified System.Posix.Env as Env
@@ -178,7 +179,11 @@ newZettelFile inputDir NewCommand{..} = do
 
           editor <- case maybeEditor of
             Nothing -> do
-              putStrLn "Set the EDITOR environment variable"
+              IO.hPutStrLn IO.stderr "Set the EDITOR environment variable"
+
+              IO.hPutStrLn IO.stderr ""
+
+              putStrLn path
 
               Exit.exitFailure
 
