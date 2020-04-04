@@ -22,7 +22,6 @@ where
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Map.Strict as Map
 import Data.Version (showVersion)
-import Development.GitRev (gitDescribe)
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
@@ -30,6 +29,7 @@ import qualified Neuron.Zettelkasten.Link.Action as Z
 import qualified Neuron.Zettelkasten.Query as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
+import qualified Neuron.Zettelkasten.Version as Z
 import Options.Applicative
 import Path
 import Path.IO
@@ -101,7 +101,7 @@ run act =
         (fullDesc <> progDesc "Zettelkasten based on Rib")
     versionOption =
         infoOption
-            (concat [showVersion version, " ", $(gitDescribe)])
+            (concat [showVersion version, " ", Z.version])
             (long "version" <> help "Show version")
 
 runWith :: Action () -> App -> IO ()
