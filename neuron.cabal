@@ -20,6 +20,7 @@ common library-common
     containers,
     directory,
     exceptions,
+    gitrev,
     lucid -any,
     optparse-applicative,
     pandoc,

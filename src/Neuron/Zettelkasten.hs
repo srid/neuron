@@ -22,7 +22,9 @@ where
 
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Map.Strict as Map
+import Data.Version (showVersion)
 import Development.Shake (Action)
+import qualified Neuron.Version as Version
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Link.Action as Z
@@ -32,6 +34,7 @@ import qualified Neuron.Zettelkasten.Store as Z
 import Options.Applicative
 import Path
 import Path.IO
+import Paths_neuron (version)
 import Relude
 import qualified Rib
 import qualified Rib.App
@@ -99,8 +102,12 @@ run act =
   where
     opts =
       info
-        (commandParser <**> helper)
+        (versionOption <*> commandParser <**> helper)
         (fullDesc <> progDesc "Zettelkasten based on Rib")
+    versionOption =
+      infoOption
+        (concat [showVersion version, " (", Version.version, ")"])
+        (long "version" <> help "Show version")
 
 runWith :: Action () -> App -> IO ()
 runWith ribAction App {..} = do

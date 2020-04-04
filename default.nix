@@ -9,7 +9,27 @@ let
   excludeContent = path: typ: 
     let d = baseNameOf (toString path);
     in !(d == "guide" && typ == "directory");
-  neuronRoot = pkgs.lib.cleanSourceWith { filter = excludeContent; src = gitignoreSource ./.; };
+  projectRoot = ./.;
+  neuronSrc = pkgs.lib.cleanSourceWith { filter = excludeContent; src = gitignoreSource projectRoot; };
+  gitDescribe = pkgs.runCommand "neuron-gitDescribe" 
+    { buildInputs = [ pkgs.git ]; }
+    ''
+      mkdir $out
+      git -C ${projectRoot} describe --long --always --dirty > $out/output
+    '';
+  # Overwrite src/Neuron/Version.hs as git won't be available in the Nix derivation.
+  neuronRoot = pkgs.runCommand "neuron" { buildInputs = [ pkgs.git gitDescribe ]; }
+    ''
+    mkdir $out
+    cp -r -p ${neuronSrc}/* $out/
+    chmod -R u+w $out/
+    GITDESC=`cat ${gitDescribe}/output`
+    cat << EOF > $out/src/Neuron/Version.hs
+    module Neuron.Version where
+    version :: String
+    version = "$GITDESC"
+    EOF
+    '';
 in {
 # Rib library source to use
   rib ? builtins.fetchTarball "https://github.com/srid/rib/archive/${ribRevision}.tar.gz"
