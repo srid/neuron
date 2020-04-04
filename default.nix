@@ -48,10 +48,9 @@ let
 in import rib { 
     inherit root name additional-packages; 
     source-overrides = {
+      neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
       which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97.tar.gz";
-      # Generate git version because gitignore prevent using gitRev
-      neuron = neuronRoot;
     } // source-overrides;
     overrides = self: super: with pkgs.haskell.lib; {
       # We must add neuron-search as a runtime dependency to the 'neuron'

@@ -33,6 +33,7 @@ import qualified Neuron.Zettelkasten.Version as Z
 import Options.Applicative
 import Path
 import Path.IO
+import Paths_neuron (version)
 import Relude
 import qualified Rib
 import qualified Rib.App
@@ -41,8 +42,6 @@ import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
 import System.Posix.Process
 import System.Which
 import qualified Text.URI as URI
-
-import Paths_neuron (version)
 
 neuronSearchScript :: FilePath
 neuronSearchScript = $(staticWhich "neuron-search")
@@ -100,9 +99,9 @@ run act =
         (versionOption <*> commandParser <**> helper)
         (fullDesc <> progDesc "Zettelkasten based on Rib")
     versionOption =
-        infoOption
-            (concat [showVersion version, " ", Z.version])
-            (long "version" <> help "Show version")
+      infoOption
+        (concat [showVersion version, " ", Z.version])
+        (long "version" <> help "Show version")
 
 runWith :: Action () -> App -> IO ()
 runWith ribAction App {..} = do

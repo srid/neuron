@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
--- | Zettelkasten version
 
+-- | Zettelkasten version
 module Neuron.Zettelkasten.Version where
 
 import Development.GitRev (gitDescribe)
