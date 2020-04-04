@@ -21,6 +21,8 @@ where
 
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Map.Strict as Map
+import Data.Version (showVersion)
+import Development.GitRev (gitHash)
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
@@ -39,6 +41,8 @@ import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
 import System.Posix.Process
 import System.Which
 import qualified Text.URI as URI
+
+import Paths_neuron (version)
 
 neuronSearchScript :: FilePath
 neuronSearchScript = $(staticWhich "neuron-search")
@@ -93,8 +97,12 @@ run act =
   where
     opts =
       info
-        (commandParser <**> helper)
+        (versionOption <*> commandParser <**> helper)
         (fullDesc <> progDesc "Zettelkasten based on Rib")
+    versionOption =
+        infoOption
+            (concat [showVersion version, " ", $(gitHash)])
+            (long "version" <> help "Show version")
 
 runWith :: Action () -> App -> IO ()
 runWith ribAction App {..} = do
