@@ -17,14 +17,15 @@ let
       mkdir $out
       git -C ${projectRoot} describe --long --always > $out/output
     '';
+  # Overwrite src/Neuron/Version.hs as git won't be available in the Nix derivation.
   neuronRoot = pkgs.runCommand "neuron" { buildInputs = [ pkgs.git gitDescribe ]; }
     ''
     mkdir $out
     cp -r -p ${neuronSrc}/* $out/
     chmod -R u+w $out/
     GITDESC=`cat ${gitDescribe}/output`
-    cat << EOF > $out/src/Neuron/Zettelkasten/Version.hs
-    module Neuron.Zettelkasten.Version where
+    cat << EOF > $out/src/Neuron/Version.hs
+    module Neuron.Version where
     version :: String
     version = "$GITDESC"
     EOF
