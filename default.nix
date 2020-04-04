@@ -25,6 +25,7 @@ let
     GITDESC=`cat ${gitDescribe}/output`
     cat << EOF > $out/src/Neuron/Zettelkasten/Version.hs
     module Neuron.Zettelkasten.Version where
+    version :: String
     version = "$GITDESC"
     EOF
     '';
