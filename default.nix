@@ -15,7 +15,7 @@ let
     { buildInputs = [ pkgs.git ]; }
     ''
       mkdir $out
-      git -C ${projectRoot} describe --long --always > $out/output
+      git -C ${projectRoot} describe --long --always --dirty > $out/output
     '';
   # Overwrite src/Neuron/Version.hs as git won't be available in the Nix derivation.
   neuronRoot = pkgs.runCommand "neuron" { buildInputs = [ pkgs.git gitDescribe ]; }

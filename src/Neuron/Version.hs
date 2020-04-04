@@ -6,7 +6,8 @@
 -- have it overwritten by the then `git describe` (see default.nix).
 module Neuron.Version where
 
-import Development.GitRev (gitDescribe)
+import Data.Bool (bool)
+import Development.GitRev (gitDescribe, gitDirty)
 
 version :: String
-version = $(gitDescribe)
+version = $(gitDescribe) <> bool "" "-dirty" $(gitDirty)
