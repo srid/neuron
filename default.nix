@@ -32,6 +32,14 @@ in import rib {
       neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
       which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97.tar.gz";
+      # Generate git version because gitignore prevent using gitRev
+      neuronVersion = pkgs.runCommand "version" { buildInputs = [ pkgs.git ]; }
+      ''
+      cat << EOF > ${neuronRoot}/src/Neuron/Zettelkasten/Version.hs
+      module Neuron.Zettelkasten.Version where
+      version = $(git describe --long --always)
+      EOF
+      '';
     } // source-overrides;
     overrides = self: super: with pkgs.haskell.lib; {
       # We must add neuron-search as a runtime dependency to the 'neuron'
