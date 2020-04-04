@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
@@ -10,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten
   ( generateSite,
@@ -37,10 +37,10 @@ import qualified Rib
 import qualified Rib.App
 import qualified System.Directory as Directory
 import qualified System.Exit as Exit
-import qualified System.IO as IO
 import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
-import System.Posix.Process
+import qualified System.IO as IO
 import qualified System.Posix.Env as Env
+import System.Posix.Process
 import System.Which
 import qualified Text.URI as URI
 
@@ -54,8 +54,8 @@ data App
       }
   deriving (Eq, Show)
 
-data NewCommand = NewCommand { title :: Text, edit :: Bool }
-    deriving (Eq, Show)
+data NewCommand = NewCommand {title :: Text, edit :: Bool}
+  deriving (Eq, Show)
 
 data Command
   = -- | Create a new zettel file
@@ -84,10 +84,8 @@ commandParser =
           ]
     newCommand = do
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created file in $EDITOR")
-
       title <- argument str (metavar "TITLE" <> help "Title of the new Zettel")
-
-      return (New NewCommand{..})
+      return (New NewCommand {..})
     queryCommand =
       fmap Query $
         (many (Z.ByTag <$> option str (long "tag" <> short 't')))
@@ -161,7 +159,7 @@ generateSite writeHtmlRoute' zettelsPat = do
 -- | Create a new zettel file and return its slug
 -- TODO: refactor this
 newZettelFile :: Path b Dir -> NewCommand -> IO ()
-newZettelFile inputDir NewCommand{..} = do
+newZettelFile inputDir NewCommand {..} = do
   zId <- Z.zettelNextIdForToday inputDir
   zettelFileName <- parseRelFile $ toString $ Z.zettelIDSourceFileName zId
   let srcPath = inputDir </> zettelFileName
@@ -170,26 +168,18 @@ newZettelFile inputDir NewCommand{..} = do
       fail $ "File already exists: " <> show srcPath
     False -> do
       writeFile (toFilePath srcPath) $ "---\ntitle: " <> toString title <> "\n---\n\n"
-
       let path = toFilePath srcPath
-
       if edit
         then do
           maybeEditor <- Env.getEnv "EDITOR"
-
           editor <- case maybeEditor of
             Nothing -> do
               IO.hPutStrLn IO.stderr "Set the EDITOR environment variable"
-
               IO.hPutStrLn IO.stderr ""
-
               putStrLn path
-
               Exit.exitFailure
-
             Just editor -> do
               return editor
-
-          executeFile editor True [ path ] Nothing
+          executeFile editor True [path] Nothing
         else do
           putStrLn path
