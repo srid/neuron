@@ -24,8 +24,7 @@ import Relude
 import qualified Rib
 
 makeHaskellTypes
-  [ SingleConstructor "Config" "Config" "./src-dhall/Config/Type.dhall",
-    SingleConstructor "Neuron" "Neuron" "./src-dhall/Neuron.dhall"
+  [ SingleConstructor "Config" "Config" "./src-dhall/Config/Type.dhall"
   ]
 
 deriving instance Generic Config
