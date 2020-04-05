@@ -17,6 +17,7 @@ module Neuron.Zettelkasten
     run,
     runWith,
     newZettelFile,
+    neuronVersion,
   )
 where
 
@@ -96,6 +97,10 @@ commandParser =
     mkURIMust =
       either (error . toText . displayException) id . URI.mkURI
 
+neuronVersion :: Text
+neuronVersion =
+  toText $ concat [showVersion version, " (", Version.version, ")"]
+
 run :: Action () -> IO ()
 run act =
   runWith act =<< execParser opts
@@ -106,7 +111,7 @@ run act =
         (fullDesc <> progDesc "Zettelkasten based on Rib")
     versionOption =
       infoOption
-        (concat [showVersion version, " (", Version.version, ")"])
+        (toString neuronVersion)
         (long "version" <> help "Show version")
 
 runWith :: Action () -> App -> IO ()

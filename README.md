@@ -34,3 +34,11 @@ bin/run ./guide rib serve
 ```
 
 This command will also automatically recompile and restart when you change any of the Haskell source files.
+
+### Running tests
+
+Unit tests can be run via ghcid as follows:
+
+```
+bin/test
+```
