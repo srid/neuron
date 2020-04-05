@@ -7,41 +7,45 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Zettelkasten config
 module Neuron.Zettelkasten.Config where
 
-import Development.Shake (Action)
-import Dhall
+import Data.FileEmbed (embedFile)
+import Development.Shake (Action, readFile')
+import Dhall (FromDhall)
+import qualified Dhall
 import Dhall.TH
 import Path
 import Path.IO (doesFileExist)
 import Relude
 import qualified Rib
-import qualified Rib.Parser.Dhall as Dhall
 
 makeHaskellTypes
-  [ SingleConstructor "Config" "Config" "./src-dhall/Neuron.dhall"
+  [ SingleConstructor "Config" "Config" "./src-dhall/Config/Type.dhall"
   ]
 
 deriving instance Generic Config
 
 deriving instance FromDhall Config
 
+defaultConfig :: ByteString
+defaultConfig = $(embedFile "./src-dhall/Config/Default.dhall")
+
 getConfig :: Action Config
 getConfig = do
   inputDir <- Rib.ribInputDir
-  doesFileExist (inputDir </> configPath) >>= \case
-    True -> Dhall.parse [] configPath
-    False -> pure defaultConfig
+  let configPath = inputDir </> configFile
+  configVal :: Text <- doesFileExist configPath >>= \case
+    True -> do
+      userConfig <- fmap toText $ readFile' $ toFilePath configPath
+      -- Dhall's combine operator (`//`) allows us to merge two records,
+      -- effectively merging the record with defaults with the user record.
+      pure $ decodeUtf8 defaultConfig <> " // " <> userConfig
+    False ->
+      pure $ decodeUtf8 @Text defaultConfig
+  liftIO $ Dhall.detailed $ Dhall.input Dhall.auto configVal
   where
-    configPath = [relfile|neuron.dhall|]
-    defaultConfig :: Config
-    defaultConfig =
-      Config
-        { siteTitle = "Neuron Zettelkasten",
-          author = mempty,
-          siteBaseUrl = mempty,
-          editUrl = mempty
-        }
+    configFile = [relfile|neuron.dhall|]
