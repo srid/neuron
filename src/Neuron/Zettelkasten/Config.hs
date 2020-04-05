@@ -7,22 +7,19 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Zettelkasten config
 module Neuron.Zettelkasten.Config where
 
+import Data.FileEmbed (embedFile)
 import Development.Shake (Action, readFile')
 import Dhall (FromDhall)
 import qualified Dhall
-import qualified Dhall.Context
-import Dhall.Import (load)
-import Dhall.Parser (exprFromText)
 import Dhall.TH
-import GHC.Stack
-import qualified Lens.Family as Lens
 import Path
-import Path.IO (doesFileExist, withCurrentDir)
+import Path.IO (doesFileExist)
 import Relude
 import qualified Rib
 
@@ -35,32 +32,21 @@ deriving instance Generic Config
 
 deriving instance FromDhall Config
 
-getConfig :: HasCallStack => Action Config
+defaultConfig :: ByteString
+defaultConfig = $(embedFile "./src-dhall/Config/Default.dhall")
+
+getConfig :: Action Config
 getConfig = do
   inputDir <- Rib.ribInputDir
   let configPath = inputDir </> configFile
-  doesFileExist configPath >>= \case
+  configVal :: Text <- doesFileExist configPath >>= \case
     True -> do
-      config <- readFile' $ toFilePath configPath
-      -- FIXME: Can't access the filesystem at runtime (outside of src tree)
-      expr <- liftIO $ withCurrentDir [reldir|src-dhall|] $ do
-        load =<< fmap (either (error . show) id . exprFromText "Neuron.dhall" . toText) (readFile "./Neuron.dhall")
-      let startingContext = transform Dhall.Context.empty
-            where
-              transform = Dhall.Context.insert "Neuron" expr
-      let inputSettings = transform Dhall.defaultInputSettings
-            where
-              transform =
-                Lens.set Dhall.startingContext startingContext
-      liftIO $ Dhall.detailed $ Dhall.inputWithSettings inputSettings Dhall.auto $ toText config
-    False -> pure defaultConfig
+      userConfig <- fmap toText $ readFile' $ toFilePath configPath
+      -- Dhall's combine operator (`//`) allows us to merge two records,
+      -- effectively merging the record with defaults with the user record.
+      pure $ decodeUtf8 defaultConfig <> " // " <> userConfig
+    False ->
+      pure $ decodeUtf8 @Text defaultConfig
+  liftIO $ Dhall.detailed $ Dhall.input Dhall.auto configVal
   where
     configFile = [relfile|neuron.dhall|]
-    defaultConfig :: Config
-    defaultConfig =
-      Config
-        { siteTitle = "Neuron Zettelkasten",
-          author = mempty,
-          siteBaseUrl = mempty,
-          editUrl = mempty
-        }
