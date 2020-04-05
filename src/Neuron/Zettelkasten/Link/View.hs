@@ -32,7 +32,7 @@ linkActionRender store MarkdownLink {..} = \case
     renderZettelLink LinkTheme_Default store zid
   LinkAction_QueryZettels _conn linkTheme q -> do
     toHtmlRaw @Text $ "<!--" <> show q <> "-->"
-    let zettels = reverse $ sortOn zettelIDDate $ matchID <$> runQuery store q
+    let zettels = reverse $ sort $ matchID <$> runQuery store q
     ul_ $ do
       forM_ zettels $ \zid -> do
         li_ $ renderZettelLink linkTheme store zid
