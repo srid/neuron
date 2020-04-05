@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -xe
+nix-shell --run "ghcid -c 'cabal new-repl exe:neuron' -T \":main $*\""

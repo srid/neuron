@@ -20,6 +20,7 @@ common library-common
     containers,
     directory,
     exceptions,
+    gitrev,
     lucid -any,
     optparse-applicative,
     pandoc,
@@ -36,7 +37,7 @@ common library-common
     filepattern,
     filepath,
     algebraic-graphs >= 0.5,
-    dhall,
+    dhall >= 1.30,
     which,
     unix
 
@@ -46,6 +47,7 @@ library
     Neuron.Zettelkasten
     Neuron.Zettelkasten.Route
     Neuron.Zettelkasten.Store
+    Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.View
     Neuron.Zettelkasten.Link

@@ -2,14 +2,34 @@ let
   # To upgrade rib, go to https://github.com/srid/rib/commits/master, select the
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
-  ribRevision = "2b64f56ef18e5a3efc8cfde50b7c28efb89cfbf1";
+  ribRevision = "99d1ac4";
 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
   pkgs = import <nixpkgs> {};
   excludeContent = path: typ: 
     let d = baseNameOf (toString path);
     in !(d == "guide" && typ == "directory");
-  neuronRoot = pkgs.lib.cleanSourceWith { filter = excludeContent; src = gitignoreSource ./.; };
+  projectRoot = ./.;
+  neuronSrc = pkgs.lib.cleanSourceWith { filter = excludeContent; src = gitignoreSource projectRoot; };
+  gitDescribe = pkgs.runCommand "neuron-gitDescribe" 
+    { buildInputs = [ pkgs.git ]; }
+    ''
+      mkdir $out
+      git -C ${projectRoot} describe --long --always --dirty > $out/output
+    '';
+  # Overwrite src/Neuron/Version.hs as git won't be available in the Nix derivation.
+  neuronRoot = pkgs.runCommand "neuron" { buildInputs = [ pkgs.git gitDescribe ]; }
+    ''
+    mkdir $out
+    cp -r -p ${neuronSrc}/* $out/
+    chmod -R u+w $out/
+    GITDESC=`cat ${gitDescribe}/output`
+    cat << EOF > $out/src/Neuron/Version.hs
+    module Neuron.Version where
+    version :: String
+    version = "$GITDESC"
+    EOF
+    '';
 in {
 # Rib library source to use
   rib ? builtins.fetchTarball "https://github.com/srid/rib/archive/${ribRevision}.tar.gz"
@@ -32,7 +52,6 @@ in import rib {
       neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
       which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97.tar.gz";
-      with-utf8 = builtins.fetchTarball "https://github.com/serokell/haskell-with-utf8/archive/v1.0.0.0.tar.gz";
     } // source-overrides;
     overrides = self: super: with pkgs.haskell.lib; {
       # We must add neuron-search as a runtime dependency to the 'neuron'

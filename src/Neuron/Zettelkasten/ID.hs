@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -17,6 +18,7 @@ module Neuron.Zettelkasten.ID
   )
 where
 
+import Data.Aeson (ToJSON)
 import qualified Data.Text as T
 import Data.Time
 import Lucid
@@ -30,7 +32,7 @@ import Text.Printf
 --
 -- Based on https://old.reddit.com/r/Zettelkasten/comments/fa09zw/shorter_zettel_ids/
 newtype ZettelID = ZettelID {unZettelID :: Text}
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, ToJSON)
 
 instance ToHtml ZettelID where
   toHtmlRaw = toHtml

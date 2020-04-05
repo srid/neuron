@@ -1,4 +1,6 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -18,22 +20,30 @@ module Neuron.Zettelkasten
   )
 where
 
+import qualified Data.Aeson.Text as Aeson
 import qualified Data.Map.Strict as Map
+import Data.Version (showVersion)
 import Development.Shake (Action)
+import qualified Neuron.Version as Version
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
+import qualified Neuron.Zettelkasten.Link.Action as Z
+import qualified Neuron.Zettelkasten.Query as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
 import Options.Applicative
 import Path
 import Path.IO
+import Paths_neuron (version)
 import Relude
 import qualified Rib
 import qualified Rib.App
 import qualified System.Directory as Directory
 import System.FilePath (addTrailingPathSeparator, dropTrailingPathSeparator)
+import qualified System.Posix.Env as Env
 import System.Posix.Process
 import System.Which
+import qualified Text.URI as URI
 
 neuronSearchScript :: FilePath
 neuronSearchScript = $(staticWhich "neuron-search")
@@ -45,12 +55,18 @@ data App
       }
   deriving (Eq, Show)
 
+data NewCommand = NewCommand {title :: Text, edit :: Bool}
+  deriving (Eq, Show)
+
 data Command
   = -- | Create a new zettel file
-    New Text
+    New NewCommand
   | -- | Search a zettel by title
     Search
-  | Rib Rib.App.Command
+  | -- | Run a query against the Zettelkasten
+    Query [Z.Query]
+  | -- | Delegate to Rib's command parser
+    Rib Rib.App.Command
   deriving (Eq, Show)
 
 commandParser :: Parser App
@@ -64,12 +80,21 @@ commandParser =
         mconcat
           [ command "new" $ info newCommand $ progDesc "Create a new zettel",
             command "search" $ info searchCommand $ progDesc "Search zettels and print the matching filepath",
-            command "rib" $ fmap Rib $ info Rib.App.commandParser $ progDesc "Call rib"
+            command "query" $ info queryCommand $ progDesc "Run a query against the zettelkasten",
+            command "rib" $ fmap Rib $ info Rib.App.commandParser $ progDesc "Run a rib command"
           ]
-    newCommand =
-      New <$> argument str (metavar "TITLE" <> help "Title of the new Zettel")
+    newCommand = do
+      edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created file in $EDITOR")
+      title <- argument str (metavar "TITLE" <> help "Title of the new Zettel")
+      return (New NewCommand {..})
+    queryCommand =
+      fmap Query $
+        (many (Z.ByTag <$> option str (long "tag" <> short 't')))
+          <|> (Z.queryFromUri . mkURIMust <$> option str (long "uri" <> short 'u'))
     searchCommand =
       pure Search
+    mkURIMust =
+      either (error . toText . displayException) id . URI.mkURI
 
 run :: Action () -> IO ()
 run act =
@@ -77,32 +102,46 @@ run act =
   where
     opts =
       info
-        (commandParser <**> helper)
+        (versionOption <*> commandParser <**> helper)
         (fullDesc <> progDesc "Zettelkasten based on Rib")
+    versionOption =
+      infoOption
+        (concat [showVersion version, " (", Version.version, ")"])
+        (long "version" <> help "Show version")
 
 runWith :: Action () -> App -> IO ()
-runWith act App {..} = do
+runWith ribAction App {..} = do
   notesDirAbs <- Directory.makeAbsolute notesDir
   inputDir <- parseAbsDir notesDirAbs
   outputDir <- directoryAside inputDir ".output"
   case cmd of
-    New tit ->
-      putStrLn =<< newZettelFile inputDir tit
+    New newCommand ->
+      newZettelFile inputDir newCommand
     Search ->
       execScript neuronSearchScript [notesDir]
-    Rib ribCmd -> do
-      -- CD to the parent of notes directory, because Rib API takes only
-      -- relative path
-      withCurrentDir (parent inputDir) $ do
-        inputDirRel <- makeRelativeToCurrentDir inputDir
-        outputDirRel <- makeRelativeToCurrentDir outputDir
-        Rib.App.runWith inputDirRel outputDirRel act ribCmd
+    Query queries -> do
+      runRibOneOffShake inputDir outputDir $ do
+        store <- Z.mkZettelStore =<< Rib.forEvery [[relfile|*.md|]] pure
+        let matches = Z.runQuery store queries
+        putLTextLn $ Aeson.encodeToLazyText $ matches
+    Rib ribCmd ->
+      runRib inputDir outputDir ribCmd ribAction
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
       -- here, such that the new process replaces the current one. fzf won't work
       -- otherwise.
       void $ executeFile scriptPath False args Nothing
+    -- Run an one-off shake action through rib
+    runRibOneOffShake inputDir outputDir =
+      runRib inputDir outputDir Rib.App.OneOff
+    runRib inputDir outputDir ribCmd act =
+      -- CD to the parent of notes directory, because Rib API takes only
+      -- relative path
+      withCurrentDir (parent inputDir) $ do
+        inputDirRel <- makeRelativeToCurrentDir inputDir
+        outputDirRel <- makeRelativeToCurrentDir outputDir
+        Rib.App.runWith inputDirRel outputDirRel act ribCmd
     directoryAside :: Path Abs Dir -> String -> IO (Path Abs Dir)
     directoryAside fp suffix = do
       let baseName = dropTrailingPathSeparator $ toFilePath $ dirname fp
@@ -124,8 +163,8 @@ generateSite writeHtmlRoute' zettelsPat = do
 
 -- | Create a new zettel file and return its slug
 -- TODO: refactor this
-newZettelFile :: Path b Dir -> Text -> IO String
-newZettelFile inputDir ztitle = do
+newZettelFile :: Path b Dir -> NewCommand -> IO ()
+newZettelFile inputDir NewCommand {..} = do
   zId <- Z.zettelNextIdForToday inputDir
   zettelFileName <- parseRelFile $ toString $ Z.zettelIDSourceFileName zId
   let srcPath = inputDir </> zettelFileName
@@ -133,6 +172,18 @@ newZettelFile inputDir ztitle = do
     True ->
       fail $ "File already exists: " <> show srcPath
     False -> do
-      writeFile (toFilePath srcPath) $ "---\ntitle: " <> toString ztitle <> "\n---\n\n"
-      pure $ toFilePath srcPath
+      writeFile (toFilePath srcPath) $ "---\ntitle: " <> toString title <> "\n---\n\n"
+      let path = toFilePath srcPath
+      putStrLn path
+      when edit $ do
+        getEnvNonEmpty "EDITOR" >>= \case
+          Nothing -> do
+            die "\nCan't open file; you must set the EDITOR environment variable"
+          Just editor -> do
+            executeFile editor True [path] Nothing
   where
+    getEnvNonEmpty name =
+      Env.getEnv name >>= \case
+        Nothing -> pure Nothing
+        Just "" -> pure Nothing
+        Just v -> pure $ Just v
