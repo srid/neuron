@@ -1,13 +1,27 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Neuron version
---
--- This module is loaded in ghcid and cabal new-repl. However, nix-build will
--- have it overwritten by the then `git describe` (see default.nix).
 module Neuron.Version where
 
-import Data.Bool (bool)
-import Development.GitRev (gitDescribe, gitDirty)
+import qualified Data.Text as T
+import Data.Version (parseVersion, showVersion)
+import qualified Neuron.Version.RepoVersion as RepoVersion
+import Paths_neuron (version)
+import Relude
+import Text.ParserCombinators.ReadP (readP_to_S)
 
-version :: String
-version = $(gitDescribe) <> bool "" "-dirty" $(gitDirty)
+neuronVersion :: Text
+neuronVersion = toText $ showVersion version
+
+neuronVersionFull :: Text
+neuronVersionFull =
+  T.concat [neuronVersion, " (", RepoVersion.version, ")"]
+
+-- | Check if neuronVersion is older than the given version
+olderThan :: Text -> Bool
+olderThan s =
+  case reverse (readP_to_S parseVersion (toString s)) of
+    (v2, _) : _ -> version < v2
+    x -> error $ "Version parse error: " <> show x

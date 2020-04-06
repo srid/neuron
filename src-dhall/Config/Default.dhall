@@ -8,4 +8,6 @@
     None Text
 , mathJaxSupport =
     True
+, minVersion =
+    "0.1"
 }

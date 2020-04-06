@@ -8,4 +8,6 @@
     Optional Text
 , mathJaxSupport :
     Bool
+, minVersion :
+    Text
 }

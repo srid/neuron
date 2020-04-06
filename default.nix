@@ -24,9 +24,12 @@ let
     cp -r -p ${neuronSrc}/* $out/
     chmod -R u+w $out/
     GITDESC=`cat ${gitDescribe}/output`
-    cat << EOF > $out/src/Neuron/Version.hs
-    module Neuron.Version where
-    version :: String
+    cat << EOF > $out/src/Neuron/Version/RepoVersion.hs
+    {-# LANGUAGE OverloadedStrings #-}
+    {-# LANGUAGE NoImplicitPrelude #-}
+    module Neuron.Version.RepoVersion (version) where
+    import Relude
+    version :: Text
     version = "$GITDESC"
     EOF
     '';
