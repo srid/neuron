@@ -17,13 +17,11 @@ module Neuron.Zettelkasten
     run,
     runWith,
     newZettelFile,
-    neuronVersion,
   )
 where
 
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Map.Strict as Map
-import Data.Version (showVersion)
 import Development.Shake (Action)
 import qualified Neuron.Version as Version
 import qualified Neuron.Zettelkasten.Graph as Z
@@ -35,7 +33,6 @@ import qualified Neuron.Zettelkasten.Store as Z
 import Options.Applicative
 import Path
 import Path.IO
-import Paths_neuron (version)
 import Relude
 import qualified Rib
 import qualified Rib.App
@@ -97,10 +94,6 @@ commandParser =
     mkURIMust =
       either (error . toText . displayException) id . URI.mkURI
 
-neuronVersion :: Text
-neuronVersion =
-  toText $ concat [showVersion version, " (", Version.version, ")"]
-
 run :: Action () -> IO ()
 run act =
   runWith act =<< execParser opts
@@ -111,7 +104,7 @@ run act =
         (fullDesc <> progDesc "Zettelkasten based on Rib")
     versionOption =
       infoOption
-        (toString neuronVersion)
+        (toString Version.neuronVersionFull)
         (long "version" <> help "Show version")
 
 runWith :: Action () -> App -> IO ()

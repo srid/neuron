@@ -10,11 +10,12 @@ module Main where
 
 import Clay hiding (s, style, type_)
 import qualified Clay as C
-import Development.Shake
-import Lucid
 -- TODO: Don't expose every module
 
+import Development.Shake
+import Lucid
 import Main.Utf8
+import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Zettelkasten as Z
 import qualified Neuron.Zettelkasten.Config as Z
 import qualified Neuron.Zettelkasten.Route as Z
@@ -31,6 +32,8 @@ generateSite :: Action ()
 generateSite = do
   Rib.buildStaticFiles [[relfile|static/**|]]
   config <- Z.getConfig
+  when (olderThan $ Z.minVersion config) $ do
+    error $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
   let writeHtmlRoute :: Z.Route s g () -> (s, g) -> Action ()
       writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage config r
   void $ Z.generateSite writeHtmlRoute [[relfile|*.md|]]
