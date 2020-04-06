@@ -26,7 +26,9 @@ type ZettelStore = Map ZettelID Zettel
 mkZettelStore :: [Path Rel File] -> Action ZettelStore
 mkZettelStore files = do
   zettels <- forM files $ \file -> do
-    doc <- RibMMark.parse file
+    -- Extensions are computed and applied during rendering, not here.
+    let mmarkExts = []
+    doc <- RibMMark.parseWith mmarkExts file
     let zid = mkZettelID file
         meta = Meta.getMeta doc
         title = maybe ("No title for " <> show file) Meta.title meta

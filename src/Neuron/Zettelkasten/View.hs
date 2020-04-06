@@ -27,6 +27,7 @@ import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)
 import Neuron.Zettelkasten.Link (linkActionExt)
 import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
+import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
@@ -34,7 +35,7 @@ import Relude
 import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
 import qualified Rib.Parser.MMark as MMark
-import Text.MMark (useExtension)
+import Text.MMark (useExtensions)
 import Text.Pandoc.Highlighting (styleToCss, tango)
 
 renderRouteHead :: Monad m => Config -> Route store graph a -> store -> HtmlT m ()
@@ -88,12 +89,13 @@ renderIndex (store, graph) = do
       n -> "are " <> show n <> " " <> nounPlural
 
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
-renderZettel Config {..} (store, graph) zid = do
+renderZettel config@Config {..} (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segment"] $ do
       h1_ [class_ "header"] $ toHtml zettelTitle
-      MMark.render $ useExtension (linkActionExt store) zettelContent
+      let mmarkExts = neuronMMarkExts config
+      MMark.render $ useExtensions (linkActionExt store : mmarkExts) zettelContent
     div_ [class_ "ui inverted teal top attached segment connections"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
