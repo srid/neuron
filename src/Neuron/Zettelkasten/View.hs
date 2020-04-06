@@ -28,6 +28,7 @@ import Neuron.Zettelkasten.Link (linkActionExt)
 import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
+import Neuron.Zettelkasten.Meta
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
@@ -91,12 +92,14 @@ renderIndex (store, graph) = do
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel config@Config {..} (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
+      mTags = getMeta zettelContent >>= tags
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segment"] $ do
       h1_ [class_ "header"] $ toHtml zettelTitle
       let mmarkExts = neuronMMarkExts config
       MMark.render $ useExtensions (linkActionExt store : mmarkExts) zettelContent
     div_ [class_ "ui inverted teal top attached connections segment"] $ do
+      renderTags mTags
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
@@ -124,6 +127,14 @@ renderZettel config@Config {..} (store, graph) zid = do
           a_ [href_ "https://github.com/srid/neuron"] "Neuron"
           " "
           code_ $ toHtml @Text neuronVersion
+
+renderTags :: Monad m => Maybe [Text] -> HtmlT m ()
+renderTags = maybe (pure ()) $ \ tags -> do
+  div_ [] $ do
+    div_ [class_ "ui header"] "Tags"
+    ul_ [class_ "tags"] $ do
+      forM_ tags $ \ tag -> do
+        li_ [class_ "tag"] $ toHtml @Text tag
 
 -- | Font awesome element
 fa :: Monad m => Text -> HtmlT m ()
@@ -209,6 +220,21 @@ style = do
     codeStyle
     blockquoteStyle
     kbd ? mozillaKbdStyle
+    "ul.tags" ? do
+      C.display C.displayTable
+      C.paddingLeft (px 0)
+      -- C.fontWeight C.bold
+      "li.tag" ? do
+        C.display C.block
+        C.position C.relative
+        C.float C.floatLeft
+        C.margin (px 0) (em 0.2) (em 0.5) (em 0.2)
+        sym2 C.padding (em 0.3) (em 0.8)
+        C.color "#ffffff"
+        C.fontFamily ["SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [monospace]
+        C.fontSize (em 0.8)
+        C.backgroundColor "#2b2c2d"
+        sym C.borderRadius (px 3)
   "div.connections" ? do
     "a" ? do
       C.important $ color white
