@@ -39,11 +39,15 @@ renderPage :: Z.Config -> Z.Route s g () -> (s, g) -> Html ()
 renderPage config r val = html_ [lang_ "en"] $ do
   head_ $ do
     Z.renderRouteHead config r (fst val)
-    stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
-    stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
-    style_ [type_ "text/css"] $ C.render style
-    googleFonts $ [headerFont, bodyFont, monoFont]
-    with (script_ mempty) [id_ "MathJax-script", src_ "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", async_ ""]
+    case r of
+      Z.Route_IndexRedirect ->
+        mempty
+      _ -> do
+        stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
+        stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
+        style_ [type_ "text/css"] $ C.render style
+        googleFonts $ [headerFont, bodyFont, monoFont]
+        with (script_ mempty) [id_ "MathJax-script", src_ "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", async_ ""]
   body_ $ do
     div_ [class_ "ui text container", id_ "thesite"] $ do
       Z.renderRouteBody config r val

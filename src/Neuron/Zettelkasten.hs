@@ -162,8 +162,13 @@ generateSite writeHtmlRoute' zettelsPat = do
   zettelStore <- Z.mkZettelStore =<< Rib.forEvery zettelsPat pure
   let zettelGraph = Z.mkZettelGraph zettelStore
   let writeHtmlRoute r = writeHtmlRoute' r (zettelStore, zettelGraph)
+  -- Generate HTML for every zettel
   (writeHtmlRoute . Z.Route_Zettel) `mapM_` Map.keys zettelStore
-  writeHtmlRoute Z.Route_Index
+  -- Generate the z-index
+  writeHtmlRoute Z.Route_ZIndex
+  -- Write index.html, unless a index.md zettel exists
+  when (isNothing $ Map.lookup (Z.parseZettelID "index") zettelStore) $
+    writeHtmlRoute Z.Route_IndexRedirect
   pure (zettelStore, zettelGraph)
 
 -- | Create a new zettel file and return its slug

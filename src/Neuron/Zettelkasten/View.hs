@@ -43,16 +43,22 @@ renderRouteHead config r val = do
   meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
   title_ $ toHtml $ routeTitle config val r
   link_ [rel_ "shortcut icon", href_ "https://raw.githubusercontent.com/srid/neuron/master/assets/logo.ico"]
-  toHtml $ routeOpenGraph config val r
-  style_ [type_ "text/css"] $ styleToCss tango
+  case r of
+    Route_IndexRedirect ->
+      mempty
+    _ -> do
+      toHtml $ routeOpenGraph config val r
+      style_ [type_ "text/css"] $ styleToCss tango
 
 renderRouteBody :: Monad m => Config -> Route store graph a -> (store, graph) -> HtmlT m ()
 renderRouteBody config r val = do
   case r of
-    Route_Index ->
+    Route_ZIndex ->
       renderIndex val
     Route_Zettel zid ->
       renderZettel config val zid
+    Route_IndexRedirect ->
+      meta_ [httpEquiv_ "Refresh", content_ $ "0; url=" <> Rib.routeUrlRel Route_ZIndex]
 
 renderIndex :: Monad m => (ZettelStore, ZettelGraph) -> HtmlT m ()
 renderIndex (store, graph) = do
@@ -107,7 +113,7 @@ renderZettel Config {..} (store, graph) zid = do
           whenJust editUrl $ \urlPrefix ->
             a_ [href_ $ urlPrefix <> zettelIDSourceFileName zid, title_ "Edit this Zettel"] $ fa "fas fa-edit"
         div_ [class_ "center aligned column"] $ do
-          a_ [href_ (Rib.routeUrlRel Route_Index), title_ "All Zettels (z-index)"] $
+          a_ [href_ (Rib.routeUrlRel Route_ZIndex), title_ "All Zettels (z-index)"] $
             fa "fas fa-tree"
     div_ [class_ "ui bottom attached basic segment"] $ do
       div_ [class_ "ui one column grid footer-version"] $ do
