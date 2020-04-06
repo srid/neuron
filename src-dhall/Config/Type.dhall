@@ -6,4 +6,6 @@
     Optional Text
 , editUrl :
     Optional Text
+, mathJaxSupport :
+    Bool
 }

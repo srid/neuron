@@ -6,4 +6,6 @@
     None Text
 , editUrl =
     None Text
+, mathJaxSupport =
+    True
 }

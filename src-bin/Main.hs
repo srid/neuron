@@ -47,7 +47,8 @@ renderPage config r val = html_ [lang_ "en"] $ do
         stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
         style_ [type_ "text/css"] $ C.render style
         googleFonts $ [headerFont, bodyFont, monoFont]
-        with (script_ mempty) [id_ "MathJax-script", src_ "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", async_ ""]
+        when (Z.mathJaxSupport config) $
+          with (script_ mempty) [id_ "MathJax-script", src_ "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", async_ ""]
   body_ $ do
     div_ [class_ "ui text container", id_ "thesite"] $ do
       Z.renderRouteBody config r val
