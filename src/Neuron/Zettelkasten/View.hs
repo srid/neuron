@@ -28,6 +28,7 @@ import Neuron.Zettelkasten.Link (linkActionExt)
 import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
+import Neuron.Zettelkasten.Meta
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Type
@@ -91,9 +92,11 @@ renderIndex (store, graph) = do
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel config@Config {..} (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
+      zettelTags = getMeta zettelContent >>= tags
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segment"] $ do
       h1_ [class_ "header"] $ toHtml zettelTitle
+      renderTags `mapM_` zettelTags
       let mmarkExts = neuronMMarkExts config
       MMark.render $ useExtensions (linkActionExt store : mmarkExts) zettelContent
     div_ [class_ "ui inverted teal top attached connections segment"] $ do
@@ -124,6 +127,13 @@ renderZettel config@Config {..} (store, graph) zid = do
           a_ [href_ "https://github.com/srid/neuron"] "Neuron"
           " "
           code_ $ toHtml @Text neuronVersionFull
+
+renderTags :: Monad m => [Text] -> HtmlT m ()
+renderTags tags = do
+  div_ [class_ "ui tiny labels"] $ do
+    forM_ tags $ \tag -> do
+      div_ [class_ "ui lightgrey label"] $ toHtml @Text tag
+  div_ [class_ "ui divider"] $ mempty
 
 -- | Font awesome element
 fa :: Monad m => Text -> HtmlT m ()
