@@ -110,7 +110,7 @@ renderZettel config@Config {..} (store, graph) zid = do
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
       div_ [class_ "ui three column grid"] $ do
         div_ [class_ "center aligned column"] $ do
-          a_ [href_ "/", title_ "/"] $ fa "fas fa-home"
+          a_ [href_ ".", title_ "/"] $ fa "fas fa-home"
         div_ [class_ "center aligned column"] $ do
           whenJust editUrl $ \urlPrefix ->
             a_ [href_ $ urlPrefix <> zettelIDSourceFileName zid, title_ "Edit this Zettel"] $ fa "fas fa-edit"
