@@ -92,11 +92,11 @@ renderIndex (store, graph) = do
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel config@Config {..} (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
-      mTags = getMeta zettelContent >>= tags
+      zettelTags = getMeta zettelContent >>= tags
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segment"] $ do
       h1_ [class_ "header"] $ toHtml zettelTitle
-      renderTags mTags
+      renderTags `mapM_` zettelTags
       let mmarkExts = neuronMMarkExts config
       MMark.render $ useExtensions (linkActionExt store : mmarkExts) zettelContent
     div_ [class_ "ui inverted teal top attached connections segment"] $ do
@@ -128,13 +128,12 @@ renderZettel config@Config {..} (store, graph) zid = do
           " "
           code_ $ toHtml @Text neuronVersion
 
-renderTags :: Monad m => Maybe [Text] -> HtmlT m ()
-renderTags = maybe (pure ()) $ \ tags -> do
+renderTags :: Monad m => [Text] -> HtmlT m ()
+renderTags tags = do
   div_ [class_ "ui tiny labels"] $ do
-    forM_ tags $ \ tag -> do
+    forM_ tags $ \tag -> do
       div_ [class_ "ui lightgrey label"] $ toHtml @Text tag
   div_ [class_ "ui divider"] $ mempty
-
 
 -- | Font awesome element
 fa :: Monad m => Text -> HtmlT m ()
