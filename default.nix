@@ -31,11 +31,11 @@ let
     { buildInputs = [ pkgs.git ]; }
     ''
       mkdir $out
-      git -C ${projectRoot} describe --long --always --dirty > $out/output
+      git -C ${projectRoot} describe --long --always --dirty | tr -d '\n' > $out/output
     '';
   neuronRev = if gitRev == "" then builtins.readFile (gitDescribe + /output) else gitRev;
   # Overwrite src/Neuron/Version.hs as git won't be available in the Nix derivation.
-  neuronRoot = pkgs.runCommand "neuron" { buildInputs = [ ]; }
+  neuronRoot = pkgs.runCommand "neuron" { buildInputs = [ neuronSrc ]; }
     ''
     mkdir $out
     cp -r -p ${neuronSrc}/* $out/
@@ -51,7 +51,8 @@ let
     '';
 
 in import rib { 
-    inherit root name additional-packages; 
+    inherit name additional-packages; 
+    root = neuronRoot;
     source-overrides = {
       neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
