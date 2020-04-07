@@ -220,8 +220,6 @@ style = do
     codeStyle
     blockquoteStyle
     kbd ? mozillaKbdStyle
-  -- ".tag" ? do
-  --   sym C.borderRadius (px 3)
   "div.connections" ? do
     "a" ? do
       C.important $ color white
