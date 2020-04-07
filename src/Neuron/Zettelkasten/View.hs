@@ -231,7 +231,6 @@ style = do
         C.margin (px 0) (em 0.2) (em 0.5) (em 0.2)
         sym2 C.padding (em 0.3) (em 0.8)
         C.color "#ffffff"
-        C.fontFamily ["SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [monospace]
         C.fontSize (em 0.8)
         C.backgroundColor "#2b2c2d"
         sym C.borderRadius (px 3)
