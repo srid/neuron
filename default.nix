@@ -11,6 +11,7 @@ in {
 , root ? projectRoot
 # Cabal project name
 , name ? "neuron"
+, gitRev ? ""
 , source-overrides ? {}
 , ...
 }:
@@ -32,20 +33,20 @@ let
       mkdir $out
       git -C ${projectRoot} describe --long --always --dirty > $out/output
     '';
+  neuronRev = if gitRev == "" then builtins.readFile (gitDescribe + /output) else gitRev;
   # Overwrite src/Neuron/Version.hs as git won't be available in the Nix derivation.
-  neuronRoot = pkgs.runCommand "neuron" { buildInputs = [ pkgs.git gitDescribe ]; }
+  neuronRoot = pkgs.runCommand "neuron" { buildInputs = [ ]; }
     ''
     mkdir $out
     cp -r -p ${neuronSrc}/* $out/
     chmod -R u+w $out/
-    GITDESC=`cat ${gitDescribe}/output`
     cat << EOF > $out/src/Neuron/Version/RepoVersion.hs
     {-# LANGUAGE OverloadedStrings #-}
     {-# LANGUAGE NoImplicitPrelude #-}
     module Neuron.Version.RepoVersion (version) where
     import Relude
     version :: Text
-    version = "$GITDESC"
+    version = "${neuronRev}"
     EOF
     '';
 
