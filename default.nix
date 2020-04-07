@@ -3,13 +3,28 @@ let
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
   ribRevision = "a5171e7";
+  projectRoot = ./.;
+in {
+# Rib library source to use
+  rib ? builtins.fetchTarball "https://github.com/srid/rib/archive/${ribRevision}.tar.gz"
+# Cabal project root
+, root ? projectRoot
+# Cabal project name
+, name ? "neuron"
+, source-overrides ? {}
+, ...
+}:
 
+let 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
   pkgs = import <nixpkgs> {};
+  neuronSearchScript = pkgs.callPackage ./src-script/neuron-search { inherit pkgs; };
+  additional-packages = pkgs:
+  [ neuronSearchScript
+  ];
   excludeContent = path: typ: 
     let d = baseNameOf (toString path);
     in !(d == "guide" && typ == "directory");
-  projectRoot = ./.;
   neuronSrc = pkgs.lib.cleanSourceWith { filter = excludeContent; src = gitignoreSource projectRoot; };
   gitDescribe = pkgs.runCommand "neuron-gitDescribe" 
     { buildInputs = [ pkgs.git ]; }
@@ -33,22 +48,7 @@ let
     version = "$GITDESC"
     EOF
     '';
-in {
-# Rib library source to use
-  rib ? builtins.fetchTarball "https://github.com/srid/rib/archive/${ribRevision}.tar.gz"
-# Cabal project root
-, root ? neuronRoot
-# Cabal project name
-, name ? "neuron"
-, source-overrides ? {}
-, ...
-}:
 
-let 
-  neuronSearchScript = pkgs.callPackage ./src-script/neuron-search { inherit pkgs; };
-  additional-packages = pkgs:
-  [ neuronSearchScript
-  ];
 in import rib { 
     inherit root name additional-packages; 
     source-overrides = {
