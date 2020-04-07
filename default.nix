@@ -3,54 +3,56 @@ let
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
   ribRevision = "a5171e7";
+  projectRoot = ./.;
+in {
+# Rib library source to use
+  rib ? builtins.fetchTarball "https://github.com/srid/rib/archive/${ribRevision}.tar.gz"
+# Cabal project root
+, root ? projectRoot
+# Cabal project name
+, name ? "neuron"
+, gitRev ? ""
+, source-overrides ? {}
+, ...
+}:
 
+let 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
   pkgs = import <nixpkgs> {};
+  neuronSearchScript = pkgs.callPackage ./src-script/neuron-search { inherit pkgs; };
+  additional-packages = pkgs:
+  [ neuronSearchScript
+  ];
   excludeContent = path: typ: 
     let d = baseNameOf (toString path);
     in !(d == "guide" && typ == "directory");
-  projectRoot = ./.;
   neuronSrc = pkgs.lib.cleanSourceWith { filter = excludeContent; src = gitignoreSource projectRoot; };
   gitDescribe = pkgs.runCommand "neuron-gitDescribe" 
     { buildInputs = [ pkgs.git ]; }
     ''
       mkdir $out
-      git -C ${projectRoot} describe --long --always --dirty > $out/output
+      git -C ${projectRoot} describe --long --always --dirty | tr -d '\n' > $out/output
     '';
+  neuronRev = if gitRev == "" then builtins.readFile (gitDescribe + /output) else gitRev;
   # Overwrite src/Neuron/Version.hs as git won't be available in the Nix derivation.
-  neuronRoot = pkgs.runCommand "neuron" { buildInputs = [ pkgs.git gitDescribe ]; }
+  neuronRoot = pkgs.runCommand "neuron" { buildInputs = [ neuronSrc ]; }
     ''
     mkdir $out
     cp -r -p ${neuronSrc}/* $out/
     chmod -R u+w $out/
-    GITDESC=`cat ${gitDescribe}/output`
     cat << EOF > $out/src/Neuron/Version/RepoVersion.hs
     {-# LANGUAGE OverloadedStrings #-}
     {-# LANGUAGE NoImplicitPrelude #-}
     module Neuron.Version.RepoVersion (version) where
     import Relude
     version :: Text
-    version = "$GITDESC"
+    version = "${neuronRev}"
     EOF
     '';
-in {
-# Rib library source to use
-  rib ? builtins.fetchTarball "https://github.com/srid/rib/archive/${ribRevision}.tar.gz"
-# Cabal project root
-, root ? neuronRoot
-# Cabal project name
-, name ? "neuron"
-, source-overrides ? {}
-, ...
-}:
 
-let 
-  neuronSearchScript = pkgs.callPackage ./src-script/neuron-search { inherit pkgs; };
-  additional-packages = pkgs:
-  [ neuronSearchScript
-  ];
 in import rib { 
-    inherit root name additional-packages; 
+    inherit name additional-packages; 
+    root = neuronRoot;
     source-overrides = {
       neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
