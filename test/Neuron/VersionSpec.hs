@@ -22,13 +22,13 @@ spec = do
       pending
   describe "Version comparison" $ do
     it "must compare simple versions" $ do
-      "0.2" `shouldSatisfy` olderThan
-      "0.1" `shouldNotSatisfy` olderThan -- This is current version
-      "0.0" `shouldNotSatisfy` olderThan
+      "0.3" `shouldSatisfy` olderThan
+      "0.2" `shouldNotSatisfy` olderThan -- This is current version
+      "0.1" `shouldNotSatisfy` olderThan
     it "must compare full versions" $ do
-      "0.2.1.2" `shouldSatisfy` olderThan
-      "0.2.3" `shouldSatisfy` olderThan
-      "0.1.0.0" `shouldNotSatisfy` olderThan -- This is current version
-      "0.0.1.0" `shouldNotSatisfy` olderThan
+      "0.3.1.2" `shouldSatisfy` olderThan
+      "0.3.3" `shouldSatisfy` olderThan
+      "0.2.0.0" `shouldNotSatisfy` olderThan -- This is current version
+      "0.1.1.0" `shouldNotSatisfy` olderThan
     it "must compare within same major version" $ do
-      "0.1.0.2" `shouldSatisfy` olderThan -- 0.1.0.0 is the current version
+      "0.2.0.2" `shouldSatisfy` olderThan -- This is current version
