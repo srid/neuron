@@ -64,6 +64,7 @@ common library-common
 library
   import: library-common
   exposed-modules:
+    Neuron.Version
     Neuron.Zettelkasten
     Neuron.Zettelkasten.Route
     Neuron.Zettelkasten.Store
@@ -78,6 +79,9 @@ library
     Neuron.Zettelkasten.Type
     Neuron.Zettelkasten.Config
     Neuron.Zettelkasten.ID
+  other-modules:
+    Neuron.Version.RepoVersion
+    Paths_neuron
 
 
 executable neuron

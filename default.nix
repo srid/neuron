@@ -8,7 +8,7 @@ in {
 # Rib library source to use
   rib ? builtins.fetchTarball "https://github.com/srid/rib/archive/${ribRevision}.tar.gz"
 # Cabal project root
-, root ? projectRoot
+, root ? ""
 # Cabal project name
 , name ? "neuron"
 , gitRev ? ""
@@ -52,7 +52,7 @@ let
 
 in import rib { 
     inherit name additional-packages; 
-    root = neuronRoot;
+    root = if root == "" then neuronRoot else root;
     source-overrides = {
       neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
