@@ -10,8 +10,11 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Zettelkasten config
-module Neuron.Zettelkasten.Config where
+module Neuron.Zettelkasten.Config
+  ( Config (..),
+    getConfig,
+  )
+where
 
 import Data.FileEmbed (embedFile)
 import Development.Shake (Action, readFile')
@@ -23,6 +26,9 @@ import Path.IO (doesFileExist)
 import Relude
 import qualified Rib
 
+-- | Config type for @neuron.dhall@
+--
+-- See <https://neuron.srid.ca/2011701.html guide> for description of the fields.
 makeHaskellTypes
   [ SingleConstructor "Config" "Config" "./src-dhall/Config/Type.dhall"
   ]
@@ -34,6 +40,7 @@ deriving instance FromDhall Config
 defaultConfig :: ByteString
 defaultConfig = $(embedFile "./src-dhall/Config/Default.dhall")
 
+-- | Read the optional @neuron.dhall@ config file from the zettelksaten
 getConfig :: Action Config
 getConfig = do
   inputDir <- Rib.ribInputDir

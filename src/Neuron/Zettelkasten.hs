@@ -11,11 +11,19 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- | Main module for using neuron as a library, instead of as a CLI tool.
 module Neuron.Zettelkasten
-  ( generateSite,
+  ( -- * CLI
+    App (..),
+    NewCommand (..),
     commandParser,
     run,
     runWith,
+
+    -- * Rib site generation
+    generateSite,
+
+    -- * Etc
     newZettelFile,
   )
 where
@@ -67,6 +75,7 @@ data Command
     Rib Rib.App.Command
   deriving (Eq, Show)
 
+-- | optparse-applicative parser for neuron CLI
 commandParser :: Parser App
 commandParser =
   App
@@ -164,10 +173,12 @@ generateSite writeHtmlRoute' zettelsPat = do
     writeHtmlRoute Z.Route_IndexRedirect
   pure (zettelStore, zettelGraph)
 
--- | Create a new zettel file and return its slug
--- TODO: refactor this
+-- | Create a new zettel file and open it in editor if requested
+--
+-- As well as print the path to the created file.
 newZettelFile :: Path b Dir -> NewCommand -> IO ()
 newZettelFile inputDir NewCommand {..} = do
+  -- TODO: refactor this function
   zId <- Z.zettelNextIdForToday inputDir
   zettelFileName <- parseRelFile $ toString $ Z.zettelIDSourceFileName zId
   let srcPath = inputDir </> zettelFileName

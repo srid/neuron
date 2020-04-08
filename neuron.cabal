@@ -1,11 +1,25 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 0.1.0.0
+version: 0.2.0.0
 license: BSD-3-Clause
+copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
 author: Sridhar Ratnakumar
 category: Web
+homepage: https://neuron.srid.ca
+bug-reports: https://github.com/srid/neuron/issues
+synopsis:
+  Haskell meets Zettelkasten, for your plain-text delight.
+description:
+  neuron is a system for managing your plain-text Zettelkasten notes.
+extra-source-files:
+  README.md
+  CHANGELOG.md
+
+source-repository head
+    type: git
+    location: https://github.com/srid/neuron
 
 common ghc-common
   ghc-options:
@@ -18,7 +32,7 @@ common library-common
   hs-source-dirs: src 
   default-language: Haskell2010
   build-depends:
-    base,
+    base >=4.7 && <5,
     aeson,
     clay -any,
     containers,

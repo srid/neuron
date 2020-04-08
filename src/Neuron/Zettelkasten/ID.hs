@@ -5,7 +5,6 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Zettel ID
 module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     Connection (..),
@@ -28,7 +27,7 @@ import System.Directory (listDirectory)
 import qualified System.FilePattern as FP
 import Text.Printf
 
--- Short Zettel ID encoding `Day` and a numeric index (on that day).
+-- | Short Zettel ID encoding `Day` and a numeric index (on that day).
 --
 -- Based on https://old.reddit.com/r/Zettelkasten/comments/fa09zw/shorter_zettel_ids/
 newtype ZettelID = ZettelID {unZettelID :: Text}

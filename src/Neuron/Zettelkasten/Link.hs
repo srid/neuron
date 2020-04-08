@@ -21,7 +21,7 @@ import Relude
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Extension, Inline (..))
 
--- | MMark extension to transform `z:/` links in Markdown
+-- | MMark extension to transform @z:/@ links in Markdown
 linkActionExt :: ZettelStore -> Extension
 linkActionExt store =
   Ext.inlineRender $ \f -> \case
