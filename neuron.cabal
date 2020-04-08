@@ -25,7 +25,7 @@ common library-common
   hs-source-dirs: src 
   default-language: Haskell2010
   build-depends:
-    base,
+    base >=4.7 && <5,
     aeson,
     clay -any,
     containers,
