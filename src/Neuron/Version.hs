@@ -2,7 +2,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Neuron version
 module Neuron.Version where
 
 import qualified Data.Text as T
@@ -12,14 +11,16 @@ import Paths_neuron (version)
 import Relude
 import Text.ParserCombinators.ReadP (readP_to_S)
 
+-- | Neuron cabal library version
 neuronVersion :: Text
 neuronVersion = toText $ showVersion version
 
+-- | Neuron full version (cabal library version + git revision)
 neuronVersionFull :: Text
 neuronVersionFull =
   T.concat [neuronVersion, " (", RepoVersion.version, ")"]
 
--- | Check if neuronVersion is older than the given version
+-- | Check if `neuronVersion` is older than the given version
 olderThan :: Text -> Bool
 olderThan s =
   case reverse (readP_to_S parseVersion (toString s)) of

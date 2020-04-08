@@ -8,8 +8,22 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Graph of zettels.
-module Neuron.Zettelkasten.Graph where
+module Neuron.Zettelkasten.Graph
+  ( -- * Graph type
+    ZettelGraph,
+
+    -- * Construction
+    mkZettelGraph,
+
+    -- * Algorithms
+    backlinks,
+    topSort,
+    zettelClusters,
+    dfsForestFrom,
+    dfsForestBackwards,
+    obviateRootUnlessForest,
+  )
+where
 
 import qualified Algebra.Graph.AdjacencyMap as AM
 import qualified Algebra.Graph.AdjacencyMap.Algorithm as Algo
@@ -23,9 +37,10 @@ import Neuron.Zettelkasten.Store (ZettelStore)
 import Neuron.Zettelkasten.Type
 import Relude
 
+-- | The Zettelkasten graph
 type ZettelGraph = LAM.AdjacencyMap [Connection] ZettelID
 
--- | Build the entire Zettel graph from the given list of note files.
+-- | Build the Zettelkasten graph from the given list of note files.
 mkZettelGraph :: ZettelStore -> ZettelGraph
 mkZettelGraph store =
   mkGraphFrom (Map.elems store) zettelID zettelEdges connectionWhitelist
@@ -58,8 +73,8 @@ topSort = Algo.topSort . LAM.skeleton
 
 -- | Get the graph without the "index" zettel.
 -- This is unused, but left for posterity.
-withoutIndex :: ZettelGraph -> ZettelGraph
-withoutIndex = LAM.induce ((/= "index") . unZettelID)
+_withoutIndex :: ZettelGraph -> ZettelGraph
+_withoutIndex = LAM.induce ((/= "index") . unZettelID)
 
 zettelClusters :: ZettelGraph -> [NonEmpty ZettelID]
 zettelClusters = mothers . LAM.skeleton
