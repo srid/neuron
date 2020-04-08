@@ -6,6 +6,10 @@ license: BSD-3-Clause
 maintainer: srid@srid.ca
 author: Sridhar Ratnakumar
 category: Web
+synopsis:
+  Haskell meets Zettelkasten, for your plain-text delight.
+description:
+  neuron is a system for managing your plain-text Zettelkasten notes.
 extra-source-files:
   README.md
   CHANGELOG.md
