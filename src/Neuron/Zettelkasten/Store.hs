@@ -14,27 +14,18 @@ module Neuron.Zettelkasten.Store where
 import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
-import qualified Neuron.Zettelkasten.Meta as Meta
-import Neuron.Zettelkasten.Type
+import Neuron.Zettelkasten.Zettel
 import Path
 import Relude
-import qualified Rib.Parser.MMark as RibMMark
+import Rib (MMark)
 
-type ZettelStore = Map ZettelID Zettel
+type ZettelStore = Map ZettelID (Zettel MMark)
 
 -- | Load all zettel files
 mkZettelStore :: [Path Rel File] -> Action ZettelStore
 mkZettelStore files = do
-  zettels <- forM files $ \file -> do
-    -- Extensions are computed and applied during rendering, not here.
-    let mmarkExts = []
-    doc <- RibMMark.parseWith mmarkExts file
-    let zid = mkZettelID file
-        meta = Meta.getMeta doc
-        title = maybe ("No title for " <> show file) Meta.title meta
-        zettel = Zettel zid title doc
-    pure zettel
+  zettels <- mkZettelFromPath `mapM` files
   pure $ Map.fromList $ zettels <&> zettelID &&& id
 
-lookupStore :: ZettelID -> ZettelStore -> Zettel
+lookupStore :: ZettelID -> ZettelStore -> Zettel MMark
 lookupStore zid = fromMaybe (error $ "No such zettel: " <> unZettelID zid) . Map.lookup zid

@@ -19,6 +19,7 @@ import qualified Data.Set as Set
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
+import Neuron.Zettelkasten.Zettel
 import Relude
 import Text.MMark (MMark, runScanner)
 import qualified Text.MMark.Extension as Ext
@@ -91,7 +92,7 @@ linkActionConnections store MarkdownLink {..} =
       let zid = parseZettelID markdownLinkText
        in [(conn, zid)]
     Just (LinkAction_QueryZettels conn _linkTheme q) ->
-      (conn,) . matchID <$> runQuery store q
+      (conn,) . zettelID <$> runQuery store q
     Nothing ->
       []
 

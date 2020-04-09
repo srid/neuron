@@ -28,10 +28,9 @@ import Neuron.Zettelkasten.Link (linkActionExt)
 import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
-import Neuron.Zettelkasten.Meta
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Type
+import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
@@ -92,14 +91,14 @@ renderIndex (store, graph) = do
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel config@Config {..} (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
-      zettelTags = getMeta zettelContent >>= tags
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segments"] $ do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
         let mmarkExts = neuronMMarkExts config
         MMark.render $ useExtensions (linkActionExt store : mmarkExts) zettelContent
-      (div_ [class_ "ui bottom attached segment"] . renderTags) `mapM_` zettelTags
+      whenNotNull zettelTags $ \_ ->
+        div_ [class_ "ui bottom attached segment"] $ renderTags zettelTags
     div_ [class_ "ui inverted teal top attached connections segment"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do

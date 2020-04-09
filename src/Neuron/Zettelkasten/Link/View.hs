@@ -20,7 +20,7 @@ import Neuron.Zettelkasten.Link.Action
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Route (Route (..))
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Type
+import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
 
@@ -32,7 +32,7 @@ linkActionRender store MarkdownLink {..} = \case
     renderZettelLink LinkTheme_Default store zid
   LinkAction_QueryZettels _conn linkTheme q -> do
     toHtmlRaw @Text $ "<!--" <> show q <> "-->"
-    let zettels = reverse $ sort $ matchID <$> runQuery store q
+    let zettels = reverse $ sort $ zettelID <$> runQuery store q
     ul_ $ do
       forM_ zettels $ \zid -> do
         li_ $ renderZettelLink linkTheme store zid

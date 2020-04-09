@@ -17,7 +17,7 @@ import Neuron.Zettelkasten.Config
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Type
+import Neuron.Zettelkasten.Zettel
 import Path
 import Relude
 import Rib (IsRoute (..))
