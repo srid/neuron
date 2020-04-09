@@ -48,7 +48,7 @@ renderPage config r val = html_ [lang_ "en"] $ do
       _ -> do
         stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
         stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
-        style_ [type_ "text/css"] $ C.render style
+        style_ [type_ "text/css"] $ C.renderWith C.compact [] style
         googleFonts $ [headerFont, bodyFont, monoFont]
         when (Z.mathJaxSupport config) $
           with (script_ mempty) [id_ "MathJax-script", src_ "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", async_ ""]
