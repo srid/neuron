@@ -75,8 +75,10 @@ data Command
     Rib
   deriving (Eq, Show)
 
-mkRibCliConfig :: FilePath -> Rib.Cli.CliConfig
-mkRibCliConfig inputDir =
+mkRibCliConfig :: FilePath -> IO Rib.Cli.CliConfig
+mkRibCliConfig inputDir = do
+  unlessM (doesDirectoryExist inputDir) $ do
+    fail $ "Zettelkasten directory " <> inputDir <> " does not exist."
   let neuronDir = inputDir </> ".neuron"
       outputDir = neuronDir </> "output"
       rebuildAll = True
@@ -85,12 +87,16 @@ mkRibCliConfig inputDir =
       verbosity = Verbose
       shakeDbDir = neuronDir </> ".shake"
       watchIgnore = [".neuron", ".git"]
-   in Rib.Cli.CliConfig {..}
+  pure Rib.Cli.CliConfig {..}
 
 -- | optparse-applicative parser for neuron CLI
-commandParser :: Parser App
-commandParser = do
-  notesDir <- argument (fmap addTrailingPathSeparator str) (metavar "NOTESDIR")
+commandParser :: FilePath -> Parser App
+commandParser defaultNotesDir = do
+  notesDir <-
+    strOption
+      ( long "zettelkasten-dir" <> short 'd' <> metavar "NOTESDIR" <> value defaultNotesDir
+          <> help ("Your zettelkasten directory containing the zettel files (" <> "default: " <> defaultNotesDir <> ")")
+      )
   cmd <- cmdParser
   pure $ App {..}
   where
@@ -116,12 +122,13 @@ commandParser = do
       either (error . toText . displayException) id . URI.mkURI
 
 run :: Action () -> IO ()
-run act =
-  runWith act =<< execParser opts
+run act = do
+  defaultNotesDir <- (</> "zettelkasten") <$> getHomeDirectory
+  runWith act =<< execParser (opts defaultNotesDir)
   where
-    opts =
+    opts d =
       info
-        (versionOption <*> commandParser <**> helper)
+        (versionOption <*> commandParser d <**> helper)
         (fullDesc <> progDesc "Zettelkasten based on Rib")
     versionOption =
       infoOption
@@ -136,12 +143,13 @@ runWith act App {..} = do
     Search ->
       execScript neuronSearchScript [notesDir]
     Query queries -> do
-      flip Rib.App.runWith ((mkRibCliConfig notesDir) {Rib.Cli.verbosity = Silent}) $ do
+      cfg <- mkRibCliConfig notesDir
+      flip Rib.App.runWith (cfg {Rib.Cli.verbosity = Silent}) $ do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
         let matches = Z.runQuery store queries
         putLTextLn $ Aeson.encodeToLazyText $ matches
     Rib ->
-      Rib.App.runWith act $ mkRibCliConfig notesDir
+      Rib.App.runWith act =<< mkRibCliConfig notesDir
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)

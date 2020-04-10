@@ -7,6 +7,10 @@
 - Styling changes:
   - Tags are restyled and positioned below
   - Produce compact CSS in HTML head
+- CLI revamp
+  - Zettelkasten directory is now provided via the `-d` argument.
+    - Its default, `~/zettelkasten`, is used when not specified.
+    - This directory must exist, otherwise neuron will error out.
 
 ## 0.2.0.0
 
