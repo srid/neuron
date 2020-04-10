@@ -14,11 +14,10 @@ import Relude
 import Text.MMark (MMark, projectYaml)
 
 -- | YAML metadata in a zettel markdown file
-data Meta
-  = Meta
-      { title :: Text,
-        tags :: Maybe [Text]
-      }
+data Meta = Meta
+  { title :: Text,
+    tags :: Maybe [Text]
+  }
   deriving (Eq, Show, Generic, FromJSON)
 
 getMeta :: MMark -> Maybe Meta

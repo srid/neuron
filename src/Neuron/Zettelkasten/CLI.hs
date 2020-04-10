@@ -27,11 +27,10 @@ import System.Directory
 import System.FilePath
 import qualified Text.URI as URI
 
-data App
-  = App
-      { notesDir :: FilePath,
-        cmd :: Command
-      }
+data App = App
+  { notesDir :: FilePath,
+    cmd :: Command
+  }
   deriving (Eq, Show)
 
 data NewCommand = NewCommand {title :: Text, edit :: Bool}
@@ -50,14 +49,13 @@ data Command
     Rib RibConfig
   deriving (Eq, Show)
 
-data RibConfig
-  = RibConfig
-      { ribOutputDir :: Maybe FilePath,
-        ribWatch :: Bool,
-        ribServe :: Maybe (Text, Int),
-        ribQuiet :: Bool,
-        ribShakeDbDir :: Maybe FilePath
-      }
+data RibConfig = RibConfig
+  { ribOutputDir :: Maybe FilePath,
+    ribWatch :: Bool,
+    ribServe :: Maybe (Text, Int),
+    ribQuiet :: Bool,
+    ribShakeDbDir :: Maybe FilePath
+  }
   deriving (Eq, Show)
 
 mkRibCliConfig :: FilePath -> RibConfig -> IO Rib.Cli.CliConfig

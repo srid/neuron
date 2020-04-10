@@ -16,13 +16,12 @@ import qualified Rib.Parser.MMark as MMark
 import Text.MMark (MMark)
 import Text.Show (Show (show))
 
-data Zettel content
-  = Zettel
-      { zettelID :: ZettelID,
-        zettelTitle :: Text,
-        zettelTags :: [Text],
-        zettelContent :: content
-      }
+data Zettel content = Zettel
+  { zettelID :: ZettelID,
+    zettelTitle :: Text,
+    zettelTags :: [Text],
+    zettelContent :: content
+  }
   deriving (Functor)
 
 instance Eq (Zettel c) where
