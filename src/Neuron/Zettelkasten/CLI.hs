@@ -66,7 +66,7 @@ mkRibCliConfig inputDir cfg = do
     fail $ "Zettelkasten directory " <> inputDir <> " does not exist."
   let neuronDir = inputDir </> ".neuron"
       outputDir = fromMaybe (neuronDir </> "output") $ ribOutputDir cfg
-      rebuildAll = True
+      rebuildAll = False
       watch = ribWatch cfg
       serve = ribServe cfg
       verbosity = bool Verbose Silent $ ribQuiet cfg
