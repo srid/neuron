@@ -24,6 +24,7 @@ import Relude
 import Text.MMark (MMark, runScanner)
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Inline (..))
+import Text.Regex.TDFA ((=~))
 import qualified Text.URI as URI
 
 data LinkTheme
@@ -33,27 +34,37 @@ data LinkTheme
   deriving (Eq, Show, Ord)
 
 data LinkAction
-  = LinkAction_ConnectZettel Connection
+  = LinkAction_ConnectZettel Connection ZettelID
   | -- | Render a list (or should it be tree?) of links to queries zettels
-    -- TODO: Should this automatically establish a connection in graph??
     LinkAction_QueryZettels Connection LinkTheme [Query]
   deriving (Eq, Show)
 
-linkActionFromUri :: URI.URI -> Maybe LinkAction
-linkActionFromUri uri =
+linkActionFromLink :: MarkdownLink -> Maybe LinkAction
+linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   -- NOTE: We should probably drop the 'cf' variants in favour of specifying
   -- the connection type as a query param or something.
   case fmap URI.unRText (URI.uriScheme uri) of
     Just "z" ->
-      Just $ LinkAction_ConnectZettel Folgezettel
+      -- The inner link text is supposed to be the zettel ID
+      let zid = parseZettelID linkText
+       in Just $ LinkAction_ConnectZettel Folgezettel zid
     Just "zcf" ->
-      Just $ LinkAction_ConnectZettel OrdinaryConnection
+      -- The inner link text is supposed to be the zettel ID
+      let zid = parseZettelID linkText
+       in Just $ LinkAction_ConnectZettel OrdinaryConnection zid
     Just "zquery" ->
       Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
     Just "zcfquery" ->
       Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
     _ ->
-      Nothing
+      let uriRendered = URI.render uri
+       in -- TODO: All this parsing should happen in parseZettelID eventually, per #70
+          if uriRendered =~ ("^[A-Za-z0-9_-]+$" :: Text)
+            && uriRendered == linkText
+            then
+              let zid = parseZettelID uriRendered
+               in Just $ LinkAction_ConnectZettel Folgezettel zid
+            else Nothing
 
 queryFromUri :: URI.URI -> [Query]
 queryFromUri uri =
@@ -78,19 +89,17 @@ linkThemeFromUri uri =
             _ -> error $ "Unknown link theme: " <> val
         _ -> Nothing
 
-data MarkdownLink
-  = MarkdownLink
-      { markdownLinkText :: Text,
-        markdownLinkUri :: URI.URI
-      }
+data MarkdownLink = MarkdownLink
+  { markdownLinkText :: Text,
+    markdownLinkUri :: URI.URI
+  }
   deriving (Eq, Ord)
 
 linkActionConnections :: ZettelStore -> MarkdownLink -> [ZettelConnection]
-linkActionConnections store MarkdownLink {..} =
-  case linkActionFromUri markdownLinkUri of
-    Just (LinkAction_ConnectZettel conn) ->
-      let zid = parseZettelID markdownLinkText
-       in [(conn, zid)]
+linkActionConnections store link =
+  case linkActionFromLink link of
+    Just (LinkAction_ConnectZettel conn zid) ->
+      [(conn, zid)]
     Just (LinkAction_QueryZettels conn _linkTheme q) ->
       (conn,) . zettelID <$> runQuery store q
     Nothing ->
