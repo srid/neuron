@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 0.3.0.0
+version: 0.3.0.1
 license: BSD-3-Clause
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -43,10 +43,8 @@ common library-common
     lucid -any,
     optparse-applicative,
     pandoc,
-    path,
-    path-io,
     relude,
-    rib ^>=0.8,
+    rib ^>=0.9,
     shake -any,
     time,
     text,
@@ -66,6 +64,7 @@ library
   exposed-modules:
     Neuron.Version
     Neuron.Zettelkasten
+    Neuron.Zettelkasten.CLI
     Neuron.Zettelkasten.Route
     Neuron.Zettelkasten.Store
     Neuron.Zettelkasten.Query

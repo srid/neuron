@@ -21,14 +21,19 @@ spec = do
       pending
   -- TODO: Check minVersion in Default.dhall is same as the one in Paths_neuron
   describe "Version comparison" $ do
+    let isGreater = shouldSatisfy
+        isLesserOrEqual = shouldNotSatisfy
     it "must compare simple versions" $ do
-      "0.4" `shouldSatisfy` olderThan
-      "0.3" `shouldNotSatisfy` olderThan -- This is current version
-      "0.2" `shouldNotSatisfy` olderThan
+      -- If the user requires 0.4, and we are "older than" than that, fail (aka. isGreater)
+      "0.4" `isGreater` olderThan
+      "0.3" `isLesserOrEqual` olderThan -- This is current version
+      "0.2" `isLesserOrEqual` olderThan
     it "must compare full versions" $ do
-      "0.4.1.2" `shouldSatisfy` olderThan
-      "0.4.3" `shouldSatisfy` olderThan
-      "0.3.0.0" `shouldNotSatisfy` olderThan -- This is current version
-      "0.2.1.0" `shouldNotSatisfy` olderThan
+      "0.4.1.2" `isGreater` olderThan
+      "0.4.3" `isGreater` olderThan
+      "0.3.0.8" `isGreater` olderThan
+      "0.3.0.1" `isLesserOrEqual` olderThan -- This is current version
+      "0.2.1.0" `isLesserOrEqual` olderThan
     it "must compare within same major version" $ do
-      "0.3.0.2" `shouldSatisfy` olderThan -- This is current version
+      "0.3.0.8" `isGreater` olderThan
+      "0.3.0.1" `isLesserOrEqual` olderThan -- This is current version

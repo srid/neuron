@@ -2,7 +2,7 @@ let
   # To upgrade rib, go to https://github.com/srid/rib/commits/master, select the
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
-  ribRevision = "19b1022442a0cde2a0b1d9373b0397030472721e";
+  ribRevision = "c115fe3";
   projectRoot = ./.;
 in {
 # Rib library source to use

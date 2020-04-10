@@ -21,10 +21,10 @@ import Development.Shake (Action, readFile')
 import Dhall (FromDhall)
 import qualified Dhall
 import Dhall.TH
-import Path
-import Path.IO (doesFileExist)
 import Relude
 import qualified Rib
+import System.Directory
+import System.FilePath
 
 -- | Config type for @neuron.dhall@
 --
@@ -45,9 +45,9 @@ getConfig :: Action Config
 getConfig = do
   inputDir <- Rib.ribInputDir
   let configPath = inputDir </> configFile
-  configVal :: Text <- doesFileExist configPath >>= \case
+  configVal :: Text <- liftIO (doesFileExist configPath) >>= \case
     True -> do
-      userConfig <- fmap toText $ readFile' $ toFilePath configPath
+      userConfig <- fmap toText $ readFile' configPath
       -- Dhall's combine operator (`//`) allows us to merge two records,
       -- effectively merging the record with defaults with the user record.
       pure $ decodeUtf8 defaultConfig <> " // " <> userConfig
@@ -55,4 +55,4 @@ getConfig = do
       pure $ decodeUtf8 @Text defaultConfig
   liftIO $ Dhall.detailed $ Dhall.input Dhall.auto configVal
   where
-    configFile = [relfile|neuron.dhall|]
+    configFile = "neuron.dhall"
