@@ -40,6 +40,8 @@ data NewCommand = NewCommand {title :: Text, edit :: Bool}
 data Command
   = -- | Create a new zettel file
     New NewCommand
+  | -- | Open the locally generated Zettelkasten
+    Open
   | -- | Search a zettel by title
     Search
   | -- | Run a query against the Zettelkasten
@@ -79,7 +81,7 @@ runRibOnceQuietly :: FilePath -> Action () -> IO ()
 runRibOnceQuietly notesDir act =
   runRib act notesDir $
     RibConfig
-      { ribOutputDir = Nothing,
+      { ribOutputDir = Nothing, -- Ignoring CLI's output dir. So don't use this within `neuron rib ...`.
         ribWatch = False,
         ribServe = Nothing,
         ribQuiet = True
@@ -101,6 +103,7 @@ commandParser defaultNotesDir = do
       hsubparser $
         mconcat
           [ command "new" $ info newCommand $ progDesc "Create a new zettel",
+            command "open" $ info openCommand $ progDesc "Open the locally generated Zettelkasten website",
             command "search" $ info searchCommand $ progDesc "Search zettels and print the matching filepath",
             command "query" $ info queryCommand $ progDesc "Run a query against the zettelkasten",
             command "rib" $ info ribCommand $ progDesc "Generate static site via rib"
@@ -109,6 +112,8 @@ commandParser defaultNotesDir = do
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created file in $EDITOR")
       title <- argument str (metavar "TITLE" <> help "Title of the new Zettel")
       return (New NewCommand {..})
+    openCommand =
+      pure Open
     queryCommand =
       fmap Query $
         (many (Z.ByTag <$> option str (long "tag" <> short 't')))

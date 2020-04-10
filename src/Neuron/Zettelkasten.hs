@@ -27,6 +27,7 @@ import Relude
 import qualified Rib
 import System.Directory
 import System.FilePath
+import System.Info (os)
 import qualified System.Posix.Env as Env
 import System.Posix.Process
 import System.Which
@@ -56,6 +57,12 @@ runWith act App {..} = do
     New newCommand ->
       runRibOnceQuietly notesDir $ do
         newZettelFile newCommand
+    Open ->
+      runRibOnceQuietly notesDir $ do
+        indexHtmlPath <- fmap (</> "index.html") Rib.ribOutputDir
+        putStrLn indexHtmlPath
+        let opener = if os == "darwin" then "open" else "xdg-open"
+        liftIO $ executeFile opener True [indexHtmlPath] Nothing
     Query queries -> do
       runRibOnceQuietly notesDir $ do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
