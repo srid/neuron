@@ -40,28 +40,29 @@ data LinkAction
   deriving (Eq, Show)
 
 linkActionFromLink :: MarkdownLink -> Maybe LinkAction
-linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = text} =
+linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   -- NOTE: We should probably drop the 'cf' variants in favour of specifying
   -- the connection type as a query param or something.
   case fmap URI.unRText (URI.uriScheme uri) of
     Just "z" ->
       -- The inner link text is supposed to be the zettel ID
-      let zid = parseZettelID text
+      let zid = parseZettelID linkText
        in Just $ LinkAction_ConnectZettel Folgezettel zid
     Just "zcf" ->
       -- The inner link text is supposed to be the zettel ID
-      let zid = parseZettelID text
+      let zid = parseZettelID linkText
        in Just $ LinkAction_ConnectZettel OrdinaryConnection zid
     Just "zquery" ->
       Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
     Just "zcfquery" ->
       Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
     _ ->
-      let uri_text = URI.render uri
-       in if uri_text =~ ("^[A-Za-z0-9_-]+$" :: Text)
-            && uri_text == text
+      let uriRendered = URI.render uri
+       in -- TODO: All this parsing should happen in parseZettelID eventually, per #70
+          if uriRendered =~ ("^[A-Za-z0-9_-]+$" :: Text)
+            && uriRendered == linkText
             then
-              let zid = parseZettelID uri_text
+              let zid = parseZettelID uriRendered
                in Just $ LinkAction_ConnectZettel Folgezettel zid
             else Nothing
 
@@ -88,11 +89,10 @@ linkThemeFromUri uri =
             _ -> error $ "Unknown link theme: " <> val
         _ -> Nothing
 
-data MarkdownLink
-  = MarkdownLink
-      { markdownLinkText :: Text,
-        markdownLinkUri :: URI.URI
-      }
+data MarkdownLink = MarkdownLink
+  { markdownLinkText :: Text,
+    markdownLinkUri :: URI.URI
+  }
   deriving (Eq, Ord)
 
 linkActionConnections :: ZettelStore -> MarkdownLink -> [ZettelConnection]
