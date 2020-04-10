@@ -55,7 +55,8 @@ data RibConfig
       { ribOutputDir :: Maybe FilePath,
         ribWatch :: Bool,
         ribServe :: Maybe (Text, Int),
-        ribQuiet :: Bool
+        ribQuiet :: Bool,
+        ribShakeDbDir :: Maybe FilePath
       }
   deriving (Eq, Show)
 
@@ -69,7 +70,7 @@ mkRibCliConfig inputDir cfg = do
       watch = ribWatch cfg
       serve = ribServe cfg
       verbosity = Verbose
-      shakeDbDir = neuronDir </> ".shake"
+      shakeDbDir = fromMaybe (neuronDir </> ".shake") $ ribShakeDbDir cfg
       watchIgnore = [".neuron", ".git"]
   pure Rib.Cli.CliConfig {..}
 
@@ -84,7 +85,9 @@ runRibOnceQuietly notesDir act =
       { ribOutputDir = Nothing, -- Ignoring CLI's output dir. So don't use this within `neuron rib ...`.
         ribWatch = False,
         ribServe = Nothing,
-        ribQuiet = True
+        ribQuiet = True,
+        -- Don't want to conflict with a long-running shake build action (eg: rib -wS)
+        ribShakeDbDir = Just "/dev/null"
       }
 
 -- | optparse-applicative parser for neuron CLI
@@ -131,6 +134,7 @@ commandParser defaultNotesDir = do
       ribWatch <- Rib.Cli.watchOption
       ribServe <- Rib.Cli.serveOption
       ~(ribQuiet) <- pure False
+      ~(ribShakeDbDir) <- pure Nothing
       pure RibConfig {..}
     mkURIMust =
       either (error . toText . displayException) id . URI.mkURI
