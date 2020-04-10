@@ -33,21 +33,25 @@ data LinkTheme
   deriving (Eq, Show, Ord)
 
 data LinkAction
-  = LinkAction_ConnectZettel Connection
+  = LinkAction_ConnectZettel Connection ZettelID
   | -- | Render a list (or should it be tree?) of links to queries zettels
     -- TODO: Should this automatically establish a connection in graph??
     LinkAction_QueryZettels Connection LinkTheme [Query]
   deriving (Eq, Show)
 
-linkActionFromUri :: URI.URI -> Maybe LinkAction
-linkActionFromUri uri =
+linkActionFromLink :: MarkdownLink -> Maybe LinkAction
+linkActionFromLink MarkdownLink {markdownLinkUri=uri,markdownLinkText=text} =
   -- NOTE: We should probably drop the 'cf' variants in favour of specifying
   -- the connection type as a query param or something.
   case fmap URI.unRText (URI.uriScheme uri) of
     Just "z" ->
-      Just $ LinkAction_ConnectZettel Folgezettel
+      -- The inner link text is supposed to be the zettel ID
+      let zid = parseZettelID text
+       in Just $ LinkAction_ConnectZettel Folgezettel zid
     Just "zcf" ->
-      Just $ LinkAction_ConnectZettel OrdinaryConnection
+      -- The inner link text is supposed to be the zettel ID
+      let zid = parseZettelID text
+       in Just $ LinkAction_ConnectZettel OrdinaryConnection zid
     Just "zquery" ->
       Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
     Just "zcfquery" ->
@@ -86,11 +90,10 @@ data MarkdownLink
   deriving (Eq, Ord)
 
 linkActionConnections :: ZettelStore -> MarkdownLink -> [ZettelConnection]
-linkActionConnections store MarkdownLink {..} =
-  case linkActionFromUri markdownLinkUri of
-    Just (LinkAction_ConnectZettel conn) ->
-      let zid = parseZettelID markdownLinkText
-       in [(conn, zid)]
+linkActionConnections store link =
+  case linkActionFromLink link of
+    Just (LinkAction_ConnectZettel conn zid) ->
+      [(conn, zid)]
     Just (LinkAction_QueryZettels conn _linkTheme q) ->
       (conn,) . zettelID <$> runQuery store q
     Nothing ->
