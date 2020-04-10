@@ -29,7 +29,7 @@ linkActionExt store =
       let mlink = MarkdownLink (Ext.asPlainText inner) uri
        in case linkActionFromLink mlink of
             Just lact ->
-               linkActionRender store mlink lact
+              linkActionRender store mlink lact
             Nothing ->
               f inline
     inline ->

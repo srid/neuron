@@ -24,8 +24,8 @@ import Relude
 import Text.MMark (MMark, runScanner)
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Inline (..))
-import qualified Text.URI as URI
 import Text.Regex.TDFA ((=~))
+import qualified Text.URI as URI
 
 data LinkTheme
   = LinkTheme_Default
@@ -40,7 +40,7 @@ data LinkAction
   deriving (Eq, Show)
 
 linkActionFromLink :: MarkdownLink -> Maybe LinkAction
-linkActionFromLink MarkdownLink {markdownLinkUri=uri,markdownLinkText=text} =
+linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = text} =
   -- NOTE: We should probably drop the 'cf' variants in favour of specifying
   -- the connection type as a query param or something.
   case fmap URI.unRText (URI.uriScheme uri) of
@@ -56,9 +56,10 @@ linkActionFromLink MarkdownLink {markdownLinkUri=uri,markdownLinkText=text} =
       Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
     Just "zcfquery" ->
       Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
-    _ | URI.render uri =~ ("^[A-Za-z0-9_-]+$" :: Text) ->
-      let zid = parseZettelID $ URI.render uri
-       in Just $ LinkAction_ConnectZettel Folgezettel zid
+    _
+      | URI.render uri =~ ("^[A-Za-z0-9_-]+$" :: Text) ->
+        let zid = parseZettelID $ URI.render uri
+         in Just $ LinkAction_ConnectZettel Folgezettel zid
     _ ->
       Nothing
 
