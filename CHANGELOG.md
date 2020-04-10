@@ -14,6 +14,7 @@
   - The output directory is now moved to `.neuron/output` under the Zettelkasten directory.
   - Added `neuron open` to open the locally generated Zettelkasten site.
   - `neuron ... rib serve` is now `neuron rib -wS`.
+- Support for [short links](https://neuron.srid.ca/2014501.html).
 
 ## 0.2.0.0
 
