@@ -72,18 +72,26 @@ data Command
   | -- | Run a query against the Zettelkasten
     Query [Z.Query]
   | -- | Delegate to Rib's command parser
-    Rib
+    Rib RibConfig
   deriving (Eq, Show)
 
-mkRibCliConfig :: FilePath -> IO Rib.Cli.CliConfig
-mkRibCliConfig inputDir = do
+data RibConfig
+  = RibConfig
+      { ribOutputDir :: Maybe FilePath,
+        ribWatch :: Bool,
+        ribServe :: Maybe (Text, Int)
+      }
+  deriving (Eq, Show)
+
+mkRibCliConfig :: FilePath -> RibConfig -> IO Rib.Cli.CliConfig
+mkRibCliConfig inputDir cfg = do
   unlessM (doesDirectoryExist inputDir) $ do
     fail $ "Zettelkasten directory " <> inputDir <> " does not exist."
   let neuronDir = inputDir </> ".neuron"
-      outputDir = neuronDir </> "output"
+      outputDir = fromMaybe (neuronDir </> "output") $ ribOutputDir cfg
       rebuildAll = True
-      watch = True
-      serve = Nothing
+      watch = ribWatch cfg
+      serve = ribServe cfg
       verbosity = Verbose
       shakeDbDir = neuronDir </> ".shake"
       watchIgnore = [".neuron", ".git"]
@@ -93,7 +101,8 @@ mkRibCliConfig inputDir = do
 commandParser :: FilePath -> Parser App
 commandParser defaultNotesDir = do
   notesDir <-
-    strOption
+    option
+      Rib.Cli.directoryReader
       ( long "zettelkasten-dir" <> short 'd' <> metavar "NOTESDIR" <> value defaultNotesDir
           <> help ("Your zettelkasten directory containing the zettel files (" <> "default: " <> defaultNotesDir <> ")")
       )
@@ -106,7 +115,7 @@ commandParser defaultNotesDir = do
           [ command "new" $ info newCommand $ progDesc "Create a new zettel",
             command "search" $ info searchCommand $ progDesc "Search zettels and print the matching filepath",
             command "query" $ info queryCommand $ progDesc "Run a query against the zettelkasten",
-            command "rib" $ info (pure Rib) $ progDesc "Run a rib site generation"
+            command "rib" $ info ribCommand $ progDesc "Generate static site via rib"
           ]
     newCommand = do
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created file in $EDITOR")
@@ -118,6 +127,17 @@ commandParser defaultNotesDir = do
           <|> (Z.queryFromUri . mkURIMust <$> option str (long "uri" <> short 'u'))
     searchCommand =
       pure Search
+    ribCommand = fmap Rib $ do
+      ribOutputDir <-
+        optional $
+          option
+            Rib.Cli.directoryReader
+            ( long "output-dir" <> short 'o' <> metavar "OUTPUTDIR"
+                <> help ("The directory where HTML will be generated (" <> "default: NOTESDIR/.neuron/output)")
+            )
+      ribWatch <- Rib.Cli.watchOption
+      ribServe <- Rib.Cli.serveOption
+      pure RibConfig {..}
     mkURIMust =
       either (error . toText . displayException) id . URI.mkURI
 
@@ -143,20 +163,20 @@ runWith act App {..} = do
     Search ->
       execScript neuronSearchScript [notesDir]
     Query queries -> do
-      cfg <- mkRibCliConfig notesDir
-      flip Rib.App.runWith (oneOffCfg cfg) $ do
+      cfg <- oneOffCfg
+      flip Rib.App.runWith cfg $ do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
         let matches = Z.runQuery store queries
         putLTextLn $ Aeson.encodeToLazyText $ matches
-    Rib ->
-      Rib.App.runWith act =<< mkRibCliConfig notesDir
+    Rib ribCfg ->
+      Rib.App.runWith act =<< mkRibCliConfig notesDir ribCfg
   where
-    oneOffCfg cfg =
-      cfg
-        { Rib.Cli.verbosity = Silent,
-          Rib.Cli.watch = False,
-          Rib.Cli.serve = Nothing
-        }
+    oneOffCfg = do
+      cfg <- mkRibCliConfig notesDir $ RibConfig Nothing False Nothing
+      pure $
+        cfg
+          { Rib.Cli.verbosity = Silent
+          }
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
       -- here, such that the new process replaces the current one. fzf won't work
