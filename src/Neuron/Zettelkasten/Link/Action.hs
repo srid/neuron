@@ -56,12 +56,14 @@ linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = text}
       Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
     Just "zcfquery" ->
       Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
-    _
-      | URI.render uri =~ ("^[A-Za-z0-9_-]+$" :: Text) ->
-        let zid = parseZettelID $ URI.render uri
-         in Just $ LinkAction_ConnectZettel Folgezettel zid
     _ ->
-      Nothing
+      let uri_text = URI.render uri
+       in if uri_text =~ ("^[A-Za-z0-9_-]+$" :: Text)
+            && uri_text == text
+            then
+              let zid = parseZettelID uri_text
+               in Just $ LinkAction_ConnectZettel Folgezettel zid
+            else Nothing
 
 queryFromUri :: URI.URI -> [Query]
 queryFromUri uri =
