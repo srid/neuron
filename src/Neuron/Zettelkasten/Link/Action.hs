@@ -25,6 +25,7 @@ import Text.MMark (MMark, runScanner)
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Inline (..))
 import qualified Text.URI as URI
+import Text.Regex.TDFA ((=~))
 
 data LinkTheme
   = LinkTheme_Default
@@ -55,6 +56,9 @@ linkActionFromLink MarkdownLink {markdownLinkUri=uri,markdownLinkText=text} =
       Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
     Just "zcfquery" ->
       Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
+    _ | URI.render uri =~ ("^[A-Za-z0-9_-]+$" :: Text) ->
+      let zid = parseZettelID $ URI.render uri
+       in Just $ LinkAction_ConnectZettel Folgezettel zid
     _ ->
       Nothing
 
