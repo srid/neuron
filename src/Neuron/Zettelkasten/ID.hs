@@ -20,8 +20,10 @@ where
 import Data.Aeson (ToJSON)
 import qualified Data.Text as T
 import Data.Time
+import Development.Shake (Action)
 import Lucid
 import Relude
+import qualified Rib
 import System.Directory (listDirectory)
 import System.FilePath
 import qualified System.FilePattern as FP
@@ -66,10 +68,11 @@ zettelIDDate =
       Nothing ->
         error "Bad day"
 
-zettelNextIdForToday :: FilePath -> IO ZettelID
-zettelNextIdForToday inputDir = ZettelID <$> do
-  zIdPartial <- dayIndex . toText . formatTime defaultTimeLocale "%y%W%a" <$> getCurrentTime
-  zettelFiles <- listDirectory $ inputDir
+zettelNextIdForToday :: Action ZettelID
+zettelNextIdForToday = ZettelID <$> do
+  inputDir <- Rib.ribInputDir
+  zIdPartial <- dayIndex . toText . formatTime defaultTimeLocale "%y%W%a" <$> liftIO getCurrentTime
+  zettelFiles <- liftIO $ listDirectory inputDir
   let nums :: [Int] = sort $ catMaybes $ fmap readMaybe $ catMaybes $ catMaybes $ fmap (fmap listToMaybe . FP.match (toString zIdPartial <> "*.md")) zettelFiles
   case fmap last (nonEmpty nums) of
     Just lastNum ->

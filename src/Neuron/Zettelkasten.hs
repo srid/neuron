@@ -42,7 +42,7 @@ run act = do
     opts d =
       info
         (versionOption <*> commandParser d <**> helper)
-        (fullDesc <> progDesc "Zettelkasten based on Rib")
+        (fullDesc <> progDesc "Neuron, a Zettelkasten CLI <https://neuron.srid.ca/>")
     versionOption =
       infoOption
         (toString Version.neuronVersionFull)
@@ -51,17 +51,18 @@ run act = do
 runWith :: Action () -> App -> IO ()
 runWith act App {..} = do
   case cmd of
+    Rib ribCfg ->
+      runRib act notesDir ribCfg
     New newCommand ->
-      newZettelFile notesDir newCommand
-    Search ->
-      execScript neuronSearchScript [notesDir]
+      runRibOnceQuietly notesDir $ do
+        newZettelFile newCommand
     Query queries -> do
       runRibOnceQuietly notesDir $ do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
         let matches = Z.runQuery store queries
         putLTextLn $ Aeson.encodeToLazyText $ matches
-    Rib ribCfg ->
-      runRib act notesDir ribCfg
+    Search ->
+      execScript neuronSearchScript [notesDir]
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
@@ -90,24 +91,25 @@ generateSite writeHtmlRoute' zettelsPat = do
 -- | Create a new zettel file and open it in editor if requested
 --
 -- As well as print the path to the created file.
-newZettelFile :: FilePath -> NewCommand -> IO ()
-newZettelFile inputDir NewCommand {..} = do
-  -- TODO: refactor this function
-  zId <- Z.zettelNextIdForToday inputDir
+newZettelFile :: NewCommand -> Action ()
+newZettelFile NewCommand {..} = do
+  zId <- Z.zettelNextIdForToday
   let zettelFileName = toString $ Z.zettelIDSourceFileName zId
+  inputDir <- Rib.ribInputDir
   let srcPath = inputDir </> zettelFileName
-  doesFileExist srcPath >>= \case
-    True ->
-      fail $ "File already exists: " <> show srcPath
-    False -> do
-      writeFile srcPath $ "---\ntitle: " <> toString title <> "\n---\n\n"
-      putStrLn srcPath
-      when edit $ do
-        getEnvNonEmpty "EDITOR" >>= \case
-          Nothing -> do
-            die "\nCan't open file; you must set the EDITOR environment variable"
-          Just editor -> do
-            executeFile editor True [srcPath] Nothing
+  liftIO $
+    doesFileExist srcPath >>= \case
+      True ->
+        fail $ "File already exists: " <> show srcPath
+      False -> do
+        writeFile srcPath $ "---\ntitle: " <> toString title <> "\n---\n\n"
+        putStrLn srcPath
+        when edit $ do
+          getEnvNonEmpty "EDITOR" >>= \case
+            Nothing -> do
+              die "\nCan't open file; you must set the EDITOR environment variable"
+            Just editor -> do
+              executeFile editor True [srcPath] Nothing
   where
     getEnvNonEmpty name =
       Env.getEnv name >>= \case
