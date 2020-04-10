@@ -30,7 +30,7 @@ nix-shell --run ghcid
 You can test your changes by running it on the `./guide` (or any) zettelkasten as follows:
 
 ```bash
-bin/run ./guide rib serve
+bin/run ./guide rib -wS
 ```
 
 This command will also automatically recompile and restart when you change any of the Haskell source files.
