@@ -16,7 +16,7 @@ module Neuron.Zettelkasten.CLI
   )
 where
 
-import Development.Shake (Action, Verbosity (Verbose))
+import Development.Shake (Action, Verbosity (Silent, Verbose))
 import qualified Neuron.Zettelkasten.Link.Action as Z
 import qualified Neuron.Zettelkasten.Query as Z
 import Options.Applicative
@@ -69,7 +69,7 @@ mkRibCliConfig inputDir cfg = do
       rebuildAll = True
       watch = ribWatch cfg
       serve = ribServe cfg
-      verbosity = Verbose
+      verbosity = bool Verbose Silent $ ribQuiet cfg
       shakeDbDir = fromMaybe (neuronDir </> ".shake") $ ribShakeDbDir cfg
       watchIgnore = [".neuron", ".git"]
   pure Rib.Cli.CliConfig {..}
