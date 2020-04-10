@@ -144,13 +144,19 @@ runWith act App {..} = do
       execScript neuronSearchScript [notesDir]
     Query queries -> do
       cfg <- mkRibCliConfig notesDir
-      flip Rib.App.runWith (cfg {Rib.Cli.verbosity = Silent}) $ do
+      flip Rib.App.runWith (oneOffCfg cfg) $ do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
         let matches = Z.runQuery store queries
         putLTextLn $ Aeson.encodeToLazyText $ matches
     Rib ->
       Rib.App.runWith act =<< mkRibCliConfig notesDir
   where
+    oneOffCfg cfg =
+      cfg
+        { Rib.Cli.verbosity = Silent,
+          Rib.Cli.watch = False,
+          Rib.Cli.serve = Nothing
+        }
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
       -- here, such that the new process replaces the current one. fzf won't work
