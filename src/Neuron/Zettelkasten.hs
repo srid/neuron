@@ -84,7 +84,7 @@ mkRibCliConfig inputDir =
       serve = Nothing
       verbosity = Verbose
       shakeDbDir = neuronDir </> ".shake"
-      watchIgnore = [".neuron"]
+      watchIgnore = [".neuron", ".git"]
    in Rib.Cli.CliConfig {..}
 
 -- | optparse-applicative parser for neuron CLI
