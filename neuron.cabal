@@ -64,6 +64,7 @@ library
   exposed-modules:
     Neuron.Version
     Neuron.Zettelkasten
+    Neuron.Zettelkasten.CLI
     Neuron.Zettelkasten.Route
     Neuron.Zettelkasten.Store
     Neuron.Zettelkasten.Query
