@@ -11,7 +11,6 @@ import Data.Aeson
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Meta as Meta
-import Path
 import Relude hiding (show)
 import qualified Rib.Parser.MMark as MMark
 import Text.MMark (MMark)
@@ -45,14 +44,14 @@ instance ToJSON (Zettel ()) where
       ]
 
 -- | Load a zettel from a file.
-mkZettelFromPath :: Path Rel File -> Action (Zettel MMark)
+mkZettelFromPath :: FilePath -> Action (Zettel MMark)
 mkZettelFromPath path = do
   -- Extensions are computed and applied during rendering, not here.
   let noExts = []
   doc <- MMark.parseWith noExts path
   let zid = mkZettelID path
       meta = Meta.getMeta doc
-      title = maybe (toText $ "No title for " <> toFilePath path) Meta.title meta
+      title = maybe (toText $ "No title for " <> path) Meta.title meta
       tags = fromMaybe [] $ Meta.tags =<< meta
   pure $ Zettel zid title tags doc
 

@@ -21,9 +21,9 @@ import Data.Aeson (ToJSON)
 import qualified Data.Text as T
 import Data.Time
 import Lucid
-import Path
 import Relude
 import System.Directory (listDirectory)
+import System.FilePath
 import qualified System.FilePattern as FP
 import Text.Printf
 
@@ -66,10 +66,10 @@ zettelIDDate =
       Nothing ->
         error "Bad day"
 
-zettelNextIdForToday :: Path b Dir -> IO ZettelID
+zettelNextIdForToday :: FilePath -> IO ZettelID
 zettelNextIdForToday inputDir = ZettelID <$> do
   zIdPartial <- dayIndex . toText . formatTime defaultTimeLocale "%y%W%a" <$> getCurrentTime
-  zettelFiles <- listDirectory $ toFilePath $ inputDir
+  zettelFiles <- listDirectory $ inputDir
   let nums :: [Int] = sort $ catMaybes $ fmap readMaybe $ catMaybes $ catMaybes $ fmap (fmap listToMaybe . FP.match (toString zIdPartial <> "*.md")) zettelFiles
   case fmap last (nonEmpty nums) of
     Just lastNum ->
@@ -91,10 +91,10 @@ parseZettelID :: Text -> ZettelID
 parseZettelID = ZettelID
 
 -- | Extract ZettelID from the zettel's filename or path.
-mkZettelID :: Path Rel File -> ZettelID
-mkZettelID fp = either (error . toText . displayException) id $ do
-  (name, _) <- splitExtension $ filename fp
-  pure $ ZettelID $ toText $ toFilePath name
+mkZettelID :: FilePath -> ZettelID
+mkZettelID fp =
+  let (name, _) = splitExtension $ takeFileName fp
+   in ZettelID $ toText name
 
 type ZettelConnection = (Connection, ZettelID)
 

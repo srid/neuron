@@ -15,14 +15,13 @@ import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Zettel
-import Path
 import Relude
 import Rib (MMark)
 
 type ZettelStore = Map ZettelID (Zettel MMark)
 
 -- | Load all zettel files
-mkZettelStore :: [Path Rel File] -> Action ZettelStore
+mkZettelStore :: [FilePath] -> Action ZettelStore
 mkZettelStore files = do
   zettels <- mkZettelFromPath `mapM` files
   pure $ Map.fromList $ zettels <&> zettelID &&& id

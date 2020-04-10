@@ -20,7 +20,6 @@ import qualified Neuron.Zettelkasten as Z
 import qualified Neuron.Zettelkasten.Config as Z
 import qualified Neuron.Zettelkasten.Route as Z
 import qualified Neuron.Zettelkasten.View as Z
-import Path
 import Relude
 import qualified Rib
 import Rib.Extra.CSS (googleFonts, stylesheet)
@@ -30,13 +29,13 @@ main = withUtf8 $ Z.run generateSite
 
 generateSite :: Action ()
 generateSite = do
-  Rib.buildStaticFiles [[relfile|static/**|]]
+  Rib.buildStaticFiles ["static/**"]
   config <- Z.getConfig
   when (olderThan $ Z.minVersion config) $ do
     error $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
   let writeHtmlRoute :: Z.Route s g () -> (s, g) -> Action ()
       writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage config r
-  void $ Z.generateSite writeHtmlRoute [[relfile|*.md|]]
+  void $ Z.generateSite writeHtmlRoute ["*.md"]
 
 renderPage :: Z.Config -> Z.Route s g () -> (s, g) -> Html ()
 renderPage config r val = html_ [lang_ "en"] $ do

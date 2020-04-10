@@ -18,7 +18,6 @@ import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
-import Path
 import Relude
 import Rib (IsRoute (..))
 import Rib.Extra.OpenGraph
@@ -33,11 +32,11 @@ data Route store graph a where
 instance IsRoute (Route store graph) where
   routeFile = \case
     Route_IndexRedirect ->
-      pure [relfile|index.html|]
+      pure "index.html"
     Route_ZIndex ->
-      pure [relfile|z-index.html|]
+      pure "z-index.html"
     Route_Zettel (unZettelID -> zid) ->
-      parseRelFile $ toString zid <> ".html"
+      pure $ toString zid <> ".html"
 
 -- | Return short name corresponding to the route
 routeName :: Route store graph a -> Text
