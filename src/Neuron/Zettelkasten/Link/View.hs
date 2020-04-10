@@ -25,10 +25,8 @@ import Relude
 import qualified Rib
 
 linkActionRender :: Monad m => ZettelStore -> MarkdownLink -> LinkAction -> HtmlT m ()
-linkActionRender store MarkdownLink {..} = \case
-  LinkAction_ConnectZettel _conn -> do
-    -- The inner link text is supposed to be the zettel ID
-    let zid = parseZettelID markdownLinkText
+linkActionRender store _ = \case
+  LinkAction_ConnectZettel _conn zid -> do
     renderZettelLink LinkTheme_Default store zid
   LinkAction_QueryZettels _conn linkTheme q -> do
     toHtmlRaw @Text $ "<!--" <> show q <> "-->"
