@@ -35,7 +35,6 @@ data LinkTheme
 data LinkAction
   = LinkAction_ConnectZettel Connection ZettelID
   | -- | Render a list (or should it be tree?) of links to queries zettels
-    -- TODO: Should this automatically establish a connection in graph??
     LinkAction_QueryZettels Connection LinkTheme [Query]
   deriving (Eq, Show)
 
