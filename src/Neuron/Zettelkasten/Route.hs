@@ -12,6 +12,7 @@
 -- | Zettel site's routes
 module Neuron.Zettelkasten.Route where
 
+import Control.Monad.Catch (MonadThrow)
 import qualified Data.Text as T
 import Neuron.Zettelkasten.Config
 import Neuron.Zettelkasten.Graph
@@ -27,7 +28,17 @@ import qualified Text.URI as URI
 data Route store graph a where
   Route_IndexRedirect :: Route ZettelStore ZettelGraph ()
   Route_ZIndex :: Route ZettelStore ZettelGraph ()
+  Route_Search :: {searchTerms :: Maybe String, searchTags :: [Text]} -> Route ZettelStore ZettelGraph ()
   Route_Zettel :: ZettelID -> Route ZettelStore ZettelGraph ()
+
+renderSearchQuery :: MonadThrow m => Maybe String -> [Text] -> m String
+renderSearchQuery (fmap toText -> terms) tags = do
+  let mkParam k v = URI.QueryParam <$> URI.mkQueryKey k <*> URI.mkQueryValue v
+      qParams = maybeToList (fmap (mkParam "q") terms)
+      tagParams = fmap (mkParam "tag") tags
+  params <- sequenceA (qParams ++ tagParams)
+  let uri = URI.emptyURI {URI.uriQuery = params}
+  pure (URI.renderStr uri)
 
 instance IsRoute (Route store graph) where
   routeFile = \case
@@ -35,6 +46,9 @@ instance IsRoute (Route store graph) where
       pure "index.html"
     Route_ZIndex ->
       pure "z-index.html"
+    Route_Search {..} -> do
+      query <- renderSearchQuery searchTerms searchTags
+      pure $ "search.html" ++ query
     Route_Zettel (zettelIDText -> s) ->
       pure $ toString s <> ".html"
 
@@ -43,6 +57,7 @@ routeName :: Route store graph a -> Text
 routeName = \case
   Route_IndexRedirect -> "Index"
   Route_ZIndex -> "Zettels"
+  Route_Search {} -> "Search"
   Route_Zettel zid -> zettelIDText zid
 
 -- | Return full title for a route
@@ -60,6 +75,7 @@ routeTitle' :: store -> Route store graph a -> Text
 routeTitle' store = \case
   Route_IndexRedirect -> "Index"
   Route_ZIndex -> "Zettel Index"
+  Route_Search {} -> "Search"
   Route_Zettel (flip lookupStore store -> Zettel {..}) ->
     zettelTitle
 
@@ -70,6 +86,7 @@ routeOpenGraph Config {..} store r =
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
         Route_IndexRedirect -> Nothing
+        Route_Search {} -> Just "Search Zettelkasten"
         Route_ZIndex -> Just "Zettelkasten Index"
         Route_Zettel (flip lookupStore store -> Zettel {..}) ->
           T.take 300 <$> MMark.getFirstParagraphText zettelContent,

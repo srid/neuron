@@ -12,6 +12,7 @@ module Neuron.Zettelkasten
   )
 where
 
+import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
@@ -90,10 +91,18 @@ generateSite writeHtmlRoute' zettelsPat = do
   (writeHtmlRoute . Z.Route_Zettel) `mapM_` Map.keys zettelStore
   -- Generate the z-index
   writeHtmlRoute Z.Route_ZIndex
+  -- Generate zettelkasten index and search page
+  writeIndex zettelStore
+  writeHtmlRoute (Z.Route_Search Nothing [])
   -- Write index.html, unless a index.md zettel exists
   when (isNothing $ Map.lookup (Z.parseZettelID "index") zettelStore) $
     writeHtmlRoute Z.Route_IndexRedirect
   pure (zettelStore, zettelGraph)
+
+writeIndex :: Z.ZettelStore -> Action ()
+writeIndex store = do
+  let results = Z.runQuery store []
+  Rib.writeFileCached "index.json" $ decodeUtf8 $ Aeson.encode (Aeson.toJSON results)
 
 -- | Create a new zettel file and open it in editor if requested
 --
