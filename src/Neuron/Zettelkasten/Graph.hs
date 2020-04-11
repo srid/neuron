@@ -72,11 +72,6 @@ backlinks zid =
 topSort :: ZettelGraph -> Either (NonEmpty ZettelID) [ZettelID]
 topSort = Algo.topSort . LAM.skeleton
 
--- | Get the graph without the "index" zettel.
--- This is unused, but left for posterity.
-_withoutIndex :: ZettelGraph -> ZettelGraph
-_withoutIndex = LAM.induce ((/= "index") . unZettelID)
-
 zettelClusters :: ZettelGraph -> [NonEmpty ZettelID]
 zettelClusters = mothers . LAM.skeleton
 

@@ -95,7 +95,7 @@ data MarkdownLink = MarkdownLink
   }
   deriving (Eq, Ord)
 
-linkActionConnections :: ZettelStore -> MarkdownLink -> [ZettelConnection]
+linkActionConnections :: ZettelStore -> MarkdownLink -> [(Connection, ZettelID)]
 linkActionConnections store link =
   case linkActionFromLink link of
     Just (LinkAction_ConnectZettel conn zid) ->

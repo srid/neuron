@@ -58,7 +58,8 @@ common library-common
     algebraic-graphs >= 0.5,
     dhall >= 1.30,
     which,
-    unix
+    unix,
+    megaparsec >= 8.0
 
 library
   import: library-common

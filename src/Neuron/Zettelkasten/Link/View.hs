@@ -52,9 +52,14 @@ renderZettelLink ltheme store zid = do
       -- Uses ZettelID as link text. Title is displayed aside.
       renderDefault zid
     LinkTheme_WithDate -> do
-      renderDefault $ show @Text $ zettelIDDate zid
+      case zettelIDDay zid of
+        Just day ->
+          renderDefault $ show @Text day
+        Nothing ->
+          -- Fallback to using zid
+          renderDefault zid
     LinkTheme_Simple -> do
-      renderZettelLinkSimpleWith zurl (unZettelID zid) zettelTitle
+      renderZettelLinkSimpleWith zurl (zettelIDText zid) zettelTitle
 
 -- | Render a normal looking zettel link with a custom body.
 renderZettelLinkSimpleWith :: forall m a. (Monad m, ToHtml a) => Text -> Text -> a -> HtmlT m ()

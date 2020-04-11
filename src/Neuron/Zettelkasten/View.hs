@@ -23,7 +23,7 @@ import Lucid
 import Neuron.Version (neuronVersionFull)
 import Neuron.Zettelkasten.Config
 import Neuron.Zettelkasten.Graph
-import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)
+import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link (linkActionExt)
 import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
@@ -167,7 +167,7 @@ renderForest isRoot maxLevel ltheme s g trees =
                 -- Has two or more backlinks
                 forM_ conns $ \zid2 -> do
                   let z2 = lookupStore zid2 s
-                  i_ [class_ "fas fa-link", title_ $ unZettelID zid2 <> " " <> zettelTitle z2] mempty
+                  i_ [class_ "fas fa-link", title_ $ zettelIDText zid2 <> " " <> zettelTitle z2] mempty
               _ -> mempty
           when (length subtrees > 0) $ do
             ul_ $ renderForest False ((\n -> n - 1) <$> maxLevel) ltheme s g subtrees
