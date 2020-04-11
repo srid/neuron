@@ -35,8 +35,16 @@ withRgb theme f =
     Brown ->
       f 165 42 42
 
+-- | Convert Theme to Semantic UI color name
 semanticColor :: Theme -> Text
 semanticColor = toLower . show @Text
+
+-- | Make Theme from Semantic UI color name
+mkTheme :: Text -> Theme
+mkTheme = \case
+  "teal" -> Teal
+  "brown" -> Brown
+  s -> error $ "Unsupported theme name: " <> s
 
 defaultTheme :: Theme
 defaultTheme = Teal

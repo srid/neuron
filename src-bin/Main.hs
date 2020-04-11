@@ -47,7 +47,7 @@ renderPage config r val = html_ [lang_ "en"] $ do
       _ -> do
         stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
         stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
-        style_ [type_ "text/css"] $ C.renderWith C.compact [] style
+        style_ [type_ "text/css"] $ C.renderWith C.compact [] $ style config
         googleFonts $ [headerFont, bodyFont, monoFont]
         when (Z.mathJaxSupport config) $
           with (script_ mempty) [id_ "MathJax-script", src_ "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", async_ ""]
@@ -64,8 +64,8 @@ bodyFont = "Open Sans"
 monoFont :: Text
 monoFont = "Roboto Mono"
 
-style :: Css
-style = "div#thesite" ? do
+style :: Z.Config -> Css
+style cfg = "div#thesite" ? do
   C.fontFamily [bodyFont] [C.serif]
   C.paddingTop $ em 1
   C.paddingBottom $ em 1
@@ -78,4 +78,4 @@ style = "div#thesite" ? do
     C.display C.block
     C.marginLeft C.auto
     C.marginRight C.auto
-  Z.style
+  Z.style cfg

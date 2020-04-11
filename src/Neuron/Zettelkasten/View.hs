@@ -30,7 +30,6 @@ import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Theme (defaultTheme)
 import qualified Neuron.Zettelkasten.Theme as Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -93,6 +92,7 @@ renderIndex (store, graph) = do
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel config@Config {..} (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
+      neuronTheme = Theme.mkTheme theme
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segments"] $ do
       div_ [class_ "ui top attached segment"] $ do
@@ -101,7 +101,7 @@ renderZettel config@Config {..} (store, graph) zid = do
         MMark.render $ useExtensions (linkActionExt store : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
-    div_ [class_ $ "ui inverted " <> Theme.semanticColor defaultTheme <> " top attached connections segment"] $ do
+    div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
@@ -179,9 +179,10 @@ renderForest isRoot maxLevel ltheme s g trees =
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
 
-style :: Css
-style = do
-  let linkColor = Theme.withRgb defaultTheme C.rgb
+style :: Config -> Css
+style Config {..} = do
+  let neuronTheme = Theme.mkTheme theme
+      linkColor = Theme.withRgb neuronTheme C.rgb
       linkTitleColor = C.auto
   "span.zettel-link span.zettel-link-idlink a" ? do
     C.fontFamily [] [C.monospace]
@@ -210,7 +211,7 @@ style = do
       C.paddingBottom $ em 0.2
       C.textAlign C.center
       C.fontWeight $ weight 700
-      C.backgroundColor $ Theme.withRgb defaultTheme C.rgba 0.1
+      C.backgroundColor $ Theme.withRgb neuronTheme C.rgba 0.1
     C.h2 ? do
       C.fontWeight $ weight 600
       C.borderBottom C.solid (px 1) C.steelblue
