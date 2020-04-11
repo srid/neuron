@@ -29,7 +29,7 @@ instance ToHtml Query where
   toHtmlRaw = toHtml
   toHtml (ByTag tag) = do
     let desc = "Zettels tagged '" <> tag <> "'"
-    span_ [class_ "ui basic pointing below label", title_ desc] $ toHtml tag
+    span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml tag
 
 instance ToHtml [Query] where
   toHtmlRaw = toHtml

@@ -97,8 +97,8 @@ renderZettel config@Config {..} (store, graph) zid = do
         h1_ [class_ "header"] $ toHtml zettelTitle
         let mmarkExts = neuronMMarkExts config
         MMark.render $ useExtensions (linkActionExt store : mmarkExts) zettelContent
-      whenNotNull zettelTags $ \_ ->
-        div_ [class_ "ui bottom attached segment"] $ renderTags zettelTags
+        whenNotNull zettelTags $ \_ ->
+          renderTags zettelTags
     div_ [class_ "ui inverted teal top attached connections segment"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
@@ -130,11 +130,13 @@ renderZettel config@Config {..} (store, graph) zid = do
 
 renderTags :: Monad m => [Text] -> HtmlT m ()
 renderTags tags = do
-  div_ [class_ "ui right aligned grid"] $ do
-    div_ [class_ "right floated column"] $ do
-      div_ [class_ "ui tag labels"] $ do
-        forM_ tags $ \tag -> do
-          div_ [class_ "ui teal tag label"] $ toHtml @Text tag
+  forM_ tags $ \tag -> do
+    -- TODO: Ideally this should be at the top, not bottom. But putting it at
+    -- the top pushes the zettel content down, introducing unnecessary white
+    -- space below the title.
+    span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
+      toHtml @Text tag
+    p_ mempty
 
 -- | Font awesome element
 fa :: Monad m => Text -> HtmlT m ()
