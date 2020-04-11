@@ -135,7 +135,7 @@ commandParser defaultNotesDir = do
     searchCommand = do
       searchBy <-
         fmap (bool SearchByTitle SearchByContent) $
-          switch (long "--full-text" <> short 'a' <> help "Full-text search")
+          switch (long "full-text" <> short 'a' <> help "Full-text search")
       edit <- switch (long "edit" <> short 'e' <> help "Open the matching zettel in $EDITOR")
       pure $ Search $ SearchCommand searchBy edit
     ribCommand = fmap Rib $ do
