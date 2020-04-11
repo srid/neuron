@@ -9,6 +9,7 @@ where
 
 import Neuron.Zettelkasten.ID (Connection (..), ZettelID (..))
 import Neuron.Zettelkasten.Link.Action
+import Neuron.Zettelkasten.Query
 import Relude
 import Test.Hspec
 import Text.URI
@@ -26,13 +27,29 @@ linkActionCases =
       (Left "1234567"),
       Just $ LinkAction_ConnectZettel Folgezettel (ZettelID "1234567")
     ),
-    ( "legacy z: link",
+    ( "z: link",
       (Right ("1234567", "z:")),
       Just $ LinkAction_ConnectZettel Folgezettel (ZettelID "1234567")
     ),
-    ( "legacy z: link, with annotation ignored",
+    ( "z: link, with annotation ignored",
       (Right ("1234567", "z://foo-bar")),
       Just $ LinkAction_ConnectZettel Folgezettel (ZettelID "1234567")
+    ),
+    ( "zcf: link",
+      (Right ("1234567", "zcf:")),
+      Just $ LinkAction_ConnectZettel OrdinaryConnection (ZettelID "1234567")
+    ),
+    ( "zcf: link, with annotation ignored",
+      (Right ("1234567", "zcf://foo-bar")),
+      Just $ LinkAction_ConnectZettel OrdinaryConnection (ZettelID "1234567")
+    ),
+    ( "zquery: link",
+      (Right (".", "zquery://search?tag=science")),
+      Just $ LinkAction_QueryZettels Folgezettel LinkTheme_Default [ByTag "science"]
+    ),
+    ( "zcfquery: link, with link theme",
+      (Right (".", "zcfquery://search?tag=science&linkTheme=withDate")),
+      Just $ LinkAction_QueryZettels OrdinaryConnection LinkTheme_WithDate [ByTag "science"]
     )
   ]
 
