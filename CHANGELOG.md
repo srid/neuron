@@ -4,9 +4,10 @@
 
 - Bug fixes
   - Fix regression in neuron library use
-- Styling changes:
+- UI
   - Tags are restyled and positioned below
   - Produce compact CSS in HTML head
+  - #24: zquery is displayed in HTML view.
 - CLI revamp
   - Zettelkasten directory is now provided via the `-d` argument.
     - Its default, `~/zettelkasten`, is used when not specified.

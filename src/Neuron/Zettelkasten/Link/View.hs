@@ -29,7 +29,7 @@ linkActionRender store _ = \case
   LinkAction_ConnectZettel _conn zid -> do
     renderZettelLink LinkTheme_Default store zid
   LinkAction_QueryZettels _conn linkTheme q -> do
-    toHtmlRaw @Text $ "<!--" <> show q <> "-->"
+    toHtml q
     let zettels = reverse $ sort $ zettelID <$> runQuery store q
     ul_ $ do
       forM_ zettels $ \zid -> do
