@@ -15,7 +15,7 @@
 -- | HTML & CSS
 module Neuron.Zettelkasten.View where
 
-import Clay hiding (head, id, ms, reverse, s, type_)
+import Clay hiding (a, b, head, id, ms, reverse, rgb, rgba, s, type_)
 import qualified Clay as C
 import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
@@ -99,7 +99,7 @@ renderZettel config@Config {..} (store, graph) zid = do
         MMark.render $ useExtensions (linkActionExt store : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
-    div_ [class_ "ui inverted teal top attached connections segment"] $ do
+    div_ [class_ $ "ui inverted " <> themeSemanticColor defaultTheme <> " top attached connections segment"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
@@ -177,9 +177,34 @@ renderForest isRoot maxLevel ltheme s g trees =
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
 
+data Theme = Theme
+  { themeSemanticColor :: Text,
+    themeRGB :: (Integer, Integer, Integer)
+  }
+  deriving (Eq, Show)
+
+tealTheme :: Theme
+tealTheme = Theme "teal" (0, 128, 128)
+
+brownTheme :: Theme
+brownTheme = Theme "brown" (165, 42, 42)
+
+defaultTheme :: Theme
+defaultTheme = brownTheme
+
+rgba :: Theme -> Float -> Color
+rgba Theme {..} a =
+  let (r, g, b) = themeRGB
+   in C.rgba r g b a
+
+rgb :: Theme -> Color
+rgb Theme {..} =
+  let (r, g, b) = themeRGB
+   in C.rgb r g b
+
 style :: Css
 style = do
-  let linkColor = C.mediumaquamarine
+  let linkColor = rgb defaultTheme
       linkTitleColor = C.auto
   "span.zettel-link span.zettel-link-idlink a" ? do
     C.fontFamily [] [C.monospace]
@@ -207,18 +232,18 @@ style = do
       C.paddingTop $ em 0.2
       C.paddingBottom $ em 0.2
       C.textAlign C.center
-      C.color C.midnightblue
-      C.fontWeight C.bold
-      C.backgroundColor C.whitesmoke
+      C.fontWeight $ weight 700
+      C.backgroundColor $ rgba defaultTheme 0.1
     C.h2 ? do
-      C.fontColor C.darkslategray
-      C.fontWeight C.bold
+      C.fontWeight $ weight 600
       C.borderBottom C.solid (px 1) C.steelblue
       C.marginBottom $ em 0.5
     C.h3 ? do
-      C.fontColor C.slategray
-      C.fontWeight C.bold
+      C.fontWeight $ weight 400
       C.margin (px 0) (px 0) (em 0.4) (px 0)
+    C.h4 ? do
+      C.fontWeight $ weight 300
+      C.opacity 0.8
     codeStyle
     blockquoteStyle
     kbd ? mozillaKbdStyle
