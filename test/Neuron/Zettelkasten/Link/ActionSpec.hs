@@ -27,6 +27,10 @@ linkActionCases =
       (Left "1234567"),
       Just $ LinkAction_ConnectZettel Folgezettel zid
     ),
+    ( "not an alias link (different link text)",
+      (Right ("foo", "1234567")),
+      Nothing
+    ),
     ( "z: link",
       (Right ("1234567", "z:")),
       Just $ LinkAction_ConnectZettel Folgezettel zid
