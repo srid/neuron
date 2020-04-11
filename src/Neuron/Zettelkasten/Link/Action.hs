@@ -24,7 +24,6 @@ import Relude
 import Text.MMark (MMark, runScanner)
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Inline (..))
-import Text.Regex.TDFA ((=~))
 import qualified Text.URI as URI
 
 data LinkTheme
@@ -56,15 +55,11 @@ linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkT
       Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
     Just "zcfquery" ->
       Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
-    _ ->
-      let uriRendered = URI.render uri
-       in -- TODO: All this parsing should happen in parseZettelID eventually, per #70
-          if uriRendered =~ ("^[A-Za-z0-9_-]+$" :: Text)
-            && uriRendered == linkText
-            then
-              let zid = parseZettelID uriRendered
-               in Just $ LinkAction_ConnectZettel Folgezettel zid
-            else Nothing
+    _ -> do
+      let uriS = URI.render uri
+      guard $ uriS == linkText
+      zid <- rightToMaybe $ parseZettelID' uriS
+      pure $ LinkAction_ConnectZettel Folgezettel zid
 
 queryFromUri :: URI.URI -> [Query]
 queryFromUri uri =
@@ -95,7 +90,7 @@ data MarkdownLink = MarkdownLink
   }
   deriving (Eq, Ord)
 
-linkActionConnections :: ZettelStore -> MarkdownLink -> [ZettelConnection]
+linkActionConnections :: ZettelStore -> MarkdownLink -> [(Connection, ZettelID)]
 linkActionConnections store link =
   case linkActionFromLink link of
     Just (LinkAction_ConnectZettel conn zid) ->

@@ -7,7 +7,7 @@ module Neuron.Zettelkasten.Link.ActionSpec
   )
 where
 
-import Neuron.Zettelkasten.ID (Connection (..), ZettelID (..))
+import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Action
 import Neuron.Zettelkasten.Query
 import Relude
@@ -25,23 +25,27 @@ linkActionCases :: [(String, Either Text (Text, Text), Maybe LinkAction)]
 linkActionCases =
   [ ( "alias link",
       (Left "1234567"),
-      Just $ LinkAction_ConnectZettel Folgezettel (ZettelID "1234567")
+      Just $ LinkAction_ConnectZettel Folgezettel zid
+    ),
+    ( "not an alias link (different link text)",
+      (Right ("foo", "1234567")),
+      Nothing
     ),
     ( "z: link",
       (Right ("1234567", "z:")),
-      Just $ LinkAction_ConnectZettel Folgezettel (ZettelID "1234567")
+      Just $ LinkAction_ConnectZettel Folgezettel zid
     ),
     ( "z: link, with annotation ignored",
       (Right ("1234567", "z://foo-bar")),
-      Just $ LinkAction_ConnectZettel Folgezettel (ZettelID "1234567")
+      Just $ LinkAction_ConnectZettel Folgezettel zid
     ),
     ( "zcf: link",
       (Right ("1234567", "zcf:")),
-      Just $ LinkAction_ConnectZettel OrdinaryConnection (ZettelID "1234567")
+      Just $ LinkAction_ConnectZettel OrdinaryConnection zid
     ),
     ( "zcf: link, with annotation ignored",
       (Right ("1234567", "zcf://foo-bar")),
-      Just $ LinkAction_ConnectZettel OrdinaryConnection (ZettelID "1234567")
+      Just $ LinkAction_ConnectZettel OrdinaryConnection zid
     ),
     ( "zquery: link",
       (Right (".", "zquery://search?tag=science")),
@@ -50,8 +54,14 @@ linkActionCases =
     ( "zcfquery: link, with link theme",
       (Right (".", "zcfquery://search?tag=science&linkTheme=withDate")),
       Just $ LinkAction_QueryZettels OrdinaryConnection LinkTheme_WithDate [ByTag "science"]
+    ),
+    ( "normal link",
+      (Left "https://www.google.com"),
+      Nothing
     )
   ]
+  where
+    zid = parseZettelID "1234567"
 
 mkMarkdownLink :: Text -> Text -> MarkdownLink
 mkMarkdownLink s l =

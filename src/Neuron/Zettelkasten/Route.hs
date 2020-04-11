@@ -35,15 +35,15 @@ instance IsRoute (Route store graph) where
       pure "index.html"
     Route_ZIndex ->
       pure "z-index.html"
-    Route_Zettel (unZettelID -> zid) ->
-      pure $ toString zid <> ".html"
+    Route_Zettel (zettelIDText -> s) ->
+      pure $ toString s <> ".html"
 
 -- | Return short name corresponding to the route
 routeName :: Route store graph a -> Text
 routeName = \case
   Route_IndexRedirect -> "Index"
   Route_ZIndex -> "Zettels"
-  Route_Zettel zid -> unZettelID zid
+  Route_Zettel zid -> zettelIDText zid
 
 -- | Return full title for a route
 routeTitle :: Config -> store -> Route store graph a -> Text

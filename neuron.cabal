@@ -43,7 +43,6 @@ common library-common
     lucid -any,
     optparse-applicative,
     pandoc,
-    regex-tdfa,
     relude,
     rib ^>=0.9,
     shake -any,
@@ -58,7 +57,8 @@ common library-common
     algebraic-graphs >= 0.5,
     dhall >= 1.30,
     which,
-    unix
+    unix,
+    megaparsec >= 8.0
 
 library
   import: library-common

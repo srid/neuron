@@ -16,11 +16,12 @@ spec :: Spec
 spec = do
   describe "Zettel ID" $ do
     context "parsing" $ do
-      let zid = Z.ZettelID "2011401"
+      let day = fromGregorian 2020 3 19
+          zid = Z.ZettelDateID day 1
       it "parses a zettel ID" $ do
         Z.parseZettelID "2011401" `shouldBe` zid
       it "parses a zettel ID from zettel filename" $ do
         Z.mkZettelID "2011401.md" `shouldBe` zid
         Z.zettelIDSourceFileName zid `shouldBe` "2011401.md"
       it "returns the correct day" $ do
-        Z.zettelIDDate zid `shouldBe` fromGregorian 2020 3 19
+        Z.zettelIDDay zid `shouldBe` Just day
