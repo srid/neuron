@@ -13,12 +13,12 @@ in {
 , name ? "neuron"
 , gitRev ? ""
 , source-overrides ? {}
+, pkgs ? import <nixpkgs> {}
 , ...
 }:
 
 let 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
-  pkgs = import <nixpkgs> {};
   neuronSearchScript = pkgs.callPackage ./src-script/neuron-search { inherit pkgs; };
   additional-packages = pkgs:
   [ neuronSearchScript
