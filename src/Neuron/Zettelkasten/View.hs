@@ -155,7 +155,11 @@ renderTags tags = do
     -- the top pushes the zettel content down, introducing unnecessary white
     -- space below the title.
     span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
-      toHtml @Text tag
+      a_
+        [ href_ (Rib.routeUrlRel $ Route_Search Nothing [tag]),
+          title_ ("See all zettels with tag '" <> tag <> "'")
+        ]
+        $ toHtml @Text tag
     p_ mempty
 
 -- | Font awesome element
