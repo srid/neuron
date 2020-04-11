@@ -1,4 +1,4 @@
-let search, zettels;
+let search, zettels, selectedTags;
 
 let searchResults = document.getElementById("search-results"); // ul element
 let searchInput = document.getElementById("search-input");
@@ -53,6 +53,12 @@ function rebuildSearchIndex() {
   search.addDocuments(zettels);
 }
 
+function matchSelectedTags(zettel) {
+  return selectedTags.every((tag) => {
+    return zettel.tags.includes(tag);
+  });
+}
+
 // Runs and renders the search
 function runSearch() {
   let query = searchInput.value;
@@ -62,6 +68,7 @@ function runSearch() {
   } else {
     results = search.search(query);
   }
+  results = results.filter(matchSelectedTags);
   renderResults(results);
 }
 
@@ -69,6 +76,7 @@ function initializeSearchFromURL() {
   let url = new URL(window.location.href);
   let searchParams = new URLSearchParams(url.search);
   searchInput.value = searchParams.get("q");
+  selectedTags = searchParams.getAll("tag");
   runSearch();
 }
 
