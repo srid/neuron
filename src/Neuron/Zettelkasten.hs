@@ -69,11 +69,11 @@ runWith act App {..} = do
         let matches = Z.runQuery store queries
         putLTextLn $ Aeson.encodeToLazyText $ matches
     Search searchBy -> do
-      let filterArg =
+      let args =
             case searchBy of
-              SearchByTitle -> "title: "
-              SearchByContent -> ""
-      execScript neuronSearchScript [notesDir, filterArg]
+              SearchByTitle -> ["title: ", "3"]
+              SearchByContent -> ["", "2"]
+      execScript neuronSearchScript $ notesDir : args
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
