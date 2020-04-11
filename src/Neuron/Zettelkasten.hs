@@ -16,7 +16,7 @@ import qualified Data.Aeson.Text as Aeson
 import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
 import qualified Neuron.Version as Version
-import Neuron.Zettelkasten.CLI (App (..), Command (..), NewCommand (..), commandParser, runRib, runRibOnceQuietly)
+import Neuron.Zettelkasten.CLI
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Query as Z
@@ -68,8 +68,12 @@ runWith act App {..} = do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
         let matches = Z.runQuery store queries
         putLTextLn $ Aeson.encodeToLazyText $ matches
-    Search ->
-      execScript neuronSearchScript [notesDir]
+    Search searchBy -> do
+      let filterArg =
+            case searchBy of
+              SearchByTitle -> "title: "
+              SearchByContent -> ""
+      execScript neuronSearchScript [notesDir, filterArg]
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
