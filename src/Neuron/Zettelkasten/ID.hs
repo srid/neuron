@@ -21,7 +21,7 @@ module Neuron.Zettelkasten.ID
   )
 where
 
-import Data.Aeson (ToJSON)
+import Data.Aeson
 import qualified Data.Text as T
 import Data.Time
 import Development.Shake (Action)
@@ -41,7 +41,10 @@ import Text.Printf
 data ZettelID
   = ZettelDateID Day Int
   | ZettelCustomID Text
-  deriving (Eq, Show, Ord, Generic, ToJSON)
+  deriving (Eq, Show, Ord, Generic)
+
+instance ToJSON ZettelID where
+  toJSON = toJSON . zettelIDText
 
 instance ToHtml ZettelID where
   toHtmlRaw = toHtml
