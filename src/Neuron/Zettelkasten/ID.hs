@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
@@ -41,7 +40,7 @@ import Text.Printf
 data ZettelID
   = ZettelDateID Day Int
   | ZettelCustomID Text
-  deriving (Eq, Show, Ord, Generic)
+  deriving (Eq, Show, Ord)
 
 instance ToJSON ZettelID where
   toJSON = toJSON . zettelIDText
