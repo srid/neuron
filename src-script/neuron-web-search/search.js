@@ -56,12 +56,20 @@ function rebuildSearchIndex() {
 // Runs and renders the search
 function runSearch() {
   let query = searchInput.value;
+  let results;
   if (query == "") {
     results = zettels;
   } else {
     results = search.search(query);
   }
   renderResults(results);
+}
+
+function initializeSearchFromURL() {
+  let url = new URL(window.location.href);
+  let searchParams = new URLSearchParams(url.search);
+  searchInput.value = searchParams.get("q");
+  runSearch();
 }
 
 // Rerun the search at every change
@@ -73,7 +81,7 @@ xmlhttp.onreadystatechange = function () {
   if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
     zettels = JSON.parse(xmlhttp.responseText);
     rebuildSearchIndex();
-    renderResults(zettels);
+    initializeSearchFromURL();
   }
 };
 xmlhttp.open("GET", "index.json", true);
