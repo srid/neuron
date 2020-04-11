@@ -16,9 +16,8 @@ import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Zettel
 import Relude
-import Rib (MMark)
 
-type ZettelStore = Map ZettelID (Zettel MMark)
+type ZettelStore = Map ZettelID Zettel
 
 -- | Load all zettel files
 mkZettelStore :: [FilePath] -> Action ZettelStore
@@ -26,5 +25,5 @@ mkZettelStore files = do
   zettels <- mkZettelFromPath `mapM` files
   pure $ Map.fromList $ zettels <&> zettelID &&& id
 
-lookupStore :: ZettelID -> ZettelStore -> Zettel MMark
+lookupStore :: ZettelID -> ZettelStore -> Zettel
 lookupStore zid = fromMaybe (error $ "No such zettel: " <> show zid) . Map.lookup zid
