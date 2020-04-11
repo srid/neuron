@@ -14,6 +14,7 @@ module Neuron.Zettelkasten.ID
     zettelIDDay,
     zettelIDText,
     parseZettelID,
+    parseZettelID',
     mkZettelID,
     zettelNextIdForToday,
     zettelIDSourceFileName,
@@ -88,9 +89,13 @@ zettelNextIdForToday = do
       pure $ ZettelDateID day 1
 
 parseZettelID :: Text -> ZettelID
-parseZettelID s =
-  either (error . toText . M.errorBundlePretty) id $
-    M.parse p "parseZettelID" s
+parseZettelID =
+  either error id . parseZettelID'
+
+parseZettelID' :: Text -> Either Text ZettelID
+parseZettelID' s =
+  first (toText . M.errorBundlePretty) $
+    M.parse (p <* M.eof) "parseZettelID" s
   where
     p =
       fmap (uncurry ZettelDateID) dayParser

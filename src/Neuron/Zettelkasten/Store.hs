@@ -27,4 +27,4 @@ mkZettelStore files = do
   pure $ Map.fromList $ zettels <&> zettelID &&& id
 
 lookupStore :: ZettelID -> ZettelStore -> Zettel MMark
-lookupStore zid = fromMaybe (error $ "No such zettel: " <> zettelIDText zid) . Map.lookup zid
+lookupStore zid = fromMaybe (error $ "No such zettel: " <> show zid) . Map.lookup zid

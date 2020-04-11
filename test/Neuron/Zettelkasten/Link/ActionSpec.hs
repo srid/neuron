@@ -50,6 +50,10 @@ linkActionCases =
     ( "zcfquery: link, with link theme",
       (Right (".", "zcfquery://search?tag=science&linkTheme=withDate")),
       Just $ LinkAction_QueryZettels OrdinaryConnection LinkTheme_WithDate [ByTag "science"]
+    ),
+    ( "normal link",
+      (Left "https://www.google.com"),
+      Nothing
     )
   ]
   where

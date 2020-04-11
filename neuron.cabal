@@ -43,7 +43,6 @@ common library-common
     lucid -any,
     optparse-applicative,
     pandoc,
-    regex-tdfa,
     relude,
     rib ^>=0.9,
     shake -any,
