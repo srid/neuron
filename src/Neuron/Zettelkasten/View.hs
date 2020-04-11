@@ -15,7 +15,7 @@
 -- | HTML & CSS
 module Neuron.Zettelkasten.View where
 
-import Clay hiding (a, b, head, id, ms, reverse, rgb, rgba, s, type_)
+import Clay hiding (id, ms, reverse, s, type_)
 import qualified Clay as C
 import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
@@ -30,6 +30,8 @@ import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
+import Neuron.Zettelkasten.Theme (defaultTheme)
+import qualified Neuron.Zettelkasten.Theme as Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -99,7 +101,7 @@ renderZettel config@Config {..} (store, graph) zid = do
         MMark.render $ useExtensions (linkActionExt store : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
-    div_ [class_ $ "ui inverted " <> themeSemanticColor defaultTheme <> " top attached connections segment"] $ do
+    div_ [class_ $ "ui inverted " <> Theme.semanticColor defaultTheme <> " top attached connections segment"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
@@ -177,34 +179,9 @@ renderForest isRoot maxLevel ltheme s g trees =
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
 
-data Theme = Theme
-  { themeSemanticColor :: Text,
-    themeRGB :: (Integer, Integer, Integer)
-  }
-  deriving (Eq, Show)
-
-tealTheme :: Theme
-tealTheme = Theme "teal" (0, 128, 128)
-
-brownTheme :: Theme
-brownTheme = Theme "brown" (165, 42, 42)
-
-defaultTheme :: Theme
-defaultTheme = brownTheme
-
-rgba :: Theme -> Float -> Color
-rgba Theme {..} a =
-  let (r, g, b) = themeRGB
-   in C.rgba r g b a
-
-rgb :: Theme -> Color
-rgb Theme {..} =
-  let (r, g, b) = themeRGB
-   in C.rgb r g b
-
 style :: Css
 style = do
-  let linkColor = rgb defaultTheme
+  let linkColor = Theme.withRgb defaultTheme C.rgb
       linkTitleColor = C.auto
   "span.zettel-link span.zettel-link-idlink a" ? do
     C.fontFamily [] [C.monospace]
@@ -233,7 +210,7 @@ style = do
       C.paddingBottom $ em 0.2
       C.textAlign C.center
       C.fontWeight $ weight 700
-      C.backgroundColor $ rgba defaultTheme 0.1
+      C.backgroundColor $ Theme.withRgb defaultTheme C.rgba 0.1
     C.h2 ? do
       C.fontWeight $ weight 600
       C.borderBottom C.solid (px 1) C.steelblue
