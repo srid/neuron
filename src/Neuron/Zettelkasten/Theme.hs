@@ -13,19 +13,6 @@ import Relude
 --
 -- Each theme corresponds to the color supported by Semantic UI
 -- https://semantic-ui.com/usage/theming.html#sitewide-defaults
--- @red            : #B03060;
--- @orange         : #FE9A76;
--- @yellow         : #FFD700;
--- @olive          : #32CD32;
--- @green          : #016936;
--- @teal           : #008080;
--- @blue           : #0E6EB8;
--- @violet         : #EE82EE;
--- @purple         : #B413EC;
--- @pink           : #FF1493;
--- @brown          : #A52A2A;
--- @grey           : #A0A0A0;
--- @black          : #000000;
 data Theme
   = Teal
   | Brown
@@ -46,31 +33,31 @@ withRgb :: Theme -> (Integer -> Integer -> Integer -> a) -> a
 withRgb theme f =
   case theme of
     Teal ->
-      f 0 128 128
+      f 0 181 173
     Brown ->
-      f 165 42 42
+      f 165 103 63
     Red ->
-      f 176 48 96
+      f 219 40 40
     Orange ->
-      f 254 154 118
+      f 242 113 28
     Yellow ->
-      f 255 215 0
+      f 251 189 8
     Olive ->
-      f 50 205 50
+      f 181 204 24
     Green ->
-      f 1 105 54
+      f 33 186 69
     Blue ->
-      f 14 110 184
+      f 33 133 208
     Violet ->
-      f 238 130 238
+      f 100 53 201
     Purple ->
-      f 180 19 236
+      f 163 51 200
     Pink ->
-      f 255 20 147
+      f 224 57 151
     Grey ->
-      f 160 160 160
+      f 118 118 118
     Black ->
-      f 0 0 0
+      f 27 28 29
 
 -- | Convert Theme to Semantic UI color name
 semanticColor :: Theme -> Text
