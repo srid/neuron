@@ -11,6 +11,7 @@ module Neuron.Zettelkasten.CLI
     Command (..),
     NewCommand (..),
     SearchBy (..),
+    SearchCommand (..),
     commandParser,
     runRib,
     runRibOnceQuietly,
@@ -37,6 +38,12 @@ data App = App
 data NewCommand = NewCommand {title :: Text, edit :: Bool}
   deriving (Eq, Show)
 
+data SearchCommand = SearchCommand
+  { searchBy :: SearchBy,
+    searchEdit :: Bool
+  }
+  deriving (Eq, Show)
+
 data SearchBy
   = SearchByTitle
   | SearchByContent
@@ -48,7 +55,7 @@ data Command
   | -- | Open the locally generated Zettelkasten
     Open
   | -- | Search a zettel by title
-    Search SearchBy
+    Search SearchCommand
   | -- | Run a query against the Zettelkasten
     Query [Z.Query]
   | -- | Delegate to Rib's command parser
@@ -116,7 +123,7 @@ commandParser defaultNotesDir = do
             command "rib" $ info ribCommand $ progDesc "Generate static site via rib"
           ]
     newCommand = do
-      edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created file in $EDITOR")
+      edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
       title <- argument str (metavar "TITLE" <> help "Title of the new Zettel")
       return (New NewCommand {..})
     openCommand =
@@ -129,7 +136,8 @@ commandParser defaultNotesDir = do
       searchBy <-
         fmap (bool SearchByTitle SearchByContent) $
           switch (long "--full-text" <> short 'a' <> help "Full-text search")
-      pure $ Search searchBy
+      edit <- switch (long "edit" <> short 'e' <> help "Open the matching zettel in $EDITOR")
+      pure $ Search $ SearchCommand searchBy edit
     ribCommand = fmap Rib $ do
       ribOutputDir <-
         optional $

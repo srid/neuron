@@ -35,6 +35,16 @@ import System.Which
 neuronSearchScript :: FilePath
 neuronSearchScript = $(staticWhich "neuron-search")
 
+searchScriptArgs :: SearchCommand -> [String]
+searchScriptArgs SearchCommand {..} =
+  let searchByArgs =
+        case searchBy of
+          SearchByTitle -> ["title: ", "3"]
+          SearchByContent -> ["", "2"]
+      editArg =
+        bool "echo" "$EDITOR" searchEdit
+   in searchByArgs <> [editArg]
+
 run :: Action () -> IO ()
 run act = do
   defaultNotesDir <- (</> "zettelkasten") <$> getHomeDirectory
@@ -68,12 +78,8 @@ runWith act App {..} = do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
         let matches = Z.runQuery store queries
         putLTextLn $ Aeson.encodeToLazyText $ matches
-    Search searchBy -> do
-      let args =
-            case searchBy of
-              SearchByTitle -> ["title: ", "3"]
-              SearchByContent -> ["", "2"]
-      execScript neuronSearchScript $ notesDir : args
+    Search searchCmd -> do
+      execScript neuronSearchScript $ notesDir : searchScriptArgs searchCmd
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)

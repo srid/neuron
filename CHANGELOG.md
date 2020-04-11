@@ -5,6 +5,7 @@
 - New features
   - [Short links](https://neuron.srid.ca/2014501.html).
   - Full text search: `neuron search --full-text`
+  - #43: Add `neuron search -e` to open the matching zettel in $EDITOR
   - Allow customizing output directory
   - Added `neuron open` to open the locally generated Zettelkasten site.
 - CLI revamp
