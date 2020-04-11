@@ -16,25 +16,24 @@ import qualified Rib.Parser.MMark as MMark
 import Text.MMark (MMark)
 import Text.Show (Show (show))
 
-data Zettel content = Zettel
+data Zettel = Zettel
   { zettelID :: ZettelID,
     zettelTitle :: Text,
     zettelTags :: [Text],
-    zettelContent :: content
+    zettelContent :: MMark
   }
-  deriving (Functor)
 
-instance Eq (Zettel c) where
+instance Eq Zettel where
   (==) = (==) `on` zettelID
 
-instance Ord (Zettel c) where
+instance Ord Zettel where
   compare = compare `on` zettelID
 
-instance Show (Zettel c) where
+instance Show Zettel where
   show Zettel {..} = "Zettel:" <> show zettelID
 
 -- TODO: Use generic deriving use field label modifier.
-instance ToJSON (Zettel ()) where
+instance ToJSON Zettel where
   toJSON Zettel {..} =
     object
       [ "id" .= toJSON zettelID,
@@ -43,7 +42,7 @@ instance ToJSON (Zettel ()) where
       ]
 
 -- | Load a zettel from a file.
-mkZettelFromPath :: FilePath -> Action (Zettel MMark)
+mkZettelFromPath :: FilePath -> Action Zettel
 mkZettelFromPath path = do
   -- Extensions are computed and applied during rendering, not here.
   let noExts = []
@@ -54,6 +53,6 @@ mkZettelFromPath path = do
       tags = fromMaybe [] $ Meta.tags =<< meta
   pure $ Zettel zid title tags doc
 
-hasTag :: forall c. Text -> Zettel c -> Bool
+hasTag :: Text -> Zettel -> Bool
 hasTag t Zettel {..} =
   isJust $ find (== t) zettelTags

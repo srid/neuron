@@ -23,11 +23,11 @@ data Query
   = ByTag Text
   deriving (Eq, Show)
 
-matchQuery :: Zettel c -> Query -> Bool
+matchQuery :: Zettel -> Query -> Bool
 matchQuery Zettel {..} = \case
   ByTag tag -> tag `elem` zettelTags
 
-runQuery :: ZettelStore -> [Query] -> [Zettel ()]
+runQuery :: ZettelStore -> [Query] -> [Zettel]
 runQuery store queries =
-  fmap (fmap (const ())) $ flip filter (Map.elems store) $ \z ->
+  flip filter (Map.elems store) $ \z ->
     and $ matchQuery z <$> queries

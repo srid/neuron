@@ -20,7 +20,7 @@ module Neuron.Zettelkasten.ID
   )
 where
 
-import Data.Aeson
+import Data.Aeson (ToJSON (toJSON))
 import qualified Data.Text as T
 import Data.Time
 import Development.Shake (Action)

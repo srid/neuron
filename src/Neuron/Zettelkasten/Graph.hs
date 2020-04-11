@@ -36,7 +36,6 @@ import Neuron.Zettelkasten.Link.Action (extractLinks, linkActionConnections)
 import Neuron.Zettelkasten.Store (ZettelStore)
 import Neuron.Zettelkasten.Zettel
 import Relude
-import Rib (MMark)
 
 -- | The Zettelkasten graph
 type ZettelGraph = LAM.AdjacencyMap [Connection] ZettelID
@@ -59,7 +58,7 @@ mkZettelGraph store =
     -- TODO: Handle conflicts in edge monoid operation (same link but with
     -- different connection type), and consequently use a sensible type other
     -- than list.
-    zettelEdges :: Zettel MMark -> [([Connection], ZettelID)]
+    zettelEdges :: Zettel -> [([Connection], ZettelID)]
     zettelEdges Zettel {..} =
       let outgoingLinks = linkActionConnections store `concatMap` extractLinks zettelContent
        in first pure <$> outgoingLinks
