@@ -98,7 +98,7 @@ parseZettelID' s =
     M.parse (p <* M.eof) "parseZettelID" s
   where
     p =
-      fmap (uncurry ZettelDateID) dayParser
+      M.try (fmap (uncurry ZettelDateID) dayParser)
         <|> fmap ZettelCustomID customIDParser
 
 dayParser :: M.Parsec Void Text (Day, Int)
