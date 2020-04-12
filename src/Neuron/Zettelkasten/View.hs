@@ -260,7 +260,6 @@ style Config {..} = do
       "div.source-code" ? do
         marginLeft auto
         marginRight auto
-        maxWidth $ pct 80
         pre ? do
           backgroundColor "#f8f8f8"
     -- https://css-tricks.com/snippets/css/simple-and-nice-blockquote-styling/
@@ -269,7 +268,7 @@ style Config {..} = do
         -- TODO: quotes in clay?
         C.backgroundColor "#f9f9f9"
         C.borderLeft C.solid (px 10) "#ccc"
-        sym2 C.margin (em 1.5) (px 10)
+        sym2 C.margin (em 1.5) (px 0)
         sym2 C.padding (em 0.5) (px 10)
         C.p ? do
           C.display C.inline
