@@ -96,7 +96,7 @@ renderRouteBody config r (s, g, x) = do
     Route_ZIndex ->
       renderIndex config (s, g)
     Route_Search {} ->
-      renderSearch config (s, g)
+      renderSearch s
     Route_Zettel zid ->
       renderZettel config (s, g) zid
     Route_Redirect _ ->
@@ -131,8 +131,8 @@ renderIndex Config {..} (store, graph) = do
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderSearch :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> HtmlT m ()
-renderSearch _ (store, _) = do
+renderSearch :: forall m. Monad m => ZettelStore -> HtmlT m ()
+renderSearch store = do
   h1_ [class_ "header"] $ "Search"
   div_ [class_ "ui fluid icon input search"] $ do
     input_ [type_ "text", id_ "search-input"]
