@@ -72,18 +72,9 @@ function runSearch() {
   renderResults(results);
 }
 
-// Fill possible dropdown values with all tags from index
-// and initialize selection
+// Initialize selected tags
 function initializeTags() {
-  $('#search-tags').dropdown({
-    values: index.tags.map((tag) => {
-      return {name: tag, value: tag, selected: selectedTags.includes(tag)};
-    }),
-    onChange: (value) => {
-      selectedTags = value.split(',').filter((tag) => tag != "");
-      runSearch();
-    }
-  });
+  $('#search-tags').dropdown('set selected', selectedTags);
 }
 
 // Initialize variables with URL parameters
@@ -101,3 +92,10 @@ initializeSearchFromURL();
 
 $('#search-input').on("change paste keyup", runSearch)
                   .focus();
+
+$('#search-tags').dropdown({
+  onChange: (value) => {
+    selectedTags = value.split(',').filter((tag) => tag != "");
+    runSearch();
+  }
+});
