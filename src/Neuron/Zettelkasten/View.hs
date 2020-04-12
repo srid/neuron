@@ -84,7 +84,7 @@ renderRouteHead config r val = do
       mempty
     Route_Search {} -> do
       with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js"]
-      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.1/dist/semantic.min.js"]
+      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"]
       with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"]
     _ -> do
       toHtml $ routeOpenGraph config val r
