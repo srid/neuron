@@ -70,14 +70,21 @@ function runSearch() {
   renderResults(results);
 }
 
+// Fill possible dropdown values with all tags from index
+// and initialize selection
 function initializeTags() {
   $('#search-tags').dropdown({
     values: index.tags.map((tag) => {
       return {name: tag, value: tag, selected: selectedTags.includes(tag)};
-    })
+    }),
+    onChange: (value) => {
+      selectedTags = value.split(',').filter((tag) => tag != "");
+      runSearch();
+    }
   });
 }
 
+// Initialize variables with URL parameters
 function initializeSearchFromURL() {
   let url = new URL(window.location.href);
   let searchParams = new URLSearchParams(url.search);
@@ -91,6 +98,7 @@ function initializeSearchFromURL() {
 searchInput.addEventListener("input", runSearch);
 
 // Query index.json and build the search index
+// TODO: allow this even in local (see CORS restriction)
 let xmlhttp = new XMLHttpRequest();
 xmlhttp.onreadystatechange = function () {
   if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
