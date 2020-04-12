@@ -6,6 +6,8 @@
     None Text
 , editUrl =
     None Text
+, theme =
+    "teal"
 , mathJaxSupport =
     True
 , minVersion =

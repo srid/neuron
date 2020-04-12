@@ -37,7 +37,9 @@ instance ToHtml [Query] where
   toHtmlRaw = toHtml
   toHtml qs =
     div_ [class_ "ui horizontal divider", title_ "Zettel Query"] $ do
-      toHtml `mapM_` qs
+      if null qs
+        then "All zettels"
+        else toHtml `mapM_` qs
 
 data QueryResults = QueryResults
   { resultTags :: Set.Set Text,

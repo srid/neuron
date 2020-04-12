@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -90,23 +91,24 @@ runWith act App {..} = do
 
 -- | Generate the Zettelkasten site
 generateSite ::
-  (Z.Route Z.ZettelStore Z.ZettelGraph () -> (Z.ZettelStore, Z.ZettelGraph) -> Action ()) ->
+  (forall a. Z.Route Z.ZettelStore Z.ZettelGraph a -> (Z.ZettelStore, Z.ZettelGraph, a) -> Action ()) ->
   [FilePath] ->
   Action (Z.ZettelStore, Z.ZettelGraph)
 generateSite writeHtmlRoute' zettelsPat = do
   zettelStore <- Z.mkZettelStore =<< Rib.forEvery zettelsPat pure
   let zettelGraph = Z.mkZettelGraph zettelStore
-  let writeHtmlRoute r = writeHtmlRoute' r (zettelStore, zettelGraph)
+  let writeHtmlRoute v r = writeHtmlRoute' r (zettelStore, zettelGraph, v)
   -- Generate HTML for every zettel
-  (writeHtmlRoute . Z.Route_Zettel) `mapM_` Map.keys zettelStore
+  (writeHtmlRoute () . Z.Route_Zettel) `mapM_` Map.keys zettelStore
   -- Generate the z-index
-  writeHtmlRoute Z.Route_ZIndex
+  writeHtmlRoute () Z.Route_ZIndex
   -- Generate zettelkasten index and search page
   writeIndex zettelStore
-  writeHtmlRoute (Z.Route_Search Nothing [])
+  writeHtmlRoute () (Z.Route_Search Nothing [])
   -- Write index.html, unless a index.md zettel exists
-  when (isNothing $ Map.lookup (Z.parseZettelID "index") zettelStore) $
-    writeHtmlRoute Z.Route_IndexRedirect
+  when (isNothing $ Map.lookup (Z.parseZettelID "index") zettelStore)
+    $ writeHtmlRoute "z-index.html"
+    $ Z.Route_Redirect "index.html"
   pure (zettelStore, zettelGraph)
 
 writeIndex :: Z.ZettelStore -> Action ()
