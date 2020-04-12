@@ -4,27 +4,38 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Config
   ( Config (..),
     getConfig,
+    Alias (..),
+    getAliases,
+    aliasParser,
   )
 where
 
+import Control.Monad.Except
 import Data.FileEmbed (embedFile)
+import qualified Data.Map.Strict as Map
 import Development.Shake (Action, readFile')
 import Dhall (FromDhall)
 import qualified Dhall
 import Dhall.TH
+import Neuron.Parser
+import qualified Neuron.Zettelkasten.ID as Z
+import qualified Neuron.Zettelkasten.Store as Z
 import Relude
 import qualified Rib
 import System.Directory
 import System.FilePath
+import qualified Text.Megaparsec.Char as M
 
 -- | Config type for @neuron.dhall@
 --
@@ -37,8 +48,17 @@ deriving instance Generic Config
 
 deriving instance FromDhall Config
 
+data Alias = Alias
+  { aliasZettel :: Z.ZettelID,
+    targetZettel :: Z.ZettelID
+  }
+  deriving (Eq, Show)
+
 defaultConfig :: ByteString
 defaultConfig = $(embedFile "./src-dhall/Config/Default.dhall")
+
+configFile :: FilePath
+configFile = "neuron.dhall"
 
 -- | Read the optional @neuron.dhall@ config file from the zettelksaten
 getConfig :: Action Config
@@ -53,6 +73,24 @@ getConfig = do
       pure $ decodeUtf8 defaultConfig <> " // " <> userConfig
     False ->
       pure $ decodeUtf8 @Text defaultConfig
-  liftIO $ Dhall.detailed $ Dhall.input Dhall.auto configVal
-  where
-    configFile = "neuron.dhall"
+  parseConfig configVal
+
+parseConfig :: MonadIO m => Text -> m Config
+parseConfig s =
+  liftIO $ Dhall.input Dhall.auto s
+
+getAliases :: Config -> Z.ZettelStore -> Either Text [Alias]
+getAliases Config {..} zettelStore =
+  sequence $ flip fmap aliases $ \aliasSpec -> runExcept $ do
+    alias@Alias {..} <- liftEither $ parse aliasParser configFile aliasSpec
+    when (isJust $ Map.lookup aliasZettel zettelStore) $ do
+      throwError $
+        "Cannot create redirect from '" <> Z.zettelIDText aliasZettel <> "', because a zettel with that ID already exists"
+    when (Z.zettelIDText targetZettel /= "z-index" && isNothing (Map.lookup targetZettel zettelStore)) $ do
+      throwError $
+        "Target zettel '" <> Z.zettelIDText targetZettel <> "' does not exist"
+    pure alias
+
+aliasParser :: Parser Alias
+aliasParser =
+  Alias <$> (Z.idParser <* M.char ':') <*> Z.idParser

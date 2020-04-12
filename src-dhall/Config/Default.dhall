@@ -8,6 +8,8 @@
     None Text
 , theme =
     "teal"
+, aliases =
+    [ "index:z-index" ]
 , mathJaxSupport =
     True
 , minVersion =

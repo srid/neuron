@@ -60,7 +60,7 @@ renderRouteBody config r (s, g, x) = do
     Route_Zettel zid ->
       renderZettel config (s, g) zid
     Route_Redirect _ ->
-      meta_ [httpEquiv_ "Refresh", content_ $ "0; url=" <> x]
+      meta_ [httpEquiv_ "Refresh", content_ $ "0; url=" <> (Rib.routeUrlRel $ Route_Zettel x)]
 
 renderIndex :: Monad m => Config -> (ZettelStore, ZettelGraph) -> HtmlT m ()
 renderIndex Config {..} (store, graph) = do
@@ -120,7 +120,7 @@ renderZettel config@Config {..} (store, graph) zid = do
           a_ [href_ ".", title_ "/"] $ fa "fas fa-home"
         div_ [class_ "center aligned column"] $ do
           whenJust editUrl $ \urlPrefix ->
-            a_ [href_ $ urlPrefix <> zettelIDSourceFileName zid, title_ "Edit this Zettel"] $ fa "fas fa-edit"
+            a_ [href_ $ urlPrefix <> toText (zettelIDSourceFileName zid), title_ "Edit this Zettel"] $ fa "fas fa-edit"
         div_ [class_ "center aligned column"] $ do
           a_ [href_ (Rib.routeUrlRel Route_ZIndex), title_ "All Zettels (z-index)"] $
             fa "fas fa-tree"
