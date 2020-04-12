@@ -46,21 +46,21 @@ renderRouteHead config r val = do
   title_ $ toHtml $ routeTitle config val r
   link_ [rel_ "shortcut icon", href_ "https://raw.githubusercontent.com/srid/neuron/master/assets/logo.ico"]
   case r of
-    Route_IndexRedirect ->
+    Route_Redirect _ ->
       mempty
     _ -> do
       toHtml $ routeOpenGraph config val r
       style_ [type_ "text/css"] $ styleToCss tango
 
-renderRouteBody :: Monad m => Config -> Route store graph a -> (store, graph) -> HtmlT m ()
-renderRouteBody config r val = do
+renderRouteBody :: Monad m => Config -> Route store graph a -> (store, graph, a) -> HtmlT m ()
+renderRouteBody config r (s, g, x) = do
   case r of
     Route_ZIndex ->
-      renderIndex config val
+      renderIndex config (s, g)
     Route_Zettel zid ->
-      renderZettel config val zid
-    Route_IndexRedirect ->
-      meta_ [httpEquiv_ "Refresh", content_ $ "0; url=" <> Rib.routeUrlRel Route_ZIndex]
+      renderZettel config (s, g) zid
+    Route_Redirect _ ->
+      meta_ [httpEquiv_ "Refresh", content_ $ "0; url=" <> x]
 
 renderIndex :: Monad m => Config -> (ZettelStore, ZettelGraph) -> HtmlT m ()
 renderIndex Config {..} (store, graph) = do

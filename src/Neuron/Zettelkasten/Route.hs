@@ -25,25 +25,18 @@ import qualified Rib.Parser.MMark as MMark
 import qualified Text.URI as URI
 
 data Route store graph a where
-  Route_IndexRedirect :: Route ZettelStore ZettelGraph ()
+  Route_Redirect :: FilePath -> Route ZettelStore ZettelGraph Text
   Route_ZIndex :: Route ZettelStore ZettelGraph ()
   Route_Zettel :: ZettelID -> Route ZettelStore ZettelGraph ()
 
 instance IsRoute (Route store graph) where
   routeFile = \case
-    Route_IndexRedirect ->
-      pure "index.html"
+    Route_Redirect fp ->
+      pure fp
     Route_ZIndex ->
       pure "z-index.html"
     Route_Zettel (zettelIDText -> s) ->
       pure $ toString s <> ".html"
-
--- | Return short name corresponding to the route
-routeName :: Route store graph a -> Text
-routeName = \case
-  Route_IndexRedirect -> "Index"
-  Route_ZIndex -> "Zettels"
-  Route_Zettel zid -> zettelIDText zid
 
 -- | Return full title for a route
 routeTitle :: Config -> store -> Route store graph a -> Text
@@ -58,7 +51,7 @@ routeTitle Config {..} store =
 -- | Return the title for a route
 routeTitle' :: store -> Route store graph a -> Text
 routeTitle' store = \case
-  Route_IndexRedirect -> "Index"
+  Route_Redirect _ -> "Redirecting..."
   Route_ZIndex -> "Zettel Index"
   Route_Zettel (flip lookupStore store -> Zettel {..}) ->
     zettelTitle
@@ -69,7 +62,7 @@ routeOpenGraph Config {..} store r =
     { _openGraph_title = routeTitle' store r,
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
-        Route_IndexRedirect -> Nothing
+        Route_Redirect _ -> Nothing
         Route_ZIndex -> Just "Zettelkasten Index"
         Route_Zettel (flip lookupStore store -> Zettel {..}) ->
           T.take 300 <$> MMark.getFirstParagraphText zettelContent,

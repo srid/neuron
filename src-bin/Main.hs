@@ -33,16 +33,16 @@ generateSite = do
   config <- Z.getConfig
   when (olderThan $ Z.minVersion config) $ do
     error $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
-  let writeHtmlRoute :: Z.Route s g () -> (s, g) -> Action ()
+  let writeHtmlRoute :: Z.Route s g a -> (s, g, a) -> Action ()
       writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage config r
   void $ Z.generateSite writeHtmlRoute ["*.md"]
 
-renderPage :: Z.Config -> Z.Route s g () -> (s, g) -> Html ()
-renderPage config r val = html_ [lang_ "en"] $ do
+renderPage :: Z.Config -> Z.Route s g a -> (s, g, a) -> Html ()
+renderPage config r val@(s, _, _) = html_ [lang_ "en"] $ do
   head_ $ do
-    Z.renderRouteHead config r (fst val)
+    Z.renderRouteHead config r s
     case r of
-      Z.Route_IndexRedirect ->
+      Z.Route_Redirect _ ->
         mempty
       _ -> do
         stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
