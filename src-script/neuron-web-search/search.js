@@ -1,4 +1,4 @@
-let search, zettels, selectedTags;
+let search, index, selectedTags;
 
 let searchResults = document.getElementById("search-results"); // ul element
 let searchInput = document.getElementById("search-input");
@@ -29,8 +29,6 @@ function makeZettelLink(zettel) {
 function renderResults(results) {
   searchResults.innerHTML = "";
 
-  let tokens = search.tokenizer.tokenize(searchInput.value);
-
   for (var i = 0, length = results.length; i < length; i++) {
     let zettel = results[i];
     let result = document.createElement("li");
@@ -50,7 +48,7 @@ function rebuildSearchIndex() {
   search.addIndex("id");
   search.addIndex("title");
   search.addIndex("tags");
-  search.addDocuments(zettels);
+  search.addDocuments(index.zettels);
 }
 
 function matchSelectedTags(zettel) {
@@ -64,7 +62,7 @@ function runSearch() {
   let query = searchInput.value;
   let results;
   if (query == "") {
-    results = zettels;
+    results = index.zettels;
   } else {
     results = search.search(query);
   }
@@ -72,11 +70,20 @@ function runSearch() {
   renderResults(results);
 }
 
+function initializeTags() {
+  $('#search-tags').dropdown({
+    values: index.tags.map((tag) => {
+      return {name: tag, value: tag, selected: selectedTags.includes(tag)};
+    })
+  });
+}
+
 function initializeSearchFromURL() {
   let url = new URL(window.location.href);
   let searchParams = new URLSearchParams(url.search);
   searchInput.value = searchParams.get("q");
   selectedTags = searchParams.getAll("tag");
+  initializeTags();
   runSearch();
 }
 
@@ -87,10 +94,12 @@ searchInput.addEventListener("input", runSearch);
 let xmlhttp = new XMLHttpRequest();
 xmlhttp.onreadystatechange = function () {
   if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-    zettels = JSON.parse(xmlhttp.responseText);
+    index = JSON.parse(xmlhttp.responseText);
     rebuildSearchIndex();
     initializeSearchFromURL();
   }
 };
 xmlhttp.open("GET", "index.json", true);
 xmlhttp.send();
+
+$('#search-tags').dropdown();
