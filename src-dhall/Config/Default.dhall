@@ -8,6 +8,8 @@
     None Text
 , theme =
     "teal"
+, aliases =
+    [] : List Text
 , mathJaxSupport =
     True
 , minVersion =

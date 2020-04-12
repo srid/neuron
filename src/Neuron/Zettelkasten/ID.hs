@@ -14,6 +14,7 @@ module Neuron.Zettelkasten.ID
     zettelIDText,
     parseZettelID,
     parseZettelID',
+    idParser,
     mkZettelID,
     zettelNextIdForToday,
     zettelIDSourceFileName,
@@ -25,6 +26,7 @@ import qualified Data.Text as T
 import Data.Time
 import Development.Shake (Action)
 import Lucid
+import Neuron.Parser
 import Relude
 import qualified Rib
 import System.Directory (listDirectory)
@@ -68,8 +70,8 @@ formatDay day =
         . T.replace "Sat" "6"
         . T.replace "Sun" "7"
 
-zettelIDSourceFileName :: ZettelID -> Text
-zettelIDSourceFileName zid = zettelIDText zid <> ".md"
+zettelIDSourceFileName :: ZettelID -> FilePath
+zettelIDSourceFileName zid = toString $ zettelIDText zid <> ".md"
 
 zettelIDDay :: ZettelID -> Maybe Day
 zettelIDDay = \case
@@ -96,14 +98,14 @@ parseZettelID =
 
 parseZettelID' :: Text -> Either Text ZettelID
 parseZettelID' s =
-  first (toText . M.errorBundlePretty) $
-    M.parse (p <* M.eof) "parseZettelID" s
-  where
-    p =
-      M.try (fmap (uncurry ZettelDateID) dayParser)
-        <|> fmap ZettelCustomID customIDParser
+  parse idParser "parseZettelID" s
 
-dayParser :: M.Parsec Void Text (Day, Int)
+idParser :: Parser ZettelID
+idParser =
+  M.try (fmap (uncurry ZettelDateID) dayParser)
+    <|> fmap ZettelCustomID customIDParser
+
+dayParser :: Parser (Day, Int)
 dayParser = do
   year <- parseNum 2
   week <- parseNum 2
@@ -127,7 +129,7 @@ dayParser = do
       7 -> "Sun"
       _ -> error "> 7"
 
-customIDParser :: M.Parsec Void Text Text
+customIDParser :: Parser Text
 customIDParser = do
   fmap toText $ M.some $ M.alphaNumChar <|> M.char '_' <|> M.char '-'
 

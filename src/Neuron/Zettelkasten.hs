@@ -16,8 +16,10 @@ where
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
+import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Version as Version
 import Neuron.Zettelkasten.CLI
+import qualified Neuron.Zettelkasten.Config as Z
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Query as Z
@@ -90,10 +92,13 @@ runWith act App {..} = do
 
 -- | Generate the Zettelkasten site
 generateSite ::
+  Z.Config ->
   (forall a. Z.Route Z.ZettelStore Z.ZettelGraph a -> (Z.ZettelStore, Z.ZettelGraph, a) -> Action ()) ->
   [FilePath] ->
   Action (Z.ZettelStore, Z.ZettelGraph)
-generateSite writeHtmlRoute' zettelsPat = do
+generateSite config writeHtmlRoute' zettelsPat = do
+  when (olderThan $ Z.minVersion config) $ do
+    error $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
   zettelStore <- Z.mkZettelStore =<< Rib.forEvery zettelsPat pure
   let zettelGraph = Z.mkZettelGraph zettelStore
   let writeHtmlRoute v r = writeHtmlRoute' r (zettelStore, zettelGraph, v)
@@ -101,10 +106,10 @@ generateSite writeHtmlRoute' zettelsPat = do
   (writeHtmlRoute () . Z.Route_Zettel) `mapM_` Map.keys zettelStore
   -- Generate the z-index
   writeHtmlRoute () Z.Route_ZIndex
-  -- Write index.html, unless a index.md zettel exists
-  when (isNothing $ Map.lookup (Z.parseZettelID "index") zettelStore)
-    $ writeHtmlRoute "z-index.html"
-    $ Z.Route_Redirect "index.html"
+  -- Write alias redirects, unless a zettel with that name exists.
+  aliases <- Z.getAliases config zettelStore
+  forM_ aliases $ \Z.Alias {..} ->
+    writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
   pure (zettelStore, zettelGraph)
 
 -- | Create a new zettel file and open it in editor if requested

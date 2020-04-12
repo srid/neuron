@@ -35,6 +35,7 @@ common library-common
     base >=4.7 && <5,
     aeson,
     clay -any,
+    mtl,
     containers,
     directory,
     exceptions,
@@ -64,6 +65,7 @@ library
   import: library-common
   exposed-modules:
     Neuron.Version
+    Neuron.Parser
     Neuron.Zettelkasten
     Neuron.Zettelkasten.CLI
     Neuron.Zettelkasten.Route
