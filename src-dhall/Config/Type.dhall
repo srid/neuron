@@ -8,6 +8,8 @@
     Optional Text
 , theme :
     Text
+, aliases :
+    List Text
 , mathJaxSupport :
     Bool
 , minVersion :

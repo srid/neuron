@@ -26,7 +26,7 @@ import qualified Rib.Parser.MMark as MMark
 import qualified Text.URI as URI
 
 data Route store graph a where
-  Route_Redirect :: FilePath -> Route ZettelStore ZettelGraph Text
+  Route_Redirect :: ZettelID -> Route ZettelStore ZettelGraph ZettelID
   Route_ZIndex :: Route ZettelStore ZettelGraph ()
   Route_Search :: {searchTerms :: Maybe String, searchTags :: [Text]} -> Route ZettelStore ZettelGraph ()
   Route_Zettel :: ZettelID -> Route ZettelStore ZettelGraph ()
@@ -42,8 +42,8 @@ renderSearchQuery (fmap toText -> terms) tags = do
 
 instance IsRoute (Route store graph) where
   routeFile = \case
-    Route_Redirect fp ->
-      pure fp
+    Route_Redirect zid ->
+      routeFile $ Route_Zettel zid
     Route_ZIndex ->
       pure "z-index.html"
     Route_Search {..} -> do

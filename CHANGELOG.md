@@ -8,6 +8,8 @@
   - #43: Add `neuron search -e` to open the matching zettel in $EDITOR
   - Allow customizing output directory
   - Added `neuron open` to open the locally generated Zettelkasten site.
+  - Custom themes for web interface
+  - Custom alias redirects
 - CLI revamp
   - Zettelkasten directory is now provided via the `-d` argument.
     - Its default, `~/zettelkasten`, is used when not specified.
