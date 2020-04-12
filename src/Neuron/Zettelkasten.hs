@@ -106,19 +106,13 @@ generateSite config writeHtmlRoute' zettelsPat = do
   (writeHtmlRoute () . Z.Route_Zettel) `mapM_` Map.keys zettelStore
   -- Generate the z-index
   writeHtmlRoute () Z.Route_ZIndex
-  -- Generate zettelkasten index and search page
-  writeIndex zettelStore
+  -- Generate search page
   writeHtmlRoute () Z.Route_Search
   -- Write alias redirects, unless a zettel with that name exists.
   aliases <- Z.getAliases config zettelStore
   forM_ aliases $ \Z.Alias {..} ->
     writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
   pure (zettelStore, zettelGraph)
-
-writeIndex :: Z.ZettelStore -> Action ()
-writeIndex store = do
-  let results = Z.runQuery store []
-  Rib.writeFileCached "index.json" $ toString $ Aeson.encodeToLazyText results
 
 -- | Create a new zettel file and open it in editor if requested
 --

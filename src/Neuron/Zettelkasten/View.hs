@@ -20,6 +20,7 @@ module Neuron.Zettelkasten.View where
 import Clay hiding (id, ms, reverse, s, type_)
 import qualified Clay as C
 import Control.Monad.Catch (MonadThrow)
+import qualified Data.Aeson.Text as Aeson
 import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
@@ -32,6 +33,7 @@ import Neuron.Zettelkasten.Link (linkActionExt)
 import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
+import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import qualified Neuron.Zettelkasten.Theme as Theme
@@ -130,7 +132,7 @@ renderIndex Config {..} (store, graph) = do
       n -> "are " <> show n <> " " <> nounPlural
 
 renderSearch :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> HtmlT m ()
-renderSearch _ (_, _) = do
+renderSearch _ (store, _) = do
   h1_ [class_ "header"] $ "Search"
   div_ [class_ "ui fluid icon input search"] $ do
     input_ [type_ "text", id_ "search-input"]
@@ -143,6 +145,8 @@ renderSearch _ (_, _) = do
     div_ [class_ "menu"] mempty
   div_ [class_ "ui divider"] mempty
   ul_ [id_ "search-results", class_ "zettel-list"] mempty
+  let index = runQuery store []
+  script_ $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   script_ searchScript
 
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()

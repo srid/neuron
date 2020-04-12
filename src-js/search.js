@@ -1,7 +1,9 @@
-let search, index, selectedTags;
+let search = "",
+    selectedTags = [];
 
 let searchResults = document.getElementById("search-results"); // ul element
 let searchInput = document.getElementById("search-input");
+
 
 // Create a zettel link from a zettel object
 function makeZettelLink(zettel) {
@@ -94,20 +96,7 @@ function initializeSearchFromURL() {
   runSearch();
 }
 
-// Rerun the search at every change
-searchInput.addEventListener("input", runSearch);
+rebuildSearchIndex();
+initializeSearchFromURL();
 
-// Query index.json and build the search index
-// TODO: allow this even in local (see CORS restriction)
-let xmlhttp = new XMLHttpRequest();
-xmlhttp.onreadystatechange = function () {
-  if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-    index = JSON.parse(xmlhttp.responseText);
-    rebuildSearchIndex();
-    initializeSearchFromURL();
-  }
-};
-xmlhttp.open("GET", "index.json", true);
-xmlhttp.send();
-
-$('#search-tags').dropdown();
+$('#search-input').on("change paste keyup", runSearch);
