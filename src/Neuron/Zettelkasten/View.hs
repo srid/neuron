@@ -108,11 +108,13 @@ renderSearch _ (_, _) = do
   div_ [class_ "ui fluid icon input search"] $ do
     input_ [type_ "text", id_ "search-input"]
     fa "search icon fas fa-search"
+  div_ [class_ "ui hidden divider"] mempty
   div_ [class_ "ui fluid multiple search selection dropdown", id_ "search-tags"] $ do
     with (input_ mempty) [name_ "tags", type_ "hidden"]
     with (i_ mempty) [class_ "dropdown icon"]
     div_ [class_ "default text"] "Select tags…"
     div_ [class_ "menu"] mempty
+  div_ [class_ "ui divider"] mempty
   ul_ [id_ "search-results", class_ "zettel-list"] mempty
   script_ searchScript
 
