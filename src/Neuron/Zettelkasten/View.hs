@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
@@ -18,6 +19,7 @@ module Neuron.Zettelkasten.View where
 
 import Clay hiding (id, ms, reverse, s, type_)
 import qualified Clay as C
+import Control.Monad.Catch (MonadThrow)
 import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
@@ -40,9 +42,34 @@ import Rib.Extra.CSS (mozillaKbdStyle)
 import qualified Rib.Parser.MMark as MMark
 import Text.MMark (useExtensions)
 import Text.Pandoc.Highlighting (styleToCss, tango)
+import Text.URI (URI (..), emptyURI)
+import qualified Text.URI as URI
 
 searchScript :: Text
-searchScript = $(embedStringFile "./src-script/neuron-web-search/search.js")
+searchScript = $(embedStringFile "./src-js/search.js")
+
+mkSearchURI :: MonadThrow m => Maybe Text -> [Text] -> m URI
+mkSearchURI terms tags = do
+  let mkParam k v = URI.QueryParam <$> URI.mkQueryKey k <*> URI.mkQueryValue v
+      qParams = maybeToList (fmap (mkParam "q") terms)
+      tagParams = fmap (mkParam "tag") tags
+  route <- URI.mkPathPiece (Rib.routeUrlRel Route_Search)
+  params <- sequenceA (qParams ++ tagParams)
+  pure
+    emptyURI
+      { uriPath = Just (False, [route]),
+        uriQuery = params
+      }
+
+-- TODO: render error message when the query is invalid
+mkSearchQuery :: Maybe Text -> [Text] -> Text
+mkSearchQuery terms tags =
+  fromMaybe
+    (Rib.routeUrlRel Route_Search)
+    (URI.render <$> mkSearchURI terms tags)
+
+mkSingleTagQuery :: Text -> Text
+mkSingleTagQuery tag = mkSearchQuery Nothing [tag]
 
 renderRouteHead :: Monad m => Config -> Route store graph a -> store -> HtmlT m ()
 renderRouteHead config r val = do
@@ -142,17 +169,17 @@ renderZettel config@Config {..} (store, graph) zid = do
           ul_ $ do
             renderForest True Nothing LinkTheme_Simple store graph forestB
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
-      div_ [class_ "ui equal width grid"] $ do
+      div_ [class_ "ui four column grid"] $ do
         div_ [class_ "center aligned column"] $ do
           a_ [href_ ".", title_ "/"] $ fa "fas fa-home"
         div_ [class_ "center aligned column"] $ do
           whenJust editUrl $ \urlPrefix ->
             a_ [href_ $ urlPrefix <> toText (zettelIDSourceFileName zid), title_ "Edit this Zettel"] $ fa "fas fa-edit"
         div_ [class_ "center aligned column"] $ do
+          a_ [href_ (Rib.routeUrlRel Route_Search), title_ "Search Zettels"] $ fa "fas fa-search"
+        div_ [class_ "center aligned column"] $ do
           a_ [href_ (Rib.routeUrlRel Route_ZIndex), title_ "All Zettels (z-index)"] $
             fa "fas fa-tree"
-        div_ [class_ "center aligned column"] $ do
-          a_ [href_ (Rib.routeUrlRel $ Route_Search Nothing []), title_ "Search Zettels"] $ fa "fas fa-search"
     renderBrandFooter False
 
 renderBrandFooter :: Monad m => Bool -> HtmlT m ()
@@ -174,7 +201,7 @@ renderTags tags = do
     -- space below the title.
     span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
       a_
-        [ href_ (Rib.routeUrlRel $ Route_Search Nothing [tag]),
+        [ href_ (mkSingleTagQuery tag),
           title_ ("See all zettels with tag '" <> tag <> "'")
         ]
         $ toHtml @Text tag

@@ -13,7 +13,6 @@ module Neuron.Zettelkasten
   )
 where
 
-import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
@@ -109,7 +108,7 @@ generateSite config writeHtmlRoute' zettelsPat = do
   writeHtmlRoute () Z.Route_ZIndex
   -- Generate zettelkasten index and search page
   writeIndex zettelStore
-  writeHtmlRoute () (Z.Route_Search Nothing [])
+  writeHtmlRoute () Z.Route_Search
   -- Write alias redirects, unless a zettel with that name exists.
   aliases <- Z.getAliases config zettelStore
   forM_ aliases $ \Z.Alias {..} ->
@@ -119,7 +118,7 @@ generateSite config writeHtmlRoute' zettelsPat = do
 writeIndex :: Z.ZettelStore -> Action ()
 writeIndex store = do
   let results = Z.runQuery store []
-  Rib.writeFileCached "index.json" $ decodeUtf8 $ Aeson.encode (Aeson.toJSON results)
+  Rib.writeFileCached "index.json" $ toString $ Aeson.encodeToLazyText results
 
 -- | Create a new zettel file and open it in editor if requested
 --
