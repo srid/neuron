@@ -96,7 +96,7 @@ linkActionConnections store link =
     Just (LinkAction_ConnectZettel conn zid) ->
       [(conn, zid)]
     Just (LinkAction_QueryZettels conn _linkTheme q) ->
-      (conn,) . zettelID <$> runQuery store q
+      (conn,) . zettelID <$> resultZettels (runQuery store q)
     Nothing ->
       []
 
