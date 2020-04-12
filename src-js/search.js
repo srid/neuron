@@ -99,4 +99,5 @@ function initializeSearchFromURL() {
 rebuildSearchIndex();
 initializeSearchFromURL();
 
-$('#search-input').on("change paste keyup", runSearch);
+$('#search-input').on("change paste keyup", runSearch)
+                  .focus();
