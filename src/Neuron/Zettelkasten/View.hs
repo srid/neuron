@@ -2,11 +2,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -17,6 +19,9 @@ module Neuron.Zettelkasten.View where
 
 import Clay hiding (id, ms, reverse, s, type_)
 import qualified Clay as C
+import Control.Monad.Catch (MonadThrow)
+import qualified Data.Aeson.Text as Aeson
+import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
 import Lucid
@@ -28,6 +33,7 @@ import Neuron.Zettelkasten.Link (linkActionExt)
 import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
+import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Route
 import Neuron.Zettelkasten.Store
 import qualified Neuron.Zettelkasten.Theme as Theme
@@ -38,6 +44,34 @@ import Rib.Extra.CSS (mozillaKbdStyle)
 import qualified Rib.Parser.MMark as MMark
 import Text.MMark (useExtensions)
 import Text.Pandoc.Highlighting (styleToCss, tango)
+import Text.URI (URI (..), emptyURI)
+import qualified Text.URI as URI
+
+searchScript :: Text
+searchScript = $(embedStringFile "./src-js/search.js")
+
+mkSearchURI :: MonadThrow m => Maybe Text -> [Text] -> m URI
+mkSearchURI terms tags = do
+  let mkParam k v = URI.QueryParam <$> URI.mkQueryKey k <*> URI.mkQueryValue v
+      qParams = maybeToList (fmap (mkParam "q") terms)
+      tagParams = fmap (mkParam "tag") tags
+  route <- URI.mkPathPiece (Rib.routeUrlRel Route_Search)
+  params <- sequenceA (qParams ++ tagParams)
+  pure
+    emptyURI
+      { uriPath = Just (False, [route]),
+        uriQuery = params
+      }
+
+-- TODO: render error message when the query is invalid
+mkSearchQuery :: Maybe Text -> [Text] -> Text
+mkSearchQuery terms tags =
+  fromMaybe
+    (Rib.routeUrlRel Route_Search)
+    (URI.render <$> mkSearchURI terms tags)
+
+mkSingleTagQuery :: Text -> Text
+mkSingleTagQuery tag = mkSearchQuery Nothing [tag]
 
 renderRouteHead :: Monad m => Config -> Route store graph a -> store -> HtmlT m ()
 renderRouteHead config r val = do
@@ -48,6 +82,10 @@ renderRouteHead config r val = do
   case r of
     Route_Redirect _ ->
       mempty
+    Route_Search {} -> do
+      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js"]
+      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"]
+      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"]
     _ -> do
       toHtml $ routeOpenGraph config val r
       style_ [type_ "text/css"] $ styleToCss tango
@@ -57,6 +95,8 @@ renderRouteBody config r (s, g, x) = do
   case r of
     Route_ZIndex ->
       renderIndex config (s, g)
+    Route_Search {} ->
+      renderSearch s
     Route_Zettel zid ->
       renderZettel config (s, g) zid
     Route_Redirect _ ->
@@ -91,6 +131,26 @@ renderIndex Config {..} (store, graph) = do
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
+renderSearch :: forall m. Monad m => ZettelStore -> HtmlT m ()
+renderSearch store = do
+  h1_ [class_ "header"] $ "Search"
+  div_ [class_ "ui fluid icon input search"] $ do
+    input_ [type_ "text", id_ "search-input"]
+    fa "search icon fas fa-search"
+  div_ [class_ "ui hidden divider"] mempty
+  let index@QueryResults {resultTags = allTags} = runQuery store []
+  div_ [class_ "ui fluid multiple search selection dropdown", id_ "search-tags"] $ do
+    with (input_ mempty) [name_ "tags", type_ "hidden"]
+    with (i_ mempty) [class_ "dropdown icon"]
+    div_ [class_ "default text"] "Select tags…"
+    div_ [class_ "menu"] $ do
+      forM_ allTags $ \tag -> do
+        div_ [class_ "item"] $ toHtml @Text tag
+  div_ [class_ "ui divider"] mempty
+  ul_ [id_ "search-results", class_ "zettel-list"] mempty
+  script_ $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
+  script_ searchScript
+
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
 renderZettel config@Config {..} (store, graph) zid = do
   let Zettel {..} = lookupStore zid store
@@ -115,12 +175,14 @@ renderZettel config@Config {..} (store, graph) zid = do
           ul_ $ do
             renderForest True Nothing LinkTheme_Simple store graph forestB
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
-      div_ [class_ "ui three column grid"] $ do
+      div_ [class_ "ui equal width grid"] $ do
         div_ [class_ "center aligned column"] $ do
           a_ [href_ ".", title_ "/"] $ fa "fas fa-home"
-        div_ [class_ "center aligned column"] $ do
-          whenJust editUrl $ \urlPrefix ->
+        whenJust editUrl $ \urlPrefix ->
+          div_ [class_ "center aligned column"] $ do
             a_ [href_ $ urlPrefix <> toText (zettelIDSourceFileName zid), title_ "Edit this Zettel"] $ fa "fas fa-edit"
+        div_ [class_ "center aligned column"] $ do
+          a_ [href_ (Rib.routeUrlRel Route_Search), title_ "Search Zettels"] $ fa "fas fa-search"
         div_ [class_ "center aligned column"] $ do
           a_ [href_ (Rib.routeUrlRel Route_ZIndex), title_ "All Zettels (z-index)"] $
             fa "fas fa-tree"
@@ -144,7 +206,11 @@ renderTags tags = do
     -- the top pushes the zettel content down, introducing unnecessary white
     -- space below the title.
     span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
-      toHtml @Text tag
+      a_
+        [ href_ (mkSingleTagQuery tag),
+          title_ ("See all zettels with tag '" <> tag <> "'")
+        ]
+        $ toHtml @Text tag
     p_ mempty
 
 -- | Font awesome element

@@ -106,6 +106,8 @@ generateSite config writeHtmlRoute' zettelsPat = do
   (writeHtmlRoute () . Z.Route_Zettel) `mapM_` Map.keys zettelStore
   -- Generate the z-index
   writeHtmlRoute () Z.Route_ZIndex
+  -- Generate search page
+  writeHtmlRoute () Z.Route_Search
   -- Write alias redirects, unless a zettel with that name exists.
   aliases <- Z.getAliases config zettelStore
   forM_ aliases $ \Z.Alias {..} ->

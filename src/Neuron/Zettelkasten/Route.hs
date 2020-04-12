@@ -27,6 +27,7 @@ import qualified Text.URI as URI
 data Route store graph a where
   Route_Redirect :: ZettelID -> Route ZettelStore ZettelGraph ZettelID
   Route_ZIndex :: Route ZettelStore ZettelGraph ()
+  Route_Search :: Route ZettelStore ZettelGraph ()
   Route_Zettel :: ZettelID -> Route ZettelStore ZettelGraph ()
 
 instance IsRoute (Route store graph) where
@@ -35,6 +36,8 @@ instance IsRoute (Route store graph) where
       routeFile $ Route_Zettel zid
     Route_ZIndex ->
       pure "z-index.html"
+    Route_Search -> do
+      pure "search.html"
     Route_Zettel (zettelIDText -> s) ->
       pure $ toString s <> ".html"
 
@@ -53,6 +56,7 @@ routeTitle' :: store -> Route store graph a -> Text
 routeTitle' store = \case
   Route_Redirect _ -> "Redirecting..."
   Route_ZIndex -> "Zettel Index"
+  Route_Search -> "Search"
   Route_Zettel (flip lookupStore store -> Zettel {..}) ->
     zettelTitle
 
@@ -64,6 +68,7 @@ routeOpenGraph Config {..} store r =
       _openGraph_description = case r of
         Route_Redirect _ -> Nothing
         Route_ZIndex -> Just "Zettelkasten Index"
+        Route_Search -> Just "Search Zettelkasten"
         Route_Zettel (flip lookupStore store -> Zettel {..}) ->
           T.take 300 <$> MMark.getFirstParagraphText zettelContent,
       _openGraph_author = author,
