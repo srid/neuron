@@ -79,9 +79,24 @@ parseConfig :: MonadIO m => Text -> m Config
 parseConfig s =
   liftIO $ Dhall.input Dhall.auto s
 
-getAliases :: Config -> Z.ZettelStore -> Either Text [Alias]
-getAliases Config {..} zettelStore =
-  sequence $ flip fmap aliases $ \aliasSpec -> runExcept $ do
+getAliases :: MonadFail m => Config -> Z.ZettelStore -> m [Alias]
+getAliases Config {..} zettelStore = do
+  let aliasSpecs = case aliases of
+        -- In the absence of an index zettel, create an an alias to the z-index
+        [] -> bool ["index:z-index"] [] $ hasIndexZettel zettelStore
+        as -> as
+  case mkAliases aliasSpecs zettelStore of
+    Left err ->
+      fail $ "Bad aliases in config: " <> toString err
+    Right v ->
+      pure v
+  where
+    hasIndexZettel =
+      isJust . Map.lookup (Z.parseZettelID "index")
+
+mkAliases :: [Text] -> Z.ZettelStore -> Either Text [Alias]
+mkAliases aliasSpecs zettelStore =
+  sequence $ flip fmap aliasSpecs $ \aliasSpec -> runExcept $ do
     alias@Alias {..} <- liftEither $ parse aliasParser configFile aliasSpec
     when (isJust $ Map.lookup aliasZettel zettelStore) $ do
       throwError $

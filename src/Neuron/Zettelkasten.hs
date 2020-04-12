@@ -107,12 +107,9 @@ generateSite config writeHtmlRoute' zettelsPat = do
   -- Generate the z-index
   writeHtmlRoute () Z.Route_ZIndex
   -- Write alias redirects, unless a zettel with that name exists.
-  case Z.getAliases config zettelStore of
-    Left err ->
-      fail $ "Bad aliases in config: " <> toString err
-    Right aliases ->
-      forM_ aliases $ \Z.Alias {..} ->
-        writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
+  aliases <- Z.getAliases config zettelStore
+  forM_ aliases $ \Z.Alias {..} ->
+    writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
   pure (zettelStore, zettelGraph)
 
 -- | Create a new zettel file and open it in editor if requested

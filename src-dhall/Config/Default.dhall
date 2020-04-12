@@ -9,7 +9,7 @@
 , theme =
     "teal"
 , aliases =
-    [ "index:z-index" ]
+    [] : List Text
 , mathJaxSupport =
     True
 , minVersion =
