@@ -175,11 +175,11 @@ renderZettel config@Config {..} (store, graph) zid = do
           ul_ $ do
             renderForest True Nothing LinkTheme_Simple store graph forestB
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
-      div_ [class_ "ui four column grid"] $ do
+      div_ [class_ "ui equal width grid"] $ do
         div_ [class_ "center aligned column"] $ do
           a_ [href_ ".", title_ "/"] $ fa "fas fa-home"
-        div_ [class_ "center aligned column"] $ do
-          whenJust editUrl $ \urlPrefix ->
+        whenJust editUrl $ \urlPrefix ->
+          div_ [class_ "center aligned column"] $ do
             a_ [href_ $ urlPrefix <> toText (zettelIDSourceFileName zid), title_ "Edit this Zettel"] $ fa "fas fa-edit"
         div_ [class_ "center aligned column"] $ do
           a_ [href_ (Rib.routeUrlRel Route_Search), title_ "Search Zettels"] $ fa "fas fa-search"
