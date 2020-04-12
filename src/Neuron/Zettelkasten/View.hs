@@ -53,7 +53,9 @@ renderRouteHead config r val = do
     Route_IndexRedirect ->
       mempty
     Route_Search {} -> do
-      with (script_ mempty) [src_ "https://unpkg.com/js-search@1.3.7/dist/umd/js-search.min.js"]
+      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js"]
+      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.1/dist/semantic.min.js"]
+      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"]
     _ -> do
       toHtml $ routeOpenGraph config val r
       style_ [type_ "text/css"] $ styleToCss tango
@@ -103,6 +105,9 @@ renderSearch = do
   div_ [class_ "ui fluid icon input search"] $ do
     input_ [type_ "text", id_ "search-input"]
     fa "search icon fas fa-search"
+  div_ [class_ "ui multiple selection dropdown", id_ "search-tags"] $ do
+    div_ [class_ "text"] "Select tags…"
+    with (i_ mempty) [class_ "dropdown icon"]
   ul_ [id_ "search-results", class_ "zettel-list"] mempty
   script_ searchScript
 
