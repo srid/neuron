@@ -1,6 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Neuron.Zettelkasten.Markdown
   ( neuronMMarkExts,
@@ -8,6 +7,7 @@ module Neuron.Zettelkasten.Markdown
 where
 
 import Neuron.Zettelkasten.Config (Config (..))
+import Neuron.Zettelkasten.Markdown.Extension (customRender)
 import Relude
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension.Common as Ext
@@ -24,5 +24,6 @@ defaultExts =
     Ext.kbd,
     Ext.linkTarget,
     Ext.punctuationPrettifier,
-    Ext.skylighting
+    Ext.skylighting,
+    customRender
   ]
