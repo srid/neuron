@@ -1,26 +1,26 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Neuron.Zettelkasten.Markdown.Extension
-  ( customRender,
+  ( setTableClass,
   )
 where
 
-import Control.Monad (forM_)
-import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as NE
 import Lucid
+import Relude
 import Text.MMark.Extension (Block (Table), Extension)
 import qualified Text.MMark.Extension as Ext
 
 newline :: Html ()
 newline = "\n"
 
--- https://github.com/mmark-md/mmark/blob/8f5534d8068c2b7a139b893639ee5920bcaedd84/Text/MMark/Render.hs#L111-L136
-customRender :: Extension
-customRender = Ext.blockRender $ \old block ->
+setTableClass :: Text -> Extension
+setTableClass tableClass = Ext.blockRender $ \old block ->
   case block of
+    -- https://github.com/mmark-md/mmark/blob/8f5534d8068c2b7a139b893639ee5920bcaedd84/Text/MMark/Render.hs#L111-L136
     (Table calign (hs :| rows)) -> do
-      table_ [class_ "ui celled table"] $ do
+      table_ [class_ tableClass] $ do
         newline
         thead_ $ do
           newline
