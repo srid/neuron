@@ -10,6 +10,7 @@
   - Added `neuron open` to open the locally generated Zettelkasten site.
   - Custom themes for web interface
   - Custom alias redirects
+  - #90: Client-side web search
 - CLI revamp
   - Zettelkasten directory is now provided via the `-d` argument.
     - Its default, `~/zettelkasten`, is used when not specified.
@@ -22,6 +23,7 @@
   - Tags are restyled and positioned below
   - Produce compact CSS in HTML head
   - #24: zquery is displayed in HTML view.
+  - #100: Tables are styled nicely using Semantic UI
 
 ## 0.2.0.0
 
