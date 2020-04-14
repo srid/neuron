@@ -10,7 +10,7 @@ module Neuron.Zettelkasten.Zettel where
 import Data.Aeson
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
-import qualified Neuron.Zettelkasten.Meta as Meta
+import qualified Neuron.Zettelkasten.Markdown.Meta as Meta
 import Relude hiding (show)
 import qualified Rib.Parser.MMark as MMark
 import Text.MMark (MMark)

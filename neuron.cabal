@@ -79,7 +79,7 @@ library
     Neuron.Zettelkasten.Link.Action
     Neuron.Zettelkasten.Markdown
     Neuron.Zettelkasten.Markdown.Extension
-    Neuron.Zettelkasten.Meta
+    Neuron.Zettelkasten.Markdown.Meta
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Config
     Neuron.Zettelkasten.ID
