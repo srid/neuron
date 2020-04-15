@@ -18,7 +18,7 @@ import Main.Utf8
 import qualified Neuron.Zettelkasten as Z
 import qualified Neuron.Config as Z
 import qualified Neuron.Route as Z
-import qualified Neuron.Zettelkasten.View as Z
+import qualified Neuron.Web.View as Z
 import Relude
 import qualified Rib
 import Rib.Extra.CSS (googleFonts, stylesheet)

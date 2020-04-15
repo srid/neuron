@@ -15,7 +15,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | HTML & CSS
-module Neuron.Zettelkasten.View where
+module Neuron.Web.View where
 
 import Clay hiding (id, ms, reverse, s, type_)
 import qualified Clay as C
