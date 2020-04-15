@@ -16,6 +16,7 @@ import qualified Data.Aeson.Text as Aeson
 import Development.Shake (Action)
 import qualified Neuron.Version as Version
 import Neuron.CLI.Types
+import Neuron.CLI.Rib
 import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Query as Z
 import qualified Neuron.Zettelkasten.Store as Z
