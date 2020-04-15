@@ -22,6 +22,9 @@ let
   neuronSearchScript = pkgs.callPackage ./src-script/neuron-search { inherit pkgs; };
   additional-packages = pkgs:
   [ neuronSearchScript
+    # For PureScript dev
+    pkgs.purescript
+    pkgs.spago
   ];
   excludeContent = path: typ: 
     let d = baseNameOf (toString path);
