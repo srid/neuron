@@ -7,7 +7,7 @@ module Neuron.Zettelkasten.Markdown
   )
 where
 
-import Neuron.Zettelkasten.Config (Config (..))
+import Neuron.Config (Config (..))
 import Neuron.Zettelkasten.Markdown.Extension (setTableClass)
 import Relude
 import qualified Text.MMark as MMark

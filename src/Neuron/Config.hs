@@ -12,7 +12,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Config
+module Neuron.Config
   ( Config (..),
     getConfig,
     Alias (..),

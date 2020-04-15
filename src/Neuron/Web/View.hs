@@ -15,7 +15,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | HTML & CSS
-module Neuron.Zettelkasten.View where
+module Neuron.Web.View where
 
 import Clay hiding (id, ms, reverse, s, type_)
 import qualified Clay as C
@@ -26,7 +26,7 @@ import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Version (neuronVersionFull)
-import Neuron.Zettelkasten.Config
+import Neuron.Config
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link (linkActionExt)
@@ -34,9 +34,9 @@ import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Route
+import Neuron.Web.Route
 import Neuron.Zettelkasten.Store
-import qualified Neuron.Zettelkasten.Theme as Theme
+import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
