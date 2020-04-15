@@ -25,6 +25,7 @@ let
     # For PureScript dev
     pkgs.purescript
     pkgs.spago
+    pkgs.pscid
   ];
   excludeContent = path: typ: 
     let d = baseNameOf (toString path);
