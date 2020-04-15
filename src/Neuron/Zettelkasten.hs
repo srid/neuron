@@ -8,22 +8,16 @@
 
 -- | Main module for using neuron as a library, instead of as a CLI tool.
 module Neuron.Zettelkasten
-  ( generateSite,
-    run,
+  ( run
   )
 where
 
 import qualified Data.Aeson.Text as Aeson
-import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
-import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Version as Version
 import Neuron.CLI
-import qualified Neuron.Config as Z
-import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Query as Z
-import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
 import Options.Applicative
 import Relude
@@ -89,30 +83,6 @@ runWith act App {..} = do
       -- here, such that the new process replaces the current one. fzf won't work
       -- otherwise.
       void $ executeFile scriptPath False args Nothing
-
--- | Generate the Zettelkasten site
-generateSite ::
-  Z.Config ->
-  (forall a. Z.Route Z.ZettelStore Z.ZettelGraph a -> (Z.ZettelStore, Z.ZettelGraph, a) -> Action ()) ->
-  [FilePath] ->
-  Action (Z.ZettelStore, Z.ZettelGraph)
-generateSite config writeHtmlRoute' zettelsPat = do
-  when (olderThan $ Z.minVersion config) $ do
-    error $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
-  zettelStore <- Z.mkZettelStore =<< Rib.forEvery zettelsPat pure
-  let zettelGraph = Z.mkZettelGraph zettelStore
-  let writeHtmlRoute v r = writeHtmlRoute' r (zettelStore, zettelGraph, v)
-  -- Generate HTML for every zettel
-  (writeHtmlRoute () . Z.Route_Zettel) `mapM_` Map.keys zettelStore
-  -- Generate the z-index
-  writeHtmlRoute () Z.Route_ZIndex
-  -- Generate search page
-  writeHtmlRoute () Z.Route_Search
-  -- Write alias redirects, unless a zettel with that name exists.
-  aliases <- Z.getAliases config zettelStore
-  forM_ aliases $ \Z.Alias {..} ->
-    writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
-  pure (zettelStore, zettelGraph)
 
 -- | Create a new zettel file and open it in editor if requested
 --

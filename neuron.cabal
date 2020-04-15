@@ -69,6 +69,7 @@ library
     Neuron.Zettelkasten
     Neuron.CLI
     Neuron.Web.Route
+    Neuron.Web.Generate
     Neuron.Zettelkasten.Store
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Graph
