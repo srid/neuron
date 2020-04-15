@@ -66,8 +66,8 @@ library
   exposed-modules:
     Neuron.Version
     Neuron.Parser
-    Neuron.Zettelkasten
     Neuron.CLI
+    Neuron.CLI.Types
     Neuron.Web.Route
     Neuron.Web.Generate
     Neuron.Zettelkasten.Store
