@@ -14,15 +14,14 @@ where
 
 import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
-import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Config as Z
-import qualified Neuron.Zettelkasten.Graph as Z
+import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Web.Route as Z
+import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.Store as Z
 import Options.Applicative
 import Relude
 import qualified Rib
-
 
 -- | Generate the Zettelkasten site
 generateSite ::

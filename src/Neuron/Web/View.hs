@@ -25,8 +25,10 @@ import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
 import Lucid
-import Neuron.Version (neuronVersionFull)
 import Neuron.Config
+import Neuron.Version (neuronVersionFull)
+import Neuron.Web.Route
+import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link (linkActionExt)
@@ -34,9 +36,7 @@ import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Query
-import Neuron.Web.Route
 import Neuron.Zettelkasten.Store
-import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib

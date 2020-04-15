@@ -6,7 +6,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.CLI.New
-  ( newZettelFile
+  ( newZettelFile,
   )
 where
 

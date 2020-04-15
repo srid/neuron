@@ -15,10 +15,10 @@
 module Neuron.Zettelkasten.Link.View where
 
 import Lucid
+import Neuron.Web.Route (Route (..))
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Action
 import Neuron.Zettelkasten.Query
-import Neuron.Web.Route (Route (..))
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
 import Relude
