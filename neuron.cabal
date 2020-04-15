@@ -69,6 +69,7 @@ library
     Neuron.CLI
     Neuron.CLI.Types
     Neuron.CLI.Rib
+    Neuron.CLI.New
     Neuron.Web.Route
     Neuron.Web.Generate
     Neuron.Zettelkasten.Store
