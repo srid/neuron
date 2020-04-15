@@ -127,6 +127,8 @@ renderIndex Config {..} (store, graph) = do
         -- Forest of zettels, beginning with mother vertices.
         ul_ $ renderForest True Nothing LinkTheme_Default store graph forest
     renderBrandFooter True
+  -- See ./src-purescript/hello/README.md
+  script_ helloScript
   where
     -- Sort clusters with newer mother zettels appearing first.
     sortMothers ms = reverse $ sortOn maximum $ fmap (reverse . sort . toList) ms
@@ -190,7 +192,6 @@ renderZettel config@Config {..} (store, graph) zid = do
           a_ [href_ (Rib.routeUrlRel Route_ZIndex), title_ "All Zettels (z-index)"] $
             fa "fas fa-tree"
     renderBrandFooter False
-  script_ helloScript
 
 renderBrandFooter :: Monad m => Bool -> HtmlT m ()
 renderBrandFooter withVersion =
