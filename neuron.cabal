@@ -70,6 +70,7 @@ library
     Neuron.CLI.Types
     Neuron.CLI.Rib
     Neuron.CLI.New
+    Neuron.CLI.Search
     Neuron.Web.Route
     Neuron.Web.Generate
     Neuron.Zettelkasten.Store

@@ -1,23 +1,20 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Main module for using neuron as a library, instead of as a CLI tool.
 module Neuron.CLI
-  ( run
+  ( run,
   )
 where
 
 import qualified Data.Aeson.Text as Aeson
 import Development.Shake (Action)
-import qualified Neuron.Version as Version
-import Neuron.CLI.Types
-import Neuron.CLI.Rib
 import Neuron.CLI.New (newZettelFile)
+import Neuron.CLI.Rib
+import Neuron.CLI.Search (runSearch)
+import qualified Neuron.Version as Version
 import qualified Neuron.Zettelkasten.Query as Z
 import qualified Neuron.Zettelkasten.Store as Z
 import Options.Applicative
@@ -27,20 +24,6 @@ import System.Directory
 import System.FilePath
 import System.Info (os)
 import System.Posix.Process
-import System.Which
-
-neuronSearchScript :: FilePath
-neuronSearchScript = $(staticWhich "neuron-search")
-
-searchScriptArgs :: SearchCommand -> [String]
-searchScriptArgs SearchCommand {..} =
-  let searchByArgs =
-        case searchBy of
-          SearchByTitle -> ["title: ", "3"]
-          SearchByContent -> ["", "2"]
-      editArg =
-        bool "echo" "$EDITOR" searchEdit
-   in searchByArgs <> [editArg]
 
 run :: Action () -> IO ()
 run act = do
@@ -75,12 +58,5 @@ runWith act App {..} = do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
         let matches = Z.runQuery store queries
         putLTextLn $ Aeson.encodeToLazyText $ matches
-    Search searchCmd -> do
-      execScript neuronSearchScript $ notesDir : searchScriptArgs searchCmd
-  where
-    execScript scriptPath args =
-      -- We must use the low-level execvp (via the unix package's `executeFile`)
-      -- here, such that the new process replaces the current one. fzf won't work
-      -- otherwise.
-      void $ executeFile scriptPath False args Nothing
-
+    Search searchCmd ->
+      runSearch notesDir searchCmd
