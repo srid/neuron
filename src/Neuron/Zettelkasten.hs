@@ -18,7 +18,7 @@ import qualified Data.Map.Strict as Map
 import Development.Shake (Action)
 import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Version as Version
-import Neuron.Zettelkasten.CLI
+import Neuron.CLI
 import qualified Neuron.Zettelkasten.Config as Z
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z

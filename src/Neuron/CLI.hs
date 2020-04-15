@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.CLI
+module Neuron.CLI
   ( -- * CLI
     App (..),
     Command (..),
