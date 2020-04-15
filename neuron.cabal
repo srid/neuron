@@ -73,7 +73,7 @@ library
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Graph
     Neuron.Web.View
-    Neuron.Zettelkasten.Theme
+    Neuron.Web.Theme
     Neuron.Zettelkasten.Link
     Neuron.Zettelkasten.Link.View
     Neuron.Zettelkasten.Link.Action

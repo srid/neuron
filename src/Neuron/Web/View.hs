@@ -36,7 +36,7 @@ import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Query
 import Neuron.Route
 import Neuron.Zettelkasten.Store
-import qualified Neuron.Zettelkasten.Theme as Theme
+import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib

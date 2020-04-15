@@ -4,7 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | HTML & CSS
-module Neuron.Zettelkasten.Theme where
+module Neuron.Web.Theme where
 
 import Data.Text (toLower)
 import Relude
