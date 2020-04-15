@@ -81,7 +81,7 @@ library
     Neuron.Zettelkasten.Markdown.Extension
     Neuron.Zettelkasten.Markdown.Meta
     Neuron.Zettelkasten.Zettel
-    Neuron.Zettelkasten.Config
+    Neuron.Config
     Neuron.Zettelkasten.ID
   other-modules:
     Neuron.Version.RepoVersion

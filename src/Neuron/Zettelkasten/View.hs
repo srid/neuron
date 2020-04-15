@@ -26,7 +26,7 @@ import Data.Foldable (maximum)
 import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Version (neuronVersionFull)
-import Neuron.Zettelkasten.Config
+import Neuron.Config
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link (linkActionExt)

@@ -4,13 +4,13 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.ConfigSpec
+module Neuron.ConfigSpec
   ( spec,
   )
 where
 
 import Neuron.Parser
-import qualified Neuron.Zettelkasten.Config as Z
+import qualified Neuron.Config as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import Relude
 import Test.Hspec

@@ -19,7 +19,7 @@ import Development.Shake (Action)
 import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Version as Version
 import Neuron.CLI
-import qualified Neuron.Zettelkasten.Config as Z
+import qualified Neuron.Config as Z
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Query as Z

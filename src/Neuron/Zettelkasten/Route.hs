@@ -13,7 +13,7 @@
 module Neuron.Zettelkasten.Route where
 
 import qualified Data.Text as T
-import Neuron.Zettelkasten.Config
+import Neuron.Config
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Store
