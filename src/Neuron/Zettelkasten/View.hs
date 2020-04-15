@@ -34,7 +34,7 @@ import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Route
+import Neuron.Route
 import Neuron.Zettelkasten.Store
 import qualified Neuron.Zettelkasten.Theme as Theme
 import Neuron.Zettelkasten.Zettel

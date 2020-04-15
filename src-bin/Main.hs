@@ -17,7 +17,7 @@ import Lucid
 import Main.Utf8
 import qualified Neuron.Zettelkasten as Z
 import qualified Neuron.Config as Z
-import qualified Neuron.Zettelkasten.Route as Z
+import qualified Neuron.Route as Z
 import qualified Neuron.Zettelkasten.View as Z
 import Relude
 import qualified Rib

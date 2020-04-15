@@ -10,7 +10,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Zettel site's routes
-module Neuron.Zettelkasten.Route where
+module Neuron.Route where
 
 import qualified Data.Text as T
 import Neuron.Config
