@@ -23,7 +23,7 @@ import qualified Neuron.Config as Z
 import qualified Neuron.Zettelkasten.Graph as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import qualified Neuron.Zettelkasten.Query as Z
-import qualified Neuron.Route as Z
+import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Store as Z
 import Options.Applicative
 import Relude
