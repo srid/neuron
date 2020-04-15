@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -xe
+nix-shell --run "cd src-purescript/hello; spago build-app"

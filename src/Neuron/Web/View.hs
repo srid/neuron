@@ -50,6 +50,9 @@ import qualified Text.URI as URI
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
 
+helloScript :: Text
+helloScript = $(embedStringFile "./src-purescript/hello/index.js")
+
 mkSearchURI :: MonadThrow m => Maybe Text -> [Text] -> m URI
 mkSearchURI terms tags = do
   let mkParam k v = URI.QueryParam <$> URI.mkQueryKey k <*> URI.mkQueryValue v
@@ -124,6 +127,8 @@ renderIndex Config {..} (store, graph) = do
         -- Forest of zettels, beginning with mother vertices.
         ul_ $ renderForest True Nothing LinkTheme_Default store graph forest
     renderBrandFooter True
+  -- See ./src-purescript/hello/README.md
+  script_ helloScript
   where
     -- Sort clusters with newer mother zettels appearing first.
     sortMothers ms = reverse $ sortOn maximum $ fmap (reverse . sort . toList) ms
