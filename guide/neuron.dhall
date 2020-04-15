@@ -1,5 +1,5 @@
 { siteTitle =
-    "Neuron"
+    "Neuron Zettelkasten"
 , siteBaseUrl =
     Some "https://neuron.srid.ca"
 , editUrl =

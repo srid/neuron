@@ -1,5 +1,5 @@
 ---
-title: Neuron
+title: Neuron Zettelkasten
 ---
 
 [Neuron](https://github.com/srid/neuron) is a command-line based system for managing your Zettelkasten notes. If you are unfamiliar with Zettelkasten, start here: <2011401>.
