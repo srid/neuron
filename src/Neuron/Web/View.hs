@@ -50,6 +50,9 @@ import qualified Text.URI as URI
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
 
+helloScript :: Text
+helloScript = $(embedStringFile "./src-purescript/hello/index.js")
+
 mkSearchURI :: MonadThrow m => Maybe Text -> [Text] -> m URI
 mkSearchURI terms tags = do
   let mkParam k v = URI.QueryParam <$> URI.mkQueryKey k <*> URI.mkQueryValue v
@@ -187,6 +190,7 @@ renderZettel config@Config {..} (store, graph) zid = do
           a_ [href_ (Rib.routeUrlRel Route_ZIndex), title_ "All Zettels (z-index)"] $
             fa "fas fa-tree"
     renderBrandFooter False
+  script_ helloScript
 
 renderBrandFooter :: Monad m => Bool -> HtmlT m ()
 renderBrandFooter withVersion =
