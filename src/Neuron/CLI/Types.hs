@@ -17,6 +17,7 @@ module Neuron.CLI.Types
 where
 
 import qualified Neuron.Zettelkasten.Query as Z
+import qualified Neuron.Zettelkasten.Tag as Z
 import Options.Applicative
 import Relude
 import qualified Rib.Cli
@@ -92,9 +93,13 @@ commandParser defaultNotesDir = do
     openCommand =
       pure Open
     queryCommand =
-      fmap Query $
-        many (Z.ByTag <$> option str (long "tag" <> short 't'))
-          <|> option uriReader (long "uri" <> short 'u')
+      let tagFilter =
+            (Z.ByTag . Z.Tag <$> option str (long "tag" <> short 't'))
+              <|> (Z.TagUnder . Z.Tag <$> option str (long "under"))
+              <|> (Z.TagFrom . Z.Tag <$> option str (long "from"))
+              <|> (Z.TagGlob . Z.TagPattern <$> option str (long "glob"))
+       in fmap Query $
+            many tagFilter <|> option uriReader (long "uri" <> short 'u')
     searchCommand = do
       searchBy <-
         bool SearchByTitle SearchByContent

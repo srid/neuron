@@ -54,9 +54,6 @@ mkZettelFromPath path = do
       tags = fromMaybe [] $ Meta.tags =<< meta
   pure $ Zettel zid title tags doc
 
-matchesTagPattern :: TagPattern -> Zettel -> Bool
-matchesTagPattern pat Zettel {..} =
-  isJust $ find (tagMatch pat) zettelTags
-
 hasTag :: Tag -> Zettel -> Bool
-hasTag tag zettel = matchesTagPattern (tagLiteral tag) zettel
+hasTag tag Zettel {..} =
+  isJust $ find (== tag) zettelTags

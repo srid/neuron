@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -18,7 +19,6 @@ import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
-import qualified Text.Megaparsec as M
 import qualified Text.URI as URI
 
 -- TODO: Support querying connections, a la:
@@ -38,7 +38,7 @@ instance ToHtml Query where
           ByTag (tagToText -> tag) -> ("Zettels tagged '" <> tag <> "'", tag)
           TagUnder (tagToText -> tag) -> ("Zettels under tag '" <> tag <> "'", tag)
           TagFrom (tagToText -> tag) -> ("Zettels under tag '" <> tag <> "' (included)", tag)
-          TagGlob (patternToText -> pat) -> ("Zettels matching pattern '" <> pat <> "'", pat)
+          TagGlob (tagPatternToText -> pat) -> ("Zettels matching pattern '" <> pat <> "'", pat)
      in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml repr
 
 instance ToHtml [Query] where
@@ -72,24 +72,23 @@ parseQuery :: URI.URI -> [Query]
 parseQuery uri =
   flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-      let tag = M.parseMaybe tagParser val
-       in case key of
-            "tag" -> ByTag <$> tag
-            "under" -> TagUnder <$> tag
-            "from" -> TagFrom <$> tag
-            "glob" -> TagGlob <$> M.parseMaybe tagPatternParser val
-            _ -> Nothing
+      case key of
+        "tag" -> pure $ ByTag (Tag val)
+        "under" -> pure $ TagUnder (Tag val)
+        "from" -> pure $ TagFrom (Tag val)
+        "glob" -> pure $ TagGlob (TagPattern $ toString val)
+        _ -> Nothing
     _ -> Nothing
 
 queryToTagPattern :: Query -> TagPattern
 queryToTagPattern = \case
-  ByTag tag -> tagLiteral tag
-  TagUnder tag -> tagLiteral tag <> TagPattern [GlobStar, Glob]
-  TagFrom tag -> tagLiteral tag <> TagPattern [GlobStar]
+  ByTag tag -> literalPattern tag
+  TagUnder tag -> literalPattern tag <> TagPattern "**"
+  TagFrom tag -> literalPattern tag <> TagPattern "*" <> TagPattern "**"
   TagGlob pat -> pat
 
 matchQuery :: Zettel -> Query -> Bool
-matchQuery zettel query = matchesTagPattern (queryToTagPattern query) zettel
+matchQuery Zettel {..} query = any (tagMatch $ queryToTagPattern query) zettelTags
 
 matchQueries :: Zettel -> [Query] -> Bool
 matchQueries zettel queries = and $ matchQuery zettel <$> queries
@@ -104,4 +103,10 @@ singleResult z@Zettel {..} = QueryResults (Set.fromList zettelTags) [z]
 
 runQuery :: ZettelStore -> [Query] -> QueryResults
 runQuery store queries =
-  foldMap (queryResults queries) (Map.elems store)
+  foldMap toQueryResult $
+    tagMatchMany
+      (((),) . queryToTagPattern <$> queries)
+      (foldMap associateTags $ Map.elems store)
+  where
+    associateTags z@Zettel {..} = (z,) <$> zettelTags
+    toQueryResult = singleResult . snd

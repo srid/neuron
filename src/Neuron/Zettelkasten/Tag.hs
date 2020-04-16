@@ -4,119 +4,61 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Tag
   ( Tag (..),
     TagPattern (..),
-    PatternComponent (..),
-    tagSep,
-    tagToText,
-    patternToText,
-    tagParser,
-    tagPatternParser,
-    parseTag,
-    parseTagPattern,
-    tagLiteral,
-    tagRelativeTo,
+    literalPattern,
+    tagPatternToText,
     tagMatch,
+    tagMatchMany,
     isSubTag,
     isStrictSubTag,
   )
 where
 
 import Data.Aeson
-import qualified Data.List.NonEmpty as NonEmpty
-import Neuron.Parser
 import Relude
 import Relude.Extra.Foldable1
-import qualified Text.Megaparsec as M
-import qualified Text.Megaparsec.Char as M
+import System.FilePath
+import System.FilePattern as FilePattern
 
-data PatternComponent
-  = Literal Text
-  | Glob
-  | GlobStar
+newtype Tag = Tag {tagToText :: Text}
+  deriving (Eq, Ord, Show, ToJSON, FromJSON)
+
+instance Semigroup Tag where
+  Tag t <> Tag t' = Tag (toText $ toString t </> toString t')
+  sconcat tags = Tag (toText $ foldl1' (</>) $ fmap (toString . tagToText) tags)
+
+newtype TagPattern = TagPattern {toFilePattern :: FilePattern}
   deriving (Eq, Show)
 
-tagSep :: Text
-tagSep = "/"
+instance Semigroup TagPattern where
+  TagPattern p <> TagPattern p' = TagPattern (p </> p')
 
-patternComponentToText :: PatternComponent -> Text
-patternComponentToText = \case
-  Glob -> "*"
-  GlobStar -> "**"
-  Literal t -> t
+tagPatternToText :: TagPattern -> Text
+tagPatternToText = toText . toFilePattern
 
-tagComponentParser :: Parser Text
-tagComponentParser = toText <$> some (M.alphaNumChar <|> M.char '-')
-
-patternComponentParser :: Parser PatternComponent
-patternComponentParser =
-  M.choice @[]
-    [ M.try (GlobStar <$ M.string "**"),
-      Glob <$ M.char '*',
-      Literal <$> tagComponentParser
-    ]
-
-newtype TagPattern = TagPattern
-  {patternComponents :: NonEmpty PatternComponent}
-  deriving (Eq, Show, Semigroup)
-
-newtype Tag = Tag
-  {tagComponents :: NonEmpty Text}
-  deriving (Eq, Ord, Show, Semigroup)
-
-instance ToJSON Tag where
-  toJSON = toJSON . tagToText
-
-instance FromJSON Tag where
-  parseJSON (String tag) = maybe (fail "Failed to parse tags") pure (M.parseMaybe tagParser tag)
-  parseJSON _ = fail "Expected string when parsing a tag"
-
-tagToText :: Tag -> Text
-tagToText = fold . tagComponents
-
-patternToText :: TagPattern -> Text
-patternToText = foldMap1 patternComponentToText . patternComponents
-
-pathParserWith :: Parser c -> Parser (NonEmpty c)
-pathParserWith p = NonEmpty.fromList <$> p `M.sepBy1` M.string tagSep
-
-tagParser :: Parser Tag
-tagParser = Tag <$> pathParserWith tagComponentParser
-
-tagPatternParser :: Parser TagPattern
-tagPatternParser = TagPattern <$> pathParserWith patternComponentParser
-
-parseTag :: Text -> Either Text Tag
-parseTag = parse tagParser "parseTag"
-
-parseTagPattern :: Text -> Either Text TagPattern
-parseTagPattern = parse tagPatternParser "parseTagPattern"
-
-tagLiteral :: Tag -> TagPattern
-tagLiteral = TagPattern . fmap Literal . tagComponents
-
-tagRelativeTo :: TagPattern -> Tag -> Maybe [Text]
-tagRelativeTo (TagPattern pat) (Tag components) = go (toList pat) (toList components)
-  where
-    go [] ps = Just ps
-    go (Literal p : ps) (p' : ps')
-      | p == p' = go ps ps'
-    go (Glob : ps) (_ : ps') = go ps ps'
-    go [GlobStar] _ = Just []
-    go (GlobStar : ps) ps' =
-      go (Glob : ps) ps'
-        <|> go (Glob : GlobStar : ps) ps'
-    go _ _ = Nothing
+literalPattern :: Tag -> TagPattern
+literalPattern = TagPattern . toString . tagToText
 
 tagMatch :: TagPattern -> Tag -> Bool
-tagMatch pat tag = tagRelativeTo pat tag == Just []
+tagMatch (TagPattern pat) (Tag tag) = pat ?== toString tag
+
+tagMatchMany :: [(a, TagPattern)] -> [(b, Tag)] -> [(a, b)]
+tagMatchMany pats tags =
+  extractMatch
+    <$> FilePattern.matchMany
+      (fmap toFilePattern <$> pats)
+      (fmap (toString . tagToText) <$> tags)
+  where
+    extractMatch (x, y, _) = (x, y)
 
 isSubTag :: Tag -> Tag -> Bool
-isSubTag tag tag' = isJust $ tagRelativeTo (tagLiteral tag') tag
+isSubTag tag tag' = tagMatch (literalPattern tag <> TagPattern "**") tag'
 
 isStrictSubTag :: Tag -> Tag -> Bool
-isStrictSubTag tag tag' = isJust $ tagRelativeTo (tagLiteral tag' <> TagPattern [Glob]) tag
+isStrictSubTag tag tag' = tagMatch (literalPattern tag <> TagPattern "*" <> TagPattern "**") tag'

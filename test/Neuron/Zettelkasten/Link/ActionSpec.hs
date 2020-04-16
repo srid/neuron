@@ -51,11 +51,11 @@ linkActionCases =
     ),
     ( "zquery: link",
       (Right (".", "zquery://search?tag=science")),
-      Just $ LinkAction_QueryZettels Folgezettel LinkTheme_Default [ByTag $ Tag ["science"]]
+      Just $ LinkAction_QueryZettels Folgezettel LinkTheme_Default [ByTag $ Tag "science"]
     ),
     ( "zcfquery: link, with link theme",
       (Right (".", "zcfquery://search?tag=science&linkTheme=withDate")),
-      Just $ LinkAction_QueryZettels OrdinaryConnection LinkTheme_WithDate [ByTag $ Tag ["science"]]
+      Just $ LinkAction_QueryZettels OrdinaryConnection LinkTheme_WithDate [ByTag $ Tag "science"]
     ),
     ( "normal link",
       (Left "https://www.google.com"),
