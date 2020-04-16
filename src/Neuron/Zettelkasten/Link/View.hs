@@ -30,7 +30,7 @@ linkActionRender store _ = \case
     renderZettelLink LinkTheme_Default store zid
   LinkAction_QueryZettels _conn linkTheme q -> do
     toHtml q
-    let zettels = reverse $ sort $ zettelID <$> resultZettels (runQuery store q)
+    let zettels = reverse $ sort $ zettelID <$> runQuery store q
     ul_ $ do
       forM_ zettels $ \zid -> do
         li_ $ renderZettelLink linkTheme store zid

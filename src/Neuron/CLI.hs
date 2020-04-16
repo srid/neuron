@@ -57,6 +57,6 @@ runWith act App {..} = do
       runRibOnceQuietly notesDir $ do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
         let matches = Z.runQuery store queries
-        putLTextLn $ Aeson.encodeToLazyText $ matches
+        putLTextLn $ Aeson.encodeToLazyText matches
     Search searchCmd ->
       runSearch notesDir searchCmd
