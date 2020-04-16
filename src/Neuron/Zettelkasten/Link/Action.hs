@@ -52,23 +52,14 @@ linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkT
       let zid = parseZettelID linkText
        in Just $ LinkAction_ConnectZettel OrdinaryConnection zid
     Just "zquery" ->
-      Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
+      Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (parseQuery uri)
     Just "zcfquery" ->
-      Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (queryFromUri uri)
+      Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (parseQuery uri)
     _ -> do
       let uriS = URI.render uri
       guard $ uriS == linkText
       zid <- rightToMaybe $ parseZettelID' uriS
       pure $ LinkAction_ConnectZettel Folgezettel zid
-
-queryFromUri :: URI.URI -> [Query]
-queryFromUri uri =
-  flip mapMaybe (URI.uriQuery uri) $ \case
-    URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-      case key of
-        "tag" -> Just $ ByTag val
-        _ -> Nothing
-    _ -> Nothing
 
 linkThemeFromUri :: URI.URI -> Maybe LinkTheme
 linkThemeFromUri uri =

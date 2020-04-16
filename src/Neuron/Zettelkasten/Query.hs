@@ -1,12 +1,9 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Queries to the Zettel store
@@ -19,6 +16,7 @@ import Lucid
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
 import Relude
+import qualified Text.URI as URI
 
 -- TODO: Support querying connections, a la:
 --   LinksTo ZettelID
@@ -59,6 +57,15 @@ instance ToJSON QueryResults where
       [ "zettels" .= resultZettels,
         "tags" .= resultTags
       ]
+
+parseQuery :: URI.URI -> [Query]
+parseQuery uri =
+  flip mapMaybe (URI.uriQuery uri) $ \case
+    URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
+      case key of
+        "tag" -> Just $ ByTag val
+        _ -> Nothing
+    _ -> Nothing
 
 matchQuery :: Zettel -> Query -> Bool
 matchQuery Zettel {..} = \case

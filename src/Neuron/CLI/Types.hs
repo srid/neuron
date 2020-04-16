@@ -16,7 +16,6 @@ module Neuron.CLI.Types
   )
 where
 
-import qualified Neuron.Zettelkasten.Link.Action as Z
 import qualified Neuron.Zettelkasten.Query as Z
 import Options.Applicative
 import Relude
@@ -95,7 +94,7 @@ commandParser defaultNotesDir = do
     queryCommand =
       fmap Query $
         (many (Z.ByTag <$> option str (long "tag" <> short 't')))
-          <|> (Z.queryFromUri . mkURIMust <$> option str (long "uri" <> short 'u'))
+          <|> (Z.parseQuery . mkURIMust <$> option str (long "uri" <> short 'u'))
     searchCommand = do
       searchBy <-
         fmap (bool SearchByTitle SearchByContent) $
