@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.ZettelSpec
@@ -23,4 +23,10 @@ spec = do
         dummyContent = either error id $ parsePure "<spec>" "Dummy"
         zettel = Zettel zid "Some title" ["science"] dummyContent
     it "Produces expected json" $ do
-      encode zettel `shouldBe` "{\"id\":\"2011401\",\"title\":\"Some title\",\"tags\":[\"science\"]}"
+      -- "{\"id\":\"2011401\",\"title\":\"Some title\",\"tags\":[\"science\"]}"
+      object (zettelJson zettel)
+        `shouldBe` object
+          [ "id" .= ("2011401" :: Text),
+            "title" .= ("Some title" :: Text),
+            "tags" .= ["science" :: Text]
+          ]

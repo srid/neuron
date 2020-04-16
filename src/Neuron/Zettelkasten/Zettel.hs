@@ -32,14 +32,12 @@ instance Ord Zettel where
 instance Show Zettel where
   show Zettel {..} = "Zettel:" <> show zettelID
 
--- TODO: Use generic deriving use field label modifier.
-instance ToJSON Zettel where
-  toJSON Zettel {..} =
-    object
-      [ "id" .= toJSON zettelID,
-        "title" .= zettelTitle,
-        "tags" .= zettelTags
-      ]
+zettelJson :: KeyValue a => Zettel -> [a]
+zettelJson Zettel {..} =
+  [ "id" .= toJSON zettelID,
+    "title" .= zettelTitle,
+    "tags" .= zettelTags
+  ]
 
 -- | Load a zettel from a file.
 mkZettelFromPath :: FilePath -> Action Zettel

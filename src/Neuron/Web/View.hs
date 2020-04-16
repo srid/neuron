@@ -147,7 +147,7 @@ renderSearch store = do
   div_ [class_ "ui hidden divider"] mempty
   let allZettels = runQuery store []
       allTags = Set.fromList $ concatMap zettelTags allZettels
-      index = object ["zettels" .= allZettels, "tags" .= allTags]
+      index = object ["zettels" .= fmap (object . zettelJson) allZettels, "tags" .= allTags]
   div_ [class_ "ui fluid multiple search selection dropdown", id_ "search-tags"] $ do
     with (input_ mempty) [name_ "tags", type_ "hidden"]
     with (i_ mempty) [class_ "dropdown icon"]
