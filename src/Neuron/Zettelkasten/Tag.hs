@@ -106,7 +106,7 @@ tagRelativeTo (TagPattern pat) (Tag components) = go (toList pat) (toList compon
     go (Literal p : ps) (p' : ps')
       | p == p' = go ps ps'
     go (Glob : ps) (_ : ps') = go ps ps'
-    go [GlobStar] (_ : _) = Just []
+    go [GlobStar] _ = Just []
     go (GlobStar : ps) ps' =
       go (Glob : ps) ps'
         <|> go (Glob : GlobStar : ps) ps'

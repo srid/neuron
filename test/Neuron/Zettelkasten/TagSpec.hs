@@ -69,8 +69,8 @@ spec = do
         shouldMatch pat `mapM_` courseNoteTags
         shouldNotMatch pat journalNoteTag
       context "recursive glob" $ do
-        it "fails to match end of tag" $ do
-          Z.TagPattern [Z.Literal "math", Z.GlobStar] `shouldNotMatch` Z.Tag ["math"]
+        it "matches end of tag" $ do
+          Z.TagPattern [Z.Literal "math", Z.GlobStar] `shouldMatch` Z.Tag ["math"]
         it "matches eagerly when terminal" $ do
           shouldMatch (Z.TagPattern [Z.Literal "math", Z.GlobStar]) `mapM_` mathTags
         it "matches lazily when non terminal" $ do
