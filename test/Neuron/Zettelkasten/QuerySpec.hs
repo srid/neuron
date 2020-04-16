@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -7,6 +8,7 @@ module Neuron.Zettelkasten.QuerySpec
 where
 
 import Neuron.Zettelkasten.Query
+import Neuron.Zettelkasten.Tag
 import Relude
 import Test.Hspec
 import Text.URI (mkURI)
@@ -17,9 +19,10 @@ spec =
     it "Parse all zettels URI" $
       parseQueryString "zquery://search" `shouldBe` Right []
     it "Parse single tag" $
-      parseQueryString "zquery://search?tag=foo" `shouldBe` Right [ByTag "foo"]
+      parseQueryString "zquery://search?tag=foo" `shouldBe` Right [ByTag $ Tag ["foo"]]
     it "Parse multiple tags" $
-      parseQueryString "zquery://search?tag=foo&tag=bar" `shouldBe` Right [ByTag "foo", ByTag "bar"]
+      parseQueryString "zquery://search?tag=foo&tag=bar"
+        `shouldBe` Right [ByTag $ Tag ["foo"], ByTag $ Tag ["bar"]]
   where
     parseQueryString =
       bimap displayException parseQuery . mkURI

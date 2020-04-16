@@ -14,22 +14,24 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Lucid
 import Neuron.Zettelkasten.Store
+import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
+import qualified Text.Megaparsec as M
 import qualified Text.URI as URI
 
 -- TODO: Support querying connections, a la:
 --   LinksTo ZettelID
 --   LinksFrom ZettelID
 data Query
-  = ByTag Text
+  = ByTag Tag
   deriving (Eq, Show)
 
 instance ToHtml Query where
   toHtmlRaw = toHtml
   toHtml (ByTag tag) = do
-    let desc = "Zettels tagged '" <> tag <> "'"
-    span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml tag
+    let desc = "Zettels tagged '" <> tagToText tag <> "'"
+    span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml (tagToText tag)
 
 instance ToHtml [Query] where
   toHtmlRaw = toHtml
@@ -40,7 +42,7 @@ instance ToHtml [Query] where
         else toHtml `mapM_` qs
 
 data QueryResults = QueryResults
-  { resultTags :: Set.Set Text,
+  { resultTags :: Set.Set Tag,
     resultZettels :: [Zettel]
   }
 
@@ -63,7 +65,7 @@ parseQuery uri =
   flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
       case key of
-        "tag" -> Just $ ByTag val
+        "tag" -> ByTag <$> M.parseMaybe tagParser val
         _ -> Nothing
     _ -> Nothing
 

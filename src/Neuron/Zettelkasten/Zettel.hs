@@ -11,6 +11,7 @@ import Data.Aeson
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Markdown.Meta as Meta
+import Neuron.Zettelkasten.Tag
 import Relude hiding (show)
 import qualified Rib.Parser.MMark as MMark
 import Text.MMark (MMark)
@@ -19,7 +20,7 @@ import Text.Show (Show (show))
 data Zettel = Zettel
   { zettelID :: ZettelID,
     zettelTitle :: Text,
-    zettelTags :: [Text],
+    zettelTags :: [Tag],
     zettelContent :: MMark
   }
 
@@ -38,7 +39,7 @@ instance ToJSON Zettel where
     object
       [ "id" .= toJSON zettelID,
         "title" .= zettelTitle,
-        "tags" .= zettelTags
+        "tags" .= toJSON zettelTags
       ]
 
 -- | Load a zettel from a file.
@@ -53,6 +54,9 @@ mkZettelFromPath path = do
       tags = fromMaybe [] $ Meta.tags =<< meta
   pure $ Zettel zid title tags doc
 
-hasTag :: Text -> Zettel -> Bool
-hasTag t Zettel {..} =
-  isJust $ find (== t) zettelTags
+matchesTagPattern :: TagPattern -> Zettel -> Bool
+matchesTagPattern pat Zettel {..} =
+  isJust $ find (tagMatch pat) zettelTags
+
+hasTag :: Tag -> Zettel -> Bool
+hasTag tag zettel = matchesTagPattern (tagLiteral tag) zettel

@@ -10,13 +10,14 @@ module Neuron.Zettelkasten.Markdown.Meta
 where
 
 import Data.Aeson
+import Neuron.Zettelkasten.Tag
 import Relude
 import Text.MMark (MMark, projectYaml)
 
 -- | YAML metadata in a zettel markdown file
 data Meta = Meta
   { title :: Text,
-    tags :: Maybe [Text]
+    tags :: Maybe [Tag]
   }
   deriving (Eq, Show, Generic, FromJSON)
 
