@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -25,13 +26,20 @@ import qualified Text.URI as URI
 --   LinksFrom ZettelID
 data Query
   = ByTag Tag
+  | TagUnder Tag
+  | TagFrom Tag
+  | TagGlob TagPattern
   deriving (Eq, Show)
 
 instance ToHtml Query where
   toHtmlRaw = toHtml
-  toHtml (ByTag tag) = do
-    let desc = "Zettels tagged '" <> tagToText tag <> "'"
-    span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml (tagToText tag)
+  toHtml query =
+    let (desc, repr) = case query of
+          ByTag (tagToText -> tag) -> ("Zettels tagged '" <> tag <> "'", tag)
+          TagUnder (tagToText -> tag) -> ("Zettels under tag '" <> tag <> "'", tag)
+          TagFrom (tagToText -> tag) -> ("Zettels under tag '" <> tag <> "' (included)", tag)
+          TagGlob (patternToText -> pat) -> ("Zettels matching pattern '" <> pat <> "'", pat)
+     in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml repr
 
 instance ToHtml [Query] where
   toHtmlRaw = toHtml
@@ -64,14 +72,24 @@ parseQuery :: URI.URI -> [Query]
 parseQuery uri =
   flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-      case key of
-        "tag" -> ByTag <$> M.parseMaybe tagParser val
-        _ -> Nothing
+      let tag = M.parseMaybe tagParser val
+       in case key of
+            "tag" -> ByTag <$> tag
+            "under" -> TagUnder <$> tag
+            "from" -> TagFrom <$> tag
+            "glob" -> TagGlob <$> M.parseMaybe tagPatternParser val
+            _ -> Nothing
     _ -> Nothing
 
+queryToTagPattern :: Query -> TagPattern
+queryToTagPattern = \case
+  ByTag tag -> tagLiteral tag
+  TagUnder tag -> tagLiteral tag <> TagPattern [GlobStar, Glob]
+  TagFrom tag -> tagLiteral tag <> TagPattern [GlobStar]
+  TagGlob pat -> pat
+
 matchQuery :: Zettel -> Query -> Bool
-matchQuery Zettel {..} = \case
-  ByTag tag -> tag `elem` zettelTags
+matchQuery zettel query = matchesTagPattern (queryToTagPattern query) zettel
 
 matchQueries :: Zettel -> [Query] -> Bool
 matchQueries zettel queries = and $ matchQuery zettel <$> queries
