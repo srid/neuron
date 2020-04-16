@@ -93,12 +93,12 @@ commandParser defaultNotesDir = do
       pure Open
     queryCommand =
       fmap Query $
-        (many (Z.ByTag <$> option str (long "tag" <> short 't')))
-          <|> (Z.parseQuery . mkURIMust <$> option str (long "uri" <> short 'u'))
+        many (Z.ByTag <$> option str (long "tag" <> short 't'))
+          <|> option uriReader (long "uri" <> short 'u')
     searchCommand = do
       searchBy <-
-        fmap (bool SearchByTitle SearchByContent) $
-          switch (long "full-text" <> short 'a' <> help "Full-text search")
+        bool SearchByTitle SearchByContent
+          <$> switch (long "full-text" <> short 'a' <> help "Full-text search")
       edit <- switch (long "edit" <> short 'e' <> help "Open the matching zettel in $EDITOR")
       pure $ Search $ SearchCommand searchBy edit
     ribCommand = fmap Rib $ do
@@ -114,5 +114,5 @@ commandParser defaultNotesDir = do
       ~(ribQuiet) <- pure False
       ~(ribShakeDbDir) <- pure Nothing
       pure RibConfig {..}
-    mkURIMust =
-      either (error . toText . displayException) id . URI.mkURI
+    uriReader =
+      eitherReader $ bimap displayException Z.parseQuery . URI.mkURI . toText
