@@ -102,6 +102,8 @@ commandParser defaultNotesDir = do
       edit <- switch (long "edit" <> short 'e' <> help "Open the matching zettel in $EDITOR")
       pure $ Search $ SearchCommand searchBy edit
     ribCommand = fmap Rib $ do
+      let ribQuiet = False
+          ribShakeDbDir = Nothing
       ribOutputDir <-
         optional $
           option
@@ -111,8 +113,6 @@ commandParser defaultNotesDir = do
             )
       ribWatch <- Rib.Cli.watchOption
       ribServe <- Rib.Cli.serveOption
-      ~(ribQuiet) <- pure False
-      ~(ribShakeDbDir) <- pure Nothing
       pure RibConfig {..}
     uriReader =
       eitherReader $ bimap displayException Z.parseQuery . URI.mkURI . toText
