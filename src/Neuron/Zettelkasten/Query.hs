@@ -60,6 +60,7 @@ queryResults queries zettel
   | matchQueries zettel queries = [zettel]
   | otherwise = mempty
 
+-- | Run the given query and return the results.
 runQuery :: ZettelStore -> [Query] -> QueryResults
 runQuery store queries =
   foldMap (queryResults queries) (Map.elems store)
