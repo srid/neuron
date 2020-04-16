@@ -3,7 +3,7 @@
 ## 0.3.0.0 (DEV)
 
 - New features
-  - [Short links](https://neuron.srid.ca/2014501.html).
+  - [Short links](https://neuron.zettel.page/2014501.html).
   - Full text search: `neuron search --full-text`
   - #43: Add `neuron search -e` to open the matching zettel in $EDITOR
   - Allow customizing output directory

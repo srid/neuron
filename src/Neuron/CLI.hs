@@ -36,7 +36,7 @@ run act = do
     opts d =
       info
         (versionOption <*> commandParser d <**> helper)
-        (fullDesc <> progDesc "Neuron, a Zettelkasten CLI <https://neuron.srid.ca/>")
+        (fullDesc <> progDesc "Neuron, a Zettelkasten CLI <https://neuron.zettel.page/>")
     versionOption =
       infoOption
         (toString Version.neuronVersionFull)
