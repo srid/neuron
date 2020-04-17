@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
@@ -65,7 +64,7 @@ mkSearchURI terms tags = do
   params <- sequenceA (qParams ++ tagParams)
   pure
     emptyURI
-      { uriPath = Just (False, [route]),
+      { uriPath = Just (False, route :| []),
         uriQuery = params
       }
 
