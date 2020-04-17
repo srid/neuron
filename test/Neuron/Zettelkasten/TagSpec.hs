@@ -60,12 +60,12 @@ shouldMatch :: Z.TagPattern -> Z.Tag -> Expectation
 shouldMatch pat tag
   | Z.tagMatch pat tag = pure ()
   | otherwise =
-    expectationFailure $ toString $
-      Z.tagPatternToText pat <> " was expected to match " <> Z.unTag tag <> " but didn't"
+    expectationFailure $
+      Z.unTagPattern pat <> " was expected to match " <> toString (Z.unTag tag) <> " but didn't"
 
 shouldNotMatch :: Z.TagPattern -> Z.Tag -> Expectation
 shouldNotMatch pat tag
   | Z.tagMatch pat tag =
-    expectationFailure $ toString $
-      Z.tagPatternToText pat <> " wasn't expected to match tag " <> Z.unTag tag <> " but it did"
+    expectationFailure $
+      Z.unTagPattern pat <> " wasn't expected to match tag " <> toString (Z.unTag tag) <> " but it did"
   | otherwise = pure ()

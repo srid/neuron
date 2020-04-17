@@ -28,8 +28,8 @@ data Query
 
 instance ToHtml Query where
   toHtmlRaw = toHtml
-  toHtml (ByTag (tagPatternToText -> pat)) =
-    let desc = "Zettels matching tag '" <> pat <> "'"
+  toHtml (ByTag (TagPattern pat)) =
+    let desc = "Zettels matching tag '" <> toText pat <> "'"
      in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml pat
 
 instance ToHtml [Query] where

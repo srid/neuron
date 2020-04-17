@@ -11,7 +11,6 @@
 module Neuron.Zettelkasten.Tag
   ( Tag (..),
     TagPattern (..),
-    tagPatternToText,
     tagMatch,
   )
 where
@@ -25,9 +24,6 @@ newtype Tag = Tag {unTag :: Text}
 
 newtype TagPattern = TagPattern {unTagPattern :: FilePattern}
   deriving (Eq, Show)
-
-tagPatternToText :: TagPattern -> Text
-tagPatternToText = toText . unTagPattern
 
 tagMatch :: TagPattern -> Tag -> Bool
 tagMatch (TagPattern pat) (Tag tag) = pat ?== toString tag
