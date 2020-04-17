@@ -23,21 +23,14 @@ import qualified Text.URI as URI
 --   LinksTo ZettelID
 --   LinksFrom ZettelID
 data Query
-  = ByTag Tag
-  | TagUnder Tag
-  | TagFrom Tag
-  | TagGlob TagPattern
+  = ByTag TagPattern
   deriving (Eq, Show)
 
 instance ToHtml Query where
   toHtmlRaw = toHtml
-  toHtml query =
-    let (desc, repr) = case query of
-          ByTag (tagToText -> tag) -> ("Zettels tagged '" <> tag <> "'", tag)
-          TagUnder (tagToText -> tag) -> ("Zettels under tag '" <> tag <> "'", tag)
-          TagFrom (tagToText -> tag) -> ("Zettels under tag '" <> tag <> "' (included)", tag)
-          TagGlob (tagPatternToText -> pat) -> ("Zettels matching pattern '" <> pat <> "'", pat)
-     in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml repr
+  toHtml (ByTag (tagPatternToText -> pat)) =
+    let desc = "Zettels matching tag '" <> pat <> "'"
+     in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml pat
 
 instance ToHtml [Query] where
   toHtmlRaw = toHtml
@@ -54,22 +47,13 @@ parseQuery uri =
   flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
       case key of
-        "tag" -> pure $ ByTag (Tag val)
-        "under" -> pure $ TagUnder (Tag val)
-        "from" -> pure $ TagFrom (Tag val)
-        "glob" -> pure $ TagGlob (TagPattern $ toString val)
+        "tag" -> pure $ ByTag (TagPattern $ toString val)
         _ -> Nothing
     _ -> Nothing
 
-queryToTagPattern :: Query -> TagPattern
-queryToTagPattern = \case
-  ByTag tag -> literalPattern tag
-  TagUnder tag -> literalPattern tag <> TagPattern "**"
-  TagFrom tag -> literalPattern tag <> TagPattern "*" <> TagPattern "**"
-  TagGlob pat -> pat
-
 matchQuery :: Zettel -> Query -> Bool
-matchQuery Zettel {..} query = any (tagMatch $ queryToTagPattern query) zettelTags
+matchQuery Zettel {..} = \case
+  ByTag pat -> any (tagMatch pat) zettelTags
 
 matchQueries :: Zettel -> [Query] -> Bool
 matchQueries zettel queries = and $ matchQuery zettel <$> queries

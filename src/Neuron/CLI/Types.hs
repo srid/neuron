@@ -94,10 +94,7 @@ commandParser defaultNotesDir = do
       pure Open
     queryCommand =
       let tagFilter =
-            (Z.ByTag . Z.Tag <$> option str (long "tag" <> short 't'))
-              <|> (Z.TagUnder . Z.Tag <$> option str (long "under"))
-              <|> (Z.TagFrom . Z.Tag <$> option str (long "from"))
-              <|> (Z.TagGlob . Z.TagPattern <$> option str (long "glob"))
+            (Z.ByTag . Z.TagPattern <$> option str (long "tag" <> short 't'))
        in fmap Query $
             many tagFilter <|> option uriReader (long "uri" <> short 'u')
     searchCommand = do
