@@ -103,10 +103,4 @@ singleResult z@Zettel {..} = QueryResults (Set.fromList zettelTags) [z]
 
 runQuery :: ZettelStore -> [Query] -> QueryResults
 runQuery store queries =
-  foldMap toQueryResult $
-    tagMatchMany
-      (((),) . queryToTagPattern <$> queries)
-      (foldMap associateTags $ Map.elems store)
-  where
-    associateTags z@Zettel {..} = (z,) <$> zettelTags
-    toQueryResult = singleResult . snd
+  foldMap (queryResults queries) (Map.elems store)

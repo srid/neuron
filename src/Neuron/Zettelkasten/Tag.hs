@@ -14,7 +14,6 @@ module Neuron.Zettelkasten.Tag
     literalPattern,
     tagPatternToText,
     tagMatch,
-    tagMatchMany,
     isSubTag,
     isStrictSubTag,
   )
@@ -47,15 +46,6 @@ literalPattern = TagPattern . toString . tagToText
 
 tagMatch :: TagPattern -> Tag -> Bool
 tagMatch (TagPattern pat) (Tag tag) = pat ?== toString tag
-
-tagMatchMany :: [(a, TagPattern)] -> [(b, Tag)] -> [(a, b)]
-tagMatchMany pats tags =
-  extractMatch
-    <$> FilePattern.matchMany
-      (fmap toFilePattern <$> pats)
-      (fmap (toString . tagToText) <$> tags)
-  where
-    extractMatch (x, y, _) = (x, y)
 
 isSubTag :: Tag -> Tag -> Bool
 isSubTag tag tag' = tagMatch (literalPattern tag <> TagPattern "**") tag'
