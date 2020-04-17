@@ -36,7 +36,7 @@ tagMatchCases =
     ),
     ( "matches any number of tag components on recursive glob",
       "journal/**",
-      ["journal", "journal/work", "journal/work/"],
+      ["journal", "journal/work"],
       ["math", "science/physics"]
     ),
     ( "can match one or more tag components",
