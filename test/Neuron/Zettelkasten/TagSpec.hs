@@ -24,32 +24,32 @@ spec = do
 
 tagMatchCases :: [(String, String, [Text], [Text])]
 tagMatchCases =
-  [ ( "matches simple tag",
+  [ ( "simple tag",
       "journal",
       ["journal"],
-      ["science"]
+      ["science", "journal/work"]
     ),
-    ( "matches itself when the tag pattern is literal",
+    ( "simple tag with slash",
       "journal/note",
       ["journal/note"],
-      ["science/physics"]
+      ["science/physics", "journal", "journal/note/foo"]
     ),
-    ( "matches any number of tag components on recursive glob",
+    ( "tag pattern with **",
       "journal/**",
-      ["journal", "journal/work"],
-      ["math", "science/physics"]
+      ["journal", "journal/work", "journal/work/clientA"],
+      ["math", "science/physics", "jour"]
     ),
-    ( "can match one or more tag components",
+    ( "tag pattern with */**",
       "journal/*/**",
       ["journal/foo", "journal/foo/bar"],
       ["science", "journal"]
     ),
-    ( "matches recursive globs lazily",
+    ( "tag pattern with ** in the middle",
       "math/**/note",
       ["math/note", "math/algebra/note", "math/algebra/linear/note"],
       ["math/algebra", "journal/note"]
     ),
-    ( "matches a single tag component on glob wildcard",
+    ( "tag pattern with * in the middle",
       "project/*/task",
       ["project/foo/task", "project/bar-baz/task"],
       ["project", "project/foo", "project/task", "project/foo/bar/task"]
