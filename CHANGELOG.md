@@ -12,6 +12,7 @@
   - Custom alias redirects
   - #90: Client-side web search
   - #107: Add full path to the zettel in `neuron query` JSON
+  - #115: Hierarchical tags, with tag pattern in zquery
 - CLI revamp
   - Zettelkasten directory is now provided via the `-d` argument.
     - Its default, `~/zettelkasten`, is used when not specified.
