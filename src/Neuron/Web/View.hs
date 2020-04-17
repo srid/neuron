@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
@@ -39,6 +38,7 @@ import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
+import Neuron.Zettelkasten.Tag (Tag (..))
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -55,27 +55,27 @@ searchScript = $(embedStringFile "./src-js/search.js")
 helloScript :: Text
 helloScript = $(embedStringFile "./src-purescript/hello/index.js")
 
-mkSearchURI :: MonadThrow m => Maybe Text -> [Text] -> m URI
+mkSearchURI :: MonadThrow m => Maybe Text -> [Tag] -> m URI
 mkSearchURI terms tags = do
   let mkParam k v = URI.QueryParam <$> URI.mkQueryKey k <*> URI.mkQueryValue v
       qParams = maybeToList (fmap (mkParam "q") terms)
-      tagParams = fmap (mkParam "tag") tags
+      tagParams = fmap (mkParam "tag" . unTag) tags
   route <- URI.mkPathPiece (Rib.routeUrlRel Route_Search)
   params <- sequenceA (qParams ++ tagParams)
   pure
     emptyURI
-      { uriPath = Just (False, [route]),
+      { uriPath = Just (False, route :| []),
         uriQuery = params
       }
 
 -- TODO: render error message when the query is invalid
-mkSearchQuery :: Maybe Text -> [Text] -> Text
+mkSearchQuery :: Maybe Text -> [Tag] -> Text
 mkSearchQuery terms tags =
   fromMaybe
     (Rib.routeUrlRel Route_Search)
     (URI.render <$> mkSearchURI terms tags)
 
-mkSingleTagQuery :: Text -> Text
+mkSingleTagQuery :: Tag -> Text
 mkSingleTagQuery tag = mkSearchQuery Nothing [tag]
 
 renderRouteHead :: Monad m => Config -> Route store graph a -> store -> HtmlT m ()
@@ -154,7 +154,7 @@ renderSearch store = do
     div_ [class_ "default text"] "Select tags…"
     div_ [class_ "menu"] $ do
       forM_ allTags $ \tag -> do
-        div_ [class_ "item"] $ toHtml @Text tag
+        div_ [class_ "item"] $ toHtml (unTag tag)
   div_ [class_ "ui divider"] mempty
   ul_ [id_ "search-results", class_ "zettel-list"] mempty
   script_ $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
@@ -208,7 +208,7 @@ renderBrandFooter withVersion =
           " "
           code_ $ toHtml @Text neuronVersionFull
 
-renderTags :: Monad m => [Text] -> HtmlT m ()
+renderTags :: Monad m => [Tag] -> HtmlT m ()
 renderTags tags = do
   forM_ tags $ \tag -> do
     -- TODO: Ideally this should be at the top, not bottom. But putting it at
@@ -217,9 +217,9 @@ renderTags tags = do
     span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
       a_
         [ href_ (mkSingleTagQuery tag),
-          title_ ("See all zettels with tag '" <> tag <> "'")
+          title_ ("See all zettels with tag '" <> unTag tag <> "'")
         ]
-        $ toHtml @Text tag
+        $ toHtml (unTag tag)
     p_ mempty
 
 -- | Font awesome element

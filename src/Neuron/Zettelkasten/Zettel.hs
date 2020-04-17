@@ -11,6 +11,7 @@ import Data.Aeson
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Markdown.Meta as Meta
+import Neuron.Zettelkasten.Tag
 import Relude hiding (show)
 import qualified Rib.Parser.MMark as MMark
 import Text.MMark (MMark)
@@ -19,7 +20,7 @@ import Text.Show (Show (show))
 data Zettel = Zettel
   { zettelID :: ZettelID,
     zettelTitle :: Text,
-    zettelTags :: [Text],
+    zettelTags :: [Tag],
     zettelContent :: MMark
   }
 
@@ -51,6 +52,6 @@ mkZettelFromPath path = do
       tags = fromMaybe [] $ Meta.tags =<< meta
   pure $ Zettel zid title tags doc
 
-hasTag :: Text -> Zettel -> Bool
-hasTag t Zettel {..} =
-  isJust $ find (== t) zettelTags
+hasTag :: Tag -> Zettel -> Bool
+hasTag tag Zettel {..} =
+  isJust $ find (== tag) zettelTags

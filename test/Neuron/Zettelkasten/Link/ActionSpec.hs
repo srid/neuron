@@ -10,6 +10,7 @@ where
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Action
 import Neuron.Zettelkasten.Query
+import Neuron.Zettelkasten.Tag
 import Relude
 import Test.Hspec
 import Text.URI
@@ -49,11 +50,11 @@ linkActionCases =
     ),
     ( "zquery: link",
       (Right (".", "zquery://search?tag=science")),
-      Just $ LinkAction_QueryZettels Folgezettel LinkTheme_Default [ByTag "science"]
+      Just $ LinkAction_QueryZettels Folgezettel LinkTheme_Default [ByTag $ TagPattern "science"]
     ),
     ( "zcfquery: link, with link theme",
       (Right (".", "zcfquery://search?tag=science&linkTheme=withDate")),
-      Just $ LinkAction_QueryZettels OrdinaryConnection LinkTheme_WithDate [ByTag "science"]
+      Just $ LinkAction_QueryZettels OrdinaryConnection LinkTheme_WithDate [ByTag $ TagPattern "science"]
     ),
     ( "normal link",
       (Left "https://www.google.com"),

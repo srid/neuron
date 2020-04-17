@@ -86,6 +86,7 @@ library
     Neuron.Zettelkasten.Markdown.Meta
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Store
+    Neuron.Zettelkasten.Tag
     Neuron.Zettelkasten.Zettel
   other-modules:
     Neuron.Version.RepoVersion

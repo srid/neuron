@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,6 +13,7 @@ module Neuron.Zettelkasten.Query where
 import qualified Data.Map.Strict as Map
 import Lucid
 import Neuron.Zettelkasten.Store
+import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Text.URI as URI
@@ -20,14 +22,14 @@ import qualified Text.URI as URI
 --   LinksTo ZettelID
 --   LinksFrom ZettelID
 data Query
-  = ByTag Text
+  = ByTag TagPattern
   deriving (Eq, Show)
 
 instance ToHtml Query where
   toHtmlRaw = toHtml
-  toHtml (ByTag tag) = do
-    let desc = "Zettels tagged '" <> tag <> "'"
-    span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml tag
+  toHtml (ByTag (TagPattern pat)) =
+    let desc = "Zettels matching tag '" <> toText pat <> "'"
+     in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml pat
 
 instance ToHtml [Query] where
   toHtmlRaw = toHtml
@@ -44,13 +46,13 @@ parseQuery uri =
   flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
       case key of
-        "tag" -> Just $ ByTag val
+        "tag" -> Just $ ByTag (TagPattern $ toString val)
         _ -> Nothing
     _ -> Nothing
 
 matchQuery :: Zettel -> Query -> Bool
 matchQuery Zettel {..} = \case
-  ByTag tag -> tag `elem` zettelTags
+  ByTag pat -> any (tagMatch pat) zettelTags
 
 matchQueries :: Zettel -> [Query] -> Bool
 matchQueries zettel queries = and $ matchQuery zettel <$> queries
