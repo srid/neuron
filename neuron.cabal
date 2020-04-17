@@ -7,7 +7,7 @@ copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
 author: Sridhar Ratnakumar
 category: Web
-homepage: https://neuron.srid.ca
+homepage: https://neuron.zettel.page
 bug-reports: https://github.com/srid/neuron/issues
 synopsis:
   Haskell meets Zettelkasten, for your plain-text delight.

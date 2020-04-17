@@ -3,7 +3,7 @@
 ## 0.3.0.0 (DEV)
 
 - New features
-  - [Short links](https://neuron.srid.ca/2014501.html).
+  - [Short links](https://neuron.zettel.page/2014501.html).
   - Full text search: `neuron search --full-text`
   - #43: Add `neuron search -e` to open the matching zettel in $EDITOR
   - Allow customizing output directory
@@ -11,6 +11,7 @@
   - Custom themes for web interface
   - Custom alias redirects
   - #90: Client-side web search
+  - #107: Add full path to the zettel in `neuron query` JSON
 - CLI revamp
   - Zettelkasten directory is now provided via the `-d` argument.
     - Its default, `~/zettelkasten`, is used when not specified.

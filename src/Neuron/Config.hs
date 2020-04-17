@@ -39,7 +39,7 @@ import qualified Text.Megaparsec.Char as M
 
 -- | Config type for @neuron.dhall@
 --
--- See <https://neuron.srid.ca/2011701.html guide> for description of the fields.
+-- See <https://neuron.zettel.page/2011701.html guide> for description of the fields.
 makeHaskellTypes
   [ SingleConstructor "Config" "Config" "./src-dhall/Config/Type.dhall"
   ]

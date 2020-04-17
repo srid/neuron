@@ -6,7 +6,7 @@
 [![built with nix](https://img.shields.io/badge/builtwith-nix-purple.svg)](https://builtwithnix.org)
 [![Zulip chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://funprog.zulipchat.com/#narrow/stream/231929-Neuron)
 
-neuron is a system for managing your plain-text [Zettelkasten](https://neuron.srid.ca/2011401.html) notes. 
+neuron is a system for managing your plain-text [Zettelkasten](https://neuron.zettel.page/2011401.html) notes. 
 
 **Features**
 
@@ -17,7 +17,7 @@ neuron is a system for managing your plain-text [Zettelkasten](https://neuron.sr
 
 ## Getting started
 
-See [neuron.srid.ca](https://neuron.srid.ca/) for the full guide to installing and using neuron.
+See [neuron.zettel.page](https://neuron.zettel.page/) for the full guide to installing and using neuron.
 
 ## Developing
 

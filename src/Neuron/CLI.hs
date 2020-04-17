@@ -9,14 +9,17 @@ module Neuron.CLI
   )
 where
 
+import Data.Aeson
 import qualified Data.Aeson.Text as Aeson
 import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Rib
 import Neuron.CLI.Search (runSearch)
 import qualified Neuron.Version as Version
+import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.Query as Z
 import qualified Neuron.Zettelkasten.Store as Z
+import Neuron.Zettelkasten.Zettel (Zettel (..), zettelJson)
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -33,7 +36,7 @@ run act = do
     opts d =
       info
         (versionOption <*> commandParser d <**> helper)
-        (fullDesc <> progDesc "Neuron, a Zettelkasten CLI <https://neuron.srid.ca/>")
+        (fullDesc <> progDesc "Neuron, a Zettelkasten CLI <https://neuron.zettel.page/>")
     versionOption =
       infoOption
         (toString Version.neuronVersionFull)
@@ -53,10 +56,15 @@ runWith act App {..} = do
         putStrLn indexHtmlPath
         let opener = if os == "darwin" then "open" else "xdg-open"
         liftIO $ executeFile opener True [indexHtmlPath] Nothing
-    Query queries -> do
+    Query queries ->
       runRibOnceQuietly notesDir $ do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
-        let matches = Z.runQuery store queries
-        putLTextLn $ Aeson.encodeToLazyText $ matches
+        putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith <$> Z.runQuery store queries
     Search searchCmd ->
       runSearch notesDir searchCmd
+  where
+    zettelJsonWith z@Zettel {..} =
+      object $
+        [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)
+        ]
+          <> zettelJson z

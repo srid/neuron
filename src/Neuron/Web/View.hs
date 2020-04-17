@@ -17,12 +17,14 @@
 -- | HTML & CSS
 module Neuron.Web.View where
 
-import Clay hiding (id, ms, reverse, s, type_)
+import Clay hiding (id, ms, object, reverse, s, type_)
 import qualified Clay as C
 import Control.Monad.Catch (MonadThrow)
+import Data.Aeson ((.=), object)
 import qualified Data.Aeson.Text as Aeson
 import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
+import qualified Data.Set as Set
 import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Config
@@ -144,7 +146,9 @@ renderSearch store = do
     input_ [type_ "text", id_ "search-input"]
     fa "search icon fas fa-search"
   div_ [class_ "ui hidden divider"] mempty
-  let index@QueryResults {resultTags = allTags} = runQuery store []
+  let allZettels = runQuery store []
+      allTags = Set.fromList $ concatMap zettelTags allZettels
+      index = object ["zettels" .= fmap (object . zettelJson) allZettels, "tags" .= allTags]
   div_ [class_ "ui fluid multiple search selection dropdown", id_ "search-tags"] $ do
     with (input_ mempty) [name_ "tags", type_ "hidden"]
     with (i_ mempty) [class_ "dropdown icon"]
