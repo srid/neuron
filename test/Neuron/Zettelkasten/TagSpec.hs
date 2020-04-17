@@ -26,7 +26,7 @@ tagMatchCases :: [(String, String, [Text], [Text])]
 tagMatchCases =
   [ ( "matches simple tag",
       "journal",
-      ["journal", "journal"],
+      ["journal"],
       ["science"]
     ),
     ( "matches itself when the tag pattern is literal",
