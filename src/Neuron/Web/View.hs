@@ -60,7 +60,7 @@ mkSearchURI :: MonadThrow m => Maybe Text -> [Tag] -> m URI
 mkSearchURI terms tags = do
   let mkParam k v = URI.QueryParam <$> URI.mkQueryKey k <*> URI.mkQueryValue v
       qParams = maybeToList (fmap (mkParam "q") terms)
-      tagParams = fmap (mkParam "tag" . tagToText) tags
+      tagParams = fmap (mkParam "tag" . unTag) tags
   route <- URI.mkPathPiece (Rib.routeUrlRel Route_Search)
   params <- sequenceA (qParams ++ tagParams)
   pure
@@ -155,7 +155,7 @@ renderSearch store = do
     div_ [class_ "default text"] "Select tags…"
     div_ [class_ "menu"] $ do
       forM_ allTags $ \tag -> do
-        div_ [class_ "item"] $ toHtml (tagToText tag)
+        div_ [class_ "item"] $ toHtml (unTag tag)
   div_ [class_ "ui divider"] mempty
   ul_ [id_ "search-results", class_ "zettel-list"] mempty
   script_ $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
@@ -218,9 +218,9 @@ renderTags tags = do
     span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
       a_
         [ href_ (mkSingleTagQuery tag),
-          title_ ("See all zettels with tag '" <> tagToText tag <> "'")
+          title_ ("See all zettels with tag '" <> unTag tag <> "'")
         ]
-        $ toHtml (tagToText tag)
+        $ toHtml (unTag tag)
     p_ mempty
 
 -- | Font awesome element

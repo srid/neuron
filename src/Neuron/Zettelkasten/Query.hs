@@ -47,7 +47,7 @@ parseQuery uri =
   flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
       case key of
-        "tag" -> pure $ ByTag (TagPattern $ toString val)
+        "tag" -> Just $ ByTag (TagPattern $ toString val)
         _ -> Nothing
     _ -> Nothing
 
