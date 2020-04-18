@@ -37,7 +37,7 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link (linkActionExt)
-import Neuron.Zettelkasten.Link.Action (LinkTheme (..))
+import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Query

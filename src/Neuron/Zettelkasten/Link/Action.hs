@@ -2,13 +2,9 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Special Zettel links in Markdown
@@ -20,17 +16,12 @@ import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Link.Theme
 import Relude
 import Text.MMark (MMark, runScanner)
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Inline (..))
 import qualified Text.URI as URI
-
-data LinkTheme
-  = LinkTheme_Default
-  | LinkTheme_Simple
-  | LinkTheme_WithDate
-  deriving (Eq, Show, Ord)
 
 data LinkAction
   = LinkAction_ConnectZettel Connection ZettelID
@@ -60,20 +51,6 @@ linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkT
       guard $ uriS == linkText
       zid <- rightToMaybe $ parseZettelID' uriS
       pure $ LinkAction_ConnectZettel Folgezettel zid
-
-linkThemeFromUri :: URI.URI -> Maybe LinkTheme
-linkThemeFromUri uri =
-  listToMaybe $ flip mapMaybe (URI.uriQuery uri) $ \case
-    URI.QueryFlag _ -> Nothing
-    URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-      case key of
-        "linkTheme" ->
-          case val of
-            "default" -> Just LinkTheme_Default
-            "simple" -> Just LinkTheme_Simple
-            "withDate" -> Just LinkTheme_WithDate
-            _ -> error $ "Unknown link theme: " <> val
-        _ -> Nothing
 
 data MarkdownLink = MarkdownLink
   { markdownLinkText :: Text,

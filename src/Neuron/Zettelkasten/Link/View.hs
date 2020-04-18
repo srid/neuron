@@ -18,6 +18,7 @@ import Lucid
 import Neuron.Web.Route (Route (..))
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Action
+import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
