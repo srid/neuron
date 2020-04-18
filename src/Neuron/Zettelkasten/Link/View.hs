@@ -33,50 +33,49 @@ zLinkExt store =
       let mlink = MarkdownLink (Ext.asPlainText inner) uri
        in case mkZLink mlink of
             Just lact ->
-              zLinkRender store lact
+              renderZLink store lact
             Nothing ->
               f inline
     inline ->
       f inline
 
 -- | Expand a zlink into normal links
-zLinkRender :: Monad m => ZettelStore -> ZLink -> HtmlT m ()
-zLinkRender store = \case
+renderZLink :: Monad m => ZettelStore -> ZLink -> HtmlT m ()
+renderZLink store = \case
   ZLink_ConnectZettel _conn zid ->
-    renderZettelLink LinkTheme_Default store zid
+    renderZettelLink LinkTheme_Default $ lookupStore zid store
   ZLink_QueryZettels _conn linkTheme q -> do
     toHtml q
     let zettels = sortOn Down $ zettelID <$> runQuery store q
     ul_ $ do
-      forM_ zettels $ \zid -> do
-        li_ $ renderZettelLink linkTheme store zid
+      forM_ zettels $ \zid ->
+        li_ $ renderZettelLink linkTheme $ lookupStore zid store
 
 -- | Render a link to an individual zettel.
-renderZettelLink :: forall m. Monad m => LinkTheme -> ZettelStore -> ZettelID -> HtmlT m ()
-renderZettelLink ltheme store zid = do
-  let Zettel {..} = lookupStore zid store
-      zurl = Rib.routeUrlRel $ Route_Zettel zid
+renderZettelLink :: forall m. Monad m => LinkTheme -> Zettel -> HtmlT m ()
+renderZettelLink ltheme Zettel {..} = do
+  let zurl = Rib.routeUrlRel $ Route_Zettel zettelID
       renderDefault :: ToHtml a => a -> HtmlT m ()
       renderDefault linkInline = do
         span_ [class_ "zettel-link"] $ do
           span_ [class_ "zettel-link-idlink"] $ do
             a_ [href_ zurl] $ toHtml linkInline
           span_ [class_ "zettel-link-title"] $ do
-            toHtml $ zettelTitle
+            toHtml zettelTitle
   case ltheme of
-    LinkTheme_Default -> do
+    LinkTheme_Default ->
       -- Special consistent styling for Zettel links
       -- Uses ZettelID as link text. Title is displayed aside.
-      renderDefault zid
-    LinkTheme_WithDate -> do
-      case zettelIDDay zid of
+      renderDefault zettelID
+    LinkTheme_WithDate ->
+      case zettelIDDay zettelID of
         Just day ->
           renderDefault $ show @Text day
         Nothing ->
           -- Fallback to using zid
-          renderDefault zid
-    LinkTheme_Simple -> do
-      renderZettelLinkSimpleWith zurl (zettelIDText zid) zettelTitle
+          renderDefault zettelID
+    LinkTheme_Simple ->
+      renderZettelLinkSimpleWith zurl (zettelIDText zettelID) zettelTitle
 
 -- | Render a normal looking zettel link with a custom body.
 renderZettelLinkSimpleWith :: forall m a. (Monad m, ToHtml a) => Text -> Text -> a -> HtmlT m ()

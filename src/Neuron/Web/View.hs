@@ -96,7 +96,7 @@ renderIndex Config {..} (store, graph) = do
       Left (toList -> cyc) -> div_ [class_ "ui orange segment"] $ do
         h2_ "Cycle detected"
         forM_ cyc $ \zid ->
-          li_ $ renderZettelLink LinkTheme_Default store zid
+          li_ $ renderZettelLink LinkTheme_Default $ lookupStore zid store
       _ -> mempty
     let clusters = sortMothers $ zettelClusters graph
     p_ $ do
@@ -224,7 +224,7 @@ renderForest isRoot maxLevel ltheme s g trees =
                 div_
                   [class_ $ bool "" "ui black label" $ ltheme == LinkTheme_Default]
           bool id zettelDiv isRoot $
-            renderZettelLink ltheme s zid
+            renderZettelLink ltheme $ lookupStore zid s
           when (ltheme == LinkTheme_Default) $ do
             " "
             case backlinks zid g of
