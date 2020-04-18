@@ -18,9 +18,9 @@ data LinkTheme
   | LinkTheme_WithDate
   deriving (Eq, Show, Ord)
 
-linkThemeFromUri :: URI.URI -> Maybe LinkTheme
-linkThemeFromUri uri =
-  listToMaybe $ flip mapMaybe (URI.uriQuery uri) $ \case
+linkThemeFromURI :: URI.URI -> LinkTheme
+linkThemeFromURI uri =
+  fromMaybe LinkTheme_Default $ listToMaybe $ flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryFlag _ -> Nothing
     URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
       case key of

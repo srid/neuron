@@ -13,10 +13,10 @@ module Neuron.Zettelkasten.Link.Action where
 import Control.Foldl (Fold (..))
 import qualified Data.Set as Set
 import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.Link.Theme
 import Relude
 import Text.MMark (MMark, runScanner)
 import qualified Text.MMark.Extension as Ext
@@ -43,9 +43,9 @@ linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkT
       let zid = parseZettelID linkText
        in Just $ LinkAction_ConnectZettel OrdinaryConnection zid
     Just "zquery" ->
-      Just $ LinkAction_QueryZettels Folgezettel (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (parseQuery uri)
+      Just $ LinkAction_QueryZettels Folgezettel (linkThemeFromURI uri) (queryFromURI uri)
     Just "zcfquery" ->
-      Just $ LinkAction_QueryZettels OrdinaryConnection (fromMaybe LinkTheme_Default $ linkThemeFromUri uri) (parseQuery uri)
+      Just $ LinkAction_QueryZettels OrdinaryConnection (linkThemeFromURI uri) (queryFromURI uri)
     _ -> do
       let uriS = URI.render uri
       guard $ uriS == linkText

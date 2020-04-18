@@ -41,8 +41,8 @@ instance ToHtml [Query] where
 
 type QueryResults = [Zettel]
 
-parseQuery :: URI.URI -> [Query]
-parseQuery uri =
+queryFromURI :: URI.URI -> [Query]
+queryFromURI uri =
   flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
       case key of

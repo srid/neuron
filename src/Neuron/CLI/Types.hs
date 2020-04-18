@@ -116,4 +116,4 @@ commandParser defaultNotesDir = do
       ribServe <- Rib.Cli.serveOption
       pure RibConfig {..}
     uriReader =
-      eitherReader $ bimap displayException Z.parseQuery . URI.mkURI . toText
+      eitherReader $ bimap displayException Z.queryFromURI . URI.mkURI . toText

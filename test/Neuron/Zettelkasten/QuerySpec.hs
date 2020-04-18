@@ -28,4 +28,4 @@ spec =
         `shouldBe` Right [ByTag $ TagPattern "foo", ByTag $ TagPattern "bar"]
   where
     parseQueryString =
-      bimap displayException parseQuery . mkURI
+      bimap displayException queryFromURI . mkURI
