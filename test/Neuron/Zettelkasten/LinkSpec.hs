@@ -51,11 +51,11 @@ zLinkCases =
     ),
     ( "zquery: link",
       (Right (".", "zquery://search?tag=science")),
-      Just $ ZLink_QueryZettels Folgezettel LinkTheme_Default [ByTag $ TagPattern "science"]
+      Just $ ZLink_QueryZettels Folgezettel LinkTheme_Default [Query_ZettelsByTag $ TagPattern "science"]
     ),
     ( "zcfquery: link, with link theme",
       (Right (".", "zcfquery://search?tag=science&linkTheme=withDate")),
-      Just $ ZLink_QueryZettels OrdinaryConnection LinkTheme_WithDate [ByTag $ TagPattern "science"]
+      Just $ ZLink_QueryZettels OrdinaryConnection LinkTheme_WithDate [Query_ZettelsByTag $ TagPattern "science"]
     ),
     ( "normal link",
       (Left "https://www.google.com"),

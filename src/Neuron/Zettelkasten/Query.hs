@@ -1,15 +1,16 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Queries to the Zettel store
 module Neuron.Zettelkasten.Query where
 
+import Control.Monad.Except
 import qualified Data.Map.Strict as Map
 import Lucid
 import Neuron.Zettelkasten.Store
@@ -43,14 +44,17 @@ instance ToHtml [Query] where
 
 type QueryResults = [Zettel]
 
-queryFromURI :: URI.URI -> [Query]
+queryFromURI :: MonadError Text m => URI.URI -> m [Query]
 queryFromURI uri =
-  flip mapMaybe (URI.uriQuery uri) $ \case
-    URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-      case key of
-        "tag" -> Just $ Query_ZettelsByTag (TagPattern $ toString val)
+  case fmap URI.unRText (URI.uriScheme uri) of
+    Just proto | proto `elem` ["zquery", "zcfquery"] ->
+      pure $ flip mapMaybe (URI.uriQuery uri) $ \case
+        URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
+          case key of
+            "tag" -> Just $ Query_ZettelsByTag (TagPattern $ toString val)
+            _ -> Nothing
         _ -> Nothing
-    _ -> Nothing
+    _ -> throwError "Bad URI (expected: zquery: or zcfquery:)"
 
 matchQuery :: Zettel -> Query -> Bool
 matchQuery Zettel {..} = \case

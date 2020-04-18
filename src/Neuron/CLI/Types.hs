@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.CLI.Types
@@ -116,4 +117,8 @@ commandParser defaultNotesDir = do
       ribServe <- Rib.Cli.serveOption
       pure RibConfig {..}
     uriReader =
-      eitherReader $ bimap displayException Z.queryFromURI . URI.mkURI . toText
+      eitherReader $ \(toText -> s) -> case URI.mkURI s of
+        Right uri ->
+          first toString $ Z.queryFromURI uri
+        Left e ->
+          Left $ displayException e

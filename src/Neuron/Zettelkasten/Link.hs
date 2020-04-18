@@ -28,7 +28,7 @@ data ZLink
     ZLink_QueryZettels Connection LinkTheme [Query]
   deriving (Eq, Show)
 
-mkZLink :: MarkdownLink -> Maybe ZLink
+mkZLink :: HasCallStack => MarkdownLink -> Maybe ZLink
 mkZLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   -- NOTE: We should probably drop the 'cf' variants in favour of specifying
   -- the connection type as a query param or something.
@@ -42,9 +42,9 @@ mkZLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
       let zid = parseZettelID linkText
        in Just $ ZLink_ConnectZettel OrdinaryConnection zid
     Just "zquery" ->
-      Just $ ZLink_QueryZettels Folgezettel (linkThemeFromURI uri) (queryFromURI uri)
+      Just $ ZLink_QueryZettels Folgezettel (linkThemeFromURI uri) (either error id $ queryFromURI uri)
     Just "zcfquery" ->
-      Just $ ZLink_QueryZettels OrdinaryConnection (linkThemeFromURI uri) (queryFromURI uri)
+      Just $ ZLink_QueryZettels OrdinaryConnection (linkThemeFromURI uri) (either error id $ queryFromURI uri)
     _ -> do
       let uriS = URI.render uri
       guard $ uriS == linkText
