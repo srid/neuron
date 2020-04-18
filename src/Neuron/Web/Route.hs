@@ -2,7 +2,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -13,13 +12,14 @@
 module Neuron.Web.Route where
 
 import qualified Data.Text as T
+import GHC.Stack
 import Neuron.Config
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
 import Relude
-import Rib (IsRoute (..))
+import Rib (IsRoute (..), routeUrlRel)
 import Rib.Extra.OpenGraph
 import qualified Rib.Parser.MMark as MMark
 import qualified Text.URI as URI
@@ -36,10 +36,21 @@ instance IsRoute (Route store graph) where
       routeFile $ Route_Zettel zid
     Route_ZIndex ->
       pure "z-index.html"
-    Route_Search -> do
+    Route_Search ->
       pure "search.html"
     Route_Zettel (zettelIDText -> s) ->
       pure $ toString s <> ".html"
+
+-- | Like `routeUrlRel` but takes a query parameter
+routeUrlRelWithQuery :: HasCallStack => IsRoute r => r a -> URI.RText 'URI.QueryKey -> Text -> Text
+routeUrlRelWithQuery r k v = maybe (error "Bad URI") URI.render $ do
+  param <- URI.QueryParam k <$> URI.mkQueryValue v
+  route <- URI.mkPathPiece $ routeUrlRel r
+  pure
+    URI.emptyURI
+      { URI.uriPath = Just (False, route :| []),
+        URI.uriQuery = [param]
+      }
 
 -- | Return full title for a route
 routeTitle :: Config -> store -> Route store graph a -> Text

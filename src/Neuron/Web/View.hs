@@ -23,7 +23,6 @@ where
 
 import Clay hiding (id, ms, object, reverse, s, style, type_)
 import qualified Clay as C
-import Control.Monad.Catch (MonadThrow)
 import Data.Aeson ((.=), object)
 import qualified Data.Aeson.Text as Aeson
 import Data.FileEmbed (embedStringFile)
@@ -51,8 +50,6 @@ import Rib.Extra.CSS (mozillaKbdStyle)
 import qualified Rib.Parser.MMark as MMark
 import Text.MMark (useExtensions)
 import Text.Pandoc.Highlighting (styleToCss, tango)
-import Text.URI (URI (..), emptyURI)
-import qualified Text.URI as URI
 import Text.URI.QQ
 
 searchScript :: Text
@@ -199,21 +196,11 @@ renderTags tags = do
     -- space below the title. So we put it at the bottom for now.
     span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
       a_
-        [ href_ (maybe (error "Bad tag query") URI.render $ tagPermalink tag),
+        [ href_ $ routeUrlRelWithQuery Route_Search [queryKey|tag|] (unTag tag),
           title_ ("See all zettels tagged '" <> unTag tag <> "'")
         ]
         $ toHtml (unTag tag)
     p_ mempty
-  where
-    tagPermalink :: MonadThrow m => Tag -> m URI
-    tagPermalink (unTag -> tag) = do
-      tagParam <- URI.QueryParam [queryKey|tag|] <$> URI.mkQueryValue tag
-      route <- URI.mkPathPiece $ Rib.routeUrlRel Route_Search
-      pure
-        emptyURI
-          { uriPath = Just (False, route :| []),
-            uriQuery = [tagParam]
-          }
 
 -- | Font awesome element
 fa :: Monad m => Text -> HtmlT m ()
