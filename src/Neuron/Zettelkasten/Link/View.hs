@@ -2,13 +2,10 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Special Zettel links in Markdown
@@ -17,13 +14,30 @@ module Neuron.Zettelkasten.Link.View where
 import Lucid
 import Neuron.Web.Route (Route (..))
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link.Action
+import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
+import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
+import qualified Text.MMark.Extension as Ext
+import Text.MMark.Extension (Extension, Inline (..))
+
+-- | MMark extension to transform @z:/@ links in Markdown
+linkActionExt :: ZettelStore -> Extension
+linkActionExt store =
+  Ext.inlineRender $ \f -> \case
+    inline@(Link inner uri _title) ->
+      let mlink = MarkdownLink (Ext.asPlainText inner) uri
+       in case linkActionFromLink mlink of
+            Just lact ->
+              linkActionRender store lact
+            Nothing ->
+              f inline
+    inline ->
+      f inline
 
 linkActionRender :: Monad m => ZettelStore -> LinkAction -> HtmlT m ()
 linkActionRender store = \case

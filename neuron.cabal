@@ -79,7 +79,6 @@ library
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Link
-    Neuron.Zettelkasten.Link.Action
     Neuron.Zettelkasten.Link.Theme
     Neuron.Zettelkasten.Link.View
     Neuron.Zettelkasten.Markdown

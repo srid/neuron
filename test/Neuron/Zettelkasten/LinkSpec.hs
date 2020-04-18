@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Link.ActionSpec
+module Neuron.Zettelkasten.LinkSpec
   ( spec,
   )
 where
 
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link.Action
+import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
