@@ -1,14 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Special Zettel links in Markdown
@@ -29,7 +23,7 @@ linkActionExt store =
       let mlink = MarkdownLink (Ext.asPlainText inner) uri
        in case linkActionFromLink mlink of
             Just lact ->
-              linkActionRender store mlink lact
+              linkActionRender store lact
             Nothing ->
               f inline
     inline ->

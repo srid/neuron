@@ -25,13 +25,13 @@ import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
 
-linkActionRender :: Monad m => ZettelStore -> MarkdownLink -> LinkAction -> HtmlT m ()
-linkActionRender store _ = \case
-  LinkAction_ConnectZettel _conn zid -> do
+linkActionRender :: Monad m => ZettelStore -> LinkAction -> HtmlT m ()
+linkActionRender store = \case
+  LinkAction_ConnectZettel _conn zid ->
     renderZettelLink LinkTheme_Default store zid
   LinkAction_QueryZettels _conn linkTheme q -> do
     toHtml q
-    let zettels = reverse $ sort $ zettelID <$> runQuery store q
+    let zettels = sortOn Down $ zettelID <$> runQuery store q
     ul_ $ do
       forM_ zettels $ \zid -> do
         li_ $ renderZettelLink linkTheme store zid
