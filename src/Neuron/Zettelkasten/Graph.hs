@@ -32,7 +32,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link.Action (extractLinks, linkActionConnections)
+import Neuron.Zettelkasten.Link.Action (linkActionConnections, linkActionFromLink)
+import Neuron.Zettelkasten.Markdown (extractLinks)
 import Neuron.Zettelkasten.Store (ZettelStore)
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -52,16 +53,19 @@ mkZettelGraph store =
     -- connetions in places (eg: a "backlinks" section) where they are
     -- relevant. See #34
     connectionWhitelist cs =
-      not $ OrdinaryConnection `elem` cs
+      OrdinaryConnection `notElem` cs
     -- Get the outgoing edges from this zettel
     --
     -- TODO: Handle conflicts in edge monoid operation (same link but with
     -- different connection type), and consequently use a sensible type other
     -- than list.
     zettelEdges :: Zettel -> [([Connection], ZettelID)]
-    zettelEdges Zettel {..} =
-      let outgoingLinks = linkActionConnections store `concatMap` extractLinks zettelContent
-       in first pure <$> outgoingLinks
+    zettelEdges =
+      fmap (first pure) . outgoingLinks
+    outgoingLinks :: Zettel -> [(Connection, ZettelID)]
+    outgoingLinks Zettel {..} =
+      (maybe [] (linkActionConnections store) . linkActionFromLink)
+        `concatMap` extractLinks zettelContent
 
 -- | Return the backlinks to the given zettel
 backlinks :: ZettelID -> ZettelGraph -> [ZettelID]

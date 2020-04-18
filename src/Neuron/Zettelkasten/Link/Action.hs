@@ -10,18 +10,14 @@
 -- | Special Zettel links in Markdown
 module Neuron.Zettelkasten.Link.Action where
 
-import Control.Foldl (Fold (..))
-import qualified Data.Set as Set
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
 import Relude
-import Text.MMark (MMark, runScanner)
-import qualified Text.MMark.Extension as Ext
-import Text.MMark.Extension (Inline (..))
 import qualified Text.URI as URI
+import Neuron.Zettelkasten.Markdown (MarkdownLink(..))
 
 data LinkAction
   = LinkAction_ConnectZettel Connection ZettelID
@@ -52,35 +48,10 @@ linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkT
       zid <- rightToMaybe $ parseZettelID' uriS
       pure $ LinkAction_ConnectZettel Folgezettel zid
 
-data MarkdownLink = MarkdownLink
-  { markdownLinkText :: Text,
-    markdownLinkUri :: URI.URI
-  }
-  deriving (Eq, Ord)
 
-linkActionConnections :: ZettelStore -> MarkdownLink -> [(Connection, ZettelID)]
-linkActionConnections store link =
-  case linkActionFromLink link of
-    Just (LinkAction_ConnectZettel conn zid) ->
-      [(conn, zid)]
-    Just (LinkAction_QueryZettels conn _linkTheme q) ->
-      (conn,) . zettelID <$> runQuery store q
-    Nothing ->
-      []
-
--- | Extract all links from the Markdown document
-extractLinks :: MMark -> [MarkdownLink]
-extractLinks = Set.toList . Set.fromList . flip runScanner (Fold go [] id)
-  where
-    go acc blk = acc <> concat (fmap f (relevantInlines blk))
-    f = \case
-      Link inner uri _title ->
-        [MarkdownLink (Ext.asPlainText inner) uri]
-      _ ->
-        []
-    relevantInlines = \case
-      Ext.Naked xs -> toList xs
-      Ext.Paragraph xs -> toList xs
-      Ext.OrderedList _ xs -> concat $ concat $ fmap (fmap relevantInlines) xs
-      Ext.UnorderedList xs -> concat $ concat $ fmap (fmap relevantInlines) xs
-      _ -> []
+linkActionConnections :: ZettelStore -> LinkAction -> [(Connection, ZettelID)]
+linkActionConnections store = \case
+  LinkAction_ConnectZettel conn zid ->
+    [(conn, zid)]
+  LinkAction_QueryZettels conn _linkTheme q ->
+    (conn,) . zettelID <$> runQuery store q

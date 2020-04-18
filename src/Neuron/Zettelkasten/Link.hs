@@ -10,6 +10,7 @@ module Neuron.Zettelkasten.Link where
 
 import Neuron.Zettelkasten.Link.Action
 import Neuron.Zettelkasten.Link.View
+import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Store
 import Relude
 import qualified Text.MMark.Extension as Ext

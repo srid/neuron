@@ -9,6 +9,7 @@ where
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Action
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
+import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Tag
 import Relude
