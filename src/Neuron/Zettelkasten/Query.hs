@@ -18,16 +18,18 @@ import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Text.URI as URI
 
+-- | Query represents a way to query the Zettelkasten.
+--
 -- TODO: Support querying connections, a la:
 --   LinksTo ZettelID
 --   LinksFrom ZettelID
 data Query
-  = ByTag TagPattern
+  = Query_ZettelsByTag TagPattern
   deriving (Eq, Show)
 
 instance ToHtml Query where
   toHtmlRaw = toHtml
-  toHtml (ByTag (TagPattern pat)) =
+  toHtml (Query_ZettelsByTag (TagPattern pat)) =
     let desc = "Zettels matching tag '" <> toText pat <> "'"
      in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml pat
 
@@ -46,13 +48,13 @@ queryFromURI uri =
   flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
       case key of
-        "tag" -> Just $ ByTag (TagPattern $ toString val)
+        "tag" -> Just $ Query_ZettelsByTag (TagPattern $ toString val)
         _ -> Nothing
     _ -> Nothing
 
 matchQuery :: Zettel -> Query -> Bool
 matchQuery Zettel {..} = \case
-  ByTag pat -> any (tagMatch pat) zettelTags
+  Query_ZettelsByTag pat -> any (tagMatch pat) zettelTags
 
 matchQueries :: Zettel -> [Query] -> Bool
 matchQueries zettel queries = and $ matchQuery zettel <$> queries
