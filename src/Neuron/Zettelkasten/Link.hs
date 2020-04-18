@@ -19,38 +19,42 @@ import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Text.URI as URI
 
-data LinkAction
-  = LinkAction_ConnectZettel Connection ZettelID
+-- | A ZLink is a special link supported by Neuron
+--
+-- z:, zcf:, zquery: and zcfquery:
+data ZLink
+  = ZLink_ConnectZettel Connection ZettelID
   | -- | Render a list (or should it be tree?) of links to queries zettels
-    LinkAction_QueryZettels Connection LinkTheme [Query]
+    ZLink_QueryZettels Connection LinkTheme [Query]
   deriving (Eq, Show)
 
-linkActionFromLink :: MarkdownLink -> Maybe LinkAction
-linkActionFromLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
+mkZLink :: MarkdownLink -> Maybe ZLink
+mkZLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   -- NOTE: We should probably drop the 'cf' variants in favour of specifying
   -- the connection type as a query param or something.
   case fmap URI.unRText (URI.uriScheme uri) of
     Just "z" ->
       -- The inner link text is supposed to be the zettel ID
       let zid = parseZettelID linkText
-       in Just $ LinkAction_ConnectZettel Folgezettel zid
+       in Just $ ZLink_ConnectZettel Folgezettel zid
     Just "zcf" ->
       -- The inner link text is supposed to be the zettel ID
       let zid = parseZettelID linkText
-       in Just $ LinkAction_ConnectZettel OrdinaryConnection zid
+       in Just $ ZLink_ConnectZettel OrdinaryConnection zid
     Just "zquery" ->
-      Just $ LinkAction_QueryZettels Folgezettel (linkThemeFromURI uri) (queryFromURI uri)
+      Just $ ZLink_QueryZettels Folgezettel (linkThemeFromURI uri) (queryFromURI uri)
     Just "zcfquery" ->
-      Just $ LinkAction_QueryZettels OrdinaryConnection (linkThemeFromURI uri) (queryFromURI uri)
+      Just $ ZLink_QueryZettels OrdinaryConnection (linkThemeFromURI uri) (queryFromURI uri)
     _ -> do
       let uriS = URI.render uri
       guard $ uriS == linkText
       zid <- rightToMaybe $ parseZettelID' uriS
-      pure $ LinkAction_ConnectZettel Folgezettel zid
+      pure $ ZLink_ConnectZettel Folgezettel zid
 
-linkActionConnections :: ZettelStore -> LinkAction -> [(Connection, ZettelID)]
-linkActionConnections store = \case
-  LinkAction_ConnectZettel conn zid ->
+-- | The connections referenced in a zlink.
+zLinkConnections :: ZettelStore -> ZLink -> [(Connection, ZettelID)]
+zLinkConnections store = \case
+  ZLink_ConnectZettel conn zid ->
     [(conn, zid)]
-  LinkAction_QueryZettels conn _linkTheme q ->
+  ZLink_QueryZettels conn _linkTheme q ->
     (conn,) . zettelID <$> runQuery store q

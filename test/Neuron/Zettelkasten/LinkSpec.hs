@@ -19,15 +19,15 @@ import Text.URI
 spec :: Spec
 spec = do
   describe "Link Action conversion" $ do
-    forM_ linkActionCases $ \(name, link, action) -> do
+    forM_ zLinkCases $ \(name, link, action) -> do
       it ("converts " <> name) $ do
-        linkActionFromLink (uncurry mkMarkdownLink $ either (id &&& id) id link) `shouldBe` action
+        mkZLink (uncurry mkMarkdownLink $ either (id &&& id) id link) `shouldBe` action
 
-linkActionCases :: [(String, Either Text (Text, Text), Maybe LinkAction)]
-linkActionCases =
+zLinkCases :: [(String, Either Text (Text, Text), Maybe ZLink)]
+zLinkCases =
   [ ( "alias link",
       (Left "1234567"),
-      Just $ LinkAction_ConnectZettel Folgezettel zid
+      Just $ ZLink_ConnectZettel Folgezettel zid
     ),
     ( "not an alias link (different link text)",
       (Right ("foo", "1234567")),
@@ -35,27 +35,27 @@ linkActionCases =
     ),
     ( "z: link",
       (Right ("1234567", "z:")),
-      Just $ LinkAction_ConnectZettel Folgezettel zid
+      Just $ ZLink_ConnectZettel Folgezettel zid
     ),
     ( "z: link, with annotation ignored",
       (Right ("1234567", "z://foo-bar")),
-      Just $ LinkAction_ConnectZettel Folgezettel zid
+      Just $ ZLink_ConnectZettel Folgezettel zid
     ),
     ( "zcf: link",
       (Right ("1234567", "zcf:")),
-      Just $ LinkAction_ConnectZettel OrdinaryConnection zid
+      Just $ ZLink_ConnectZettel OrdinaryConnection zid
     ),
     ( "zcf: link, with annotation ignored",
       (Right ("1234567", "zcf://foo-bar")),
-      Just $ LinkAction_ConnectZettel OrdinaryConnection zid
+      Just $ ZLink_ConnectZettel OrdinaryConnection zid
     ),
     ( "zquery: link",
       (Right (".", "zquery://search?tag=science")),
-      Just $ LinkAction_QueryZettels Folgezettel LinkTheme_Default [ByTag $ TagPattern "science"]
+      Just $ ZLink_QueryZettels Folgezettel LinkTheme_Default [ByTag $ TagPattern "science"]
     ),
     ( "zcfquery: link, with link theme",
       (Right (".", "zcfquery://search?tag=science&linkTheme=withDate")),
-      Just $ LinkAction_QueryZettels OrdinaryConnection LinkTheme_WithDate [ByTag $ TagPattern "science"]
+      Just $ ZLink_QueryZettels OrdinaryConnection LinkTheme_WithDate [ByTag $ TagPattern "science"]
     ),
     ( "normal link",
       (Left "https://www.google.com"),

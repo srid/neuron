@@ -32,7 +32,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link (linkActionConnections, linkActionFromLink)
+import Neuron.Zettelkasten.Link (zLinkConnections, mkZLink)
 import Neuron.Zettelkasten.Markdown (extractLinks)
 import Neuron.Zettelkasten.Store (ZettelStore)
 import Neuron.Zettelkasten.Zettel
@@ -64,7 +64,7 @@ mkZettelGraph store =
       fmap (first pure) . outgoingLinks
     outgoingLinks :: Zettel -> [(Connection, ZettelID)]
     outgoingLinks Zettel {..} =
-      (maybe [] (linkActionConnections store) . linkActionFromLink)
+      (maybe [] (zLinkConnections store) . mkZLink)
         `concatMap` extractLinks zettelContent
 
 -- | Return the backlinks to the given zettel

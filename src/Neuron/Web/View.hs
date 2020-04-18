@@ -37,7 +37,7 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
-import Neuron.Zettelkasten.Link.View (linkActionExt, renderZettelLink)
+import Neuron.Zettelkasten.Link.View (zLinkExt, renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
@@ -148,7 +148,7 @@ renderZettel config@Config {..} (store, graph) zid = do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
         let mmarkExts = neuronMMarkExts config
-        MMark.render $ useExtensions (linkActionExt store : mmarkExts) zettelContent
+        MMark.render $ useExtensions (zLinkExt store : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do

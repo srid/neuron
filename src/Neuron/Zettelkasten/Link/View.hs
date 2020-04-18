@@ -25,31 +25,33 @@ import qualified Rib
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Extension, Inline (..))
 
--- | MMark extension to transform @z:/@ links in Markdown
-linkActionExt :: ZettelStore -> Extension
-linkActionExt store =
+-- | MMark extension to transform zlinks to actual links
+zLinkExt :: ZettelStore -> Extension
+zLinkExt store =
   Ext.inlineRender $ \f -> \case
     inline@(Link inner uri _title) ->
       let mlink = MarkdownLink (Ext.asPlainText inner) uri
-       in case linkActionFromLink mlink of
+       in case mkZLink mlink of
             Just lact ->
-              linkActionRender store lact
+              zLinkRender store lact
             Nothing ->
               f inline
     inline ->
       f inline
 
-linkActionRender :: Monad m => ZettelStore -> LinkAction -> HtmlT m ()
-linkActionRender store = \case
-  LinkAction_ConnectZettel _conn zid ->
+-- | Expand a zlink into normal links
+zLinkRender :: Monad m => ZettelStore -> ZLink -> HtmlT m ()
+zLinkRender store = \case
+  ZLink_ConnectZettel _conn zid ->
     renderZettelLink LinkTheme_Default store zid
-  LinkAction_QueryZettels _conn linkTheme q -> do
+  ZLink_QueryZettels _conn linkTheme q -> do
     toHtml q
     let zettels = sortOn Down $ zettelID <$> runQuery store q
     ul_ $ do
       forM_ zettels $ \zid -> do
         li_ $ renderZettelLink linkTheme store zid
 
+-- | Render a link to an individual zettel.
 renderZettelLink :: forall m. Monad m => LinkTheme -> ZettelStore -> ZettelID -> HtmlT m ()
 renderZettelLink ltheme store zid = do
   let Zettel {..} = lookupStore zid store
