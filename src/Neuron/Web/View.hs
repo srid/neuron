@@ -14,9 +14,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | HTML & CSS
-module Neuron.Web.View where
+module Neuron.Web.View
+  ( renderRouteHead,
+    renderRouteBody,
+    style,
+  )
+where
 
-import Clay hiding (id, ms, object, reverse, s, type_)
+import Clay hiding (id, ms, object, reverse, s, style, type_)
 import qualified Clay as C
 import Control.Monad.Catch (MonadThrow)
 import Data.Aeson ((.=), object)
@@ -48,35 +53,13 @@ import Text.MMark (useExtensions)
 import Text.Pandoc.Highlighting (styleToCss, tango)
 import Text.URI (URI (..), emptyURI)
 import qualified Text.URI as URI
+import Text.URI.QQ
 
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
 
 helloScript :: Text
 helloScript = $(embedStringFile "./src-purescript/hello/index.js")
-
-mkSearchURI :: MonadThrow m => Maybe Text -> [Tag] -> m URI
-mkSearchURI terms tags = do
-  let mkParam k v = URI.QueryParam <$> URI.mkQueryKey k <*> URI.mkQueryValue v
-      qParams = maybeToList (fmap (mkParam "q") terms)
-      tagParams = fmap (mkParam "tag" . unTag) tags
-  route <- URI.mkPathPiece (Rib.routeUrlRel Route_Search)
-  params <- sequenceA (qParams ++ tagParams)
-  pure
-    emptyURI
-      { uriPath = Just (False, route :| []),
-        uriQuery = params
-      }
-
--- TODO: render error message when the query is invalid
-mkSearchQuery :: Maybe Text -> [Tag] -> Text
-mkSearchQuery terms tags =
-  fromMaybe
-    (Rib.routeUrlRel Route_Search)
-    (URI.render <$> mkSearchURI terms tags)
-
-mkSingleTagQuery :: Tag -> Text
-mkSingleTagQuery tag = mkSearchQuery Nothing [tag]
 
 renderRouteHead :: Monad m => Config -> Route store graph a -> store -> HtmlT m ()
 renderRouteHead config r val = do
@@ -213,14 +196,24 @@ renderTags tags = do
   forM_ tags $ \tag -> do
     -- TODO: Ideally this should be at the top, not bottom. But putting it at
     -- the top pushes the zettel content down, introducing unnecessary white
-    -- space below the title.
+    -- space below the title. So we put it at the bottom for now.
     span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
       a_
-        [ href_ (mkSingleTagQuery tag),
-          title_ ("See all zettels with tag '" <> unTag tag <> "'")
+        [ href_ (maybe (error "Bad tag query") URI.render $ tagPermalink tag),
+          title_ ("See all zettels tagged '" <> unTag tag <> "'")
         ]
         $ toHtml (unTag tag)
     p_ mempty
+  where
+    tagPermalink :: MonadThrow m => Tag -> m URI
+    tagPermalink (unTag -> tag) = do
+      tagParam <- URI.QueryParam [queryKey|tag|] <$> URI.mkQueryValue tag
+      route <- URI.mkPathPiece $ Rib.routeUrlRel Route_Search
+      pure
+        emptyURI
+          { uriPath = Just (False, route :| []),
+            uriQuery = [tagParam]
+          }
 
 -- | Font awesome element
 fa :: Monad m => Text -> HtmlT m ()
