@@ -41,6 +41,7 @@ type instance QueryViewTheme [Zettel] = LinkTheme
 
 type instance QueryViewTheme [Tag] = ()
 
+-- TODO: Refactor to be a GADT using Some, and derive GEq, etc. correctly
 data NeuronLink
   = forall r.
     (Show (Query r), Show (QueryConnection r), Show (QueryViewTheme r)) =>

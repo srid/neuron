@@ -19,7 +19,7 @@ data LinkTheme
   deriving (Eq, Show, Ord)
 
 -- TODO: MonadError
-linkThemeFromURI :: URI.URI -> LinkTheme
+linkThemeFromURI :: HasCallStack => URI.URI -> LinkTheme
 linkThemeFromURI uri =
   fromMaybe LinkTheme_Default $ listToMaybe $ flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryFlag _ -> Nothing
