@@ -3,11 +3,13 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -23,6 +25,7 @@ import Lucid
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.ID
 import Relude
 import qualified Text.URI as URI
 
@@ -32,6 +35,7 @@ import qualified Text.URI as URI
 --   LinksTo ZettelID
 --   LinksFrom ZettelID
 data Query r where
+  Query_ZettelByID :: ZettelID -> Query Zettel
   Query_ZettelsByTag :: [TagPattern] -> Query [Zettel]
   Query_Tags :: [TagPattern] -> Query [Tag]
 
@@ -42,6 +46,7 @@ deriveGShow ''Query
 deriving instance Show (Query [Zettel])
 
 deriving instance Eq (Query [Zettel])
+
 
 instance ToHtml (Query [Zettel]) where
   toHtmlRaw = toHtml
@@ -71,6 +76,8 @@ queryFromURI uri =
 -- | Run the given query and return the results.
 runQuery :: ZettelStore -> Query r -> r
 runQuery store = \case
+  Query_ZettelByID zid ->
+    lookupStore zid store
   Query_ZettelsByTag pats ->
     foldMap (queryResults pats) (Map.elems store)
   Query_Tags _pats ->

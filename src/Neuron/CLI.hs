@@ -62,6 +62,9 @@ runWith act App {..} = do
       runRibOnceQuietly notesDir $ do
         store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
         case q of
+          Some (Z.Query_ZettelByID zid) -> do
+            let res = Z.lookupStore zid store
+            putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith res
           Some (Z.Query_ZettelsByTag pats) -> do
             let res = Z.runQuery store (Z.Query_ZettelsByTag pats)
             putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith <$> res
