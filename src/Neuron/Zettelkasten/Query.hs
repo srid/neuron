@@ -24,6 +24,7 @@ import Data.Some
 import Lucid
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
+import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.ID
 import Relude
@@ -62,16 +63,27 @@ instance ToHtml (Query [Zettel]) where
 type QueryResults = [Zettel]
 
 queryFromURI :: MonadError Text m => URI.URI -> m (Some Query)
-queryFromURI uri =
+queryFromURI uri = do
+  mq <- queryFromMarkdownLink $ MarkdownLink { markdownLinkUri = uri, markdownLinkText = "" }
+  case mq of
+    Just q -> pure q
+    Nothing -> throwError "Unsupported query URI"
+
+-- NOTE: To support legacy links which rely on linkText. New short links shouldn't use this.
+queryFromMarkdownLink :: MonadError Text m => MarkdownLink -> m (Maybe (Some Query))
+queryFromMarkdownLink MarkdownLink { markdownLinkUri = uri, markdownLinkText = linkText } =
   case fmap URI.unRText (URI.uriScheme uri) of
+    Just proto | proto `elem` ["z", "zcf"] -> do
+      zid <- liftEither $ parseZettelID' linkText
+      pure $ Just $ Some $ Query_ZettelByID zid
     Just proto | proto `elem` ["zquery", "zcfquery"] ->
-      pure $ Some $ Query_ZettelsByTag $ flip mapMaybe (URI.uriQuery uri) $ \case
+      pure $ Just $ Some $ Query_ZettelsByTag $ flip mapMaybe (URI.uriQuery uri) $ \case
         URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
           case key of
             "tag" -> Just (TagPattern $ toString val)
             _ -> Nothing
         _ -> Nothing
-    _ -> throwError "Bad URI (expected: zquery: or zcfquery:)"
+    _ -> pure Nothing
 
 -- | Run the given query and return the results.
 runQuery :: ZettelStore -> Query r -> r

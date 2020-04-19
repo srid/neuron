@@ -16,7 +16,7 @@ import Data.Some
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
-import Neuron.Zettelkasten.Query (Query (..), queryFromURI, runQuery)
+import Neuron.Zettelkasten.Query (Query (..), queryFromMarkdownLink, queryFromURI, runQuery)
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -40,16 +40,28 @@ type instance QueryViewTheme [Tag] = ()
 
 data NeuronLink = forall r. NeuronLink (Query r, QueryConnection r, QueryViewTheme r)
 
-neuronLinkFromURI :: MonadError Text m => URI.URI -> m NeuronLink
-neuronLinkFromURI uri = do
-  someQ <- queryFromURI uri
-  withSome someQ $ \q -> case q of
-    Query_ZettelByID _ ->
-      pure $ NeuronLink (q, connectionFromURI uri, linkThemeFromURI uri)
-    Query_ZettelsByTag _ ->
-      pure $ NeuronLink (q, connectionFromURI uri, linkThemeFromURI uri)
-    Query_Tags _ ->
-      pure $ NeuronLink (q, (), ())
+neuronLinkFromMarkdownLink :: MonadError Text m => MarkdownLink -> m (Maybe NeuronLink)
+neuronLinkFromMarkdownLink ml@MarkdownLink { markdownLinkUri = uri } = do
+  queryFromMarkdownLink ml >>= \case
+    Nothing -> pure Nothing
+    Just someQ -> Just <$> do
+      withSome someQ $ \q -> case q of
+        Query_ZettelByID _ ->
+          pure $ NeuronLink (q, connectionFromURI uri, linkThemeFromURI uri)
+        Query_ZettelsByTag _ ->
+          pure $ NeuronLink (q, connectionFromURI uri, linkThemeFromURI uri)
+        Query_Tags _ ->
+          pure $ NeuronLink (q, (), ())
+
+neuronLinkConnections :: ZettelStore -> NeuronLink -> [(Connection, ZettelID)]
+neuronLinkConnections store = \case
+  NeuronLink (Query_ZettelByID zid, conn, _) ->
+    [(conn, zid)]
+  NeuronLink (q@(Query_ZettelsByTag _pats), conn, _) ->
+    (conn,) . zettelID <$> runQuery store q
+  _ ->
+    []
+
 
 -- | A ZLink is a special link supported by Neuron
 --

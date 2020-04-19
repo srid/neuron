@@ -26,30 +26,34 @@ import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Extension, Inline (..))
 
 -- | MMark extension to transform zlinks to actual links
-zLinkExt :: ZettelStore -> Extension
+zLinkExt :: HasCallStack => ZettelStore -> Extension
 zLinkExt store =
   Ext.inlineRender $ \f -> \case
     inline@(Link inner uri _title) ->
       let mlink = MarkdownLink (Ext.asPlainText inner) uri
-       in case mkZLink mlink of
-            Just lact ->
+       in case neuronLinkFromMarkdownLink mlink of
+            Right (Just lact) ->
               renderZLink store lact
-            Nothing ->
+            Right Nothing ->
               f inline
+            Left e ->
+              error e
     inline ->
       f inline
 
 -- | Expand a zlink into normal links
-renderZLink :: Monad m => ZettelStore -> ZLink -> HtmlT m ()
+renderZLink :: Monad m => ZettelStore -> NeuronLink -> HtmlT m ()
 renderZLink store = \case
-  ZLink_ConnectZettel _conn zid ->
-    renderZettelLink LinkTheme_Default $ lookupStore zid store
-  ZLink_QueryZettels _conn linkTheme q -> do
+  NeuronLink (Query_ZettelByID zid, _conn, linkTheme) ->
+    renderZettelLink linkTheme $ lookupStore zid store
+  NeuronLink (q@(Query_ZettelsByTag _pats), _conn, linkTheme) -> do
     toHtml q
     let zettels = sortOn Down $ zettelID <$> runQuery store q
     ul_ $ do
       forM_ zettels $ \zid ->
         li_ $ renderZettelLink linkTheme $ lookupStore zid store
+  NeuronLink (_q@(Query_Tags _), (), ()) ->
+    pre_ "Not Implemented"
 
 -- | Render a link to an individual zettel.
 renderZettelLink :: forall m. Monad m => LinkTheme -> Zettel -> HtmlT m ()
