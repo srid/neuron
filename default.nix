@@ -3,6 +3,7 @@ let
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
   ribRevision = "2dcd420";
+  nixpkgsRev = "10100a97c896";
   projectRoot = ./.;
 in {
 # Rib library source to use
@@ -13,7 +14,7 @@ in {
 , name ? "neuron"
 , gitRev ? ""
 , source-overrides ? {}
-, pkgs ? import <nixpkgs> {}
+, pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
 , ...
 }:
 
