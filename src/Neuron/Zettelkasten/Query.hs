@@ -56,10 +56,10 @@ instance ToHtml (Some Query) where
            in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml qs
         Some (Query_Tags []) ->
           "All tags"
-        Some (Query_Tags (fmap unTagPattern -> pats)) ->
+        Some (Query_Tags (fmap unTagPattern -> pats)) -> do
           let qs = intercalate ", " pats
-              desc = toText $ "Tags matching '" <> qs <> "'"
-           in span_ [class_ "ui basic pointing below grey label", title_ desc] $ toHtml qs
+          "Tags matching: "
+          toHtml qs
 
 type QueryResults = [Zettel]
 
@@ -113,10 +113,7 @@ runQuery store = \case
   Query_Tags [] ->
     allTags
   Query_Tags pats ->
-    -- TODO: Use step from https://hackage.haskell.org/package/filepattern-0.1.2/docs/System-FilePattern.html#v:step
-    -- for efficient matching.
-    flip filter allTags $ \t ->
-      any (`tagMatch` t) pats
+    filter (tagMatchAny pats) allTags
   where
     allTags = Set.toList $ Set.fromList $ foldMap zettelTags (Map.elems store)
 

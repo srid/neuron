@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -17,16 +18,17 @@ module Neuron.Zettelkasten.Link.View
   )
 where
 
+import qualified Data.Map.Strict as Map
 import Data.Some
 import Lucid
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link
-import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
+import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Tag (Tag (unTag))
+import Neuron.Zettelkasten.Tag (Tag (unTag), tagMatchAny)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -51,18 +53,22 @@ neuronLinkExt store =
       f inline
 
 -- | Render the custom view for the given neuron link
-renderNeuronLink :: Monad m => ZettelStore -> NeuronLink -> HtmlT m ()
+renderNeuronLink :: forall m. Monad m => ZettelStore -> NeuronLink -> HtmlT m ()
 renderNeuronLink store = \case
   NeuronLink (Query_ZettelByID zid, _conn, linkTheme) ->
     -- Render a single link
     renderZettelLink linkTheme $ lookupStore zid store
-  NeuronLink (q@(Query_ZettelsByTag _pats), _conn, linkTheme) -> do
-    -- Render a list of links
+  NeuronLink (q@(Query_ZettelsByTag pats), _conn, ZettelsView {..}) -> do
+    let zettels = sortZettelsReverseChronological $ runQuery store q
     toHtml $ Some q
-    let zettels = sortOn Down $ zettelID <$> runQuery store q
-    ul_ $ do
-      forM_ zettels $ \zid ->
-        li_ $ renderZettelLink linkTheme $ lookupStore zid store
+    case zettelsViewGroupByTag of
+      False ->
+        -- Render a list of links
+        renderZettelLinks zettelsViewLinkTheme zettels
+      True ->
+        forM_ (Map.toList $ groupZettelsByTagsMatching pats zettels) $ \(tag, zettelGrp) -> do
+          span_ [class_ "ui basic pointing below grey label"] $ toHtml $ unTag tag
+          renderZettelLinks zettelsViewLinkTheme zettelGrp
   NeuronLink (q@(Query_Tags _), (), ()) -> do
     -- Render a list of tags
     toHtml $ Some q
@@ -71,6 +77,17 @@ renderNeuronLink store = \case
       forM_ tags $ \(unTag -> tag) -> do
         let tagUrl = routeUrlRelWithQuery Route_Search [queryKey|tag|] tag
         li_ $ a_ [href_ tagUrl] $ toHtml tag
+  where
+    sortZettelsReverseChronological =
+      sortOn (Down . zettelIDDay . zettelID)
+    groupZettelsByTagsMatching pats zettels =
+      fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap zettels $ \z ->
+        flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
+    renderZettelLinks :: LinkTheme -> [Zettel] -> HtmlT m ()
+    renderZettelLinks ltheme zettels =
+      ul_ $ do
+        forM_ zettels $ \z ->
+          li_ $ renderZettelLink ltheme z
 
 -- | Render a link to an individual zettel.
 renderZettelLink :: forall m. Monad m => LinkTheme -> Zettel -> HtmlT m ()
