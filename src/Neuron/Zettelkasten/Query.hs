@@ -41,16 +41,25 @@ data Query r where
   Query_ZettelsByTag :: [TagPattern] -> Query [Zettel]
   Query_Tags :: [TagPattern] -> Query [Tag]
 
-instance ToHtml (Query [Zettel]) where
+instance ToHtml (Some Query) where
   toHtmlRaw = toHtml
-  toHtml = \case
-    Query_ZettelsByTag (fmap unTagPattern -> pats) ->
-      div_ [class_ "ui horizontal divider", title_ "Zettel Query"] $ do
-        if null pats
-          then "All zettels"
-          else
-            let desc = "Zettels tagged '" <> show pats <> "'"
-             in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml $ show @Text pats
+  toHtml q =
+    div_ [class_ "ui horizontal divider", title_ "Neuron Query"] $ do
+      case q of
+        Some (Query_ZettelByID _) ->
+          mempty
+        Some (Query_ZettelsByTag []) ->
+          "All zettels"
+        Some (Query_ZettelsByTag (fmap unTagPattern -> pats)) -> do
+          let qs = intercalate ", " pats
+              desc = toText $ "Zettels tagged '" <> qs <> "'"
+           in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml qs
+        Some (Query_Tags []) ->
+          "All tags"
+        Some (Query_Tags (fmap unTagPattern -> pats)) ->
+          let qs = intercalate ", " pats
+              desc = toText $ "Tags matching '" <> qs <> "'"
+           in span_ [class_ "ui basic pointing below grey label", title_ desc] $ toHtml qs
 
 type QueryResults = [Zettel]
 
