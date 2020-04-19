@@ -37,7 +37,7 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
-import Neuron.Zettelkasten.Link.View (renderZettelLink, zLinkExt)
+import Neuron.Zettelkasten.Link.View (neuronLinkExt, renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
@@ -112,7 +112,7 @@ renderIndex Config {..} (store, graph) = do
   script_ helloScript
   where
     -- Sort clusters with newer mother zettels appearing first.
-    sortMothers ms = reverse $ sortOn maximum $ fmap (reverse . sort . toList) ms
+    sortMothers ms = sortOn (Down . maximum) $ fmap (sortOn Down . toList) ms
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
@@ -148,7 +148,7 @@ renderZettel config@Config {..} (store, graph) zid = do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
         let mmarkExts = neuronMMarkExts config
-        MMark.render $ useExtensions (zLinkExt store : mmarkExts) zettelContent
+        MMark.render $ useExtensions (neuronLinkExt store : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do

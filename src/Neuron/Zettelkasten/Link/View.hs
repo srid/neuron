@@ -9,7 +9,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Special Zettel links in Markdown
-module Neuron.Zettelkasten.Link.View where
+module Neuron.Zettelkasten.Link.View
+  ( neuronLinkExt,
+    renderZettelLink,
+  )
+where
 
 import Lucid
 import Neuron.Web.Route (Route (..))
@@ -25,15 +29,15 @@ import qualified Rib
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Extension, Inline (..))
 
--- | MMark extension to transform zlinks to actual links
-zLinkExt :: HasCallStack => ZettelStore -> Extension
-zLinkExt store =
+-- | MMark extension to transform neuron links to custom views
+neuronLinkExt :: HasCallStack => ZettelStore -> Extension
+neuronLinkExt store =
   Ext.inlineRender $ \f -> \case
     inline@(Link inner uri _title) ->
       let mlink = MarkdownLink (Ext.asPlainText inner) uri
        in case neuronLinkFromMarkdownLink mlink of
-            Right (Just lact) ->
-              renderZLink store lact
+            Right (Just nl) ->
+              renderNeuronLink store nl
             Right Nothing ->
               f inline
             Left e ->
@@ -41,19 +45,22 @@ zLinkExt store =
     inline ->
       f inline
 
--- | Expand a zlink into normal links
-renderZLink :: Monad m => ZettelStore -> NeuronLink -> HtmlT m ()
-renderZLink store = \case
+-- | Render the custom view for the given neuron link
+renderNeuronLink :: Monad m => ZettelStore -> NeuronLink -> HtmlT m ()
+renderNeuronLink store = \case
   NeuronLink (Query_ZettelByID zid, _conn, linkTheme) ->
+    -- Render a single link
     renderZettelLink linkTheme $ lookupStore zid store
   NeuronLink (q@(Query_ZettelsByTag _pats), _conn, linkTheme) -> do
+    -- Render a list of links
     toHtml q
     let zettels = sortOn Down $ zettelID <$> runQuery store q
     ul_ $ do
       forM_ zettels $ \zid ->
         li_ $ renderZettelLink linkTheme $ lookupStore zid store
   NeuronLink (_q@(Query_Tags _), (), ()) ->
-    pre_ "Not Implemented"
+    -- Render a list of tags
+    pre_ "TODO: Tags view not Implemented"
 
 -- | Render a link to an individual zettel.
 renderZettelLink :: forall m. Monad m => LinkTheme -> Zettel -> HtmlT m ()
