@@ -1,9 +1,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -11,7 +15,10 @@
 module Neuron.Zettelkasten.Query where
 
 import Control.Monad.Except
+import Data.GADT.Compare.TH
+import Data.GADT.Show.TH
 import qualified Data.Map.Strict as Map
+import Data.Some
 import Lucid
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
@@ -24,51 +31,60 @@ import qualified Text.URI as URI
 -- TODO: Support querying connections, a la:
 --   LinksTo ZettelID
 --   LinksFrom ZettelID
-data Query
-  = Query_ZettelsByTag TagPattern
-  deriving (Eq, Show)
+data Query r where
+  Query_ZettelsByTag :: [TagPattern] -> Query [Zettel]
+  Query_Tags :: [TagPattern] -> Query [Tag]
 
-instance ToHtml Query where
-  toHtmlRaw = toHtml
-  toHtml (Query_ZettelsByTag (TagPattern pat)) =
-    let desc = "Zettels matching tag '" <> toText pat <> "'"
-     in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml pat
+deriveGEq ''Query
 
-instance ToHtml [Query] where
+deriveGShow ''Query
+
+deriving instance Show (Query [Zettel])
+
+deriving instance Eq (Query [Zettel])
+
+instance ToHtml (Query [Zettel]) where
   toHtmlRaw = toHtml
-  toHtml qs =
-    div_ [class_ "ui horizontal divider", title_ "Zettel Query"] $ do
-      if null qs
-        then "All zettels"
-        else toHtml `mapM_` qs
+  toHtml = \case
+    Query_ZettelsByTag (fmap unTagPattern -> pats) ->
+      div_ [class_ "ui horizontal divider", title_ "Zettel Query"] $ do
+        if null pats
+          then "All zettels"
+          else
+            let desc = "Zettels tagged '" <> show pats <> "'"
+             in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml $ show @Text pats
 
 type QueryResults = [Zettel]
 
-queryFromURI :: MonadError Text m => URI.URI -> m [Query]
+queryFromURI :: MonadError Text m => URI.URI -> m (Some Query)
 queryFromURI uri =
   case fmap URI.unRText (URI.uriScheme uri) of
     Just proto | proto `elem` ["zquery", "zcfquery"] ->
-      pure $ flip mapMaybe (URI.uriQuery uri) $ \case
+      pure $ Some $ Query_ZettelsByTag $ flip mapMaybe (URI.uriQuery uri) $ \case
         URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
           case key of
-            "tag" -> Just $ Query_ZettelsByTag (TagPattern $ toString val)
+            "tag" -> Just (TagPattern $ toString val)
             _ -> Nothing
         _ -> Nothing
     _ -> throwError "Bad URI (expected: zquery: or zcfquery:)"
 
-matchQuery :: Zettel -> Query -> Bool
-matchQuery Zettel {..} = \case
-  Query_ZettelsByTag pat -> any (tagMatch pat) zettelTags
-
-matchQueries :: Zettel -> [Query] -> Bool
-matchQueries zettel queries = and $ matchQuery zettel <$> queries
-
-queryResults :: [Query] -> Zettel -> QueryResults
-queryResults queries zettel
-  | matchQueries zettel queries = [zettel]
-  | otherwise = mempty
-
 -- | Run the given query and return the results.
-runQuery :: ZettelStore -> [Query] -> QueryResults
-runQuery store queries =
-  foldMap (queryResults queries) (Map.elems store)
+runQuery :: ZettelStore -> Query r -> r
+runQuery store = \case
+  Query_ZettelsByTag pats ->
+    foldMap (queryResults pats) (Map.elems store)
+  Query_Tags _pats ->
+    -- TODO:
+    []
+
+matchQuery :: Zettel -> TagPattern -> Bool
+matchQuery Zettel {..} pat =
+  any (tagMatch pat) zettelTags
+
+matchQueries :: Zettel -> [TagPattern] -> Bool
+matchQueries zettel pats = and $ matchQuery zettel <$> pats
+
+queryResults :: [TagPattern] -> Zettel -> [Zettel]
+queryResults pats zettel
+  | matchQueries zettel pats = [zettel]
+  | otherwise = mempty

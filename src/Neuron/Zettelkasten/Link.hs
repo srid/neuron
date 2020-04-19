@@ -10,6 +10,7 @@
 -- | Special Zettel links in Markdown
 module Neuron.Zettelkasten.Link where
 
+import Data.Some
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
@@ -25,8 +26,18 @@ import qualified Text.URI as URI
 data ZLink
   = ZLink_ConnectZettel Connection ZettelID
   | -- | Render a list (or should it be tree?) of links to queries zettels
-    ZLink_QueryZettels Connection LinkTheme [Query]
+    ZLink_QueryZettels Connection LinkTheme (Query [Zettel])
   deriving (Eq, Show)
+
+connectionFromURI :: URI.URI -> Connection
+connectionFromURI uri =
+  fromMaybe Folgezettel $
+    case fmap URI.unRText (URI.uriScheme uri) of
+      Just scheme
+        | scheme `elem` ["zcf", "zcfquery"] ->
+          Just OrdinaryConnection
+      _ ->
+        Nothing
 
 mkZLink :: HasCallStack => MarkdownLink -> Maybe ZLink
 mkZLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
@@ -41,14 +52,17 @@ mkZLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
       -- The inner link text is supposed to be the zettel ID
       let zid = parseZettelID linkText
        in Just $ ZLink_ConnectZettel OrdinaryConnection zid
-    Just "zquery" ->
-      Just $ ZLink_QueryZettels Folgezettel (linkThemeFromURI uri) (either error id $ queryFromURI uri)
-    Just "zcfquery" ->
-      Just $ ZLink_QueryZettels OrdinaryConnection (linkThemeFromURI uri) (either error id $ queryFromURI uri)
+    Just scheme | scheme `elem` ["zquery", "zcfquery"] ->
+      case queryFromURI uri of
+        Right (Some q@(Query_ZettelsByTag _)) ->
+          Just $ ZLink_QueryZettels (connectionFromURI uri) (linkThemeFromURI uri) q
+        Right _ ->
+          error "Bad query for zquery"
+        Left err ->
+          error err
     _ -> do
-      let uriS = URI.render uri
-      guard $ uriS == linkText
-      zid <- rightToMaybe $ parseZettelID' uriS
+      guard $ linkText == URI.render uri
+      zid <- rightToMaybe $ parseZettelID' linkText
       pure $ ZLink_ConnectZettel Folgezettel zid
 
 -- | The connections referenced in a zlink.

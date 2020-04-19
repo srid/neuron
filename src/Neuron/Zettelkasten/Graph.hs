@@ -32,7 +32,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link (zLinkConnections, mkZLink)
+import Neuron.Zettelkasten.Link (mkZLink, zLinkConnections)
 import Neuron.Zettelkasten.Markdown (extractLinks)
 import Neuron.Zettelkasten.Store (ZettelStore)
 import Neuron.Zettelkasten.Zettel

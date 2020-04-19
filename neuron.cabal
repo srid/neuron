@@ -59,7 +59,10 @@ common library-common
     dhall >= 1.30,
     which,
     unix,
-    megaparsec >= 8.0
+    megaparsec >= 8.0,
+    some,
+    dependent-sum,
+    dependent-sum-template
 
 library
   import: library-common
