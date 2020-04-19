@@ -8,7 +8,7 @@ where
 
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link
-import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
+import Neuron.Zettelkasten.Link.Theme (LinkTheme (..), ZettelsView (..))
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Tag
@@ -20,6 +20,7 @@ spec :: Spec
 spec =
   describe "NeuronLink" $ do
     let zid = parseZettelID "1234567"
+        zettelsView = ZettelsView LinkTheme_Default False
     it "alias link" $
       mkMarkdownLink "1234567" "1234567"
         `shouldParseAs` Just (NeuronLink (Query_ZettelByID zid, Folgezettel, LinkTheme_Default))
@@ -40,10 +41,10 @@ spec =
         `shouldParseAs` Just (NeuronLink (Query_ZettelByID zid, OrdinaryConnection, LinkTheme_Default))
     it "zquery: link" $
       mkMarkdownLink "." "zquery://search?tag=science"
-        `shouldParseAs` Just (NeuronLink (Query_ZettelsByTag [mkTagPattern "science"], Folgezettel, LinkTheme_Default))
+        `shouldParseAs` Just (NeuronLink (Query_ZettelsByTag [mkTagPattern "science"], Folgezettel, zettelsView))
     it "zcfquery: link" $
       mkMarkdownLink "." "zcfquery://search?tag=science"
-        `shouldParseAs` Just (NeuronLink (Query_ZettelsByTag [mkTagPattern "science"], OrdinaryConnection, LinkTheme_Default))
+        `shouldParseAs` Just (NeuronLink (Query_ZettelsByTag [mkTagPattern "science"], OrdinaryConnection, zettelsView))
     it "normal link" $ do
       mkMarkdownLink "foo bar" "https://www.google.com"
         `shouldParseAs` Nothing

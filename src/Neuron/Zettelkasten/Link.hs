@@ -35,9 +35,9 @@ type instance QueryConnection [Tag] = ()
 
 type family QueryViewTheme q
 
-type instance QueryViewTheme Zettel = LinkTheme
+type instance QueryViewTheme Zettel = ZettelView
 
-type instance QueryViewTheme [Zettel] = LinkTheme
+type instance QueryViewTheme [Zettel] = ZettelsView
 
 type instance QueryViewTheme [Tag] = ()
 
@@ -66,9 +66,9 @@ neuronLinkFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri} = do
     Just someQ -> Just <$> do
       withSome someQ $ \q -> case q of
         Query_ZettelByID _ ->
-          pure $ NeuronLink (q, connectionFromURI uri, linkThemeFromURI uri)
+          NeuronLink . (q,connectionFromURI uri,) <$> linkThemeFromURI uri
         Query_ZettelsByTag _ ->
-          pure $ NeuronLink (q, connectionFromURI uri, linkThemeFromURI uri)
+          NeuronLink . (q,connectionFromURI uri,) <$> zettelsViewFromURI uri
         Query_Tags _ ->
           pure $ NeuronLink (q, (), ())
 
