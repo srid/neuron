@@ -68,8 +68,9 @@ runWith act App {..} = do
           Some (Z.Query_ZettelsByTag pats) -> do
             let res = Z.runQuery store (Z.Query_ZettelsByTag pats)
             putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith <$> res
-          Some (Z.Query_Tags _pats) -> do
-            putLTextLn "Not Implemented"
+          Some (Z.Query_Tags pats) -> do
+            let res = Z.runQuery store (Z.Query_Tags pats)
+            putLTextLn $ Aeson.encodeToLazyText res
     Search searchCmd ->
       runSearch notesDir searchCmd
   where
