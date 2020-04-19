@@ -44,9 +44,14 @@ deriveGEq ''Query
 
 deriveGShow ''Query
 
-deriving instance Show (Query [Zettel])
+deriving instance Show (Query Zettel)
 
+deriving instance Show (Query [Zettel])
+deriving instance Show (Query [Tag])
+
+deriving instance Eq (Query Zettel)
 deriving instance Eq (Query [Zettel])
+deriving instance Eq (Query [Tag])
 
 
 instance ToHtml (Query [Zettel]) where
@@ -83,7 +88,10 @@ queryFromMarkdownLink MarkdownLink { markdownLinkUri = uri, markdownLinkText = l
             "tag" -> Just (TagPattern $ toString val)
             _ -> Nothing
         _ -> Nothing
-    _ -> pure Nothing
+    _ -> pure $ do
+      guard $ URI.render uri == linkText
+      zid <- rightToMaybe $ parseZettelID' linkText
+      pure $ Some $ Query_ZettelByID zid
 
 -- | Run the given query and return the results.
 runQuery :: ZettelStore -> Query r -> r
