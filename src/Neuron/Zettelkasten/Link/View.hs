@@ -2,54 +2,75 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Special Zettel links in Markdown
-module Neuron.Zettelkasten.Link.View where
+module Neuron.Zettelkasten.Link.View
+  ( neuronLinkExt,
+    renderZettelLink,
+  )
+where
 
+import Data.Some
 import Lucid
-import Neuron.Web.Route (Route (..))
+import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
+import Neuron.Zettelkasten.Tag (Tag (unTag))
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Extension, Inline (..))
+import Text.URI.QQ (queryKey)
 
--- | MMark extension to transform zlinks to actual links
-zLinkExt :: ZettelStore -> Extension
-zLinkExt store =
+-- | MMark extension to transform neuron links to custom views
+neuronLinkExt :: HasCallStack => ZettelStore -> Extension
+neuronLinkExt store =
   Ext.inlineRender $ \f -> \case
     inline@(Link inner uri _title) ->
       let mlink = MarkdownLink (Ext.asPlainText inner) uri
-       in case mkZLink mlink of
-            Just lact ->
-              renderZLink store lact
-            Nothing ->
+       in case neuronLinkFromMarkdownLink mlink of
+            Right (Just nl) ->
+              renderNeuronLink store nl
+            Right Nothing ->
               f inline
+            Left e ->
+              error e
     inline ->
       f inline
 
--- | Expand a zlink into normal links
-renderZLink :: Monad m => ZettelStore -> ZLink -> HtmlT m ()
-renderZLink store = \case
-  ZLink_ConnectZettel _conn zid ->
-    renderZettelLink LinkTheme_Default $ lookupStore zid store
-  ZLink_QueryZettels _conn linkTheme q -> do
-    toHtml q
+-- | Render the custom view for the given neuron link
+renderNeuronLink :: Monad m => ZettelStore -> NeuronLink -> HtmlT m ()
+renderNeuronLink store = \case
+  NeuronLink (Query_ZettelByID zid, _conn, linkTheme) ->
+    -- Render a single link
+    renderZettelLink linkTheme $ lookupStore zid store
+  NeuronLink (q@(Query_ZettelsByTag _pats), _conn, linkTheme) -> do
+    -- Render a list of links
+    toHtml $ Some q
     let zettels = sortOn Down $ zettelID <$> runQuery store q
     ul_ $ do
       forM_ zettels $ \zid ->
         li_ $ renderZettelLink linkTheme $ lookupStore zid store
+  NeuronLink (q@(Query_Tags _), (), ()) -> do
+    -- Render a list of tags
+    toHtml $ Some q
+    let tags = runQuery store q
+    ul_ $ do
+      forM_ tags $ \(unTag -> tag) -> do
+        let tagUrl = routeUrlRelWithQuery Route_Search [queryKey|tag|] tag
+        li_ $ a_ [href_ tagUrl] $ toHtml tag
 
 -- | Render a link to an individual zettel.
 renderZettelLink :: forall m. Monad m => LinkTheme -> Zettel -> HtmlT m ()

@@ -18,7 +18,8 @@ data LinkTheme
   | LinkTheme_WithDate
   deriving (Eq, Show, Ord)
 
-linkThemeFromURI :: URI.URI -> LinkTheme
+-- TODO: MonadError
+linkThemeFromURI :: HasCallStack => URI.URI -> LinkTheme
 linkThemeFromURI uri =
   fromMaybe LinkTheme_Default $ listToMaybe $ flip mapMaybe (URI.uriQuery uri) $ \case
     URI.QueryFlag _ -> Nothing

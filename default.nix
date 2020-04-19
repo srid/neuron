@@ -3,6 +3,7 @@ let
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
   ribRevision = "2dcd420";
+  nixpkgsRev = "10100a97c896";
   projectRoot = ./.;
 in {
 # Rib library source to use
@@ -13,7 +14,7 @@ in {
 , name ? "neuron"
 , gitRev ? ""
 , source-overrides ? {}
-, pkgs ? import <nixpkgs> {}
+, pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
 , ...
 }:
 
@@ -53,6 +54,7 @@ let
     version = "${neuronRev}"
     EOF
     '';
+  dsumSrc = builtins.fetchTarball "https://github.com/obsidiansystems/dependent-sum/archive/73ab6cb.tar.gz";
 
 in import rib { 
     inherit name additional-packages; 
@@ -61,6 +63,8 @@ in import rib {
       neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
       which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97.tar.gz";
+      dependent-sum = dsumSrc + "/dependent-sum";
+      dependent-sum-template = dsumSrc + "/dependent-sum-template";
     } // source-overrides;
     overrides = self: super: with pkgs.haskell.lib; {
       # We must add neuron-search as a runtime dependency to the 'neuron'

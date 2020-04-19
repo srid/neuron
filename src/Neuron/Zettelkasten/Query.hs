@@ -1,9 +1,15 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -11,8 +17,14 @@
 module Neuron.Zettelkasten.Query where
 
 import Control.Monad.Except
+import Data.GADT.Compare.TH
+import Data.GADT.Show.TH
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
+import Data.Some
 import Lucid
+import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
@@ -24,51 +36,102 @@ import qualified Text.URI as URI
 -- TODO: Support querying connections, a la:
 --   LinksTo ZettelID
 --   LinksFrom ZettelID
-data Query
-  = Query_ZettelsByTag TagPattern
-  deriving (Eq, Show)
+data Query r where
+  Query_ZettelByID :: ZettelID -> Query Zettel
+  Query_ZettelsByTag :: [TagPattern] -> Query [Zettel]
+  Query_Tags :: [TagPattern] -> Query [Tag]
 
-instance ToHtml Query where
+instance ToHtml (Some Query) where
   toHtmlRaw = toHtml
-  toHtml (Query_ZettelsByTag (TagPattern pat)) =
-    let desc = "Zettels matching tag '" <> toText pat <> "'"
-     in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml pat
-
-instance ToHtml [Query] where
-  toHtmlRaw = toHtml
-  toHtml qs =
-    div_ [class_ "ui horizontal divider", title_ "Zettel Query"] $ do
-      if null qs
-        then "All zettels"
-        else toHtml `mapM_` qs
+  toHtml q =
+    div_ [class_ "ui horizontal divider", title_ "Neuron Query"] $ do
+      case q of
+        Some (Query_ZettelByID _) ->
+          mempty
+        Some (Query_ZettelsByTag []) ->
+          "All zettels"
+        Some (Query_ZettelsByTag (fmap unTagPattern -> pats)) -> do
+          let qs = intercalate ", " pats
+              desc = toText $ "Zettels tagged '" <> qs <> "'"
+           in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml qs
+        Some (Query_Tags []) ->
+          "All tags"
+        Some (Query_Tags (fmap unTagPattern -> pats)) ->
+          let qs = intercalate ", " pats
+              desc = toText $ "Tags matching '" <> qs <> "'"
+           in span_ [class_ "ui basic pointing below grey label", title_ desc] $ toHtml qs
 
 type QueryResults = [Zettel]
 
-queryFromURI :: MonadError Text m => URI.URI -> m [Query]
-queryFromURI uri =
+queryFromURI :: MonadError Text m => URI.URI -> m (Some Query)
+queryFromURI uri = do
+  mq <- queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = ""}
+  case mq of
+    Just q -> pure q
+    Nothing -> throwError "Unsupported query URI"
+
+-- NOTE: To support legacy links which rely on linkText. New short links shouldn't use this.
+queryFromMarkdownLink :: MonadError Text m => MarkdownLink -> m (Maybe (Some Query))
+queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   case fmap URI.unRText (URI.uriScheme uri) of
+    Just proto | proto `elem` ["z", "zcf"] -> do
+      zid <- liftEither $ parseZettelID' linkText
+      pure $ Just $ Some $ Query_ZettelByID zid
     Just proto | proto `elem` ["zquery", "zcfquery"] ->
-      pure $ flip mapMaybe (URI.uriQuery uri) $ \case
+      case uriHost uri of
+        Right "search" ->
+          pure $ Just $ Some $ Query_ZettelsByTag $ mkTagPattern <$> getParamValues "tag" uri
+        Right "tags" ->
+          pure $ Just $ Some $ Query_Tags $ mkTagPattern <$> getParamValues "filter" uri
+        _ ->
+          throwError "Unsupported host in zquery"
+    _ -> pure $ do
+      -- Initial support for the upcoming short links.
+      guard $ URI.render uri == linkText
+      zid <- rightToMaybe $ parseZettelID' linkText
+      pure $ Some $ Query_ZettelByID zid
+  where
+    getParamValues k u =
+      flip mapMaybe (URI.uriQuery u) $ \case
         URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-          case key of
-            "tag" -> Just $ Query_ZettelsByTag (TagPattern $ toString val)
-            _ -> Nothing
+          if key == k
+            then Just val
+            else Nothing
         _ -> Nothing
-    _ -> throwError "Bad URI (expected: zquery: or zcfquery:)"
-
-matchQuery :: Zettel -> Query -> Bool
-matchQuery Zettel {..} = \case
-  Query_ZettelsByTag pat -> any (tagMatch pat) zettelTags
-
-matchQueries :: Zettel -> [Query] -> Bool
-matchQueries zettel queries = and $ matchQuery zettel <$> queries
-
-queryResults :: [Query] -> Zettel -> QueryResults
-queryResults queries zettel
-  | matchQueries zettel queries = [zettel]
-  | otherwise = mempty
+    uriHost u =
+      fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
 
 -- | Run the given query and return the results.
-runQuery :: ZettelStore -> [Query] -> QueryResults
-runQuery store queries =
-  foldMap (queryResults queries) (Map.elems store)
+runQuery :: ZettelStore -> Query r -> r
+runQuery store = \case
+  Query_ZettelByID zid ->
+    lookupStore zid store
+  Query_ZettelsByTag pats ->
+    flip filter (Map.elems store) $ \Zettel {..} ->
+      and $ flip fmap pats $ \pat ->
+        any (tagMatch pat) zettelTags
+  Query_Tags [] ->
+    allTags
+  Query_Tags pats ->
+    -- TODO: Use step from https://hackage.haskell.org/package/filepattern-0.1.2/docs/System-FilePattern.html#v:step
+    -- for efficient matching.
+    flip filter allTags $ \t ->
+      any (`tagMatch` t) pats
+  where
+    allTags = Set.toList $ Set.fromList $ foldMap zettelTags (Map.elems store)
+
+deriveGEq ''Query
+
+deriveGShow ''Query
+
+deriving instance Show (Query Zettel)
+
+deriving instance Show (Query [Zettel])
+
+deriving instance Show (Query [Tag])
+
+deriving instance Eq (Query Zettel)
+
+deriving instance Eq (Query [Zettel])
+
+deriving instance Eq (Query [Tag])

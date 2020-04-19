@@ -17,6 +17,7 @@ module Neuron.CLI.Types
   )
 where
 
+import Data.Some
 import qualified Neuron.Zettelkasten.Query as Z
 import qualified Neuron.Zettelkasten.Tag as Z
 import Options.Applicative
@@ -28,7 +29,6 @@ data App = App
   { notesDir :: FilePath,
     cmd :: Command
   }
-  deriving (Eq, Show)
 
 data NewCommand = NewCommand {title :: Text, edit :: Bool}
   deriving (Eq, Show)
@@ -52,10 +52,9 @@ data Command
   | -- | Search a zettel by title
     Search SearchCommand
   | -- | Run a query against the Zettelkasten
-    Query [Z.Query]
+    Query (Some Z.Query)
   | -- | Delegate to Rib's command parser
     Rib RibConfig
-  deriving (Eq, Show)
 
 data RibConfig = RibConfig
   { ribOutputDir :: Maybe FilePath,
@@ -95,7 +94,7 @@ commandParser defaultNotesDir = do
       pure Open
     queryCommand =
       fmap Query $
-        many (Z.Query_ZettelsByTag . Z.TagPattern <$> option str (long "tag" <> short 't'))
+        fmap (Some . Z.Query_ZettelsByTag) (many (Z.mkTagPattern <$> option str (long "tag" <> short 't')))
           <|> option uriReader (long "uri" <> short 'u')
     searchCommand = do
       searchBy <-

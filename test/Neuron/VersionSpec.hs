@@ -31,9 +31,9 @@ spec = do
     it "must compare full versions" $ do
       "0.4.1.2" `isGreater` olderThan
       "0.4.3" `isGreater` olderThan
-      "0.3.0.8" `isGreater` olderThan
-      "0.3.0.1" `isLesserOrEqual` olderThan -- This is current version
+      "0.3.1.8" `isGreater` olderThan
+      "0.3.1.0" `isLesserOrEqual` olderThan -- This is current version
       "0.2.1.0" `isLesserOrEqual` olderThan
     it "must compare within same major version" $ do
-      "0.3.0.8" `isGreater` olderThan
-      "0.3.0.1" `isLesserOrEqual` olderThan -- This is current version
+      "0.3.1.8" `isGreater` olderThan
+      "0.3.1.0" `isLesserOrEqual` olderThan -- This is current version

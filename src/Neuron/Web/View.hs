@@ -37,7 +37,7 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
-import Neuron.Zettelkasten.Link.View (zLinkExt, renderZettelLink)
+import Neuron.Zettelkasten.Link.View (neuronLinkExt, renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
@@ -112,7 +112,7 @@ renderIndex Config {..} (store, graph) = do
   script_ helloScript
   where
     -- Sort clusters with newer mother zettels appearing first.
-    sortMothers ms = reverse $ sortOn maximum $ fmap (reverse . sort . toList) ms
+    sortMothers ms = sortOn (Down . maximum) $ fmap (sortOn Down . toList) ms
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
@@ -124,7 +124,7 @@ renderSearch store = do
     input_ [type_ "text", id_ "search-input"]
     fa "search icon fas fa-search"
   div_ [class_ "ui hidden divider"] mempty
-  let allZettels = runQuery store []
+  let allZettels = runQuery store $ Query_ZettelsByTag []
       allTags = Set.fromList $ concatMap zettelTags allZettels
       index = object ["zettels" .= fmap (object . zettelJson) allZettels, "tags" .= allTags]
   div_ [class_ "ui fluid multiple search selection dropdown", id_ "search-tags"] $ do
@@ -148,7 +148,7 @@ renderZettel config@Config {..} (store, graph) zid = do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
         let mmarkExts = neuronMMarkExts config
-        MMark.render $ useExtensions (zLinkExt store : mmarkExts) zettelContent
+        MMark.render $ useExtensions (neuronLinkExt store : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do
@@ -223,8 +223,9 @@ renderForest isRoot maxLevel ltheme s g trees =
           let zettelDiv =
                 div_
                   [class_ $ bool "" "ui black label" $ ltheme == LinkTheme_Default]
-          bool id zettelDiv isRoot $
-            renderZettelLink ltheme $ lookupStore zid s
+          bool id zettelDiv isRoot
+            $ renderZettelLink ltheme
+            $ lookupStore zid s
           when (ltheme == LinkTheme_Default) $ do
             " "
             case backlinks zid g of
