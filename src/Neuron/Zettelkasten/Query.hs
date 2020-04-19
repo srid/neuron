@@ -22,11 +22,11 @@ import Data.GADT.Show.TH
 import qualified Data.Map.Strict as Map
 import Data.Some
 import Lucid
+import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
-import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.ID
 import Relude
 import qualified Text.URI as URI
 
@@ -47,12 +47,14 @@ deriveGShow ''Query
 deriving instance Show (Query Zettel)
 
 deriving instance Show (Query [Zettel])
+
 deriving instance Show (Query [Tag])
 
 deriving instance Eq (Query Zettel)
-deriving instance Eq (Query [Zettel])
-deriving instance Eq (Query [Tag])
 
+deriving instance Eq (Query [Zettel])
+
+deriving instance Eq (Query [Tag])
 
 instance ToHtml (Query [Zettel]) where
   toHtmlRaw = toHtml
@@ -69,14 +71,14 @@ type QueryResults = [Zettel]
 
 queryFromURI :: MonadError Text m => URI.URI -> m (Some Query)
 queryFromURI uri = do
-  mq <- queryFromMarkdownLink $ MarkdownLink { markdownLinkUri = uri, markdownLinkText = "" }
+  mq <- queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = ""}
   case mq of
     Just q -> pure q
     Nothing -> throwError "Unsupported query URI"
 
 -- NOTE: To support legacy links which rely on linkText. New short links shouldn't use this.
 queryFromMarkdownLink :: MonadError Text m => MarkdownLink -> m (Maybe (Some Query))
-queryFromMarkdownLink MarkdownLink { markdownLinkUri = uri, markdownLinkText = linkText } =
+queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   case fmap URI.unRText (URI.uriScheme uri) of
     Just proto | proto `elem` ["z", "zcf"] -> do
       zid <- liftEither $ parseZettelID' linkText
@@ -89,6 +91,7 @@ queryFromMarkdownLink MarkdownLink { markdownLinkUri = uri, markdownLinkText = l
             _ -> Nothing
         _ -> Nothing
     _ -> pure $ do
+      -- Initial support for the upcoming short links.
       guard $ URI.render uri == linkText
       zid <- rightToMaybe $ parseZettelID' linkText
       pure $ Some $ Query_ZettelByID zid

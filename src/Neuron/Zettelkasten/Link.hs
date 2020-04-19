@@ -1,11 +1,11 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -41,9 +41,10 @@ type instance QueryViewTheme [Zettel] = LinkTheme
 
 type instance QueryViewTheme [Tag] = ()
 
-data NeuronLink =
-  forall r. (Show (Query r), Show (QueryConnection r), Show (QueryViewTheme r))
-  => NeuronLink (Query r, QueryConnection r, QueryViewTheme r)
+data NeuronLink
+  = forall r.
+    (Show (Query r), Show (QueryConnection r), Show (QueryViewTheme r)) =>
+    NeuronLink (Query r, QueryConnection r, QueryViewTheme r)
 
 deriving instance Show NeuronLink
 
@@ -56,7 +57,6 @@ instance Eq NeuronLink where
     and [p1 == p2, c1 == c2, t1 == t2]
   (==) _ _ =
     False
-
 
 neuronLinkFromMarkdownLink :: MonadError Text m => MarkdownLink -> m (Maybe NeuronLink)
 neuronLinkFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri} = do
