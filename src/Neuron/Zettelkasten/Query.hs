@@ -41,22 +41,6 @@ data Query r where
   Query_ZettelsByTag :: [TagPattern] -> Query [Zettel]
   Query_Tags :: [TagPattern] -> Query [Tag]
 
-deriveGEq ''Query
-
-deriveGShow ''Query
-
-deriving instance Show (Query Zettel)
-
-deriving instance Show (Query [Zettel])
-
-deriving instance Show (Query [Tag])
-
-deriving instance Eq (Query Zettel)
-
-deriving instance Eq (Query [Zettel])
-
-deriving instance Eq (Query [Tag])
-
 instance ToHtml (Query [Zettel]) where
   toHtmlRaw = toHtml
   toHtml = \case
@@ -114,23 +98,31 @@ runQuery store = \case
   Query_ZettelByID zid ->
     lookupStore zid store
   Query_ZettelsByTag pats ->
-    foldMap (queryResults pats) (Map.elems store)
+    flip filter (Map.elems store) $ \Zettel {..} ->
+      and $ flip fmap pats $ \pat ->
+        any (tagMatch pat) zettelTags
+  Query_Tags [] ->
+    allTags
   Query_Tags pats ->
     -- TODO: Use step from https://hackage.haskell.org/package/filepattern-0.1.2/docs/System-FilePattern.html#v:step
     -- for efficient matching.
-    let allTags = Set.toList $ Set.fromList $ flip foldMap (Map.elems store) $ \Zettel {..} -> zettelTags
-     in if null pats
-          then allTags
-          else filter (\t -> any (`tagMatch` t) pats) allTags
+    flip filter allTags $ \t ->
+      any (`tagMatch` t) pats
+  where
+    allTags = Set.toList $ Set.fromList $ foldMap zettelTags (Map.elems store)
 
-matchQuery :: Zettel -> TagPattern -> Bool
-matchQuery Zettel {..} pat =
-  any (tagMatch pat) zettelTags
+deriveGEq ''Query
 
-matchQueries :: Zettel -> [TagPattern] -> Bool
-matchQueries zettel pats = and $ matchQuery zettel <$> pats
+deriveGShow ''Query
 
-queryResults :: [TagPattern] -> Zettel -> [Zettel]
-queryResults pats zettel
-  | matchQueries zettel pats = [zettel]
-  | otherwise = mempty
+deriving instance Show (Query Zettel)
+
+deriving instance Show (Query [Zettel])
+
+deriving instance Show (Query [Tag])
+
+deriving instance Eq (Query Zettel)
+
+deriving instance Eq (Query [Zettel])
+
+deriving instance Eq (Query [Tag])
