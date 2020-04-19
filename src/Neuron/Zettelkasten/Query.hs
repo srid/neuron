@@ -20,6 +20,7 @@ import Control.Monad.Except
 import Data.GADT.Compare.TH
 import Data.GADT.Show.TH
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import Data.Some
 import Lucid
 import Neuron.Zettelkasten.ID
@@ -83,10 +84,14 @@ queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = li
     Just proto | proto `elem` ["z", "zcf"] -> do
       zid <- liftEither $ parseZettelID' linkText
       pure $ Just $ Some $ Query_ZettelByID zid
-    Just proto
-      | proto `elem` ["zquery", "zcfquery"]
-          && uriHost uri == Right "search" ->
-        pure $ Just $ Some $ Query_ZettelsByTag $ mkTagPattern <$> getParamValues "tag" uri
+    Just proto | proto `elem` ["zquery", "zcfquery"] ->
+      case uriHost uri of
+        Right "search" ->
+          pure $ Just $ Some $ Query_ZettelsByTag $ mkTagPattern <$> getParamValues "tag" uri
+        Right "tags" ->
+          pure $ Just $ Some $ Query_Tags $ mkTagPattern <$> getParamValues "filter" uri
+        _ ->
+          throwError "Unsupported host in zquery"
     _ -> pure $ do
       -- Initial support for the upcoming short links.
       guard $ URI.render uri == linkText
@@ -110,9 +115,13 @@ runQuery store = \case
     lookupStore zid store
   Query_ZettelsByTag pats ->
     foldMap (queryResults pats) (Map.elems store)
-  Query_Tags _pats ->
-    -- TODO:
-    []
+  Query_Tags pats ->
+    -- TODO: Use step from https://hackage.haskell.org/package/filepattern-0.1.2/docs/System-FilePattern.html#v:step
+    -- for efficient matching.
+    let allTags = Set.toList $ Set.fromList $ flip foldMap (Map.elems store) $ \Zettel {..} -> zettelTags
+     in if null pats
+          then allTags
+          else filter (\t -> any (`tagMatch` t) pats) allTags
 
 matchQuery :: Zettel -> TagPattern -> Bool
 matchQuery Zettel {..} pat =
