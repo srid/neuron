@@ -83,7 +83,9 @@ queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = li
     Just proto | proto `elem` ["z", "zcf"] -> do
       zid <- liftEither $ parseZettelID' linkText
       pure $ Just $ Some $ Query_ZettelByID zid
-    Just proto | proto `elem` ["zquery", "zcfquery"] ->
+    Just proto
+      | proto `elem` ["zquery", "zcfquery"]
+        && fmap (URI.unRText . URI.authHost) (URI.uriAuthority uri) == Right "search" ->
       pure $ Just $ Some $ Query_ZettelsByTag $ flip mapMaybe (URI.uriQuery uri) $ \case
         URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
           case key of
