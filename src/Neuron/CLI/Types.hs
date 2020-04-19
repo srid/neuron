@@ -94,7 +94,7 @@ commandParser defaultNotesDir = do
       pure Open
     queryCommand =
       fmap Query $
-        fmap (Some . Z.Query_ZettelsByTag) (many (Z.TagPattern <$> option str (long "tag" <> short 't')))
+        fmap (Some . Z.Query_ZettelsByTag) (many (Z.mkTagPattern <$> option str (long "tag" <> short 't')))
           <|> option uriReader (long "uri" <> short 'u')
     searchCommand = do
       searchBy <-

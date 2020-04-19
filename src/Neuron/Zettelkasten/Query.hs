@@ -85,18 +85,23 @@ queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = li
       pure $ Just $ Some $ Query_ZettelByID zid
     Just proto
       | proto `elem` ["zquery", "zcfquery"]
-        && fmap (URI.unRText . URI.authHost) (URI.uriAuthority uri) == Right "search" ->
-      pure $ Just $ Some $ Query_ZettelsByTag $ flip mapMaybe (URI.uriQuery uri) $ \case
-        URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-          case key of
-            "tag" -> Just (TagPattern $ toString val)
-            _ -> Nothing
-        _ -> Nothing
+          && uriHost uri == Right "search" ->
+        pure $ Just $ Some $ Query_ZettelsByTag $ mkTagPattern <$> getParamValues "tag" uri
     _ -> pure $ do
       -- Initial support for the upcoming short links.
       guard $ URI.render uri == linkText
       zid <- rightToMaybe $ parseZettelID' linkText
       pure $ Some $ Query_ZettelByID zid
+  where
+    getParamValues k u =
+      flip mapMaybe (URI.uriQuery u) $ \case
+        URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
+          if key == k
+            then Just val
+            else Nothing
+        _ -> Nothing
+    uriHost u =
+      fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
 
 -- | Run the given query and return the results.
 runQuery :: ZettelStore -> Query r -> r

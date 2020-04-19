@@ -16,7 +16,7 @@ import Text.URI (mkURI)
 spec :: Spec
 spec =
   describe "Parse query URI" $ do
-    let zettelsByTag = Some . Query_ZettelsByTag . fmap TagPattern
+    let zettelsByTag = Some . Query_ZettelsByTag . fmap mkTagPattern
     it "Parse all zettels URI" $
       parseQueryString "zquery://search" `shouldBe` Right (zettelsByTag [])
     it "Parse single tag" $

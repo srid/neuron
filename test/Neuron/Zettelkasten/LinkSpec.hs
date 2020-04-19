@@ -40,10 +40,10 @@ spec =
         `shouldParseAs` Just (NeuronLink (Query_ZettelByID zid, OrdinaryConnection, LinkTheme_Default))
     it "zquery: link" $
       mkMarkdownLink "." "zquery://search?tag=science"
-        `shouldParseAs` Just (NeuronLink (Query_ZettelsByTag [TagPattern "science"], Folgezettel, LinkTheme_Default))
+        `shouldParseAs` Just (NeuronLink (Query_ZettelsByTag [mkTagPattern "science"], Folgezettel, LinkTheme_Default))
     it "zcfquery: link" $
       mkMarkdownLink "." "zcfquery://search?tag=science"
-        `shouldParseAs` Just (NeuronLink (Query_ZettelsByTag [TagPattern "science"], OrdinaryConnection, LinkTheme_Default))
+        `shouldParseAs` Just (NeuronLink (Query_ZettelsByTag [mkTagPattern "science"], OrdinaryConnection, LinkTheme_Default))
     it "normal link" $ do
       mkMarkdownLink "foo bar" "https://www.google.com"
         `shouldParseAs` Nothing
