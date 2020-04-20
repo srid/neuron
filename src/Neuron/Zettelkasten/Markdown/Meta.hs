@@ -17,7 +17,8 @@ import Text.MMark (MMark, projectYaml)
 -- | YAML metadata in a zettel markdown file
 data Meta = Meta
   { title :: Text,
-    tags :: Maybe [Tag]
+    tags :: Maybe [Tag],
+    author :: Maybe Text
   }
   deriving (Eq, Show, Generic, FromJSON)
 

@@ -151,6 +151,8 @@ renderZettel config@Config {..} (store, graph) zid = do
         MMark.render $ useExtensions (neuronLinkExt store : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
+        forM_ zettelAuthor renderAuthor
+
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
@@ -200,6 +202,12 @@ renderTags tags = do
         ]
         $ toHtml (unTag tag)
     p_ mempty
+
+renderAuthor :: Monad m => Text -> HtmlT m ()
+renderAuthor author = do
+  div_ [class_ "ui one footer-version"] $ do
+    div_ [class_ "left aligned"] ( p_  $ do "Author: "
+                                            toHtml @Text author)
 
 -- | Font awesome element
 fa :: Monad m => Text -> HtmlT m ()

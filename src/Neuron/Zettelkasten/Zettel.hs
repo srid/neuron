@@ -21,6 +21,7 @@ data Zettel = Zettel
   { zettelID :: ZettelID,
     zettelTitle :: Text,
     zettelTags :: [Tag],
+    zettelAuthor :: Maybe Text,
     zettelContent :: MMark
   }
 
@@ -37,7 +38,8 @@ zettelJson :: KeyValue a => Zettel -> [a]
 zettelJson Zettel {..} =
   [ "id" .= toJSON zettelID,
     "title" .= zettelTitle,
-    "tags" .= zettelTags
+    "tags" .= zettelTags,
+    "author" .= zettelAuthor
   ]
 
 -- | Load a zettel from a file.
@@ -50,7 +52,8 @@ mkZettelFromPath path = do
       meta = Meta.getMeta doc
       title = maybe (toText $ "No title for " <> path) Meta.title meta
       tags = fromMaybe [] $ Meta.tags =<< meta
-  pure $ Zettel zid title tags doc
+      author =  Meta.author =<< meta
+  pure $ Zettel zid title tags author doc
 
 hasTag :: Tag -> Zettel -> Bool
 hasTag tag Zettel {..} =
