@@ -6,7 +6,7 @@ module Neuron.Util.TreeSpec
 where
 
 import Data.Tree (Forest, Tree (..))
-import qualified Neuron.Util.Tree as Z
+import Neuron.Util.Tree
 import Relude
 import System.FilePath ((</>))
 import Test.Hspec
@@ -17,12 +17,12 @@ spec = do
     context "Tree building" $ do
       forM_ treeCases $ \(name, paths, tree) -> do
         it name $ do
-          Z.mkTreeFromPaths paths `shouldBe` tree
+          mkTreeFromPaths paths `shouldBe` tree
     context "Tree folding" $ do
       forM_ foldingCases $ \(name, tree, folded) -> do
         it name $ do
           let mergePaths (p, _) (p', b') = (p </> p', b')
-              res = fmap fst $ Z.foldTreeOnWith snd mergePaths tree
+              res = fst <$> foldTreeOnWith snd mergePaths tree
           res `shouldBe` folded
 
 treeCases :: [(String, [[String]], Forest String)]

@@ -7,6 +7,7 @@ module Neuron.Util.Tree
   )
 where
 
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as Map
 import Data.Tree
 import Relude
@@ -19,16 +20,17 @@ mkTreeFromPaths paths = uncurry mkNode <$> Map.assocs groups
     mkNode label children =
       Node label $ mkTreeFromPaths $ toList children
 
-annotatePathsWith :: ([a] -> ann) -> Tree a -> Tree (a, ann)
+annotatePathsWith :: (NonEmpty a -> ann) -> Tree a -> Tree (a, ann)
 annotatePathsWith f = go []
   where
-    go root (Node rel children) =
-      let path = rel : root
-       in Node (rel, f $ reverse path) $ fmap (go path) children
+    go ancestors (Node rel children) =
+      let path = rel :| ancestors
+       in Node (rel, f $ NE.reverse path) $ fmap (go $ toList path) children
 
 -- | Fold one-child nodes that satisfy a predicate
 --
--- The given function is called to fold a parent and its (only) child.
+-- The node which satisfies the predicate will be folded with its only child
+-- using the given function.
 foldTreeOnWith :: (a -> Bool) -> (a -> a -> a) -> Tree a -> Tree a
 foldTreeOnWith p f = go
   where

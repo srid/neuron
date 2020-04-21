@@ -6,6 +6,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Special Zettel links in Markdown
@@ -17,7 +18,6 @@ where
 
 import qualified Data.Map.Strict as Map
 import Data.Some
-import qualified Data.Text as T
 import Data.Tree
 import Lucid
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
@@ -27,7 +27,7 @@ import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Tag (Tag (..), foldTagTree, tagMatchAny, tagTree)
+import Neuron.Zettelkasten.Tag (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -120,36 +120,40 @@ renderZettelLinkSimpleWith url title body =
       toHtml body
 
 -- |  Render a tag tree along with the count of zettels tagged with it
-renderTagTree :: forall m. Monad m => Forest (Text, Natural) -> HtmlT m ()
-renderTagTree tags =
+renderTagTree :: forall m. Monad m => Forest (NonEmpty TagNode, Natural) -> HtmlT m ()
+renderTagTree t =
   div_ [class_ "tag-tree"] $
-    renderForest mempty tags
+    renderForest mempty t
   where
-    renderForest :: [Text] -> Forest (Text, Natural) -> HtmlT m ()
+    renderForest :: [TagNode] -> Forest (NonEmpty TagNode, Natural) -> HtmlT m ()
     renderForest ancestors forest =
       ul_ $ do
         forM_ forest $ \tree -> do
           li_ $ renderTree ancestors tree
-    renderTree :: [Text] -> Tree (Text, Natural) -> HtmlT m ()
-    renderTree ancestors = \case
-      Node (tag, count) [] -> renderTag ancestors (tag, count)
-      Node (tag, count) subForest -> do
-        renderTag ancestors (tag, count)
-        renderForest (ancestors <> [tag]) subForest
-    renderTag :: [Text] -> (Text, Natural) -> HtmlT m ()
-    renderTag ancestors (tag, count) =
+    renderTree :: [TagNode] -> Tree (NonEmpty TagNode, Natural) -> HtmlT m ()
+    renderTree ancestors (Node (tagNode, count) children) = do
+      renderTag ancestors (tagNode, count)
+      whenNotNull children $
+        renderForest (ancestors <> toList tagNode) . toList
+    renderTag :: [TagNode] -> (NonEmpty TagNode, Natural) -> HtmlT m ()
+    renderTag ancestors (tagNode, count) = do
       div_ [class_ "node"] $ do
-        if count == 0
-          then toHtml tag
-          else
-            a_
-              [ href_ (getNodeUrl ancestors tag),
-                title_ $ show count <> " zettels tagged"
-              ]
-              $ toHtml tag
-    getNodeUrl ancestors tag =
-      routeUrlRelWithQuery Route_Search [queryKey|tag|]
-        $
-        -- TODO: Consolidate with unbreakTag (see comment) in Tag.hs
-        T.intercalate "/"
-        $ ancestors <> [tag]
+        let Tag tag = constructTag $ maybe tagNode (<> tagNode) $ nonEmpty ancestors
+            attrs = case count of
+              0 ->
+                [class_ "inactive"]
+              _ ->
+                [ href_ $ routeUrlRelWithQuery Route_Search [queryKey|tag|] tag,
+                  title_ $ show count <> " zettels tagged"
+                ]
+        a_ attrs $ renderTagNode tagNode
+    renderTagNode :: NonEmpty TagNode -> HtmlT m ()
+    renderTagNode = \case
+      n :| (nonEmpty -> mrest) ->
+        case mrest of
+          Nothing ->
+            toHtml $ unTagNode n
+          Just rest -> do
+            toHtml $ unTagNode n
+            "/"
+            renderTagNode rest

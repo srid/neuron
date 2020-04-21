@@ -62,7 +62,8 @@ common library-common
     megaparsec >= 8.0,
     some,
     dependent-sum,
-    dependent-sum-template
+    dependent-sum-template,
+    parser-combinators
 
 library
   import: library-common

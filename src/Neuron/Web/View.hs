@@ -290,6 +290,8 @@ style Config {..} = do
   "div.tag-tree" ? do
     "div.node" ? do
       C.fontWeight C.bold
+      "a.inactive" ? do
+        C.color "#555"
   "div.connections" ? do
     "a" ? do
       C.important $ color white
