@@ -12,9 +12,9 @@ where
 
 import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
-import Neuron.CLI.Query
+import Neuron.CLI.Query (queryZettelkasten)
 import Neuron.CLI.Rib
-import Neuron.CLI.Search (runSearch)
+import Neuron.CLI.Search (interactiveSearch)
 import qualified Neuron.Version as Version
 import Options.Applicative
 import Relude
@@ -53,7 +53,7 @@ runWith act App {..} = do
         let opener = if os == "darwin" then "open" else "xdg-open"
         liftIO $ executeFile opener True [indexHtmlPath] Nothing
     Query q ->
-      runRibOnceQuietly notesDir $ do
-        runQuery notesDir q
+      runRibOnceQuietly notesDir $
+        queryZettelkasten notesDir q
     Search searchCmd ->
-      runSearch notesDir searchCmd
+      interactiveSearch notesDir searchCmd

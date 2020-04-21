@@ -27,7 +27,7 @@ import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Tag
+import Neuron.Zettelkasten.Tag (Tag (..), tagMatchAny, tagTree)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -71,12 +71,7 @@ renderNeuronLink store = \case
   NeuronLink (q@(Query_Tags _), (), ()) -> do
     -- Render a list of tags
     toHtml $ Some q
-    let tags = runQuery store q
-        tagPaths = fmap tagComponents $ Map.keys tags
-        ann path =
-          let tag = fold $ intersperse "/" path
-           in fromMaybe 0 $ Map.lookup (Tag tag) tags
-        tree = annotatePaths ann <$> mkTreeFromPaths tagPaths
+    let tree = tagTree $ runQuery store q
         concatRelTags (parent, _) (child, count) = (parent <> "/" <> child, count)
         tagDoesNotExist (_, count) = count == 0
         folded = fmap (foldTreeOnWith tagDoesNotExist concatRelTags) tree
@@ -126,10 +121,11 @@ renderZettelLinkSimpleWith url title body =
     span_ [class_ "zettel-link-title"] $ do
       toHtml body
 
--- |  Renders a nested list of relative tags along with the number of zettels having that tag
+-- |  Render a nested list of relative tags along with the count of zettels tagged with it
 renderTagTree :: forall m. Monad m => Forest (Text, Natural) -> HtmlT m ()
 renderTagTree tags = div_ [class_ "tag-tree"] $ renderForest "" tags
   where
+    -- TODO: What's "root"?
     renderForest :: Text -> Forest (Text, Natural) -> HtmlT m ()
     renderForest root forest =
       ul_ $ do

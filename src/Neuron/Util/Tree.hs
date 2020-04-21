@@ -2,7 +2,7 @@
 
 module Neuron.Util.Tree
   ( mkTreeFromPaths,
-    annotatePaths,
+    annotatePathsWith,
     foldTreeOnWith,
   )
 where
@@ -15,17 +15,18 @@ import Relude.Extra.Group
 mkTreeFromPaths :: Ord a => [[a]] -> Forest a
 mkTreeFromPaths paths = uncurry mkNode <$> Map.assocs groups
   where
-    groups = fmap tail <$> groupBy head (catMaybes $ fmap nonEmpty paths)
+    groups = fmap tail <$> groupBy head (mapMaybe nonEmpty paths)
     mkNode label children =
       Node label $ mkTreeFromPaths $ toList children
 
-annotatePaths :: ([a] -> ann) -> Tree a -> Tree (a, ann)
-annotatePaths f = go []
+annotatePathsWith :: ([a] -> ann) -> Tree a -> Tree (a, ann)
+annotatePathsWith f = go []
   where
     go root (Node rel children) =
       let path = rel : root
        in Node (rel, f $ reverse path) $ fmap (go path) children
 
+-- TODO: What does this function do?
 foldTreeOnWith :: (a -> Bool) -> (a -> a -> a) -> Tree a -> Tree a
 foldTreeOnWith foldPredicate concatPaths = go
   where

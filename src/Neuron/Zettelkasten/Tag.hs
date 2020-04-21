@@ -1,21 +1,21 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Tag
   ( Tag (..),
-    tagComponents,
     TagPattern (unTagPattern),
     mkTagPattern,
     tagMatch,
     tagMatchAny,
+    tagTree,
   )
 where
 
 import Data.Aeson
+import qualified Data.Map.Strict as Map
+import Data.Tree (Forest)
+import Neuron.Util.Tree (annotatePathsWith, mkTreeFromPaths)
 import Relude
 import System.FilePath (splitDirectories)
 import System.FilePattern
@@ -23,12 +23,20 @@ import System.FilePattern
 newtype Tag = Tag {unTag :: Text}
   deriving (Eq, Ord, Show, ToJSON, FromJSON)
 
-tagComponents :: Tag -> [Text]
-tagComponents =
-  fmap toText
-    . splitDirectories
-    . toString
-    . unTag
+tagTree :: Num a => Map Tag a -> Forest (Text, a)
+tagTree tags =
+  annotatePathsWith countFor <$> mkTreeFromPaths tagPaths
+  where
+    tagPaths = tagComponents <$> Map.keys tags
+    countFor path =
+      let tag = fold $ intersperse "/" path
+       in fromMaybe 0 $ Map.lookup (Tag tag) tags
+    tagComponents :: Tag -> [Text]
+    tagComponents =
+      fmap toText
+        . splitDirectories
+        . toString
+        . unTag
 
 newtype TagPattern = TagPattern {unTagPattern :: FilePattern}
   deriving (Eq, Show)

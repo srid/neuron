@@ -39,7 +39,7 @@ import qualified Text.URI as URI
 data Query r where
   Query_ZettelByID :: ZettelID -> Query Zettel
   Query_ZettelsByTag :: [TagPattern] -> Query [Zettel]
-  Query_Tags :: [TagPattern] -> Query (Map.Map Tag Natural)
+  Query_Tags :: [TagPattern] -> Query (Map Tag Natural)
 
 instance ToHtml (Some Query) where
   toHtmlRaw = toHtml
@@ -59,6 +59,7 @@ instance ToHtml (Some Query) where
         Some (Query_Tags []) ->
           "All tags"
         Some (Query_Tags (fmap unTagPattern -> pats)) -> do
+          -- TODO: UI header is wrong; not a tag
           let qs = intercalate ", " pats
               desc = toText $ "Tags matching '" <> qs <> "'"
            in span_ [class_ "ui basic pointing below grey label", title_ desc] $ do
@@ -117,8 +118,7 @@ runQuery store = \case
   Query_Tags [] ->
     allTags
   Query_Tags pats ->
-    let match tag _ = tagMatchAny pats tag
-     in Map.filterWithKey match allTags
+    Map.filterWithKey (const . tagMatchAny pats) allTags
   where
     allTags :: Map.Map Tag Natural
     allTags =
@@ -134,10 +134,10 @@ deriving instance Show (Query Zettel)
 
 deriving instance Show (Query [Zettel])
 
-deriving instance Show (Query (Map.Map Tag Natural))
+deriving instance Show (Query (Map Tag Natural))
 
 deriving instance Eq (Query Zettel)
 
 deriving instance Eq (Query [Zettel])
 
-deriving instance Eq (Query (Map.Map Tag Natural))
+deriving instance Eq (Query (Map Tag Natural))

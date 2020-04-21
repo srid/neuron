@@ -14,7 +14,6 @@
 module Neuron.Zettelkasten.Link where
 
 import Control.Monad.Except
-import qualified Data.Map.Strict as Map
 import Data.Some
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Theme
@@ -32,7 +31,7 @@ type instance QueryConnection Zettel = Connection
 
 type instance QueryConnection [Zettel] = Connection
 
-type instance QueryConnection (Map.Map Tag Natural) = ()
+type instance QueryConnection (Map Tag Natural) = ()
 
 type family QueryViewTheme q
 
@@ -40,7 +39,7 @@ type instance QueryViewTheme Zettel = ZettelView
 
 type instance QueryViewTheme [Zettel] = ZettelsView
 
-type instance QueryViewTheme (Map.Map Tag Natural) = ()
+type instance QueryViewTheme (Map Tag Natural) = ()
 
 -- TODO: Refactor to be a GADT using Some, and derive GEq, etc. correctly
 data NeuronLink
