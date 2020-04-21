@@ -17,6 +17,7 @@ where
 
 import qualified Data.Map.Strict as Map
 import Data.Some
+import qualified Data.Text as T
 import Data.Tree
 import Lucid
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
@@ -120,26 +121,29 @@ renderZettelLinkSimpleWith url title body =
 
 -- |  Render a nested list of relative tags along with the count of zettels tagged with it
 renderTagTree :: forall m. Monad m => Forest (Text, Natural) -> HtmlT m ()
-renderTagTree tags = div_ [class_ "tag-tree"] $ renderForest "" tags
+renderTagTree tags =
+  div_ [class_ "tag-tree"] $
+    renderForest mempty tags
   where
-    -- TODO: What's "root"?
-    renderForest :: Text -> Forest (Text, Natural) -> HtmlT m ()
-    renderForest root forest =
+    renderForest :: [Text] -> Forest (Text, Natural) -> HtmlT m ()
+    renderForest ancestors forest =
       ul_ $ do
         forM_ forest $ \tree -> do
-          li_ $ renderTree root tree
-    renderTree :: Text -> Tree (Text, Natural) -> HtmlT m ()
-    renderTree root = \case
-      Node (tag, count) [] -> renderTag root (tag, count)
+          li_ $ renderTree ancestors tree
+    renderTree :: [Text] -> Tree (Text, Natural) -> HtmlT m ()
+    renderTree ancestors = \case
+      Node (tag, count) [] -> renderTag ancestors (tag, count)
       Node (tag, count) subForest -> do
-        renderTag root (tag, count)
-        renderForest (root <> "/" <> tag) subForest
-    renderTag :: Text -> (Text, Natural) -> HtmlT m ()
-    renderTag root (tag, count) =
+        renderTag ancestors (tag, count)
+        renderForest (ancestors <> [tag]) subForest
+    renderTag :: [Text] -> (Text, Natural) -> HtmlT m ()
+    renderTag ancestors (tag, count) =
       div_ [class_ "rel-tag"] $ do
         if count == 0
           then toHtml tag
           else do
-            let tagUrl = routeUrlRelWithQuery Route_Search [queryKey|tag|] $ root <> "/" <> tag
+            -- TODO: COnsolidate with unbreakTag (see comment) in Tag.hs
+            let tagS = T.intercalate "/" $ ancestors <> [tag]
+                tagUrl = routeUrlRelWithQuery Route_Search [queryKey|tag|] tagS
             a_ [href_ tagUrl] $ toHtml tag
             span_ [class_ "ui mini circular label zettel-count"] $ show count
