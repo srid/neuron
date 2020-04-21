@@ -318,19 +318,9 @@ style Config {..} = do
         pre ? do
           backgroundColor "#f8f8f8"
     -- https://css-tricks.com/snippets/css/simple-and-nice-blockquote-styling/
-    blockquoteStyle = do
+    blockquoteStyle =
       C.blockquote ? do
-        -- TODO: quotes in clay?
         C.backgroundColor "#f9f9f9"
         C.borderLeft C.solid (px 10) "#ccc"
         sym2 C.margin (em 1.5) (px 0)
         sym2 C.padding (em 0.5) (px 10)
-        C.p ? do
-          C.display C.inline
-      "blockquote:before" ? do
-        C.color "#ccc"
-        C.content C.openQuote
-        C.fontSize $ em 4
-        C.lineHeight $ em 0.1
-        C.marginRight $ em 0.25
-        C.verticalAlign $ em $ -0.4
