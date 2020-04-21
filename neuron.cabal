@@ -69,6 +69,7 @@ library
   exposed-modules:
     Neuron.CLI
     Neuron.CLI.New
+    Neuron.CLI.Query
     Neuron.CLI.Rib
     Neuron.CLI.Search
     Neuron.CLI.Types

@@ -1,10 +1,13 @@
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Tag
   ( Tag (..),
+    tagComponents,
     TagPattern (unTagPattern),
     mkTagPattern,
     tagMatch,
@@ -14,10 +17,18 @@ where
 
 import Data.Aeson
 import Relude
+import System.FilePath (splitDirectories)
 import System.FilePattern
 
 newtype Tag = Tag {unTag :: Text}
   deriving (Eq, Ord, Show, ToJSON, FromJSON)
+
+tagComponents :: Tag -> [Text]
+tagComponents =
+  fmap toText
+    . splitDirectories
+    . toString
+    . unTag
 
 newtype TagPattern = TagPattern {unTagPattern :: FilePattern}
   deriving (Eq, Show)

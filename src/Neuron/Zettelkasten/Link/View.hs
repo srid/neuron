@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,7 +6,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Special Zettel links in Markdown
@@ -20,7 +17,9 @@ where
 
 import qualified Data.Map.Strict as Map
 import Data.Some
+import Data.Tree
 import Lucid
+import Neuron.Util.Tree
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link
@@ -28,7 +27,7 @@ import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Tag (Tag (unTag), tagMatchAny)
+import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -73,10 +72,15 @@ renderNeuronLink store = \case
     -- Render a list of tags
     toHtml $ Some q
     let tags = runQuery store q
-    ul_ $ do
-      forM_ tags $ \(unTag -> tag) -> do
-        let tagUrl = routeUrlRelWithQuery Route_Search [queryKey|tag|] tag
-        li_ $ a_ [href_ tagUrl] $ toHtml tag
+        tagPaths = fmap tagComponents $ Map.keys tags
+        ann path =
+          let tag = fold $ intersperse "/" path
+           in fromMaybe 0 $ Map.lookup (Tag tag) tags
+        tree = annotatePaths ann <$> mkTreeFromPaths tagPaths
+        concatRelTags (parent, _) (child, count) = (parent <> "/" <> child, count)
+        tagDoesNotExist (_, count) = count == 0
+        folded = fmap (foldTreeOnWith tagDoesNotExist concatRelTags) tree
+    renderTagTree folded
   where
     sortZettelsReverseChronological =
       sortOn (Down . zettelIDDay . zettelID)
@@ -121,3 +125,28 @@ renderZettelLinkSimpleWith url title body =
   a_ [class_ "zettel-link item", href_ url, title_ title] $ do
     span_ [class_ "zettel-link-title"] $ do
       toHtml body
+
+-- |  Renders a nested list of relative tags along with the number of zettels having that tag
+renderTagTree :: forall m. Monad m => Forest (Text, Natural) -> HtmlT m ()
+renderTagTree tags = div_ [class_ "tag-tree"] $ renderForest "" tags
+  where
+    renderForest :: Text -> Forest (Text, Natural) -> HtmlT m ()
+    renderForest root forest =
+      ul_ $ do
+        forM_ forest $ \tree -> do
+          li_ $ renderTree root tree
+    renderTree :: Text -> Tree (Text, Natural) -> HtmlT m ()
+    renderTree root = \case
+      Node (tag, count) [] -> renderTag root (tag, count)
+      Node (tag, count) subForest -> do
+        renderTag root (tag, count)
+        renderForest (root <> "/" <> tag) subForest
+    renderTag :: Text -> (Text, Natural) -> HtmlT m ()
+    renderTag root (tag, count) =
+      div_ [class_ "rel-tag"] $ do
+        if count == 0
+          then toHtml tag
+          else do
+            let tagUrl = routeUrlRelWithQuery Route_Search [queryKey|tag|] $ root <> "/" <> tag
+            a_ [href_ tagUrl] $ toHtml tag
+            span_ [class_ "ui mini circular label zettel-count"] $ show count

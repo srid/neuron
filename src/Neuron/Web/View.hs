@@ -41,7 +41,7 @@ import Neuron.Zettelkasten.Link.View (neuronLinkExt, renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Tag (Tag (..))
+import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -189,16 +189,16 @@ renderBrandFooter withVersion =
 
 renderTags :: Monad m => [Tag] -> HtmlT m ()
 renderTags tags = do
-  forM_ tags $ \tag -> do
+  forM_ tags $ \(unTag -> tag) -> do
     -- TODO: Ideally this should be at the top, not bottom. But putting it at
     -- the top pushes the zettel content down, introducing unnecessary white
     -- space below the title. So we put it at the bottom for now.
     span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
       a_
-        [ href_ $ routeUrlRelWithQuery Route_Search [queryKey|tag|] (unTag tag),
-          title_ ("See all zettels tagged '" <> unTag tag <> "'")
+        [ href_ $ routeUrlRelWithQuery Route_Search [queryKey|tag|] tag,
+          title_ ("See all zettels tagged '" <> tag <> "'")
         ]
-        $ toHtml (unTag tag)
+        $ toHtml tag
     p_ mempty
 
 -- | Font awesome element
@@ -287,6 +287,13 @@ style Config {..} = do
     codeStyle
     blockquoteStyle
     kbd ? mozillaKbdStyle
+  "div.tag-tree" ? do
+    "div.rel-tag" ? do
+      C.fontWeight C.bold
+    "div.rel-tag:hover" ? do
+      C.background C.oldlace
+    "span.zettel-count" ? do
+      C.float C.floatRight
   "div.connections" ? do
     "a" ? do
       C.important $ color white

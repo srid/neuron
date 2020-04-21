@@ -8,6 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -20,7 +21,6 @@ import Control.Monad.Except
 import Data.GADT.Compare.TH
 import Data.GADT.Show.TH
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 import Data.Some
 import Lucid
 import Neuron.Zettelkasten.ID
@@ -39,7 +39,7 @@ import qualified Text.URI as URI
 data Query r where
   Query_ZettelByID :: ZettelID -> Query Zettel
   Query_ZettelsByTag :: [TagPattern] -> Query [Zettel]
-  Query_Tags :: [TagPattern] -> Query [Tag]
+  Query_Tags :: [TagPattern] -> Query (Map.Map Tag Natural)
 
 instance ToHtml (Some Query) where
   toHtmlRaw = toHtml
@@ -53,13 +53,17 @@ instance ToHtml (Some Query) where
         Some (Query_ZettelsByTag (fmap unTagPattern -> pats)) -> do
           let qs = intercalate ", " pats
               desc = toText $ "Zettels tagged '" <> qs <> "'"
-           in span_ [class_ "ui basic pointing below black label", title_ desc] $ toHtml qs
+           in span_ [class_ "ui basic pointing below black label", title_ desc] $ do
+                with (i_ mempty) [class_ "sticky note outline icon"]
+                toHtml qs
         Some (Query_Tags []) ->
           "All tags"
         Some (Query_Tags (fmap unTagPattern -> pats)) -> do
           let qs = intercalate ", " pats
-          "Tags matching: "
-          toHtml qs
+              desc = toText $ "Tags matching '" <> qs <> "'"
+           in span_ [class_ "ui basic pointing below grey label", title_ desc] $ do
+                with (i_ mempty) [class_ "tags icon"]
+                toHtml qs
 
 type QueryResults = [Zettel]
 
@@ -113,9 +117,14 @@ runQuery store = \case
   Query_Tags [] ->
     allTags
   Query_Tags pats ->
-    filter (tagMatchAny pats) allTags
+    let match tag _ = tagMatchAny pats tag
+     in Map.filterWithKey match allTags
   where
-    allTags = Set.toList $ Set.fromList $ foldMap zettelTags (Map.elems store)
+    allTags :: Map.Map Tag Natural
+    allTags =
+      Map.fromListWith (+)
+        $ concatMap (\Zettel {..} -> (,1) <$> zettelTags)
+        $ Map.elems store
 
 deriveGEq ''Query
 
@@ -125,10 +134,10 @@ deriving instance Show (Query Zettel)
 
 deriving instance Show (Query [Zettel])
 
-deriving instance Show (Query [Tag])
+deriving instance Show (Query (Map.Map Tag Natural))
 
 deriving instance Eq (Query Zettel)
 
 deriving instance Eq (Query [Zettel])
 
-deriving instance Eq (Query [Tag])
+deriving instance Eq (Query (Map.Map Tag Natural))
