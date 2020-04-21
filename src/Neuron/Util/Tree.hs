@@ -26,12 +26,14 @@ annotatePathsWith f = go []
       let path = rel : root
        in Node (rel, f $ reverse path) $ fmap (go path) children
 
--- TODO: What does this function do?
+-- | Fold one-child nodes that satisfy a predicate
+--
+-- The given function is called to fold a parent and its (only) child.
 foldTreeOnWith :: (a -> Bool) -> (a -> a -> a) -> Tree a -> Tree a
-foldTreeOnWith foldPredicate concatPaths = go
+foldTreeOnWith p f = go
   where
     go (Node parent children) =
       case fmap go children of
-        [Node dir grandChildren]
-          | foldPredicate parent -> Node (concatPaths parent dir) grandChildren
+        [Node child grandChildren]
+          | p parent -> Node (f parent child) grandChildren
         xs -> Node parent xs
