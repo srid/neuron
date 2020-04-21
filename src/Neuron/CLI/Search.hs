@@ -7,7 +7,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.CLI.Search
-  ( runSearch,
+  ( interactiveSearch,
   )
 where
 
@@ -29,8 +29,8 @@ searchScriptArgs SearchCommand {..} =
         bool "echo" "$EDITOR" searchEdit
    in searchByArgs <> [editArg]
 
-runSearch :: FilePath -> SearchCommand -> IO ()
-runSearch notesDir searchCmd =
+interactiveSearch :: FilePath -> SearchCommand -> IO ()
+interactiveSearch notesDir searchCmd =
   execScript neuronSearchScript $ notesDir : searchScriptArgs searchCmd
   where
     execScript scriptPath args =

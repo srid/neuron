@@ -31,7 +31,7 @@ type instance QueryConnection Zettel = Connection
 
 type instance QueryConnection [Zettel] = Connection
 
-type instance QueryConnection [Tag] = ()
+type instance QueryConnection (Map Tag Natural) = ()
 
 type family QueryViewTheme q
 
@@ -39,7 +39,7 @@ type instance QueryViewTheme Zettel = ZettelView
 
 type instance QueryViewTheme [Zettel] = ZettelsView
 
-type instance QueryViewTheme [Tag] = ()
+type instance QueryViewTheme (Map Tag Natural) = ()
 
 -- TODO: Refactor to be a GADT using Some, and derive GEq, etc. correctly
 data NeuronLink

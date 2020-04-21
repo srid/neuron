@@ -15,14 +15,14 @@ import Test.Hspec
 spec :: Spec
 spec = do
   describe "Tag matching" $ do
-    forM_ tagMatchCases $ \(name, Z.mkTagPattern . toText -> pat, fmap Z.Tag -> matching, fmap Z.Tag -> failing) -> do
+    forM_ tagMatchCases $ \(name, Z.mkTagPattern -> pat, fmap Z.Tag -> matching, fmap Z.Tag -> failing) -> do
       it name $ do
         forM_ matching $ \tag -> do
           pat `shouldMatch` tag
         forM_ failing $ \tag -> do
           pat `shouldNotMatch` tag
 
-tagMatchCases :: [(String, String, [Text], [Text])]
+tagMatchCases :: [(String, Text, [Text], [Text])]
 tagMatchCases =
   [ ( "simple tag",
       "journal",

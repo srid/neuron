@@ -62,13 +62,15 @@ common library-common
     megaparsec >= 8.0,
     some,
     dependent-sum,
-    dependent-sum-template
+    dependent-sum-template,
+    parser-combinators
 
 library
   import: library-common
   exposed-modules:
     Neuron.CLI
     Neuron.CLI.New
+    Neuron.CLI.Query
     Neuron.CLI.Rib
     Neuron.CLI.Search
     Neuron.CLI.Types

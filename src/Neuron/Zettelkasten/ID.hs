@@ -18,6 +18,7 @@ module Neuron.Zettelkasten.ID
     mkZettelID,
     zettelNextIdForToday,
     zettelIDSourceFileName,
+    customIDParser,
   )
 where
 

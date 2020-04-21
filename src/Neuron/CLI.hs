@@ -10,18 +10,12 @@ module Neuron.CLI
   )
 where
 
-import Data.Aeson
-import qualified Data.Aeson.Text as Aeson
-import Data.Some
 import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
+import Neuron.CLI.Query (queryZettelkasten)
 import Neuron.CLI.Rib
-import Neuron.CLI.Search (runSearch)
+import Neuron.CLI.Search (interactiveSearch)
 import qualified Neuron.Version as Version
-import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
-import qualified Neuron.Zettelkasten.Query as Z
-import qualified Neuron.Zettelkasten.Store as Z
-import Neuron.Zettelkasten.Zettel (Zettel (..), zettelJson)
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -59,23 +53,7 @@ runWith act App {..} = do
         let opener = if os == "darwin" then "open" else "xdg-open"
         liftIO $ executeFile opener True [indexHtmlPath] Nothing
     Query q ->
-      runRibOnceQuietly notesDir $ do
-        store <- Z.mkZettelStore =<< Rib.forEvery ["*.md"] pure
-        case q of
-          Some (Z.Query_ZettelByID zid) -> do
-            let res = Z.lookupStore zid store
-            putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith res
-          Some (Z.Query_ZettelsByTag pats) -> do
-            let res = Z.runQuery store (Z.Query_ZettelsByTag pats)
-            putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith <$> res
-          Some (Z.Query_Tags pats) -> do
-            let res = Z.runQuery store (Z.Query_Tags pats)
-            putLTextLn $ Aeson.encodeToLazyText res
+      runRibOnceQuietly notesDir $
+        queryZettelkasten notesDir q
     Search searchCmd ->
-      runSearch notesDir searchCmd
-  where
-    zettelJsonWith z@Zettel {..} =
-      object $
-        [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)
-        ]
-          <> zettelJson z
+      interactiveSearch notesDir searchCmd

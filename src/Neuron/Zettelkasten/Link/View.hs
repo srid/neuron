@@ -1,5 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -20,6 +18,7 @@ where
 
 import qualified Data.Map.Strict as Map
 import Data.Some
+import Data.Tree
 import Lucid
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.ID
@@ -28,7 +27,7 @@ import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Tag (Tag (unTag), tagMatchAny)
+import Neuron.Zettelkasten.Tag (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -67,16 +66,14 @@ renderNeuronLink store = \case
         renderZettelLinks zettelsViewLinkTheme zettels
       True ->
         forM_ (Map.toList $ groupZettelsByTagsMatching pats zettels) $ \(tag, zettelGrp) -> do
-          span_ [class_ "ui basic pointing below grey label"] $ toHtml $ unTag tag
+          span_ [class_ "ui basic pointing below grey label"] $ do
+            i_ [class_ "tag icon"] mempty
+            toHtml $ unTag tag
           renderZettelLinks zettelsViewLinkTheme zettelGrp
   NeuronLink (q@(Query_Tags _), (), ()) -> do
     -- Render a list of tags
     toHtml $ Some q
-    let tags = runQuery store q
-    ul_ $ do
-      forM_ tags $ \(unTag -> tag) -> do
-        let tagUrl = routeUrlRelWithQuery Route_Search [queryKey|tag|] tag
-        li_ $ a_ [href_ tagUrl] $ toHtml tag
+    renderTagTree $ foldTagTree $ tagTree $ runQuery store q
   where
     sortZettelsReverseChronological =
       sortOn (Down . zettelIDDay . zettelID)
@@ -121,3 +118,42 @@ renderZettelLinkSimpleWith url title body =
   a_ [class_ "zettel-link item", href_ url, title_ title] $ do
     span_ [class_ "zettel-link-title"] $ do
       toHtml body
+
+-- |  Render a tag tree along with the count of zettels tagged with it
+renderTagTree :: forall m. Monad m => Forest (NonEmpty TagNode, Natural) -> HtmlT m ()
+renderTagTree t =
+  div_ [class_ "tag-tree"] $
+    renderForest mempty t
+  where
+    renderForest :: [TagNode] -> Forest (NonEmpty TagNode, Natural) -> HtmlT m ()
+    renderForest ancestors forest =
+      ul_ $ do
+        forM_ forest $ \tree -> do
+          li_ $ renderTree ancestors tree
+    renderTree :: [TagNode] -> Tree (NonEmpty TagNode, Natural) -> HtmlT m ()
+    renderTree ancestors (Node (tagNode, count) children) = do
+      renderTag ancestors (tagNode, count)
+      whenNotNull children $
+        renderForest (ancestors <> toList tagNode) . toList
+    renderTag :: [TagNode] -> (NonEmpty TagNode, Natural) -> HtmlT m ()
+    renderTag ancestors (tagNode, count) = do
+      div_ [class_ "node"] $ do
+        let Tag tag = constructTag $ maybe tagNode (<> tagNode) $ nonEmpty ancestors
+            attrs = case count of
+              0 ->
+                [class_ "inactive"]
+              _ ->
+                [ href_ $ routeUrlRelWithQuery Route_Search [queryKey|tag|] tag,
+                  title_ $ show count <> " zettels tagged"
+                ]
+        a_ attrs $ renderTagNode tagNode
+    renderTagNode :: NonEmpty TagNode -> HtmlT m ()
+    renderTagNode = \case
+      n :| (nonEmpty -> mrest) ->
+        case mrest of
+          Nothing ->
+            toHtml $ unTagNode n
+          Just rest -> do
+            toHtml $ unTagNode n
+            "/"
+            renderTagNode rest
