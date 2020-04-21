@@ -21,8 +21,8 @@ spec = do
     context "Tree folding" $ do
       forM_ foldingCases $ \(name, tree, folded) -> do
         it name $ do
-          let mergePaths (p, _) (p', b') = (p </> p', b')
-              res = fst <$> foldTreeOnWith snd mergePaths tree
+          let mergePaths (p, n) (p', b') = bool Nothing (Just (p </> p', b')) n
+              res = fst <$> foldSingleParentsWith mergePaths tree
           res `shouldBe` folded
 
 treeCases :: [(String, [[String]], Forest String)]

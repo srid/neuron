@@ -3,7 +3,7 @@
 module Neuron.Util.Tree
   ( mkTreeFromPaths,
     annotatePathsWith,
-    foldTreeOnWith,
+    foldSingleParentsWith,
   )
 where
 
@@ -27,15 +27,15 @@ annotatePathsWith f = go []
       let path = rel :| ancestors
        in Node (rel, f $ NE.reverse path) $ fmap (go $ toList path) children
 
--- | Fold one-child nodes that satisfy a predicate
+-- | Fold nodes with one child using the given function
 --
--- The node which satisfies the predicate will be folded with its only child
--- using the given function.
-foldTreeOnWith :: (a -> Bool) -> (a -> a -> a) -> Tree a -> Tree a
-foldTreeOnWith p f = go
+-- The function is called with the parent and the only child. If a Just value is
+-- returned, folding happens with that value, otherwise there is no effect.
+foldSingleParentsWith :: (a -> a -> Maybe a) -> Tree a -> Tree a
+foldSingleParentsWith f = go
   where
     go (Node parent children) =
       case fmap go children of
         [Node child grandChildren]
-          | p parent -> Node (f parent child) grandChildren
+          | Just new <- f parent child -> Node new grandChildren
         xs -> Node parent xs

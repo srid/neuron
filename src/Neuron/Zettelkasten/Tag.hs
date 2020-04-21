@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -24,7 +25,7 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Data.Tree (Forest)
 import Neuron.Parser
-import Neuron.Util.Tree (annotatePathsWith, foldTreeOnWith, mkTreeFromPaths)
+import Neuron.Util.Tree (annotatePathsWith, foldSingleParentsWith, mkTreeFromPaths)
 import Neuron.Zettelkasten.ID (customIDParser)
 import Relude
 import System.FilePattern
@@ -82,7 +83,7 @@ constructTag (fmap unTagNode . toList -> nodes) =
   Tag $ T.intercalate "/" nodes
 
 -- | Construct a tree from a list of tags
-tagTree :: Num a => Map Tag a -> Forest (TagNode, a)
+tagTree :: ann ~ Natural => Map Tag ann -> Forest (TagNode, ann)
 tagTree tags =
   fmap (annotatePathsWith $ countFor tags)
     $ mkTreeFromPaths
@@ -92,9 +93,9 @@ tagTree tags =
     countFor tags' path =
       fromMaybe 0 $ Map.lookup (constructTag path) tags'
 
-foldTagTree :: (Num a, Eq a) => Forest (TagNode, a) -> Forest (NonEmpty TagNode, a)
+foldTagTree :: ann ~ Natural => Forest (TagNode, ann) -> Forest (NonEmpty TagNode, ann)
 foldTagTree tree =
-  foldTreeOnWith hasNoZettels foldNodes <$> fmap (fmap (first (:| []))) tree
+  foldSingleParentsWith foldNodes <$> fmap (fmap (first (:| []))) tree
   where
-    foldNodes (parent, _) (child, count) = (parent <> child, count)
-    hasNoZettels (_, count) = count == 0
+    foldNodes (parent, 0) (child, count) = Just (parent <> child, count)
+    foldNodes _ _ = Nothing
