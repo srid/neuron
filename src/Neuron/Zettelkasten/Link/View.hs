@@ -19,7 +19,6 @@ import qualified Data.Map.Strict as Map
 import Data.Some
 import Data.Tree
 import Lucid
-import Neuron.Util.Tree
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link
@@ -27,7 +26,7 @@ import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
-import Neuron.Zettelkasten.Tag (Tag (..), tagMatchAny, tagTree)
+import Neuron.Zettelkasten.Tag (Tag (..), foldTagTree, tagMatchAny, tagTree)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -73,11 +72,7 @@ renderNeuronLink store = \case
   NeuronLink (q@(Query_Tags _), (), ()) -> do
     -- Render a list of tags
     toHtml $ Some q
-    let tree = tagTree $ runQuery store q
-        concatRelTags (parent, _) (child, count) = (parent <> "/" <> child, count)
-        tagDoesNotExist (_, count) = count == 0
-        folded = fmap (foldTreeOnWith tagDoesNotExist concatRelTags) tree
-    renderTagTree folded
+    renderTagTree $ foldTagTree $ tagTree $ runQuery store q
   where
     sortZettelsReverseChronological =
       sortOn (Down . zettelIDDay . zettelID)
