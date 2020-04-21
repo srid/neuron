@@ -119,7 +119,7 @@ renderZettelLinkSimpleWith url title body =
     span_ [class_ "zettel-link-title"] $ do
       toHtml body
 
--- |  Render a nested list of relative tags along with the count of zettels tagged with it
+-- |  Render a tag tree along with the count of zettels tagged with it
 renderTagTree :: forall m. Monad m => Forest (Text, Natural) -> HtmlT m ()
 renderTagTree tags =
   div_ [class_ "tag-tree"] $
@@ -138,12 +138,18 @@ renderTagTree tags =
         renderForest (ancestors <> [tag]) subForest
     renderTag :: [Text] -> (Text, Natural) -> HtmlT m ()
     renderTag ancestors (tag, count) =
-      div_ [class_ "rel-tag"] $ do
+      div_ [class_ "node"] $ do
         if count == 0
           then toHtml tag
-          else do
-            -- TODO: COnsolidate with unbreakTag (see comment) in Tag.hs
-            let tagS = T.intercalate "/" $ ancestors <> [tag]
-                tagUrl = routeUrlRelWithQuery Route_Search [queryKey|tag|] tagS
-            a_ [href_ tagUrl] $ toHtml tag
-            span_ [class_ "ui mini circular label zettel-count"] $ show count
+          else
+            a_
+              [ href_ (getNodeUrl ancestors tag),
+                title_ $ show count <> " zettels tagged"
+              ]
+              $ toHtml tag
+    getNodeUrl ancestors tag =
+      routeUrlRelWithQuery Route_Search [queryKey|tag|]
+        $
+        -- TODO: Consolidate with unbreakTag (see comment) in Tag.hs
+        T.intercalate "/"
+        $ ancestors <> [tag]

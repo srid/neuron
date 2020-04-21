@@ -288,12 +288,8 @@ style Config {..} = do
     blockquoteStyle
     kbd ? mozillaKbdStyle
   "div.tag-tree" ? do
-    "div.rel-tag" ? do
+    "div.node" ? do
       C.fontWeight C.bold
-    "div.rel-tag:hover" ? do
-      C.background C.oldlace
-    "span.zettel-count" ? do
-      C.float C.floatRight
   "div.connections" ? do
     "a" ? do
       C.important $ color white
