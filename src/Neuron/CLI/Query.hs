@@ -39,7 +39,7 @@ queryZettelkasten notesDir query = do
     -- TODO: Use newtype wrapper and write ToJSON
     treeToJson (Node (tag, count) children) =
       object
-        [ "tag" .= tag,
+        [ "name" .= tag,
           "count" .= count,
           "children" .= fmap treeToJson children
         ]
