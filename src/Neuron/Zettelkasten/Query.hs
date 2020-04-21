@@ -54,17 +54,13 @@ instance ToHtml (Some Query) where
           let qs = intercalate ", " pats
               desc = toText $ "Zettels tagged '" <> qs <> "'"
            in span_ [class_ "ui basic pointing below black label", title_ desc] $ do
-                with (i_ mempty) [class_ "sticky note outline icon"]
+                i_ [class_ "tags icon"] mempty
                 toHtml qs
         Some (Query_Tags []) ->
           "All tags"
         Some (Query_Tags (fmap unTagPattern -> pats)) -> do
-          -- TODO: UI header is wrong; not a tag
           let qs = intercalate ", " pats
-              desc = toText $ "Tags matching '" <> qs <> "'"
-           in span_ [class_ "ui basic pointing below grey label", title_ desc] $ do
-                with (i_ mempty) [class_ "tags icon"]
-                toHtml qs
+          toHtml $ "Tags matching '" <> qs <> "'"
 
 type QueryResults = [Zettel]
 

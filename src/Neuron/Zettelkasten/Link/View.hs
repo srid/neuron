@@ -66,7 +66,9 @@ renderNeuronLink store = \case
         renderZettelLinks zettelsViewLinkTheme zettels
       True ->
         forM_ (Map.toList $ groupZettelsByTagsMatching pats zettels) $ \(tag, zettelGrp) -> do
-          span_ [class_ "ui basic pointing below grey label"] $ toHtml $ unTag tag
+          span_ [class_ "ui basic pointing below grey label"] $ do
+            i_ [class_ "tag icon"] mempty
+            toHtml $ unTag tag
           renderZettelLinks zettelsViewLinkTheme zettelGrp
   NeuronLink (q@(Query_Tags _), (), ()) -> do
     -- Render a list of tags
