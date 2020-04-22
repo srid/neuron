@@ -16,7 +16,6 @@ import GHC.Stack
 import Neuron.Config
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Rib (IsRoute (..), routeUrlRel)
@@ -24,13 +23,13 @@ import Rib.Extra.OpenGraph
 import qualified Rib.Parser.MMark as MMark
 import qualified Text.URI as URI
 
-data Route store graph a where
-  Route_Redirect :: ZettelID -> Route ZettelStore ZettelGraph ZettelID
-  Route_ZIndex :: Route ZettelStore ZettelGraph ()
-  Route_Search :: Route ZettelStore ZettelGraph ()
-  Route_Zettel :: ZettelID -> Route ZettelStore ZettelGraph Zettel
+data Route graph a where
+  Route_Redirect :: ZettelID -> Route ZettelGraph ZettelID
+  Route_ZIndex :: Route ZettelGraph ()
+  Route_Search :: Route ZettelGraph ()
+  Route_Zettel :: ZettelID -> Route ZettelGraph Zettel
 
-instance IsRoute (Route store graph) where
+instance IsRoute (Route graph) where
   routeFile = \case
     Route_Redirect zid ->
       routeFile $ Route_Zettel zid
@@ -53,7 +52,7 @@ routeUrlRelWithQuery r k v = maybe (error "Bad URI") URI.render $ do
       }
 
 -- | Return full title for a route
-routeTitle :: Config -> a -> Route store graph a -> Text
+routeTitle :: Config -> a -> Route graph a -> Text
 routeTitle Config {..} val =
   withSuffix siteTitle . routeTitle' val
   where
@@ -63,7 +62,7 @@ routeTitle Config {..} val =
         else x <> " - " <> suffix
 
 -- | Return the title for a route
-routeTitle' :: a -> Route store graph a -> Text
+routeTitle' :: a -> Route graph a -> Text
 routeTitle' val = \case
   Route_Redirect _ -> "Redirecting..."
   Route_ZIndex -> "Zettel Index"
@@ -71,7 +70,7 @@ routeTitle' val = \case
   Route_Zettel _ ->
     zettelTitle val
 
-routeOpenGraph :: Config -> a -> Route store graph a -> OpenGraph
+routeOpenGraph :: Config -> a -> Route graph a -> OpenGraph
 routeOpenGraph Config {..} val r =
   OpenGraph
     { _openGraph_title = routeTitle' val r,

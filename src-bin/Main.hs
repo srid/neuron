@@ -27,12 +27,12 @@ generateMainSite :: Action ()
 generateMainSite = do
   Rib.buildStaticFiles ["static/**"]
   config <- Config.getConfig
-  let writeHtmlRoute :: Route s g a -> (s, g, a) -> Action ()
+  let writeHtmlRoute :: Route g a -> (g, a) -> Action ()
       writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage config r
   void $ generateSite config writeHtmlRoute ["*.md"]
 
-renderPage :: Config -> Route s g a -> (s, g, a) -> Html ()
-renderPage config r val@(_, _, x) = html_ [lang_ "en"] $ do
+renderPage :: Config -> Route g a -> (g, a) -> Html ()
+renderPage config r val@(_, x) = html_ [lang_ "en"] $ do
   head_ $ do
     renderRouteHead config r x
     case r of

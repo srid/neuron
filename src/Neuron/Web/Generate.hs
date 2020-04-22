@@ -26,7 +26,7 @@ import qualified Rib
 -- | Generate the Zettelkasten site
 generateSite ::
   Z.Config ->
-  (forall a. Z.Route Z.ZettelStore Z.ZettelGraph a -> (Z.ZettelStore, Z.ZettelGraph, a) -> Action ()) ->
+  (forall a. Z.Route Z.ZettelGraph a -> (Z.ZettelGraph, a) -> Action ()) ->
   [FilePath] ->
   Action (Z.ZettelStore, Z.ZettelGraph)
 generateSite config writeHtmlRoute' zettelsPat = do
@@ -36,7 +36,7 @@ generateSite config writeHtmlRoute' zettelsPat = do
     $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
   zettelStore <- Z.mkZettelStore =<< Rib.forEvery zettelsPat pure
   zettelGraph <- either (fail . toString) pure $ Z.mkZettelGraph zettelStore
-  let writeHtmlRoute v r = writeHtmlRoute' r (zettelStore, zettelGraph, v)
+  let writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
   forM_ (Map.toList zettelStore) $ \(k, v) ->
     -- TODO: Should `Zettel` not contain ZettelID?
