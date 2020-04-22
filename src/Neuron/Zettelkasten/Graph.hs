@@ -1,9 +1,8 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -28,9 +27,11 @@ where
 import qualified Algebra.Graph.AdjacencyMap as AM
 import qualified Algebra.Graph.AdjacencyMap.Algorithm as Algo
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
+import Control.Monad.Except
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))
+import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link (neuronLinkConnections, neuronLinkFromMarkdownLink)
 import Neuron.Zettelkasten.Markdown (extractLinks)
@@ -42,9 +43,9 @@ import Relude
 type ZettelGraph = LAM.AdjacencyMap [Connection] ZettelID
 
 -- | Build the Zettelkasten graph from the given list of note files.
-mkZettelGraph :: ZettelStore -> ZettelGraph
+mkZettelGraph :: forall m. MonadError Text m => ZettelStore -> m ZettelGraph
 mkZettelGraph store =
-  mkGraphFrom (Map.elems store) zettelID zettelEdges connectionWhitelist
+  mkGraphFrom @m (Map.elems store) zettelID zettelEdges connectionWhitelist
   where
     -- Exclude ordinary connection when building the graph
     --
@@ -59,14 +60,25 @@ mkZettelGraph store =
     -- TODO: Handle conflicts in edge monoid operation (same link but with
     -- different connection type), and consequently use a sensible type other
     -- than list.
-    zettelEdges :: Zettel -> [([Connection], ZettelID)]
+    zettelEdges :: Zettel -> m [([Connection], ZettelID)]
     zettelEdges =
-      fmap (first pure) . outgoingLinks
-    outgoingLinks :: Zettel -> [(Connection, ZettelID)]
+      fmap (fmap $ first pure) . outgoingLinks
+    outgoingLinks :: Zettel -> m [(Connection, ZettelID)]
     outgoingLinks Zettel {..} =
-      flip concatMap (extractLinks zettelContent) $ \mlink ->
-        let nlink = either error id $ neuronLinkFromMarkdownLink mlink
-         in maybe [] (neuronLinkConnections store) nlink
+      fmap concat $ sequence $ flip fmap (extractLinks zettelContent) $ \mlink ->
+        liftEither $ runExcept $ do
+          withExcept show $ do
+            liftEither (first (NeuronError_BadLink zettelID) $ neuronLinkFromMarkdownLink mlink) >>= \case
+              Nothing ->
+                pure []
+              Just nlink -> do
+                let conns = neuronLinkConnections store nlink
+                -- Check the connections refer to existing zettels
+                forM_ (snd <$> conns) $ \zref ->
+                  when (isNothing (Map.lookup zref store))
+                    $ throwError
+                    $ NeuronError_BrokenZettelRef zettelID zref
+                pure conns
 
 -- | Return the backlinks to the given zettel
 backlinks :: ZettelID -> ZettelGraph -> [ZettelID]
@@ -136,24 +148,25 @@ obviateRootUnlessForest root = \case
 -- Build a graph from a list objects that contains information about the
 -- corresponding vertex as well as the outgoing edges.
 mkGraphFrom ::
-  (Eq e, Monoid e, Ord v) =>
+  forall m e v a.
+  (Eq e, Monoid e, Ord v, Monad m) =>
   -- | List of objects corresponding to vertexes
   [a] ->
   -- | Make vertex from an object
   (a -> v) ->
   -- | Outgoing edges, and their vertex, for an object
-  (a -> [(e, v)]) ->
+  (a -> m [(e, v)]) ->
   -- | A function to filter relevant edges
   (e -> Bool) ->
-  LAM.AdjacencyMap e v
-mkGraphFrom xs vertexFor edgesFor edgeWhitelist =
-  let vertices =
-        vertexFor <$> xs
-      edges =
-        flip concatMap xs $ \x ->
-          edgesFor x
-            <&> \(edge, v2) ->
-              (edge, vertexFor x, v2)
-   in LAM.overlay
-        (LAM.vertices vertices)
-        (LAM.edges $ filter (\(e, _, _) -> edgeWhitelist e) edges)
+  m (LAM.AdjacencyMap e v)
+mkGraphFrom xs vertexFor edgesFor edgeWhitelist = do
+  let vertices = vertexFor <$> xs
+  edges <-
+    fmap concat $ sequence $ flip fmap xs $ \x -> do
+      es <- edgesFor x
+      pure $ flip fmap es $ \(edge, v2) ->
+        (edge, vertexFor x, v2)
+  pure $
+    LAM.overlay
+      (LAM.vertices vertices)
+      (LAM.edges $ filter (\(e, _, _) -> edgeWhitelist e) edges)

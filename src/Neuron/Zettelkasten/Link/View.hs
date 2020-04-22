@@ -47,12 +47,12 @@ neuronLinkExt store =
             Right Nothing ->
               f inline
             Left e ->
-              error e
+              error $ show e
     inline ->
       f inline
 
 -- | Render the custom view for the given neuron link
-renderNeuronLink :: forall m. Monad m => ZettelStore -> NeuronLink -> HtmlT m ()
+renderNeuronLink :: forall m. (Monad m, HasCallStack) => ZettelStore -> NeuronLink -> HtmlT m ()
 renderNeuronLink store = \case
   NeuronLink (Query_ZettelByID zid, _conn, linkTheme) ->
     -- Render a single link

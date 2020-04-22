@@ -33,7 +33,7 @@ generateSite config writeHtmlRoute' zettelsPat = do
   when (olderThan $ Z.minVersion config) $ do
     error $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
   zettelStore <- Z.mkZettelStore =<< Rib.forEvery zettelsPat pure
-  let zettelGraph = Z.mkZettelGraph zettelStore
+  zettelGraph <- either (fail . toString) pure $ Z.mkZettelGraph zettelStore
   let writeHtmlRoute v r = writeHtmlRoute' r (zettelStore, zettelGraph, v)
   -- Generate HTML for every zettel
   (writeHtmlRoute () . Z.Route_Zettel) `mapM_` Map.keys zettelStore

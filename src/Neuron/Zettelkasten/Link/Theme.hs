@@ -13,6 +13,7 @@ module Neuron.Zettelkasten.Link.Theme
   ( ZettelsView (..),
     ZettelView,
     LinkTheme (..),
+    InvalidLinkTheme (..),
     zettelsViewFromURI,
     linkThemeFromURI,
   )
@@ -37,20 +38,23 @@ data LinkTheme
   | LinkTheme_WithDate
   deriving (Eq, Show, Ord)
 
-zettelsViewFromURI :: MonadError Text m => URI.URI -> m ZettelsView
+data InvalidLinkTheme = InvalidLinkTheme Text
+  deriving (Eq, Show)
+
+zettelsViewFromURI :: MonadError InvalidLinkTheme m => URI.URI -> m ZettelsView
 zettelsViewFromURI uri =
   ZettelsView
     <$> linkThemeFromURI uri
     <*> pure (hasQueryFlag [queryKey|grouped|] uri)
 
-linkThemeFromURI :: MonadError Text m => URI.URI -> m LinkTheme
+linkThemeFromURI :: MonadError InvalidLinkTheme m => URI.URI -> m LinkTheme
 linkThemeFromURI uri =
   fmap (fromMaybe LinkTheme_Default) $ case getQueryParam [queryKey|linkTheme|] uri of
     Just "default" -> pure $ Just LinkTheme_Default
     Just "simple" -> pure $ Just LinkTheme_Simple
     Just "withDate" -> pure $ Just LinkTheme_WithDate
+    Just x -> throwError $ InvalidLinkTheme x
     Nothing -> pure Nothing
-    _ -> throwError "Invalid value for linkTheme"
 
 getQueryParam :: URI.RText 'URI.QueryKey -> URI.URI -> Maybe Text
 getQueryParam k uri =

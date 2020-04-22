@@ -45,9 +45,9 @@ renderPage config r val@(s, _, _) = html_ [lang_ "en"] $ do
         googleFonts [headerFont, bodyFont, monoFont]
         when (Config.mathJaxSupport config) $
           with (script_ mempty) [id_ "MathJax-script", src_ "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", async_ ""]
-  body_ $
-    div_ [class_ "ui text container", id_ "thesite"] $
-      renderRouteBody config r val
+  body_
+    $ div_ [class_ "ui text container", id_ "thesite"]
+    $ renderRouteBody config r val
 
 headerFont :: Text
 headerFont = "Oswald"

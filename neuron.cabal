@@ -81,6 +81,7 @@ library
     Neuron.Web.Route
     Neuron.Web.Theme
     Neuron.Web.View
+    Neuron.Zettelkasten.Error
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Link
