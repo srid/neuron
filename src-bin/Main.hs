@@ -32,9 +32,9 @@ generateMainSite = do
   void $ generateSite config writeHtmlRoute ["*.md"]
 
 renderPage :: Config -> Route s g a -> (s, g, a) -> Html ()
-renderPage config r val@(s, _, _) = html_ [lang_ "en"] $ do
+renderPage config r val@(_, _, x) = html_ [lang_ "en"] $ do
   head_ $ do
-    renderRouteHead config r s
+    renderRouteHead config r x
     case r of
       Route_Redirect _ ->
         mempty

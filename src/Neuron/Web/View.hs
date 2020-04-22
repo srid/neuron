@@ -58,7 +58,7 @@ searchScript = $(embedStringFile "./src-js/search.js")
 helloScript :: Text
 helloScript = $(embedStringFile "./src-purescript/hello/index.js")
 
-renderRouteHead :: Monad m => Config -> Route store graph a -> store -> HtmlT m ()
+renderRouteHead :: Monad m => Config -> Route store graph a -> a -> HtmlT m ()
 renderRouteHead config r val = do
   meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
   meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
@@ -96,8 +96,8 @@ renderIndex Config {..} (store, graph) = do
     case G.topSort graph of
       Left (toList -> cyc) -> div_ [class_ "ui orange segment"] $ do
         h2_ "Cycle detected"
-        forM_ cyc $ \zid ->
-          li_ $ renderZettelLink LinkTheme_Default $ lookupStore zid store
+        forM_ cyc $ \zettel ->
+          li_ $ renderZettelLink LinkTheme_Default zettel
       _ -> mempty
     let clusters = sortMothers $ G.clusters graph
     p_ $ do
@@ -141,7 +141,7 @@ renderSearch store = do
   script_ searchScript
 
 renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph, Zettel) -> ZettelID -> HtmlT m ()
-renderZettel config@Config {..} (store, graph, Zettel {..}) zid = do
+renderZettel config@Config {..} (store, graph, z@Zettel {..}) zid = do
   let neuronTheme = Theme.mkTheme theme
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segments"] $ do
@@ -155,11 +155,11 @@ renderZettel config@Config {..} (store, graph, Zettel {..}) zid = do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
-          let forest = G.obviateRootUnlessForest zid $ G.dfsForestFrom [zid] graph
+          let forest = G.obviateRootUnlessForest z $ G.dfsForestFrom [z] graph
           ul_ $ renderForest True (Just 2) LinkTheme_Simple store graph forest
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Navigate up"
-          let forestB = G.obviateRootUnlessForest zid $ G.dfsForestBackwards zid graph
+          let forestB = G.obviateRootUnlessForest z $ G.dfsForestBackwards z graph
           ul_ $ do
             renderForest True Nothing LinkTheme_Simple store graph forestB
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
@@ -212,28 +212,26 @@ renderForest ::
   LinkTheme ->
   ZettelStore ->
   ZettelGraph ->
-  [Tree ZettelID] ->
+  [Tree Zettel] ->
   HtmlT m ()
 renderForest isRoot maxLevel ltheme s g trees =
   case maxLevel of
     Just 0 -> mempty
     _ -> do
-      forM_ (sortForest trees) $ \(Node zid subtrees) ->
+      forM_ (sortForest trees) $ \(Node zettel subtrees) ->
         li_ $ do
           let zettelDiv =
                 div_
                   [class_ $ bool "" "ui black label" $ ltheme == LinkTheme_Default]
           bool id zettelDiv isRoot
-            $ renderZettelLink ltheme
-            $ lookupStore zid s
+            $ renderZettelLink ltheme zettel
           when (ltheme == LinkTheme_Default) $ do
             " "
-            case G.backlinks zid g of
+            case G.backlinks zettel g of
               conns@(_ : _ : _) ->
                 -- Has two or more backlinks
-                forM_ conns $ \zid2 -> do
-                  let z2 = lookupStore zid2 s
-                  i_ [class_ "fas fa-link", title_ $ zettelIDText zid2 <> " " <> zettelTitle z2] mempty
+                forM_ conns $ \zettel2 -> do
+                  i_ [class_ "fas fa-link", title_ $ zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2] mempty
               _ -> mempty
           when (length subtrees > 0) $ do
             ul_ $ renderForest False ((\n -> n - 1) <$> maxLevel) ltheme s g subtrees

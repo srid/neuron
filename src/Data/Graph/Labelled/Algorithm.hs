@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -9,32 +10,46 @@ import qualified Algebra.Graph.AdjacencyMap as AM
 import qualified Algebra.Graph.AdjacencyMap.Algorithm as Algo
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Data.Graph.Labelled.Type
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))
 import Relude
 
 -- | Return the backlinks to the given vertex
-backlinks :: Ord v => v -> LabelledGraph v e -> [v]
-backlinks zid =
-  toList . LAM.preSet zid
+backlinks :: (IsVertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
+backlinks (vertexID -> zid) =
+  withVertexID $ toList . LAM.preSet zid
 
-topSort :: Ord v => LabelledGraph v e -> Either (NonEmpty v) [v]
-topSort = Algo.topSort . LAM.skeleton
+-- | Run a graph algorithm at the level of vertex IDs, while still returning vertices.
+withVertexID :: (Functor f, Ord (VertexID v)) => (LAM.AdjacencyMap e (VertexID v) -> f (VertexID v)) -> LabelledGraph v e -> f v
+withVertexID f (LabelledGraph g vm) =
+  flip fmap (f g) $ \x ->
+    fromMaybe (error "vertex not in map") $ Map.lookup x vm
 
-clusters :: Ord v => LabelledGraph v e -> [NonEmpty v]
-clusters = mothers . LAM.skeleton
+getVertex :: Ord (VertexID a) => LabelledGraph a e -> VertexID a -> a
+getVertex (LabelledGraph _ vm) x =
+  fromMaybe (error "vertex not in map") $ Map.lookup x vm
+
+topSort :: (IsVertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
+topSort g =
+  bimap (fmap (getVertex g)) (fmap (getVertex g)) $
+    Algo.topSort $ LAM.skeleton $ graph g
+
+clusters :: (IsVertex v, Ord (VertexID v)) => LabelledGraph v e -> [NonEmpty v]
+clusters g =
+  fmap (fmap $ getVertex g) $ mothers $ LAM.skeleton $ graph g
 
 -- | Compute the dfsForest from the given vertices.
-dfsForestFrom :: Ord v => [v] -> LabelledGraph v e -> Forest v
-dfsForestFrom zids g =
-  Algo.dfsForestFrom zids $ LAM.skeleton g
+dfsForestFrom :: (IsVertex v, Ord (VertexID v)) => [v] -> LabelledGraph v e -> Forest v
+dfsForestFrom (fmap vertexID -> vs) g =
+  fmap (fmap $ getVertex g) $ Algo.dfsForestFrom vs $ LAM.skeleton $ graph g
 
 -- | Compute the dfsForest ending in the given vertex.
 --
 -- Return the forest flipped, such that the given vertex is the root.
-dfsForestBackwards :: (Monoid e, Ord v) => v -> LabelledGraph v e -> Forest v
-dfsForestBackwards fromZid =
-  dfsForestFrom [fromZid] . LAM.transpose
+dfsForestBackwards :: (Monoid e, IsVertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> Forest v
+dfsForestBackwards fromV (LabelledGraph g' v') =
+  dfsForestFrom [fromV] $ LabelledGraph (LAM.transpose g') v'
 
 --------------------------
 --- More general utilities
@@ -69,7 +84,7 @@ motherVertices =
 
 -- | If the input is a tree with the given root node, return its children (as
 -- forest). Otherwise return the input as is.
-obviateRootUnlessForest :: (HasCallStack, Show a, Eq a) => a -> [Tree a] -> [Tree a]
+obviateRootUnlessForest :: (HasCallStack, Show a, Eq a) => a -> Forest a -> Forest a
 obviateRootUnlessForest root = \case
   [Node v ts] ->
     if v == root

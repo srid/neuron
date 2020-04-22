@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -38,12 +39,12 @@ import Neuron.Zettelkasten.Zettel
 import Relude
 
 -- | The Zettelkasten graph
-type ZettelGraph = LabelledGraph ZettelID [Connection]
+type ZettelGraph = LabelledGraph Zettel [Connection]
 
 -- | Build the Zettelkasten graph from the given list of note files.
 mkZettelGraph :: forall m. MonadError Text m => ZettelStore -> m ZettelGraph
 mkZettelGraph store =
-  mkGraphFrom @m (Map.elems store) zettelID zettelEdges connectionWhitelist
+  mkGraphFrom @m (Map.elems store) zettelEdges connectionWhitelist
   where
     -- Exclude ordinary connection when building the graph
     --

@@ -53,9 +53,9 @@ routeUrlRelWithQuery r k v = maybe (error "Bad URI") URI.render $ do
       }
 
 -- | Return full title for a route
-routeTitle :: Config -> store -> Route store graph a -> Text
-routeTitle Config {..} store =
-  withSuffix siteTitle . routeTitle' store
+routeTitle :: Config -> a -> Route store graph a -> Text
+routeTitle Config {..} val =
+  withSuffix siteTitle . routeTitle' val
   where
     withSuffix suffix x =
       if x == suffix
@@ -63,32 +63,32 @@ routeTitle Config {..} store =
         else x <> " - " <> suffix
 
 -- | Return the title for a route
-routeTitle' :: store -> Route store graph a -> Text
-routeTitle' store = \case
+routeTitle' :: a -> Route store graph a -> Text
+routeTitle' val = \case
   Route_Redirect _ -> "Redirecting..."
   Route_ZIndex -> "Zettel Index"
   Route_Search -> "Search"
-  Route_Zettel (flip lookupStore store -> Zettel {..}) ->
-    zettelTitle
+  Route_Zettel _ ->
+    zettelTitle val
 
-routeOpenGraph :: Config -> store -> Route store graph a -> OpenGraph
-routeOpenGraph Config {..} store r =
+routeOpenGraph :: Config -> a -> Route store graph a -> OpenGraph
+routeOpenGraph Config {..} val r =
   OpenGraph
-    { _openGraph_title = routeTitle' store r,
+    { _openGraph_title = routeTitle' val r,
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
         Route_Redirect _ -> Nothing
         Route_ZIndex -> Just "Zettelkasten Index"
         Route_Search -> Just "Search Zettelkasten"
-        Route_Zettel (flip lookupStore store -> Zettel {..}) ->
-          T.take 300 <$> MMark.getFirstParagraphText zettelContent,
+        Route_Zettel _ ->
+          T.take 300 <$> MMark.getFirstParagraphText (zettelContent val),
       _openGraph_author = author,
       _openGraph_type = case r of
         Route_Zettel _ -> Just $ OGType_Article (Article Nothing Nothing Nothing Nothing mempty)
         _ -> Just OGType_Website,
       _openGraph_image = case r of
-        Route_Zettel (flip lookupStore store -> Zettel {..}) -> do
-          img <- MMark.getFirstImg zettelContent
+        Route_Zettel _ -> do
+          img <- MMark.getFirstImg (zettelContent val)
           baseUrl <- URI.mkURI =<< siteBaseUrl
           URI.relativeTo img baseUrl
         _ -> Nothing,
