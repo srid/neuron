@@ -9,8 +9,8 @@ module Neuron.ConfigSpec
   )
 where
 
-import Neuron.Parser
 import qualified Neuron.Config as Z
+import Neuron.Parser
 import qualified Neuron.Zettelkasten.ID as Z
 import Relude
 import Test.Hspec

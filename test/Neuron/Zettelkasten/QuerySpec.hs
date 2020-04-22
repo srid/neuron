@@ -11,7 +11,7 @@ import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Tag
 import Relude
 import Test.Hspec
-import Text.URI (mkURI)
+import Util
 
 spec :: Spec
 spec =
@@ -29,6 +29,5 @@ spec =
       parseQueryString "zquery://search?tag=foo&tag=bar"
         `shouldBe` Right (zettelsByTag ["foo", "bar"])
   where
-    parseQueryString :: Text -> Either Text (Some Query)
     parseQueryString =
-      either (Left . toText . displayException) queryFromURI . mkURI
+      parseURIWith queryFromURI

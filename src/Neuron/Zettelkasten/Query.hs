@@ -64,19 +64,25 @@ instance ToHtml (Some Query) where
 
 type QueryResults = [Zettel]
 
-queryFromURI :: MonadError Text m => URI.URI -> m (Some Query)
+data InvalidQuery
+  = InvalidQuery_InvalidID InvalidID
+  | InvalidQuery_Unsupported
+  | InvalidQuery_UnsupportedHost
+  deriving (Eq, Show)
+
+queryFromURI :: MonadError InvalidQuery m => URI.URI -> m (Some Query)
 queryFromURI uri = do
   mq <- queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = ""}
   case mq of
     Just q -> pure q
-    Nothing -> throwError "Unsupported query URI"
+    Nothing -> throwError InvalidQuery_Unsupported
 
 -- NOTE: To support legacy links which rely on linkText. New short links shouldn't use this.
-queryFromMarkdownLink :: MonadError Text m => MarkdownLink -> m (Maybe (Some Query))
+queryFromMarkdownLink :: MonadError InvalidQuery m => MarkdownLink -> m (Maybe (Some Query))
 queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   case fmap URI.unRText (URI.uriScheme uri) of
     Just proto | proto `elem` ["z", "zcf"] -> do
-      zid <- liftEither $ parseZettelID' linkText
+      zid <- liftEither $ first InvalidQuery_InvalidID $ parseZettelID' linkText
       pure $ Just $ Some $ Query_ZettelByID zid
     Just proto | proto `elem` ["zquery", "zcfquery"] ->
       case uriHost uri of
@@ -85,7 +91,7 @@ queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = li
         Right "tags" ->
           pure $ Just $ Some $ Query_Tags $ mkTagPattern <$> getParamValues "filter" uri
         _ ->
-          throwError "Unsupported host in zquery"
+          throwError InvalidQuery_UnsupportedHost
     _ -> pure $ do
       -- Initial support for the upcoming short links.
       guard $ URI.render uri == linkText

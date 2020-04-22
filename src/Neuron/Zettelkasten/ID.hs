@@ -10,6 +10,7 @@
 module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     Connection (..),
+    InvalidID (..),
     zettelIDDay,
     zettelIDText,
     parseZettelID,
@@ -36,6 +37,7 @@ import qualified System.FilePattern as FP
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import Text.Printf
+import qualified Text.Show
 
 -- | Short Zettel ID encoding `Day` and a numeric index (on that day).
 --
@@ -44,6 +46,22 @@ data ZettelID
   = ZettelDateID Day Int
   | ZettelCustomID Text
   deriving (Eq, Show, Ord)
+
+data InvalidID = InvalidIDParseError Text
+  deriving (Eq)
+
+-- | Represent the connection between zettels
+data Connection
+  = -- | A folgezettel points to a zettel that is conceptually a part of the
+    -- parent zettel.
+    Folgezettel
+  | -- | Any other ordinary connection (eg: "See also")
+    OrdinaryConnection
+  deriving (Eq, Ord, Show, Enum, Bounded)
+
+instance Show InvalidID where
+  show (InvalidIDParseError s) =
+    "Invalid Zettel ID: " <> toString s
 
 instance ToJSON ZettelID where
   toJSON = toJSON . zettelIDText
@@ -95,11 +113,11 @@ zettelNextIdForToday = do
 
 parseZettelID :: Text -> ZettelID
 parseZettelID =
-  either error id . parseZettelID'
+  either (error . show) id . parseZettelID'
 
-parseZettelID' :: Text -> Either Text ZettelID
-parseZettelID' s =
-  parse idParser "parseZettelID" s
+parseZettelID' :: Text -> Either InvalidID ZettelID
+parseZettelID' =
+  first InvalidIDParseError . parse idParser "parseZettelID"
 
 idParser :: Parser ZettelID
 idParser =
@@ -110,25 +128,25 @@ dayParser :: Parser (Day, Int)
 dayParser = do
   year <- parseNum 2
   week <- parseNum 2
-  dayIdx <- parseNum 1
+  dayName <- dayFromIdx =<< parseNum 1
   idx <- parseNum 2
   day <-
     parseTimeM False defaultTimeLocale "%y%W%a" $
-      printf "%02d" year <> printf "%02d" week <> toString (dayName dayIdx)
+      printf "%02d" year <> printf "%02d" week <> dayName
   pure (day, idx)
   where
     parseNum n = readNum =<< M.count n M.digitChar
     readNum = maybe (fail "Not a number") pure . readMaybe
-    dayName :: Int -> Text
-    dayName = \case
-      1 -> "Mon"
-      2 -> "Tue"
-      3 -> "Wed"
-      4 -> "Thu"
-      5 -> "Fri"
-      6 -> "Sat"
-      7 -> "Sun"
-      _ -> error "> 7"
+    dayFromIdx :: MonadFail m => Int -> m String
+    dayFromIdx = \case
+      1 -> pure "Mon"
+      2 -> pure "Tue"
+      3 -> pure "Wed"
+      4 -> pure "Thu"
+      5 -> pure "Fri"
+      6 -> pure "Sat"
+      7 -> pure "Sun"
+      _ -> fail "Day should be a value from 1 to 7"
 
 customIDParser :: Parser Text
 customIDParser = do
@@ -139,12 +157,3 @@ mkZettelID :: FilePath -> ZettelID
 mkZettelID fp =
   let (name, _) = splitExtension $ takeFileName fp
    in parseZettelID $ toText name
-
--- | Represent the connection between zettels
-data Connection
-  = -- | A folgezettel points to a zettel that is conceptually a part of the
-    -- parent zettel.
-    Folgezettel
-  | -- | Any other ordinary connection (eg: "See also")
-    OrdinaryConnection
-  deriving (Eq, Ord, Show, Enum, Bounded)

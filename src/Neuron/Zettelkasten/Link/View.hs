@@ -47,12 +47,15 @@ neuronLinkExt store =
             Right Nothing ->
               f inline
             Left e ->
-              error e
+              -- TODO: Build the links during graph construction, and pass it to
+              -- the extension from rendering stage. This way we don't have to
+              -- re-parse the URIs and needlessly handle the errors.
+              error $ show e
     inline ->
       f inline
 
 -- | Render the custom view for the given neuron link
-renderNeuronLink :: forall m. Monad m => ZettelStore -> NeuronLink -> HtmlT m ()
+renderNeuronLink :: forall m. (Monad m, HasCallStack) => ZettelStore -> NeuronLink -> HtmlT m ()
 renderNeuronLink store = \case
   NeuronLink (Query_ZettelByID zid, _conn, linkTheme) ->
     -- Render a single link

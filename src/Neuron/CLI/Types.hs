@@ -118,6 +118,6 @@ commandParser defaultNotesDir = do
     uriReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
-          first toString $ Z.queryFromURI uri
+          first show $ Z.queryFromURI uri
         Left e ->
           Left $ displayException e

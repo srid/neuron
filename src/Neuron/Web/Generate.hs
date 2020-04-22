@@ -30,13 +30,18 @@ generateSite ::
   [FilePath] ->
   Action (Z.ZettelStore, Z.ZettelGraph)
 generateSite config writeHtmlRoute' zettelsPat = do
-  when (olderThan $ Z.minVersion config) $ do
-    error $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
+  when (olderThan $ Z.minVersion config)
+    $ fail
+    $ toString
+    $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
   zettelStore <- Z.mkZettelStore =<< Rib.forEvery zettelsPat pure
-  let zettelGraph = Z.mkZettelGraph zettelStore
+  zettelGraph <- either (fail . toString) pure $ Z.mkZettelGraph zettelStore
   let writeHtmlRoute v r = writeHtmlRoute' r (zettelStore, zettelGraph, v)
   -- Generate HTML for every zettel
-  (writeHtmlRoute () . Z.Route_Zettel) `mapM_` Map.keys zettelStore
+  forM_ (Map.toList zettelStore) $ \(k, v) ->
+    -- TODO: Should `Zettel` not contain ZettelID?
+    -- See duplication in `renderZettel`
+    writeHtmlRoute v $ Z.Route_Zettel k
   -- Generate the z-index
   writeHtmlRoute () Z.Route_ZIndex
   -- Generate search page

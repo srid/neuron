@@ -28,7 +28,7 @@ data Route store graph a where
   Route_Redirect :: ZettelID -> Route ZettelStore ZettelGraph ZettelID
   Route_ZIndex :: Route ZettelStore ZettelGraph ()
   Route_Search :: Route ZettelStore ZettelGraph ()
-  Route_Zettel :: ZettelID -> Route ZettelStore ZettelGraph ()
+  Route_Zettel :: ZettelID -> Route ZettelStore ZettelGraph Zettel
 
 instance IsRoute (Route store graph) where
   routeFile = \case

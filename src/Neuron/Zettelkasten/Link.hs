@@ -18,12 +18,13 @@ import Data.Some
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
-import Neuron.Zettelkasten.Query (Query (..), queryFromMarkdownLink, runQuery)
+import Neuron.Zettelkasten.Query (InvalidQuery (..), Query (..), queryFromMarkdownLink, runQuery)
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Text.URI as URI
+import Text.URI (URI)
 
 type family QueryConnection q
 
@@ -59,16 +60,23 @@ instance Eq NeuronLink where
   (==) _ _ =
     False
 
-neuronLinkFromMarkdownLink :: MonadError Text m => MarkdownLink -> m (Maybe NeuronLink)
-neuronLinkFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri} = do
-  queryFromMarkdownLink ml >>= \case
+data InvalidNeuronLink
+  = InvalidNeuronLink URI (Either InvalidQuery InvalidLinkTheme)
+  deriving (Eq, Show)
+
+neuronLinkFromMarkdownLink :: MonadError InvalidNeuronLink m => MarkdownLink -> m (Maybe NeuronLink)
+neuronLinkFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri} = liftEither $ runExcept $ do
+  l <- withExcept (InvalidNeuronLink uri . Left) $ queryFromMarkdownLink ml
+  case l of
     Nothing -> pure Nothing
     Just someQ -> Just <$> do
       withSome someQ $ \q -> case q of
-        Query_ZettelByID _ ->
-          NeuronLink . (q,connectionFromURI uri,) <$> linkThemeFromURI uri
-        Query_ZettelsByTag _ ->
-          NeuronLink . (q,connectionFromURI uri,) <$> zettelsViewFromURI uri
+        Query_ZettelByID _ -> do
+          t <- withExcept (InvalidNeuronLink uri . Right) $ linkThemeFromURI uri
+          pure $ NeuronLink (q, connectionFromURI uri, t)
+        Query_ZettelsByTag _ -> do
+          t <- withExcept (InvalidNeuronLink uri . Right) $ zettelsViewFromURI uri
+          pure $ NeuronLink (q, connectionFromURI uri, t)
         Query_Tags _ ->
           pure $ NeuronLink (q, (), ())
 

@@ -25,5 +25,5 @@ mkZettelStore files = do
   zettels <- mkZettelFromPath `mapM` files
   pure $ Map.fromList $ zettels <&> zettelID &&& id
 
-lookupStore :: ZettelID -> ZettelStore -> Zettel
+lookupStore :: HasCallStack => ZettelID -> ZettelStore -> Zettel
 lookupStore zid = fromMaybe (error $ "No such zettel: " <> zettelIDText zid) . Map.lookup zid
