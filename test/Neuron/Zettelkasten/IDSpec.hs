@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.IDSpec
@@ -15,7 +14,7 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  describe "Zettel ID" $ do
+  describe "ID parsing" $ do
     let day = fromGregorian 2020 3 19
     context "date id parsing" $ do
       let zid = Z.ZettelDateID day 1
@@ -33,8 +32,13 @@ spec = do
       it "parses a custom zettel ID from zettel filename" $ do
         Z.mkZettelID "20abcde.md" `shouldBe` zid
         Z.zettelIDSourceFileName zid `shouldBe` "20abcde.md"
+  describe "ID converstion" $ do
     context "JSON encoding" $ do
-      let zid = Z.ZettelDateID day 1
+      let day = fromGregorian 2020 3 19
+          zid = Z.ZettelDateID day 1
       it "Converts ID to text when encoding to JSON" $ do
         Aeson.toJSON (Z.ZettelCustomID "20abcde") `shouldBe` Aeson.String "20abcde"
         Aeson.toJSON zid `shouldBe` Aeson.String "2011401"
+    it "Date ID to Text" $ do
+      let day = fromGregorian 2020 4 21
+      Z.zettelIDText (Z.ZettelDateID day 1) `shouldBe` "2016201"
