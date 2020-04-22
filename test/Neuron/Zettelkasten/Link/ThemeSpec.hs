@@ -11,7 +11,7 @@ where
 import Neuron.Zettelkasten.Link.Theme
 import Relude
 import Test.Hspec
-import Text.URI (URI, mkURI)
+import Util
 
 spec :: Spec
 spec =
@@ -28,7 +28,3 @@ spec =
         `shouldBe` Right (ZettelsView LinkTheme_Default True)
       parseURIWith zettelsViewFromURI "zquery://search?tag=foo"
         `shouldBe` Right (ZettelsView LinkTheme_Default False)
-  where
-    parseURIWith :: (URI -> Either Text a) -> Text -> Either Text a
-    parseURIWith f =
-      either (Left . toText . displayException) f . mkURI

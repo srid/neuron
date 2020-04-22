@@ -30,7 +30,7 @@ instance Show NeuronError where
           NeuronError_BrokenZettelRef zid _ -> zid
         msg = case e of
           NeuronError_BadLink _ (InvalidNeuronLink uri le) ->
-            "it contains a query URI (" <> toString (URI.render uri) <> ") " <> case le of
+            "it contains a query URI (" <> URI.render uri <> ") " <> case le of
               Left (InvalidQuery_InvalidID s) ->
                 "with invalid ID: " <> show s
               Left InvalidQuery_UnsupportedHost ->
@@ -38,7 +38,11 @@ instance Show NeuronError where
               Left InvalidQuery_Unsupported ->
                 "that is not supported"
               Right (InvalidLinkTheme theme) ->
-                "with invalid link theme (" <> toString theme <> ")"
+                "with invalid link theme (" <> theme <> ")"
           NeuronError_BrokenZettelRef _fromZid toZid ->
-            "it references a zettel <" <> toString (zettelIDText toZid) <> "> that does not exist"
-     in "\n  The zettel file '" <> zettelIDSourceFileName fromZid <> "' is malformed\n    " <> msg <> "\n"
+            "it references a zettel <" <> zettelIDText toZid <> "> that does not exist"
+     in toString $ unlines
+          [ "",
+            "  Zettel file \"" <> toText (zettelIDSourceFileName fromZid) <> "\" is malformed:",
+            "    " <> msg
+          ]
