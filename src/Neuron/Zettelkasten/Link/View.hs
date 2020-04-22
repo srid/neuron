@@ -49,6 +49,8 @@ neuronLinkExt zettels =
               -- TODO: Build the links during graph construction, and pass it to
               -- the extension from rendering stage. This way we don't have to
               -- re-parse the URIs and needlessly handle the errors.
+              -- TODO: As well pass query results (computed in
+              -- neuronLinkConnections) to this function..
               error $ show e
     inline ->
       f inline
@@ -60,7 +62,7 @@ renderNeuronLink zettels = \case
     -- Render a single link
     case runQuery zettels q of
       Nothing ->
-        -- TODO: See the TODO above
+        -- TODO: See the second TODO above
         error "No zettel for that ID"
       Just zettel ->
         renderZettelLink linkTheme zettel

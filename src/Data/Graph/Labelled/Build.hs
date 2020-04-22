@@ -16,16 +16,13 @@ import Relude
 mkGraphFrom ::
   forall m e v.
   (Eq e, Monoid e, Ord (VertexID v), Vertex v, Monad m) =>
-  -- | List of objects corresponding to vertexes
+  -- | List of known vertices in the graph.
   [v] ->
-  -- | Outgoing edges, and their vertex, for an object
+  -- | Function returning the adjacents for each vertex.
   --
-  -- Warning: The caller must ensure that this function returns vertices already
-  -- in `[v]`.
-  -- TODO: It is better to do this fmap'ing outside mkGraphFrom, and handle
-  -- errors there.
-  (v -> m [(e, VertexID v)]) ->
-  -- | A function to filter relevant edges
+  -- Each adjacent vertex is expected to be in the original list.
+  (v -> m [(e, v)]) ->
+  -- | Edge whitelist function.
   (e -> Bool) ->
   m (LabelledGraph v e)
 mkGraphFrom xs edgesFor edgeWhitelist = do
@@ -35,7 +32,7 @@ mkGraphFrom xs edgesFor edgeWhitelist = do
     fmap concat $ for xs $ \x -> do
       es <- edgesFor x
       pure $ flip fmap es $ \(edge, v2) ->
-        (edge, vertexID x, v2)
+        (edge, vertexID x, vertexID v2)
   let edgesFinal = filter (\(e, _, _) -> edgeWhitelist e) edges
       graph =
         LAM.overlay

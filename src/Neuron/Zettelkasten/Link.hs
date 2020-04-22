@@ -79,14 +79,21 @@ neuronLinkFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri} = liftEither 
         Query_Tags _ ->
           pure $ NeuronLink (q, (), ())
 
-neuronLinkConnections :: [Zettel] -> NeuronLink -> [(Connection, ZettelID)]
+data MissingZettel = MissingZettel ZettelID
+  deriving Eq
+
+neuronLinkConnections :: MonadError MissingZettel m => [Zettel] -> NeuronLink -> m [(Connection, Zettel)]
 neuronLinkConnections zettels = \case
-  NeuronLink (Query_ZettelByID zid, conn, _) ->
-    [(conn, zid)]
+  NeuronLink (q@(Query_ZettelByID zid), conn, _) ->
+    case runQuery zettels q of
+      Nothing ->
+        throwError $ MissingZettel zid
+      Just zettel ->
+        pure [(conn, zettel)]
   NeuronLink (q@(Query_ZettelsByTag _pats), conn, _) ->
-    (conn,) . zettelID <$> runQuery zettels q
+    pure $ (conn,) <$> runQuery zettels q
   _ ->
-    []
+    pure []
 
 connectionFromURI :: URI.URI -> Connection
 connectionFromURI uri =
