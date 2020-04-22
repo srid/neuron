@@ -6,7 +6,7 @@
 module Data.Graph.Labelled.Build where
 
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
-import Data.Graph.Labelled.Type
+import Data.Graph.Labelled.Type (LabelledGraph (LabelledGraph), Vertex (..))
 import qualified Data.Map.Strict as Map
 import Data.Traversable (for)
 import Relude
@@ -20,7 +20,10 @@ mkGraphFrom ::
   [v] ->
   -- | Outgoing edges, and their vertex, for an object
   --
-  -- Warning: This function may return vertices that do not belong to the graph.
+  -- Warning: The caller must ensure that this function returns vertices already
+  -- in `[v]`.
+  -- TODO: It is better to do this fmap'ing outside mkGraphFrom, and handle
+  -- errors there.
   (v -> m [(e, VertexID v)]) ->
   -- | A function to filter relevant edges
   (e -> Bool) ->
@@ -34,8 +37,8 @@ mkGraphFrom xs edgesFor edgeWhitelist = do
       pure $ flip fmap es $ \(edge, v2) ->
         (edge, vertexID x, v2)
   let edgesFinal = filter (\(e, _, _) -> edgeWhitelist e) edges
-      g =
+      graph =
         LAM.overlay
           (LAM.vertices vertexList)
           (LAM.edges edgesFinal)
-  pure $ LabelledGraph g vertexMap
+  pure $ LabelledGraph graph vertexMap

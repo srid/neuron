@@ -3,13 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Graph.Labelled.Type
-  ( -- * Graph type
-    -- TODO: don't expose internals
-    LabelledGraph (..),
-    Vertex (..),
-  )
-where
+module Data.Graph.Labelled.Type where
 
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Relude

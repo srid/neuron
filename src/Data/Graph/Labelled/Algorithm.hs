@@ -20,24 +20,18 @@ findVertex v lg@(LabelledGraph g _) = do
   guard $ LAM.hasVertex v g
   pure $ getVertex lg v
 
+getVertex :: (HasCallStack, Ord (VertexID a)) => LabelledGraph a e -> VertexID a -> a
+getVertex (LabelledGraph _ vm) x =
+  fromMaybe (error "Vertex not in map") $ Map.lookup x vm
+
 getVertices :: LabelledGraph v e -> [v]
 getVertices (LabelledGraph _ lm) =
   Map.elems lm
 
 -- | Return the backlinks to the given vertex
 backlinks :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
-backlinks (vertexID -> zid) =
-  withVertexID $ toList . LAM.preSet zid
-
--- | Run a graph algorithm at the level of vertex IDs, while still returning vertices.
-withVertexID :: (Functor f, Ord (VertexID v)) => (LAM.AdjacencyMap e (VertexID v) -> f (VertexID v)) -> LabelledGraph v e -> f v
-withVertexID f (LabelledGraph g vm) =
-  flip fmap (f g) $ \x ->
-    fromMaybe (error "vertex not in map") $ Map.lookup x vm
-
-getVertex :: Ord (VertexID a) => LabelledGraph a e -> VertexID a -> a
-getVertex (LabelledGraph _ vm) x =
-  fromMaybe (error "vertex not in map") $ Map.lookup x vm
+backlinks (vertexID -> zid) g =
+  fmap (getVertex g) $ toList . LAM.preSet zid $ graph g
 
 topSort :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
 topSort g =
