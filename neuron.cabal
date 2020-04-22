@@ -68,6 +68,9 @@ common library-common
 library
   import: library-common
   exposed-modules:
+    Data.Graph.Labelled.Build
+    Data.Graph.Labelled.Type
+    Data.Graph.Labelled.Algorithm
     Neuron.CLI
     Neuron.CLI.New
     Neuron.CLI.Query

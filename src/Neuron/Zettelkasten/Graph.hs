@@ -4,7 +4,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Graph
@@ -14,34 +13,32 @@ module Neuron.Zettelkasten.Graph
     -- * Construction
     mkZettelGraph,
 
-    -- * Algorithms
+    -- * Algorithm reports
     backlinks,
     topSort,
-    zettelClusters,
+    clusters,
     dfsForestFrom,
     dfsForestBackwards,
     obviateRootUnlessForest,
   )
 where
 
-import qualified Algebra.Graph.AdjacencyMap as AM
-import qualified Algebra.Graph.AdjacencyMap.Algorithm as Algo
-import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Control.Monad.Except
+import Data.Graph.Labelled.Algorithm
+import Data.Graph.Labelled.Build
+import Data.Graph.Labelled.Type
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import Data.Tree (Forest, Tree (..))
+import Data.Traversable (for)
 import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link (neuronLinkConnections, neuronLinkFromMarkdownLink)
 import Neuron.Zettelkasten.Markdown (extractLinks)
 import Neuron.Zettelkasten.Store (ZettelStore)
 import Neuron.Zettelkasten.Zettel
-import Data.Traversable (for)
 import Relude
 
 -- | The Zettelkasten graph
-type ZettelGraph = LAM.AdjacencyMap [Connection] ZettelID
+type ZettelGraph = LabelledGraph ZettelID [Connection]
 
 -- | Build the Zettelkasten graph from the given list of note files.
 mkZettelGraph :: forall m. MonadError Text m => ZettelStore -> m ZettelGraph
@@ -67,107 +64,16 @@ mkZettelGraph store =
     outgoingLinks :: Zettel -> m [(Connection, ZettelID)]
     outgoingLinks Zettel {..} =
       fmap concat $ for (extractLinks zettelContent) $ \mlink ->
-        liftEither $ runExcept $
-          withExcept show $
-            liftEither (first (NeuronError_BadLink zettelID) $ neuronLinkFromMarkdownLink mlink) >>= \case
-              Nothing ->
-                pure []
-              Just nlink -> do
-                let conns = neuronLinkConnections store nlink
-                -- Check the connections refer to existing zettels
-                forM_ (snd <$> conns) $ \zref ->
-                  when (isNothing (Map.lookup zref store))
-                    $ throwError
-                    $ NeuronError_BrokenZettelRef zettelID zref
-                pure conns
-
--- | Return the backlinks to the given zettel
-backlinks :: ZettelID -> ZettelGraph -> [ZettelID]
-backlinks zid =
-  toList . LAM.preSet zid
-
-topSort :: ZettelGraph -> Either (NonEmpty ZettelID) [ZettelID]
-topSort = Algo.topSort . LAM.skeleton
-
-zettelClusters :: ZettelGraph -> [NonEmpty ZettelID]
-zettelClusters = mothers . LAM.skeleton
-
--- | Compute the dfsForest from the given zettels.
-dfsForestFrom :: [ZettelID] -> ZettelGraph -> Forest ZettelID
-dfsForestFrom zids g =
-  Algo.dfsForestFrom zids $ LAM.skeleton g
-
--- | Compute the dfsForest ending in the given zettel.
---
--- Return the forest flipped, such that the given zettel is the root.
-dfsForestBackwards :: ZettelID -> ZettelGraph -> Forest ZettelID
-dfsForestBackwards fromZid =
-  dfsForestFrom [fromZid] . LAM.transpose
-
--- -------------
--- Graph Helpers
--- -------------
-
--- | Get the clusters in a graph, as a list of the mother vertices in each
--- cluster.
-mothers :: Ord a => AM.AdjacencyMap a -> [NonEmpty a]
-mothers g =
-  go [] $ motherVertices g
-  where
-    go acc = \case
-      [] -> acc
-      v : (Set.fromList -> vs) ->
-        let reach = reachableUndirected v g
-            covered = vs `Set.intersection` reach
-            rest = vs `Set.difference` reach
-         in go ((v :| Set.toList covered) : acc) (Set.toList rest)
-
--- | Get the vertexes reachable (regardless of direction) from the given vertex.
-reachableUndirected :: Ord a => a -> AM.AdjacencyMap a -> Set a
-reachableUndirected v =
-  Set.fromList . Algo.reachable v . toUndirected
-  where
-    toUndirected g = AM.overlay g $ AM.transpose g
-
-motherVertices :: Ord a => AM.AdjacencyMap a -> [a]
-motherVertices =
-  mapMaybe (\(v, es) -> if null es then Just v else Nothing)
-    . AM.adjacencyList
-    . AM.transpose
-
--- | If the input is a tree with the given root node, return its children (as
--- forest). Otherwise return the input as is.
-obviateRootUnlessForest :: (Show a, Eq a) => a -> [Tree a] -> [Tree a]
-obviateRootUnlessForest root = \case
-  [Node v ts] ->
-    if v == root
-      then ts
-      else error "Root mismatch"
-  nodes ->
-    nodes
-
--- Build a graph from a list objects that contains information about the
--- corresponding vertex as well as the outgoing edges.
-mkGraphFrom ::
-  forall m e v a.
-  (Eq e, Monoid e, Ord v, Monad m) =>
-  -- | List of objects corresponding to vertexes
-  [a] ->
-  -- | Make vertex from an object
-  (a -> v) ->
-  -- | Outgoing edges, and their vertex, for an object
-  (a -> m [(e, v)]) ->
-  -- | A function to filter relevant edges
-  (e -> Bool) ->
-  m (LAM.AdjacencyMap e v)
-mkGraphFrom xs vertexFor edgesFor edgeWhitelist = do
-  let vertices = vertexFor <$> xs
-  edges <-
-    fmap concat $ for xs $ \x -> do
-      es <- edgesFor x
-      pure $ flip fmap es $ \(edge, v2) ->
-        (edge, vertexFor x, v2)
-  pure $
-    LAM.overlay
-      (LAM.vertices vertices)
-      (LAM.edges $ filter (\(e, _, _) -> edgeWhitelist e) edges)
+        liftEither $ runExcept
+          $ withExcept show
+          $ liftEither (first (NeuronError_BadLink zettelID) $ neuronLinkFromMarkdownLink mlink) >>= \case
+            Nothing ->
+              pure []
+            Just nlink -> do
+              let conns = neuronLinkConnections store nlink
+              -- Check the connections refer to existing zettels
+              forM_ (snd <$> conns) $ \zref ->
+                when (isNothing (Map.lookup zref store))
+                  $ throwError
+                  $ NeuronError_BrokenZettelRef zettelID zref
+              pure conns

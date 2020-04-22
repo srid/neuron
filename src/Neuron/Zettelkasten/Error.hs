@@ -41,8 +41,9 @@ instance Show NeuronError where
                 "with invalid link theme (" <> theme <> ")"
           NeuronError_BrokenZettelRef _fromZid toZid ->
             "it references a zettel <" <> zettelIDText toZid <> "> that does not exist"
-     in toString $ unlines
-          [ "",
-            "  Zettel file \"" <> toText (zettelIDSourceFileName fromZid) <> "\" is malformed:",
-            "    " <> msg
-          ]
+     in toString $
+          unlines
+            [ "",
+              "  Zettel file \"" <> toText (zettelIDSourceFileName fromZid) <> "\" is malformed:",
+              "    " <> msg
+            ]

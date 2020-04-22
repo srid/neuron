@@ -34,7 +34,8 @@ import Neuron.Config
 import Neuron.Version (neuronVersionFull)
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
-import Neuron.Zettelkasten.Graph
+import Neuron.Zettelkasten.Graph (ZettelGraph)
+import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (neuronLinkExt, renderZettelLink)
@@ -92,19 +93,19 @@ renderIndex Config {..} (store, graph) = do
   h1_ [class_ "header"] $ "Zettel Index"
   div_ [class_ "z-index"] $ do
     -- Cycle detection.
-    case topSort graph of
+    case G.topSort graph of
       Left (toList -> cyc) -> div_ [class_ "ui orange segment"] $ do
         h2_ "Cycle detected"
         forM_ cyc $ \zid ->
           li_ $ renderZettelLink LinkTheme_Default $ lookupStore zid store
       _ -> mempty
-    let clusters = sortMothers $ zettelClusters graph
+    let clusters = sortMothers $ G.clusters graph
     p_ $ do
       "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten graph. "
       "Each cluster is rendered as a forest, with their roots (mother zettels) highlighted."
     forM_ clusters $ \zids ->
       div_ [class_ $ "ui stacked " <> Theme.semanticColor neuronTheme <> " segment"] $ do
-        let forest = dfsForestFrom zids graph
+        let forest = G.dfsForestFrom zids graph
         -- Forest of zettels, beginning with mother vertices.
         ul_ $ renderForest True Nothing LinkTheme_Default store graph forest
     renderBrandFooter True
@@ -154,11 +155,11 @@ renderZettel config@Config {..} (store, graph, Zettel {..}) zid = do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
-          let forest = obviateRootUnlessForest zid $ dfsForestFrom [zid] graph
+          let forest = G.obviateRootUnlessForest zid $ G.dfsForestFrom [zid] graph
           ul_ $ renderForest True (Just 2) LinkTheme_Simple store graph forest
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Navigate up"
-          let forestB = obviateRootUnlessForest zid $ dfsForestBackwards zid graph
+          let forestB = G.obviateRootUnlessForest zid $ G.dfsForestBackwards zid graph
           ul_ $ do
             renderForest True Nothing LinkTheme_Simple store graph forestB
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
@@ -227,7 +228,7 @@ renderForest isRoot maxLevel ltheme s g trees =
             $ lookupStore zid s
           when (ltheme == LinkTheme_Default) $ do
             " "
-            case backlinks zid g of
+            case G.backlinks zid g of
               conns@(_ : _ : _) ->
                 -- Has two or more backlinks
                 forM_ conns $ \zid2 -> do
