@@ -57,9 +57,9 @@ neuronLinkExt store =
 -- | Render the custom view for the given neuron link
 renderNeuronLink :: forall m. (Monad m, HasCallStack) => ZettelStore -> NeuronLink -> HtmlT m ()
 renderNeuronLink store = \case
-  NeuronLink (Query_ZettelByID zid, _conn, linkTheme) ->
+  NeuronLink (q@(Query_ZettelByID _zid), _conn, linkTheme) ->
     -- Render a single link
-    renderZettelLink linkTheme $ lookupStore zid store
+    renderZettelLink linkTheme $ runQuery store q
   NeuronLink (q@(Query_ZettelsByTag pats), _conn, ZettelsView {..}) -> do
     let zettels = sortZettelsReverseChronological $ runQuery store q
     toHtml $ Some q

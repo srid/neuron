@@ -19,6 +19,8 @@ mkGraphFrom ::
   -- | Make vertex from an object
   (a -> v) ->
   -- | Outgoing edges, and their vertex, for an object
+  --
+  -- Warning: This function may return vertices that do not belong to the graph.
   (a -> m [(e, v)]) ->
   -- | A function to filter relevant edges
   (e -> Bool) ->
@@ -30,7 +32,8 @@ mkGraphFrom xs vertexFor edgesFor edgeWhitelist = do
       es <- edgesFor x
       pure $ flip fmap es $ \(edge, v2) ->
         (edge, vertexFor x, v2)
+  let edgesFinal = filter (\(e, _, _) -> edgeWhitelist e) edges
   pure $
     LAM.overlay
       (LAM.vertices vertices)
-      (LAM.edges $ filter (\(e, _, _) -> edgeWhitelist e) edges)
+      (LAM.edges edgesFinal)
