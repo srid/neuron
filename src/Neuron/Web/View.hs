@@ -82,7 +82,7 @@ renderRouteBody config r (s, g, x) = do
     Route_Search {} ->
       renderSearch s
     Route_Zettel zid ->
-      renderZettel config (s, g) zid
+      renderZettel config (s, g, x) zid
     Route_Redirect _ ->
       meta_ [httpEquiv_ "Refresh", content_ $ "0; url=" <> (Rib.routeUrlRel $ Route_Zettel x)]
 
@@ -139,10 +139,9 @@ renderSearch store = do
   script_ $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   script_ searchScript
 
-renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph) -> ZettelID -> HtmlT m ()
-renderZettel config@Config {..} (store, graph) zid = do
-  let Zettel {..} = lookupStore zid store
-      neuronTheme = Theme.mkTheme theme
+renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph, Zettel) -> ZettelID -> HtmlT m ()
+renderZettel config@Config {..} (store, graph, Zettel {..}) zid = do
+  let neuronTheme = Theme.mkTheme theme
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segments"] $ do
       div_ [class_ "ui top attached segment"] $ do

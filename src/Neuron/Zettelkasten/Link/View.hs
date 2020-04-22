@@ -47,6 +47,9 @@ neuronLinkExt store =
             Right Nothing ->
               f inline
             Left e ->
+              -- TODO: Build the links during graph construction, and pass it to
+              -- the extension from rendering stage. This way we don't have to
+              -- re-parse the URIs and needlessly handle the errors.
               error $ show e
     inline ->
       f inline

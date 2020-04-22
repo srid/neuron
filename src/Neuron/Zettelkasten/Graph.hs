@@ -37,6 +37,7 @@ import Neuron.Zettelkasten.Link (neuronLinkConnections, neuronLinkFromMarkdownLi
 import Neuron.Zettelkasten.Markdown (extractLinks)
 import Neuron.Zettelkasten.Store (ZettelStore)
 import Neuron.Zettelkasten.Zettel
+import Data.Traversable (for)
 import Relude
 
 -- | The Zettelkasten graph
@@ -65,9 +66,9 @@ mkZettelGraph store =
       fmap (fmap $ first pure) . outgoingLinks
     outgoingLinks :: Zettel -> m [(Connection, ZettelID)]
     outgoingLinks Zettel {..} =
-      fmap concat $ sequence $ flip fmap (extractLinks zettelContent) $ \mlink ->
-        liftEither $ runExcept $ do
-          withExcept show $ do
+      fmap concat $ for (extractLinks zettelContent) $ \mlink ->
+        liftEither $ runExcept $
+          withExcept show $
             liftEither (first (NeuronError_BadLink zettelID) $ neuronLinkFromMarkdownLink mlink) >>= \case
               Nothing ->
                 pure []
@@ -162,7 +163,7 @@ mkGraphFrom ::
 mkGraphFrom xs vertexFor edgesFor edgeWhitelist = do
   let vertices = vertexFor <$> xs
   edges <-
-    fmap concat $ sequence $ flip fmap xs $ \x -> do
+    fmap concat $ for xs $ \x -> do
       es <- edgesFor x
       pure $ flip fmap es $ \(edge, v2) ->
         (edge, vertexFor x, v2)
