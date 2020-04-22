@@ -15,6 +15,15 @@ import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))
 import Relude
 
+findVertex :: Ord (VertexID v) => VertexID v -> LabelledGraph v e -> Maybe v
+findVertex v lg@(LabelledGraph g _) = do
+  guard $ LAM.hasVertex v g
+  pure $ getVertex lg v
+
+getVertices :: LabelledGraph v e -> [v]
+getVertices (LabelledGraph _ lm) =
+  Map.elems lm
+
 -- | Return the backlinks to the given vertex
 backlinks :: (IsVertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
 backlinks (vertexID -> zid) =
@@ -32,8 +41,10 @@ getVertex (LabelledGraph _ vm) x =
 
 topSort :: (IsVertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
 topSort g =
-  bimap (fmap (getVertex g)) (fmap (getVertex g)) $
-    Algo.topSort $ LAM.skeleton $ graph g
+  bimap (fmap (getVertex g)) (fmap (getVertex g))
+    $ Algo.topSort
+    $ LAM.skeleton
+    $ graph g
 
 clusters :: (IsVertex v, Ord (VertexID v)) => LabelledGraph v e -> [NonEmpty v]
 clusters g =

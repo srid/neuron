@@ -1,10 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Graph
@@ -27,19 +27,16 @@ where
 import Control.Monad.Except
 import Data.Graph.Labelled.Algorithm
 import Data.Graph.Labelled.Build
-import Data.Graph.Labelled.Type
 import qualified Data.Map.Strict as Map
 import Data.Traversable (for)
 import Neuron.Zettelkasten.Error
+import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link (neuronLinkConnections, neuronLinkFromMarkdownLink)
 import Neuron.Zettelkasten.Markdown (extractLinks)
 import Neuron.Zettelkasten.Store (ZettelStore)
 import Neuron.Zettelkasten.Zettel
 import Relude
-
--- | The Zettelkasten graph
-type ZettelGraph = LabelledGraph Zettel [Connection]
 
 -- | Build the Zettelkasten graph from the given list of note files.
 mkZettelGraph :: forall m. MonadError Text m => ZettelStore -> m ZettelGraph
@@ -71,7 +68,7 @@ mkZettelGraph store =
             Nothing ->
               pure []
             Just nlink -> do
-              let conns = neuronLinkConnections store nlink
+              let conns = neuronLinkConnections (Map.elems store) nlink
               -- Check the connections refer to existing zettels
               forM_ (snd <$> conns) $ \zref ->
                 when (isNothing (Map.lookup zref store))

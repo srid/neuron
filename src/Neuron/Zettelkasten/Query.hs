@@ -25,7 +25,6 @@ import Data.Some
 import Lucid
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
-import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -37,7 +36,7 @@ import qualified Text.URI as URI
 --   LinksTo ZettelID
 --   LinksFrom ZettelID
 data Query r where
-  Query_ZettelByID :: ZettelID -> Query Zettel
+  Query_ZettelByID :: ZettelID -> Query (Maybe Zettel)
   Query_ZettelsByTag :: [TagPattern] -> Query [Zettel]
   Query_Tags :: [TagPattern] -> Query (Map Tag Natural)
 
@@ -109,12 +108,12 @@ queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = li
       fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
 
 -- | Run the given query and return the results.
-runQuery :: ZettelStore -> Query r -> r
-runQuery store = \case
+runQuery :: [Zettel] -> Query r -> r
+runQuery vertices = \case
   Query_ZettelByID zid ->
-    lookupStore zid store
+    find ((== zid) . zettelID) vertices
   Query_ZettelsByTag pats ->
-    flip filter (Map.elems store) $ \Zettel {..} ->
+    flip filter vertices $ \Zettel {..} ->
       and $ flip fmap pats $ \pat ->
         any (tagMatch pat) zettelTags
   Query_Tags [] ->
@@ -124,21 +123,20 @@ runQuery store = \case
   where
     allTags :: Map.Map Tag Natural
     allTags =
-      Map.fromListWith (+)
-        $ concatMap (\Zettel {..} -> (,1) <$> zettelTags)
-        $ Map.elems store
+      Map.fromListWith (+) $
+        concatMap (\Zettel {..} -> (,1) <$> zettelTags) vertices
 
 deriveGEq ''Query
 
 deriveGShow ''Query
 
-deriving instance Show (Query Zettel)
+deriving instance Show (Query (Maybe Zettel))
 
 deriving instance Show (Query [Zettel])
 
 deriving instance Show (Query (Map Tag Natural))
 
-deriving instance Eq (Query Zettel)
+deriving instance Eq (Query (Maybe Zettel))
 
 deriving instance Eq (Query [Zettel])
 

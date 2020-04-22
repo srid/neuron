@@ -6,7 +6,7 @@
 module Data.Graph.Labelled.Type
   ( -- * Graph type
     -- TODO: don't expose internals
-    LabelledGraph(..),
+    LabelledGraph (..),
     IsVertex (..),
   )
 where

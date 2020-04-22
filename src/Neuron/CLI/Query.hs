@@ -10,6 +10,7 @@ where
 
 import Data.Aeson
 import qualified Data.Aeson.Text as Aeson
+import qualified Data.Map.Strict as Map
 import Data.Some
 import Data.Tree (Tree (..))
 import Development.Shake (Action)
@@ -24,16 +25,16 @@ import System.FilePath
 
 queryZettelkasten :: FilePath -> Some Query -> Action ()
 queryZettelkasten notesDir query = do
-  store <- mkZettelStore =<< Rib.forEvery ["*.md"] pure
+  zettels <- fmap Map.elems . mkZettelStore =<< Rib.forEvery ["*.md"] pure
   case query of
     Some (Query_ZettelByID zid) -> do
-      let res = runQuery store (Query_ZettelByID zid)
-      putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith res
+      let res = runQuery zettels (Query_ZettelByID zid)
+      putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith <$> res
     Some (Query_ZettelsByTag pats) -> do
-      let res = runQuery store (Query_ZettelsByTag pats)
+      let res = runQuery zettels (Query_ZettelsByTag pats)
       putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith <$> res
     Some (Query_Tags pats) -> do
-      let tags = runQuery store (Query_Tags pats)
+      let tags = runQuery zettels (Query_Tags pats)
       putLTextLn $ Aeson.encodeToLazyText $ toJSON $ fmap treeToJson (tagTree tags)
   where
     -- TODO: Use newtype wrapper and write ToJSON

@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -7,8 +7,8 @@ module Data.Graph.Labelled.Build where
 
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Data.Graph.Labelled.Type
-import Data.Traversable (for)
 import qualified Data.Map.Strict as Map
+import Data.Traversable (for)
 import Relude
 
 -- Build a graph from a list objects that contains information about the
@@ -34,7 +34,8 @@ mkGraphFrom xs edgesFor edgeWhitelist = do
       pure $ flip fmap es $ \(edge, v2) ->
         (edge, vertexID x, v2)
   let edgesFinal = filter (\(e, _, _) -> edgeWhitelist e) edges
-      g = LAM.overlay
-        (LAM.vertices vertexList)
-        (LAM.edges edgesFinal)
+      g =
+        LAM.overlay
+          (LAM.vertices vertexList)
+          (LAM.edges edgesFinal)
   pure $ LabelledGraph g vertexMap

@@ -36,11 +36,11 @@ import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
+import Neuron.Zettelkasten.Graph.Type (getVertices)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (neuronLinkExt, renderZettelLink)
 import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
-import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
@@ -81,7 +81,7 @@ renderRouteBody config r (s, g, x) = do
     Route_ZIndex ->
       renderIndex config (s, g)
     Route_Search {} ->
-      renderSearch s
+      renderSearch g
     Route_Zettel zid ->
       renderZettel config (s, g, x) zid
     Route_Redirect _ ->
@@ -118,14 +118,14 @@ renderIndex Config {..} (store, graph) = do
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderSearch :: forall m. Monad m => ZettelStore -> HtmlT m ()
-renderSearch store = do
+renderSearch :: forall m. Monad m => ZettelGraph -> HtmlT m ()
+renderSearch graph = do
   h1_ [class_ "header"] $ "Search"
   div_ [class_ "ui fluid icon input search"] $ do
     input_ [type_ "text", id_ "search-input"]
     fa "search icon fas fa-search"
   div_ [class_ "ui hidden divider"] mempty
-  let allZettels = runQuery store $ Query_ZettelsByTag []
+  let allZettels = getVertices graph
       allTags = Set.fromList $ concatMap zettelTags allZettels
       index = object ["zettels" .= fmap (object . zettelJson) allZettels, "tags" .= allTags]
   div_ [class_ "ui fluid multiple search selection dropdown", id_ "search-tags"] $ do
@@ -148,7 +148,7 @@ renderZettel config@Config {..} (store, graph, z@Zettel {..}) zid = do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
         let mmarkExts = neuronMMarkExts config
-        MMark.render $ useExtensions (neuronLinkExt store : mmarkExts) zettelContent
+        MMark.render $ useExtensions (neuronLinkExt (getVertices graph) : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do
@@ -223,8 +223,8 @@ renderForest isRoot maxLevel ltheme s g trees =
           let zettelDiv =
                 div_
                   [class_ $ bool "" "ui black label" $ ltheme == LinkTheme_Default]
-          bool id zettelDiv isRoot
-            $ renderZettelLink ltheme zettel
+          bool id zettelDiv isRoot $
+            renderZettelLink ltheme zettel
           when (ltheme == LinkTheme_Default) $ do
             " "
             case G.backlinks zettel g of

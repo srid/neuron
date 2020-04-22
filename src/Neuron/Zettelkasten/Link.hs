@@ -19,7 +19,6 @@ import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query (InvalidQuery (..), Query (..), queryFromMarkdownLink, runQuery)
-import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -28,7 +27,7 @@ import Text.URI (URI)
 
 type family QueryConnection q
 
-type instance QueryConnection Zettel = Connection
+type instance QueryConnection (Maybe Zettel) = Connection
 
 type instance QueryConnection [Zettel] = Connection
 
@@ -36,7 +35,7 @@ type instance QueryConnection (Map Tag Natural) = ()
 
 type family QueryViewTheme q
 
-type instance QueryViewTheme Zettel = ZettelView
+type instance QueryViewTheme (Maybe Zettel) = ZettelView
 
 type instance QueryViewTheme [Zettel] = ZettelsView
 
@@ -80,12 +79,12 @@ neuronLinkFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri} = liftEither 
         Query_Tags _ ->
           pure $ NeuronLink (q, (), ())
 
-neuronLinkConnections :: ZettelStore -> NeuronLink -> [(Connection, ZettelID)]
-neuronLinkConnections store = \case
+neuronLinkConnections :: [Zettel] -> NeuronLink -> [(Connection, ZettelID)]
+neuronLinkConnections zettels = \case
   NeuronLink (Query_ZettelByID zid, conn, _) ->
     [(conn, zid)]
   NeuronLink (q@(Query_ZettelsByTag _pats), conn, _) ->
-    (conn,) . zettelID <$> runQuery store q
+    (conn,) . zettelID <$> runQuery zettels q
   _ ->
     []
 

@@ -26,7 +26,6 @@ import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -36,14 +35,14 @@ import Text.MMark.Extension (Extension, Inline (..))
 import Text.URI.QQ (queryKey)
 
 -- | MMark extension to transform neuron links to custom views
-neuronLinkExt :: HasCallStack => ZettelStore -> Extension
-neuronLinkExt store =
+neuronLinkExt :: HasCallStack => [Zettel] -> Extension
+neuronLinkExt zettels =
   Ext.inlineRender $ \f -> \case
     inline@(Link inner uri _title) ->
       let mlink = MarkdownLink (Ext.asPlainText inner) uri
        in case neuronLinkFromMarkdownLink mlink of
             Right (Just nl) ->
-              renderNeuronLink store nl
+              renderNeuronLink zettels nl
             Right Nothing ->
               f inline
             Left e ->
@@ -55,20 +54,25 @@ neuronLinkExt store =
       f inline
 
 -- | Render the custom view for the given neuron link
-renderNeuronLink :: forall m. (Monad m, HasCallStack) => ZettelStore -> NeuronLink -> HtmlT m ()
-renderNeuronLink store = \case
+renderNeuronLink :: forall m. (Monad m, HasCallStack) => [Zettel] -> NeuronLink -> HtmlT m ()
+renderNeuronLink zettels = \case
   NeuronLink (q@(Query_ZettelByID _zid), _conn, linkTheme) ->
     -- Render a single link
-    renderZettelLink linkTheme $ runQuery store q
+    case runQuery zettels q of
+      Nothing ->
+        -- TODO: See the TODO above
+        error "No zettel for that ID"
+      Just zettel ->
+        renderZettelLink linkTheme zettel
   NeuronLink (q@(Query_ZettelsByTag pats), _conn, ZettelsView {..}) -> do
-    let zettels = sortZettelsReverseChronological $ runQuery store q
+    let matches = sortZettelsReverseChronological $ runQuery zettels q
     toHtml $ Some q
     case zettelsViewGroupByTag of
       False ->
         -- Render a list of links
-        renderZettelLinks zettelsViewLinkTheme zettels
+        renderZettelLinks zettelsViewLinkTheme matches
       True ->
-        forM_ (Map.toList $ groupZettelsByTagsMatching pats zettels) $ \(tag, zettelGrp) -> do
+        forM_ (Map.toList $ groupZettelsByTagsMatching pats matches) $ \(tag, zettelGrp) -> do
           span_ [class_ "ui basic pointing below grey label"] $ do
             i_ [class_ "tag icon"] mempty
             toHtml $ unTag tag
@@ -76,17 +80,17 @@ renderNeuronLink store = \case
   NeuronLink (q@(Query_Tags _), (), ()) -> do
     -- Render a list of tags
     toHtml $ Some q
-    renderTagTree $ foldTagTree $ tagTree $ runQuery store q
+    renderTagTree $ foldTagTree $ tagTree $ runQuery zettels q
   where
     sortZettelsReverseChronological =
       sortOn (Down . zettelIDDay . zettelID)
-    groupZettelsByTagsMatching pats zettels =
-      fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap zettels $ \z ->
+    groupZettelsByTagsMatching pats matches =
+      fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap matches $ \z ->
         flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
     renderZettelLinks :: LinkTheme -> [Zettel] -> HtmlT m ()
-    renderZettelLinks ltheme zettels =
+    renderZettelLinks ltheme zs =
       ul_ $ do
-        forM_ zettels $ \z ->
+        forM_ zs $ \z ->
           li_ $ renderZettelLink ltheme z
 
 -- | Render a link to an individual zettel.
