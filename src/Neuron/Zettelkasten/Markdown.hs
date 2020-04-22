@@ -1,42 +1,19 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Markdown
-  ( neuronMMarkExts,
-    MarkdownLink (..),
+  ( MarkdownLink (..),
     extractLinks,
   )
 where
 
 import Control.Foldl (Fold (..))
 import qualified Data.Set as Set
-import Neuron.Config (Config (..))
-import Neuron.Zettelkasten.Markdown.Extension (setTableClass)
 import Relude
 import Text.MMark (MMark, runScanner)
-import qualified Text.MMark as MMark
 import Text.MMark.Extension (Inline (..))
 import qualified Text.MMark.Extension as Ext
-import qualified Text.MMark.Extension.Common as Ext
 import qualified Text.URI as URI
-
-neuronMMarkExts :: Config -> [MMark.Extension]
-neuronMMarkExts Config {..} =
-  defaultExts
-    <> bool [] [Ext.mathJax (Just '$')] mathJaxSupport
-
-defaultExts :: [MMark.Extension]
-defaultExts =
-  [ Ext.fontAwesome,
-    Ext.footnotes,
-    Ext.kbd,
-    Ext.linkTarget,
-    Ext.punctuationPrettifier,
-    Ext.skylighting,
-    setTableClass "ui celled table"
-  ]
 
 data MarkdownLink = MarkdownLink
   { markdownLinkText :: Text,

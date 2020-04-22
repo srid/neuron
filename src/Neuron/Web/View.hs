@@ -40,7 +40,6 @@ import Neuron.Zettelkasten.Graph.Type (getVertices)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (neuronLinkExt, renderZettelLink)
-import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -146,7 +145,7 @@ renderZettel config@Config {..} (graph, z@Zettel {..}) zid = do
     div_ [class_ "ui raised segments"] $ do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
-        let mmarkExts = neuronMMarkExts config
+        let mmarkExts = getMarkdownExtensions config
         MMark.render $ useExtensions (neuronLinkExt (getVertices graph) : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags

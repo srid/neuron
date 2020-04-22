@@ -10,13 +10,13 @@ where
 
 import Data.Aeson
 import qualified Data.Aeson.Text as Aeson
-import qualified Data.Map.Strict as Map
 import Data.Some
 import Data.Tree (Tree (..))
 import Development.Shake (Action)
+import qualified Neuron.Zettelkasten.Graph as G
+import qualified Neuron.Zettelkasten.Graph.Type as G
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import Neuron.Zettelkasten.Query (Query (..), runQuery)
-import Neuron.Zettelkasten.Store (mkZettelStore)
 import Neuron.Zettelkasten.Tag (tagTree)
 import Neuron.Zettelkasten.Zettel (Zettel (..), zettelJson)
 import Relude
@@ -25,7 +25,7 @@ import System.FilePath
 
 queryZettelkasten :: FilePath -> Some Query -> Action ()
 queryZettelkasten notesDir query = do
-  zettels <- fmap Map.elems . mkZettelStore =<< Rib.forEvery ["*.md"] pure
+  zettels <- fmap G.getVertices . G.loadZettelkasten =<< Rib.forEvery ["*.md"] pure
   case query of
     Some (Query_ZettelByID zid) -> do
       let res = runQuery zettels (Query_ZettelByID zid)

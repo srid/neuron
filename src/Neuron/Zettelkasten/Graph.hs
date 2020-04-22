@@ -12,7 +12,7 @@ module Neuron.Zettelkasten.Graph
     ZettelGraph,
 
     -- * Construction
-    mkZettelGraph,
+    loadZettelkasten,
 
     -- * Algorithm reports
     backlinks,
@@ -29,20 +29,27 @@ import Data.Graph.Labelled.Algorithm
 import Data.Graph.Labelled.Build
 import qualified Data.Map.Strict as Map
 import Data.Traversable (for)
+import Development.Shake (Action)
 import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link (neuronLinkConnections, neuronLinkFromMarkdownLink)
 import Neuron.Zettelkasten.Markdown (extractLinks)
-import Neuron.Zettelkasten.Store (ZettelStore)
 import Neuron.Zettelkasten.Zettel
 import Relude
 
--- | Build the Zettelkasten graph from the given list of note files.
-mkZettelGraph :: forall m. MonadError Text m => ZettelStore -> m ZettelGraph
-mkZettelGraph store =
-  mkGraphFrom @m (Map.elems store) zettelEdges connectionWhitelist
+-- | Load the Zettelkasten from disk, using the given list of zettel files
+loadZettelkasten :: [FilePath] -> Action ZettelGraph
+loadZettelkasten files = do
+  zettels <- mkZettelFromPath `mapM` files
+  either (fail . toString) pure $ mkZettelGraph zettels
+
+-- | Build the Zettelkasten graph from a list of zettels
+mkZettelGraph :: forall m. MonadError Text m => [Zettel] -> m ZettelGraph
+mkZettelGraph zettels =
+  mkGraphFrom @m zettels zettelEdges connectionWhitelist
   where
+    zettelsMap = Map.fromList $ zettels <&> zettelID &&& id
     -- Exclude ordinary connection when building the graph
     --
     -- TODO: Build the graph with all connections, but induce a subgraph when
@@ -68,10 +75,10 @@ mkZettelGraph store =
             Nothing ->
               pure []
             Just nlink -> do
-              let conns = neuronLinkConnections (Map.elems store) nlink
+              let conns = neuronLinkConnections zettels nlink
               -- Check the connections refer to existing zettels
               forM_ (snd <$> conns) $ \zref ->
-                when (isNothing (Map.lookup zref store))
+                when (isNothing (Map.lookup zref zettelsMap))
                   $ throwError
                   $ NeuronError_BrokenZettelRef zettelID zref
               pure conns
