@@ -94,7 +94,6 @@ library
     Neuron.Zettelkasten.Markdown.Extension
     Neuron.Zettelkasten.Markdown.Meta
     Neuron.Zettelkasten.Query
-    Neuron.Zettelkasten.Store
     Neuron.Zettelkasten.Tag
     Neuron.Zettelkasten.Zettel
   other-modules:
