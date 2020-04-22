@@ -8,7 +8,7 @@
 module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson
-import Data.Graph.Labelled.Type
+import Data.Graph.Labelled (Vertex (..))
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Markdown.Meta as Meta
@@ -34,7 +34,7 @@ instance Ord Zettel where
 instance Show Zettel where
   show Zettel {..} = "Zettel:" <> show zettelID
 
-instance IsVertex Zettel where
+instance Vertex Zettel where
   type VertexID Zettel = ZettelID
   vertexID = zettelID
 

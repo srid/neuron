@@ -15,7 +15,7 @@ import Relude
 -- corresponding vertex as well as the outgoing edges.
 mkGraphFrom ::
   forall m e v.
-  (Eq e, Monoid e, Ord (VertexID v), IsVertex v, Monad m) =>
+  (Eq e, Monoid e, Ord (VertexID v), Vertex v, Monad m) =>
   -- | List of objects corresponding to vertexes
   [v] ->
   -- | Outgoing edges, and their vertex, for an object

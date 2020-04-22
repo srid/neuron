@@ -24,13 +24,13 @@ where
 
 import Control.Monad.Except
 import Data.FileEmbed (embedFile)
+import qualified Data.Graph.Labelled as G
 import Development.Shake (Action, readFile')
 import Dhall (FromDhall)
 import qualified Dhall
 import Dhall.TH
 import Neuron.Parser
 import qualified Neuron.Zettelkasten.Graph as G
-import qualified Neuron.Zettelkasten.Graph.Type as G
 import qualified Neuron.Zettelkasten.ID as Z
 import Neuron.Zettelkasten.Markdown.Extension (setTableClass)
 import Relude

@@ -25,7 +25,7 @@ getVertices (LabelledGraph _ lm) =
   Map.elems lm
 
 -- | Return the backlinks to the given vertex
-backlinks :: (IsVertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
+backlinks :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
 backlinks (vertexID -> zid) =
   withVertexID $ toList . LAM.preSet zid
 
@@ -39,26 +39,26 @@ getVertex :: Ord (VertexID a) => LabelledGraph a e -> VertexID a -> a
 getVertex (LabelledGraph _ vm) x =
   fromMaybe (error "vertex not in map") $ Map.lookup x vm
 
-topSort :: (IsVertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
+topSort :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
 topSort g =
   bimap (fmap (getVertex g)) (fmap (getVertex g))
     $ Algo.topSort
     $ LAM.skeleton
     $ graph g
 
-clusters :: (IsVertex v, Ord (VertexID v)) => LabelledGraph v e -> [NonEmpty v]
+clusters :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> [NonEmpty v]
 clusters g =
   fmap (fmap $ getVertex g) $ mothers $ LAM.skeleton $ graph g
 
 -- | Compute the dfsForest from the given vertices.
-dfsForestFrom :: (IsVertex v, Ord (VertexID v)) => [v] -> LabelledGraph v e -> Forest v
+dfsForestFrom :: (Vertex v, Ord (VertexID v)) => [v] -> LabelledGraph v e -> Forest v
 dfsForestFrom (fmap vertexID -> vs) g =
   fmap (fmap $ getVertex g) $ Algo.dfsForestFrom vs $ LAM.skeleton $ graph g
 
 -- | Compute the dfsForest ending in the given vertex.
 --
 -- Return the forest flipped, such that the given vertex is the root.
-dfsForestBackwards :: (Monoid e, IsVertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> Forest v
+dfsForestBackwards :: (Monoid e, Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> Forest v
 dfsForestBackwards fromV (LabelledGraph g' v') =
   dfsForestFrom [fromV] $ LabelledGraph (LAM.transpose g') v'
 

@@ -12,12 +12,12 @@ module Neuron.Web.Generate
   )
 where
 
+import qualified Data.Graph.Labelled as G
 import Development.Shake (Action)
 import qualified Neuron.Config as Z
 import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph as G
-import qualified Neuron.Zettelkasten.Graph.Type as G
 import qualified Neuron.Zettelkasten.Zettel as Z
 import Options.Applicative
 import Relude

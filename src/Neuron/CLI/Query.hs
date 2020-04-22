@@ -10,11 +10,11 @@ where
 
 import Data.Aeson
 import qualified Data.Aeson.Text as Aeson
+import qualified Data.Graph.Labelled as G
 import Data.Some
 import Data.Tree (Tree (..))
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as G
-import qualified Neuron.Zettelkasten.Graph.Type as G
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import Neuron.Zettelkasten.Query (Query (..), runQuery)
 import Neuron.Zettelkasten.Tag (tagTree)

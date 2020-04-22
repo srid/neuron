@@ -27,6 +27,7 @@ import Data.Aeson ((.=), object)
 import qualified Data.Aeson.Text as Aeson
 import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
+import qualified Data.Graph.Labelled as G
 import qualified Data.Set as Set
 import Data.Tree (Tree (..))
 import Lucid
@@ -35,8 +36,6 @@ import Neuron.Version (neuronVersionFull)
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Graph (ZettelGraph)
-import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.Graph.Type (getVertices)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (neuronLinkExt, renderZettelLink)
@@ -123,7 +122,7 @@ renderSearch graph = do
     input_ [type_ "text", id_ "search-input"]
     fa "search icon fas fa-search"
   div_ [class_ "ui hidden divider"] mempty
-  let allZettels = getVertices graph
+  let allZettels = G.getVertices graph
       allTags = Set.fromList $ concatMap zettelTags allZettels
       index = object ["zettels" .= fmap (object . zettelJson) allZettels, "tags" .= allTags]
   div_ [class_ "ui fluid multiple search selection dropdown", id_ "search-tags"] $ do
@@ -146,7 +145,7 @@ renderZettel config@Config {..} (graph, z@Zettel {..}) zid = do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
         let mmarkExts = getMarkdownExtensions config
-        MMark.render $ useExtensions (neuronLinkExt (getVertices graph) : mmarkExts) zettelContent
+        MMark.render $ useExtensions (neuronLinkExt (G.getVertices graph) : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do

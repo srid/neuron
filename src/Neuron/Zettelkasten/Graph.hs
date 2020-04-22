@@ -25,18 +25,19 @@ module Neuron.Zettelkasten.Graph
 where
 
 import Control.Monad.Except
-import Data.Graph.Labelled.Algorithm
-import Data.Graph.Labelled.Build
+import Data.Graph.Labelled
 import qualified Data.Map.Strict as Map
 import Data.Traversable (for)
 import Development.Shake (Action)
 import Neuron.Zettelkasten.Error
-import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link (neuronLinkConnections, neuronLinkFromMarkdownLink)
 import Neuron.Zettelkasten.Markdown (extractLinks)
 import Neuron.Zettelkasten.Zettel
 import Relude
+
+-- | The Zettelkasten graph
+type ZettelGraph = LabelledGraph Zettel [Connection]
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkasten :: [FilePath] -> Action ZettelGraph
