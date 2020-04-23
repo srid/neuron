@@ -25,7 +25,6 @@ import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.Theme
-import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Tag (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import Neuron.Zettelkasten.Zettel
@@ -33,6 +32,7 @@ import Relude
 import qualified Rib
 import qualified Text.MMark.Extension as Ext
 import Text.MMark.Extension (Extension, Inline (..))
+import Text.MMark.MarkdownLink (MarkdownLink (..))
 import Text.URI.QQ (queryKey)
 
 -- | MMark extension to transform neuron links to custom views

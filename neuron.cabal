@@ -88,12 +88,12 @@ library
     Neuron.Zettelkasten.Link
     Neuron.Zettelkasten.Link.Theme
     Neuron.Zettelkasten.Link.View
-    Neuron.Zettelkasten.Markdown
-    Neuron.Zettelkasten.Markdown.Extension
-    Neuron.Zettelkasten.Markdown.Meta
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Tag
     Neuron.Zettelkasten.Zettel
+    Neuron.Zettelkasten.Zettel.Meta
+    Text.MMark.Extension.SetTableClass
+    Text.MMark.MarkdownLink
   other-modules:
     Data.Graph.Labelled.Build
     Data.Graph.Labelled.Type

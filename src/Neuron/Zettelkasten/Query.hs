@@ -24,10 +24,10 @@ import qualified Data.Map.Strict as Map
 import Data.Some
 import Lucid
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
+import Text.MMark.MarkdownLink (MarkdownLink (..))
 import qualified Text.URI as URI
 
 -- | Query represents a way to query the Zettelkasten.

@@ -8,7 +8,7 @@ where
 
 import Data.Some
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Markdown
+import Text.MMark.MarkdownLink
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Tag
 import Relude

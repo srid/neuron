@@ -1,7 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Markdown.Extension
+module Text.MMark.Extension.SetTableClass
   ( setTableClass,
   )
 where

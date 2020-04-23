@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Markdown
+module Text.MMark.MarkdownLink
   ( MarkdownLink (..),
     extractLinks,
   )

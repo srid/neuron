@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Markdown.Meta
+module Neuron.Zettelkasten.Zettel.Meta
   ( Meta (..),
     getMeta,
   )

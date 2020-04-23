@@ -32,13 +32,13 @@ import Dhall.TH
 import Neuron.Parser
 import Neuron.Zettelkasten.Graph.Type
 import qualified Neuron.Zettelkasten.ID as Z
-import Neuron.Zettelkasten.Markdown.Extension (setTableClass)
 import Relude
 import qualified Rib
 import System.Directory
 import System.FilePath
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension.Common as Ext
+import Text.MMark.Extension.SetTableClass (setTableClass)
 import qualified Text.Megaparsec.Char as M
 
 -- | Config type for @neuron.dhall@

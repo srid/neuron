@@ -11,8 +11,8 @@ import Data.Aeson
 import Data.Graph.Labelled (Vertex (..))
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
-import qualified Neuron.Zettelkasten.Markdown.Meta as Meta
 import Neuron.Zettelkasten.Tag
+import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude hiding (show)
 import qualified Rib.Parser.MMark as MMark
 import Text.MMark (MMark)

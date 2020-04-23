@@ -21,11 +21,11 @@ import Data.Some
 import Data.Traversable (for)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Theme
-import Neuron.Zettelkasten.Markdown
 import Neuron.Zettelkasten.Query (InvalidQuery (..), Query (..), queryFromMarkdownLink, runQuery)
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
+import Text.MMark.MarkdownLink
 import qualified Text.URI as URI
 import Text.URI (URI)
 
