@@ -9,8 +9,8 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Special Zettel links in Markdown
-module Neuron.Zettelkasten.Link.View
+-- | Extension and render functions for queries
+module Neuron.Zettelkasten.Query.View
   ( neuronLinkExt,
     renderZettelLink,
   )

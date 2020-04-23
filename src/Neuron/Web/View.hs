@@ -38,8 +38,8 @@ import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
-import Neuron.Zettelkasten.Link.View (renderZettelLink)
 import Neuron.Zettelkasten.Query.Theme (LinkTheme (..))
+import Neuron.Zettelkasten.Query.View (renderZettelLink)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
