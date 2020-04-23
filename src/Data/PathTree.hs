@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Util.Tree
+module Data.PathTree
   ( mkTreeFromPaths,
     annotatePathsWith,
     foldSingleParentsWith,

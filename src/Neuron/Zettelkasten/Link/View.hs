@@ -26,7 +26,7 @@ import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Tag (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
+import Data.TagTree (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib

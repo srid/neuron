@@ -10,7 +10,7 @@ import Data.Some
 import Neuron.Zettelkasten.ID
 import Text.MMark.MarkdownLink
 import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Tag
+import Data.TagTree
 import Relude
 import Test.Hspec
 import Text.URI

@@ -10,7 +10,7 @@ where
 import Data.Aeson
 import Data.Time.Calendar
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Tag
+import Data.TagTree
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Rib.Parser.MMark (parsePure)

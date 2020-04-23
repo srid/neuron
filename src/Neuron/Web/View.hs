@@ -29,6 +29,7 @@ import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
 import qualified Data.Set as Set
+import Data.TagTree (Tag (..))
 import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Config
@@ -39,7 +40,6 @@ import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (renderZettelLink)
-import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib

@@ -10,7 +10,7 @@ module Neuron.Zettelkasten.Zettel.Meta
 where
 
 import Data.Aeson
-import Neuron.Zettelkasten.Tag
+import Data.TagTree (Tag)
 import Relude
 import Text.MMark (MMark, projectYaml)
 

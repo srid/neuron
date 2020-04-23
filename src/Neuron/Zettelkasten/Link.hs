@@ -18,11 +18,11 @@ import Control.Monad.Except
 import Data.Dependent.Sum
 import qualified Data.Map.Strict as Map
 import Data.Some
+import Data.TagTree (Tag)
 import Data.Traversable (for)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Query (InvalidQuery (..), Query (..), queryFromMarkdownLink, runQuery)
-import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Text.MMark.MarkdownLink

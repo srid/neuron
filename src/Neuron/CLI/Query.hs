@@ -11,12 +11,12 @@ where
 import Data.Aeson
 import qualified Data.Aeson.Text as Aeson
 import Data.Some
+import Data.TagTree (tagTree)
 import Data.Tree (Tree (..))
 import Development.Shake (Action)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import Neuron.Zettelkasten.Query (Query (..), runQuery)
-import Neuron.Zettelkasten.Tag (tagTree)
 import Neuron.Zettelkasten.Zettel (Zettel (..), zettelJson)
 import Relude
 import qualified Rib

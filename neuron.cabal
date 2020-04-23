@@ -69,6 +69,8 @@ library
   import: library-common
   exposed-modules:
     Data.Graph.Labelled
+    Data.TagTree
+    Data.PathTree
     Neuron.CLI
     Neuron.CLI.New
     Neuron.CLI.Query
@@ -89,7 +91,6 @@ library
     Neuron.Zettelkasten.Link.Theme
     Neuron.Zettelkasten.Link.View
     Neuron.Zettelkasten.Query
-    Neuron.Zettelkasten.Tag
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
     Text.MMark.Extension.SetTableClass

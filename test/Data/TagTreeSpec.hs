@@ -1,21 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.TagSpec
+module Data.TagTreeSpec
   ( spec,
   )
 where
 
-import qualified Neuron.Zettelkasten.Tag as Z
+import Data.TagTree
 import Relude
 import Test.Hspec
 
 spec :: Spec
 spec = do
   describe "Tag matching" $ do
-    forM_ tagMatchCases $ \(name, Z.mkTagPattern -> pat, fmap Z.Tag -> matching, fmap Z.Tag -> failing) -> do
+    forM_ tagMatchCases $ \(name, mkTagPattern -> pat, fmap Tag -> matching, fmap Tag -> failing) -> do
       it name $ do
         forM_ matching $ \tag -> do
           pat `shouldMatch` tag
@@ -56,16 +55,16 @@ tagMatchCases =
     )
   ]
 
-shouldMatch :: Z.TagPattern -> Z.Tag -> Expectation
+shouldMatch :: TagPattern -> Tag -> Expectation
 shouldMatch pat tag
-  | Z.tagMatch pat tag = pure ()
+  | tagMatch pat tag = pure ()
   | otherwise =
     expectationFailure $
-      Z.unTagPattern pat <> " was expected to match " <> toString (Z.unTag tag) <> " but didn't"
+      unTagPattern pat <> " was expected to match " <> toString (unTag tag) <> " but didn't"
 
-shouldNotMatch :: Z.TagPattern -> Z.Tag -> Expectation
+shouldNotMatch :: TagPattern -> Tag -> Expectation
 shouldNotMatch pat tag
-  | Z.tagMatch pat tag =
+  | tagMatch pat tag =
     expectationFailure $
-      Z.unTagPattern pat <> " wasn't expected to match tag " <> toString (Z.unTag tag) <> " but it did"
+      unTagPattern pat <> " wasn't expected to match tag " <> toString (unTag tag) <> " but it did"
   | otherwise = pure ()

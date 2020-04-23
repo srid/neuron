@@ -9,9 +9,9 @@ module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson
 import Data.Graph.Labelled (Vertex (..))
+import Data.TagTree (Tag)
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Tag
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude hiding (show)
 import qualified Rib.Parser.MMark as MMark

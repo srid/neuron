@@ -1,12 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Util.TreeSpec
+module Data.PathTreeSpec
   ( spec,
   )
 where
 
 import Data.Tree (Forest, Tree (..))
-import Neuron.Util.Tree
+import Data.PathTree
 import Relude
 import System.FilePath ((</>))
 import Test.Hspec

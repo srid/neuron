@@ -4,9 +4,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- TODO: Move TagPattern to a different module, as well as tagTree to its own
--- module.
-module Neuron.Zettelkasten.Tag
+module Data.TagTree
   ( Tag (..),
     TagPattern (unTagPattern),
     TagNode (..),
@@ -22,13 +20,13 @@ where
 import Control.Monad.Combinators.NonEmpty (sepBy1)
 import Data.Aeson
 import qualified Data.Map.Strict as Map
+import Data.PathTree (annotatePathsWith, foldSingleParentsWith, mkTreeFromPaths)
 import qualified Data.Text as T
 import Data.Tree (Forest)
 import Neuron.Parser
-import Neuron.Util.Tree (annotatePathsWith, foldSingleParentsWith, mkTreeFromPaths)
-import Neuron.Zettelkasten.ID (customIDParser)
 import Relude
 import System.FilePattern
+import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 
 -- | Tag metadata field in Zettel notes
@@ -76,7 +74,7 @@ deconstructTag (Tag s) =
       nodeParser `sepBy1` M.char '/'
     nodeParser :: Parser TagNode
     nodeParser =
-      TagNode <$> customIDParser
+      TagNode . toText <$> M.some (M.anySingleBut '/')
 
 constructTag :: NonEmpty TagNode -> Tag
 constructTag (fmap unTagNode . toList -> nodes) =
