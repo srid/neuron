@@ -1,39 +1,29 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Graph.Labelled.Build where
 
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
-import Data.Graph.Labelled.Type
-import Data.Traversable (for)
+import Data.Graph.Labelled.Type (LabelledGraph (LabelledGraph), Vertex (..))
+import qualified Data.Map.Strict as Map
 import Relude
 
 -- Build a graph from a list objects that contains information about the
 -- corresponding vertex as well as the outgoing edges.
 mkGraphFrom ::
-  forall m e v a.
-  (Eq e, Monoid e, Ord v, Monad m) =>
-  -- | List of objects corresponding to vertexes
-  [a] ->
-  -- | Make vertex from an object
-  (a -> v) ->
-  -- | Outgoing edges, and their vertex, for an object
-  --
-  -- Warning: This function may return vertices that do not belong to the graph.
-  (a -> m [(e, v)]) ->
-  -- | A function to filter relevant edges
-  (e -> Bool) ->
-  m (LabelledGraph v e)
-mkGraphFrom xs vertexFor edgesFor edgeWhitelist = do
-  let vertices = vertexFor <$> xs
-  edges <-
-    fmap concat $ for xs $ \x -> do
-      es <- edgesFor x
-      pure $ flip fmap es $ \(edge, v2) ->
-        (edge, vertexFor x, v2)
-  let edgesFinal = filter (\(e, _, _) -> edgeWhitelist e) edges
-  pure $
-    LAM.overlay
-      (LAM.vertices vertices)
-      (LAM.edges edgesFinal)
+  forall e v.
+  (Eq e, Monoid e, Ord (VertexID v), Vertex v) =>
+  -- | List of known vertices in the graph.
+  [v] ->
+  [(e, v, v)] ->
+  LabelledGraph v e
+mkGraphFrom xs es =
+  let vertexList = vertexID <$> xs
+      vertexMap = Map.fromList $ fmap (vertexID &&& id) xs
+      edges = flip fmap es $ \(e, v1, v2) -> (e, vertexID v1, vertexID v2)
+      graph =
+        LAM.overlay
+          (LAM.vertices vertexList)
+          (LAM.edges edges)
+   in LabelledGraph graph vertexMap

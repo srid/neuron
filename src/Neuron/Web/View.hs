@@ -27,6 +27,7 @@ import Data.Aeson ((.=), object)
 import qualified Data.Aeson.Text as Aeson
 import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
+import qualified Data.Graph.Labelled as G
 import qualified Data.Set as Set
 import Data.Tree (Tree (..))
 import Lucid
@@ -35,13 +36,10 @@ import Neuron.Version (neuronVersionFull)
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Graph (ZettelGraph)
-import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
+import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (neuronLinkExt, renderZettelLink)
-import Neuron.Zettelkasten.Markdown (neuronMMarkExts)
-import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -58,7 +56,7 @@ searchScript = $(embedStringFile "./src-js/search.js")
 helloScript :: Text
 helloScript = $(embedStringFile "./src-purescript/hello/index.js")
 
-renderRouteHead :: Monad m => Config -> Route store graph a -> store -> HtmlT m ()
+renderRouteHead :: Monad m => Config -> Route graph a -> a -> HtmlT m ()
 renderRouteHead config r val = do
   meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
   meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
@@ -75,20 +73,20 @@ renderRouteHead config r val = do
       toHtml $ routeOpenGraph config val r
       style_ [type_ "text/css"] $ styleToCss tango
 
-renderRouteBody :: Monad m => Config -> Route store graph a -> (store, graph, a) -> HtmlT m ()
-renderRouteBody config r (s, g, x) = do
+renderRouteBody :: Monad m => Config -> Route graph a -> (graph, a) -> HtmlT m ()
+renderRouteBody config r (g, x) = do
   case r of
     Route_ZIndex ->
-      renderIndex config (s, g)
+      renderIndex config g
     Route_Search {} ->
-      renderSearch s
+      renderSearch g
     Route_Zettel zid ->
-      renderZettel config (s, g, x) zid
+      renderZettel config (g, x) zid
     Route_Redirect _ ->
       meta_ [httpEquiv_ "Refresh", content_ $ "0; url=" <> (Rib.routeUrlRel $ Route_Zettel x)]
 
-renderIndex :: Monad m => Config -> (ZettelStore, ZettelGraph) -> HtmlT m ()
-renderIndex Config {..} (store, graph) = do
+renderIndex :: Monad m => Config -> ZettelGraph -> HtmlT m ()
+renderIndex Config {..} graph = do
   let neuronTheme = Theme.mkTheme theme
   h1_ [class_ "header"] $ "Zettel Index"
   div_ [class_ "z-index"] $ do
@@ -96,8 +94,8 @@ renderIndex Config {..} (store, graph) = do
     case G.topSort graph of
       Left (toList -> cyc) -> div_ [class_ "ui orange segment"] $ do
         h2_ "Cycle detected"
-        forM_ cyc $ \zid ->
-          li_ $ renderZettelLink LinkTheme_Default $ lookupStore zid store
+        forM_ cyc $ \zettel ->
+          li_ $ renderZettelLink LinkTheme_Default zettel
       _ -> mempty
     let clusters = sortMothers $ G.clusters graph
     p_ $ do
@@ -107,7 +105,7 @@ renderIndex Config {..} (store, graph) = do
       div_ [class_ $ "ui stacked " <> Theme.semanticColor neuronTheme <> " segment"] $ do
         let forest = G.dfsForestFrom zids graph
         -- Forest of zettels, beginning with mother vertices.
-        ul_ $ renderForest True Nothing LinkTheme_Default store graph forest
+        ul_ $ renderForest True Nothing LinkTheme_Default graph forest
     renderBrandFooter True
   -- See ./src-purescript/hello/README.md
   script_ helloScript
@@ -118,14 +116,14 @@ renderIndex Config {..} (store, graph) = do
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderSearch :: forall m. Monad m => ZettelStore -> HtmlT m ()
-renderSearch store = do
+renderSearch :: forall m. Monad m => ZettelGraph -> HtmlT m ()
+renderSearch graph = do
   h1_ [class_ "header"] $ "Search"
   div_ [class_ "ui fluid icon input search"] $ do
     input_ [type_ "text", id_ "search-input"]
     fa "search icon fas fa-search"
   div_ [class_ "ui hidden divider"] mempty
-  let allZettels = runQuery store $ Query_ZettelsByTag []
+  let allZettels = G.getVertices graph
       allTags = Set.fromList $ concatMap zettelTags allZettels
       index = object ["zettels" .= fmap (object . zettelJson) allZettels, "tags" .= allTags]
   div_ [class_ "ui fluid multiple search selection dropdown", id_ "search-tags"] $ do
@@ -140,28 +138,28 @@ renderSearch store = do
   script_ $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   script_ searchScript
 
-renderZettel :: forall m. Monad m => Config -> (ZettelStore, ZettelGraph, Zettel) -> ZettelID -> HtmlT m ()
-renderZettel config@Config {..} (store, graph, Zettel {..}) zid = do
+renderZettel :: forall m. Monad m => Config -> (ZettelGraph, (Zettel, ZettelQueryResource)) -> ZettelID -> HtmlT m ()
+renderZettel config@Config {..} (graph, (z@Zettel {..}, zd)) zid = do
   let neuronTheme = Theme.mkTheme theme
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segments"] $ do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
-        let mmarkExts = neuronMMarkExts config
-        MMark.render $ useExtensions (neuronLinkExt store : mmarkExts) zettelContent
+        let mmarkExts = getMarkdownExtensions config
+        MMark.render $ useExtensions (neuronLinkExt zd : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Connections"
-          let forest = G.obviateRootUnlessForest zid $ G.dfsForestFrom [zid] graph
-          ul_ $ renderForest True (Just 2) LinkTheme_Simple store graph forest
+          let forest = G.obviateRootUnlessForest z $ G.dfsForestFrom [z] graph
+          ul_ $ renderForest True (Just 2) LinkTheme_Simple graph forest
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Navigate up"
-          let forestB = G.obviateRootUnlessForest zid $ G.dfsForestBackwards zid graph
+          let forestB = G.obviateRootUnlessForest z $ G.dfsForestBackwards z graph
           ul_ $ do
-            renderForest True Nothing LinkTheme_Simple store graph forestB
+            renderForest True Nothing LinkTheme_Simple graph forestB
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
       div_ [class_ "ui equal width grid"] $ do
         div_ [class_ "center aligned column"] $ do
@@ -210,33 +208,30 @@ renderForest ::
   Bool ->
   Maybe Int ->
   LinkTheme ->
-  ZettelStore ->
   ZettelGraph ->
-  [Tree ZettelID] ->
+  [Tree Zettel] ->
   HtmlT m ()
-renderForest isRoot maxLevel ltheme s g trees =
+renderForest isRoot maxLevel ltheme g trees =
   case maxLevel of
     Just 0 -> mempty
     _ -> do
-      forM_ (sortForest trees) $ \(Node zid subtrees) ->
+      forM_ (sortForest trees) $ \(Node zettel subtrees) ->
         li_ $ do
           let zettelDiv =
                 div_
                   [class_ $ bool "" "ui black label" $ ltheme == LinkTheme_Default]
-          bool id zettelDiv isRoot
-            $ renderZettelLink ltheme
-            $ lookupStore zid s
+          bool id zettelDiv isRoot $
+            renderZettelLink ltheme zettel
           when (ltheme == LinkTheme_Default) $ do
             " "
-            case G.backlinks zid g of
+            case G.backlinks zettel g of
               conns@(_ : _ : _) ->
                 -- Has two or more backlinks
-                forM_ conns $ \zid2 -> do
-                  let z2 = lookupStore zid2 s
-                  i_ [class_ "fas fa-link", title_ $ zettelIDText zid2 <> " " <> zettelTitle z2] mempty
+                forM_ conns $ \zettel2 -> do
+                  i_ [class_ "fas fa-link", title_ $ zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2] mempty
               _ -> mempty
           when (length subtrees > 0) $ do
-            ul_ $ renderForest False ((\n -> n - 1) <$> maxLevel) ltheme s g subtrees
+            ul_ $ renderForest False ((\n -> n - 1) <$> maxLevel) ltheme g subtrees
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum

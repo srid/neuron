@@ -68,9 +68,7 @@ common library-common
 library
   import: library-common
   exposed-modules:
-    Data.Graph.Labelled.Build
-    Data.Graph.Labelled.Type
-    Data.Graph.Labelled.Algorithm
+    Data.Graph.Labelled
     Neuron.CLI
     Neuron.CLI.New
     Neuron.CLI.Query
@@ -94,10 +92,12 @@ library
     Neuron.Zettelkasten.Markdown.Extension
     Neuron.Zettelkasten.Markdown.Meta
     Neuron.Zettelkasten.Query
-    Neuron.Zettelkasten.Store
     Neuron.Zettelkasten.Tag
     Neuron.Zettelkasten.Zettel
   other-modules:
+    Data.Graph.Labelled.Build
+    Data.Graph.Labelled.Type
+    Data.Graph.Labelled.Algorithm
     Neuron.Version.RepoVersion
     Paths_neuron
 

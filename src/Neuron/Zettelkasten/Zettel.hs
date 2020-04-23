@@ -1,13 +1,14 @@
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson
+import Data.Graph.Labelled (Vertex (..))
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Markdown.Meta as Meta
@@ -32,6 +33,10 @@ instance Ord Zettel where
 
 instance Show Zettel where
   show Zettel {..} = "Zettel:" <> show zettelID
+
+instance Vertex Zettel where
+  type VertexID Zettel = ZettelID
+  vertexID = zettelID
 
 zettelJson :: KeyValue a => Zettel -> [a]
 zettelJson Zettel {..} =

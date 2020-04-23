@@ -16,6 +16,7 @@ module Neuron.Zettelkasten.Link.View
   )
 where
 
+import Data.Dependent.Sum
 import qualified Data.Map.Strict as Map
 import Data.Some
 import Data.Tree
@@ -26,7 +27,6 @@ import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
 import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Store
 import Neuron.Zettelkasten.Tag (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -36,57 +36,48 @@ import Text.MMark.Extension (Extension, Inline (..))
 import Text.URI.QQ (queryKey)
 
 -- | MMark extension to transform neuron links to custom views
-neuronLinkExt :: HasCallStack => ZettelStore -> Extension
-neuronLinkExt store =
+neuronLinkExt :: HasCallStack => ZettelQueryResource -> Extension
+neuronLinkExt zqr =
   Ext.inlineRender $ \f -> \case
     inline@(Link inner uri _title) ->
-      let mlink = MarkdownLink (Ext.asPlainText inner) uri
-       in case neuronLinkFromMarkdownLink mlink of
-            Right (Just nl) ->
-              renderNeuronLink store nl
-            Right Nothing ->
-              f inline
-            Left e ->
-              -- TODO: Build the links during graph construction, and pass it to
-              -- the extension from rendering stage. This way we don't have to
-              -- re-parse the URIs and needlessly handle the errors.
-              error $ show e
+      MarkdownLink (Ext.asPlainText inner) uri
+        & flip Map.lookup zqr
+        & maybe (f inline) renderNeuronLink
     inline ->
       f inline
 
 -- | Render the custom view for the given neuron link
-renderNeuronLink :: forall m. (Monad m, HasCallStack) => ZettelStore -> NeuronLink -> HtmlT m ()
-renderNeuronLink store = \case
-  NeuronLink (q@(Query_ZettelByID _zid), _conn, linkTheme) ->
-    -- Render a single link
-    renderZettelLink linkTheme $ runQuery store q
-  NeuronLink (q@(Query_ZettelsByTag pats), _conn, ZettelsView {..}) -> do
-    let zettels = sortZettelsReverseChronological $ runQuery store q
+renderNeuronLink :: forall m. (Monad m, HasCallStack) => DSum Query EvaluatedQuery -> HtmlT m ()
+renderNeuronLink = \case
+  Query_ZettelByID _zid :=> EvaluatedQuery {..} ->
+    renderZettelLink evaluatedQueryViewTheme evaluatedQueryResult
+  q@(Query_ZettelsByTag pats) :=> EvaluatedQuery {..} -> do
+    let matches = sortZettelsReverseChronological evaluatedQueryResult
     toHtml $ Some q
-    case zettelsViewGroupByTag of
+    case zettelsViewGroupByTag evaluatedQueryViewTheme of
       False ->
         -- Render a list of links
-        renderZettelLinks zettelsViewLinkTheme zettels
+        renderZettelLinks (zettelsViewLinkTheme evaluatedQueryViewTheme) matches
       True ->
-        forM_ (Map.toList $ groupZettelsByTagsMatching pats zettels) $ \(tag, zettelGrp) -> do
+        forM_ (Map.toList $ groupZettelsByTagsMatching pats matches) $ \(tag, zettelGrp) -> do
           span_ [class_ "ui basic pointing below grey label"] $ do
             i_ [class_ "tag icon"] mempty
             toHtml $ unTag tag
-          renderZettelLinks zettelsViewLinkTheme zettelGrp
-  NeuronLink (q@(Query_Tags _), (), ()) -> do
+          renderZettelLinks (zettelsViewLinkTheme evaluatedQueryViewTheme) zettelGrp
+  q@(Query_Tags _) :=> EvaluatedQuery {..} -> do
     -- Render a list of tags
     toHtml $ Some q
-    renderTagTree $ foldTagTree $ tagTree $ runQuery store q
+    renderTagTree $ foldTagTree $ tagTree evaluatedQueryResult
   where
     sortZettelsReverseChronological =
       sortOn (Down . zettelIDDay . zettelID)
-    groupZettelsByTagsMatching pats zettels =
-      fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap zettels $ \z ->
+    groupZettelsByTagsMatching pats matches =
+      fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap matches $ \z ->
         flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
     renderZettelLinks :: LinkTheme -> [Zettel] -> HtmlT m ()
-    renderZettelLinks ltheme zettels =
+    renderZettelLinks ltheme zs =
       ul_ $ do
-        forM_ zettels $ \z ->
+        forM_ zs $ \z ->
           li_ $ renderZettelLink ltheme z
 
 -- | Render a link to an individual zettel.

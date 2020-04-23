@@ -3,7 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Graph
@@ -11,7 +13,7 @@ module Neuron.Zettelkasten.Graph
     ZettelGraph,
 
     -- * Construction
-    mkZettelGraph,
+    loadZettelkasten,
 
     -- * Algorithm reports
     backlinks,
@@ -24,27 +26,56 @@ module Neuron.Zettelkasten.Graph
 where
 
 import Control.Monad.Except
-import Data.Graph.Labelled.Algorithm
-import Data.Graph.Labelled.Build
-import Data.Graph.Labelled.Type
+import Data.Dependent.Sum
+import Data.Graph.Labelled
 import qualified Data.Map.Strict as Map
 import Data.Traversable (for)
+import Development.Shake (Action)
 import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link (neuronLinkConnections, neuronLinkFromMarkdownLink)
-import Neuron.Zettelkasten.Markdown (extractLinks)
-import Neuron.Zettelkasten.Store (ZettelStore)
+import Neuron.Zettelkasten.Link
+import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Zettel
 import Relude
 
 -- | The Zettelkasten graph
-type ZettelGraph = LabelledGraph ZettelID [Connection]
+type ZettelGraph = LabelledGraph Zettel [Connection]
 
--- | Build the Zettelkasten graph from the given list of note files.
-mkZettelGraph :: forall m. MonadError Text m => ZettelStore -> m ZettelGraph
-mkZettelGraph store =
-  mkGraphFrom @m (Map.elems store) zettelID zettelEdges connectionWhitelist
+-- | Load the Zettelkasten from disk, using the given list of zettel files
+loadZettelkasten :: [FilePath] -> Action (ZettelGraph, [(Zettel, ZettelQueryResource)])
+loadZettelkasten files = do
+  zettels <- mkZettelFromPath `mapM` files
+  either (fail . show) pure $ mkZettelGraph zettels
+
+-- | Build the Zettelkasten graph from a list of zettels
+mkZettelGraph ::
+  forall m.
+  MonadError NeuronError m =>
+  [Zettel] ->
+  m (ZettelGraph, [(Zettel, ZettelQueryResource)])
+mkZettelGraph zettels = do
+  zettelsWithQueryResults <-
+    liftEither $ runExcept $ do
+      for zettels $ \z ->
+        withExcept (NeuronError_BadQuery (zettelID z)) $
+          (z,) <$> evaluateQueries zettels z
+  let edges :: [([Connection], Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, qm) ->
+        let conns :: [([Connection], Zettel)] = concatMap getConnections $ Map.elems qm
+            connsFiltered = filter (connectionWhitelist . fst) conns
+         in flip fmap connsFiltered $ \(cs, z2) -> (cs, z, z2)
+  pure (mkGraphFrom zettels edges, zettelsWithQueryResults)
   where
+    -- TODO: Handle conflicts in edge monoid operation (same link but with
+    -- different connection type), and consequently use a sensible type other
+    -- than list.
+    getConnections :: DSum Query EvaluatedQuery -> [([Connection], Zettel)]
+    getConnections = \case
+      Query_ZettelByID _ :=> EvaluatedQuery {..} ->
+        [([evaluatedQueryConnection], evaluatedQueryResult)]
+      Query_ZettelsByTag _ :=> EvaluatedQuery {..} ->
+        ([evaluatedQueryConnection],) <$> evaluatedQueryResult
+      _ ->
+        []
     -- Exclude ordinary connection when building the graph
     --
     -- TODO: Build the graph with all connections, but induce a subgraph when
@@ -53,27 +84,3 @@ mkZettelGraph store =
     -- relevant. See #34
     connectionWhitelist cs =
       OrdinaryConnection `notElem` cs
-    -- Get the outgoing edges from this zettel
-    --
-    -- TODO: Handle conflicts in edge monoid operation (same link but with
-    -- different connection type), and consequently use a sensible type other
-    -- than list.
-    zettelEdges :: Zettel -> m [([Connection], ZettelID)]
-    zettelEdges =
-      fmap (fmap $ first pure) . outgoingLinks
-    outgoingLinks :: Zettel -> m [(Connection, ZettelID)]
-    outgoingLinks Zettel {..} =
-      fmap concat $ for (extractLinks zettelContent) $ \mlink ->
-        liftEither $ runExcept
-          $ withExcept show
-          $ liftEither (first (NeuronError_BadLink zettelID) $ neuronLinkFromMarkdownLink mlink) >>= \case
-            Nothing ->
-              pure []
-            Just nlink -> do
-              let conns = neuronLinkConnections store nlink
-              -- Check the connections refer to existing zettels
-              forM_ (snd <$> conns) $ \zref ->
-                when (isNothing (Map.lookup zref store))
-                  $ throwError
-                  $ NeuronError_BrokenZettelRef zettelID zref
-              pure conns

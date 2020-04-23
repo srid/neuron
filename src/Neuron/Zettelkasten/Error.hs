@@ -9,7 +9,7 @@ module Neuron.Zettelkasten.Error
 where
 
 import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName, zettelIDText)
-import Neuron.Zettelkasten.Link (InvalidNeuronLink (..))
+import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.Theme (InvalidLinkTheme (..))
 import Neuron.Zettelkasten.Query (InvalidQuery (..))
 import Relude
@@ -18,29 +18,28 @@ import qualified Text.URI as URI
 
 data NeuronError
   = -- A zettel file contains invalid link that neuron cannot parse
-    NeuronError_BadLink ZettelID InvalidNeuronLink
-  | -- A zettel file refers to another that does not exist
-    NeuronError_BrokenZettelRef ZettelID ZettelID
+    NeuronError_BadQuery ZettelID QueryError
   deriving (Eq)
 
 instance Show NeuronError where
   show e =
     let fromZid = case e of
-          NeuronError_BadLink zid _ -> zid
-          NeuronError_BrokenZettelRef zid _ -> zid
+          NeuronError_BadQuery zid _ -> zid
         msg = case e of
-          NeuronError_BadLink _ (InvalidNeuronLink uri le) ->
-            "it contains a query URI (" <> URI.render uri <> ") " <> case le of
-              Left (InvalidQuery_InvalidID s) ->
-                "with invalid ID: " <> show s
-              Left InvalidQuery_UnsupportedHost ->
-                "with unsupported host"
-              Left InvalidQuery_Unsupported ->
-                "that is not supported"
-              Right (InvalidLinkTheme theme) ->
-                "with invalid link theme (" <> theme <> ")"
-          NeuronError_BrokenZettelRef _fromZid toZid ->
-            "it references a zettel <" <> zettelIDText toZid <> "> that does not exist"
+          NeuronError_BadQuery _fromZid qe ->
+            "it contains a query URI (" <> URI.render (queryErrorUri qe) <> ") " <> case qe of
+              QueryError_ZettelNotFound _fromZid toZid ->
+                "which references a zettel <" <> zettelIDText toZid <> "> that does not exist"
+              QueryError_InvalidQuery _ e' -> case e' of
+                InvalidQuery_UnsupportedHost ->
+                  "with unsupported host"
+                InvalidQuery_Unsupported ->
+                  "that is not supported"
+                InvalidQuery_InvalidID e'' ->
+                  "with invalidID: " <> show e''
+              QueryError_InvalidQueryView _ e' -> case e' of
+                InvalidLinkTheme theme ->
+                  "with invalid link theme (" <> theme <> ")"
      in toString $
           unlines
             [ "",

@@ -18,23 +18,27 @@ module Neuron.Config
     Alias (..),
     getAliases,
     aliasParser,
+    getMarkdownExtensions,
   )
 where
 
 import Control.Monad.Except
 import Data.FileEmbed (embedFile)
-import qualified Data.Map.Strict as Map
+import qualified Data.Graph.Labelled as G
 import Development.Shake (Action, readFile')
 import Dhall (FromDhall)
 import qualified Dhall
 import Dhall.TH
 import Neuron.Parser
+import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.ID as Z
-import qualified Neuron.Zettelkasten.Store as Z
+import Neuron.Zettelkasten.Markdown.Extension (setTableClass)
 import Relude
 import qualified Rib
 import System.Directory
 import System.FilePath
+import qualified Text.MMark as MMark
+import qualified Text.MMark.Extension.Common as Ext
 import qualified Text.Megaparsec.Char as M
 
 -- | Config type for @neuron.dhall@
@@ -79,29 +83,45 @@ parseConfig :: MonadIO m => Text -> m Config
 parseConfig s =
   liftIO $ Dhall.input Dhall.auto s
 
-getAliases :: MonadFail m => Config -> Z.ZettelStore -> m [Alias]
-getAliases Config {..} zettelStore = do
+getMarkdownExtensions :: Config -> [MMark.Extension]
+getMarkdownExtensions Config {..} =
+  defaultExts
+    <> bool [] [Ext.mathJax (Just '$')] mathJaxSupport
+  where
+    defaultExts :: [MMark.Extension]
+    defaultExts =
+      [ Ext.fontAwesome,
+        Ext.footnotes,
+        Ext.kbd,
+        Ext.linkTarget,
+        Ext.punctuationPrettifier,
+        Ext.skylighting,
+        setTableClass "ui celled table"
+      ]
+
+getAliases :: MonadFail m => Config -> G.ZettelGraph -> m [Alias]
+getAliases Config {..} graph = do
   let aliasSpecs = case aliases of
         -- In the absence of an index zettel, create an an alias to the z-index
-        [] -> bool ["index:z-index"] [] $ hasIndexZettel zettelStore
+        [] -> bool ["index:z-index"] [] $ hasIndexZettel graph
         as -> as
-  case mkAliases aliasSpecs zettelStore of
+  case mkAliases aliasSpecs graph of
     Left err ->
       fail $ "Bad aliases in config: " <> toString err
     Right v ->
       pure v
   where
     hasIndexZettel =
-      isJust . Map.lookup (Z.parseZettelID "index")
+      isJust . G.findVertex (Z.parseZettelID "index")
 
-mkAliases :: [Text] -> Z.ZettelStore -> Either Text [Alias]
-mkAliases aliasSpecs zettelStore =
+mkAliases :: [Text] -> G.ZettelGraph -> Either Text [Alias]
+mkAliases aliasSpecs graph =
   sequence $ flip fmap aliasSpecs $ \aliasSpec -> runExcept $ do
     alias@Alias {..} <- liftEither $ parse aliasParser configFile aliasSpec
-    when (isJust $ Map.lookup aliasZettel zettelStore) $ do
+    when (isJust $ G.findVertex aliasZettel graph) $ do
       throwError $
         "Cannot create redirect from '" <> Z.zettelIDText aliasZettel <> "', because a zettel with that ID already exists"
-    when (Z.zettelIDText targetZettel /= "z-index" && isNothing (Map.lookup targetZettel zettelStore)) $ do
+    when (Z.zettelIDText targetZettel /= "z-index" && isNothing (G.findVertex targetZettel graph)) $ do
       throwError $
         "Target zettel '" <> Z.zettelIDText targetZettel <> "' does not exist"
     pure alias

@@ -13,9 +13,9 @@ import qualified Data.Aeson.Text as Aeson
 import Data.Some
 import Data.Tree (Tree (..))
 import Development.Shake (Action)
+import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import Neuron.Zettelkasten.Query (Query (..), runQuery)
-import Neuron.Zettelkasten.Store (mkZettelStore)
 import Neuron.Zettelkasten.Tag (tagTree)
 import Neuron.Zettelkasten.Zettel (Zettel (..), zettelJson)
 import Relude
@@ -24,16 +24,16 @@ import System.FilePath
 
 queryZettelkasten :: FilePath -> Some Query -> Action ()
 queryZettelkasten notesDir query = do
-  store <- mkZettelStore =<< Rib.forEvery ["*.md"] pure
+  zettels <- fmap (fmap fst . snd) . G.loadZettelkasten =<< Rib.forEvery ["*.md"] pure
   case query of
     Some (Query_ZettelByID zid) -> do
-      let res = runQuery store (Query_ZettelByID zid)
-      putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith res
+      let res = runQuery zettels (Query_ZettelByID zid)
+      putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith <$> res
     Some (Query_ZettelsByTag pats) -> do
-      let res = runQuery store (Query_ZettelsByTag pats)
+      let res = runQuery zettels (Query_ZettelsByTag pats)
       putLTextLn $ Aeson.encodeToLazyText $ zettelJsonWith <$> res
     Some (Query_Tags pats) -> do
-      let tags = runQuery store (Query_Tags pats)
+      let tags = runQuery zettels (Query_Tags pats)
       putLTextLn $ Aeson.encodeToLazyText $ toJSON $ fmap treeToJson (tagTree tags)
   where
     -- TODO: Use newtype wrapper and write ToJSON
