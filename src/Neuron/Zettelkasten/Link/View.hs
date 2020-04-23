@@ -36,7 +36,7 @@ import Text.MMark.Extension (Extension, Inline (..))
 import Text.URI.QQ (queryKey)
 
 -- | MMark extension to transform neuron links to custom views
-neuronLinkExt :: HasCallStack => ZettelQueryResource -> Extension
+neuronLinkExt :: ZettelQueryResource -> Extension
 neuronLinkExt zqr =
   Ext.inlineRender $ \f -> \case
     inline@(Link inner uri _title) ->

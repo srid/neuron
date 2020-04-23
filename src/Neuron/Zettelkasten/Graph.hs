@@ -14,14 +14,6 @@ module Neuron.Zettelkasten.Graph
 
     -- * Construction
     loadZettelkasten,
-
-    -- * Algorithm reports
-    backlinks,
-    topSort,
-    clusters,
-    dfsForestFrom,
-    dfsForestBackwards,
-    obviateRootUnlessForest,
   )
 where
 
@@ -32,17 +24,17 @@ import qualified Data.Map.Strict as Map
 import Data.Traversable (for)
 import Development.Shake (Action)
 import Neuron.Zettelkasten.Error
+import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link
+import Neuron.Zettelkasten.Link.View (neuronLinkExt)
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Zettel
 import Relude
-
--- | The Zettelkasten graph
-type ZettelGraph = LabelledGraph Zettel [Connection]
+import Text.MMark.Extension (Extension)
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
-loadZettelkasten :: [FilePath] -> Action (ZettelGraph, [(Zettel, ZettelQueryResource)])
+loadZettelkasten :: [FilePath] -> Action (ZettelGraph, [(Zettel, Extension)])
 loadZettelkasten files = do
   zettels <- mkZettelFromPath `mapM` files
   either (fail . show) pure $ mkZettelGraph zettels
@@ -52,7 +44,7 @@ mkZettelGraph ::
   forall m.
   MonadError NeuronError m =>
   [Zettel] ->
-  m (ZettelGraph, [(Zettel, ZettelQueryResource)])
+  m (ZettelGraph, [(Zettel, Extension)])
 mkZettelGraph zettels = do
   zettelsWithQueryResults <-
     liftEither $ runExcept $ do
@@ -63,7 +55,7 @@ mkZettelGraph zettels = do
         let conns :: [([Connection], Zettel)] = concatMap getConnections $ Map.elems qm
             connsFiltered = filter (connectionWhitelist . fst) conns
          in flip fmap connsFiltered $ \(cs, z2) -> (cs, z, z2)
-  pure (mkGraphFrom zettels edges, zettelsWithQueryResults)
+  pure (mkGraphFrom zettels edges, fmap neuronLinkExt <$> zettelsWithQueryResults)
   where
     -- TODO: Handle conflicts in edge monoid operation (same link but with
     -- different connection type), and consequently use a sensible type other

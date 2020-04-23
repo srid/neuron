@@ -30,7 +30,7 @@ import Dhall (FromDhall)
 import qualified Dhall
 import Dhall.TH
 import Neuron.Parser
-import qualified Neuron.Zettelkasten.Graph as G
+import Neuron.Zettelkasten.Graph.Type
 import qualified Neuron.Zettelkasten.ID as Z
 import Neuron.Zettelkasten.Markdown.Extension (setTableClass)
 import Relude
@@ -99,7 +99,7 @@ getMarkdownExtensions Config {..} =
         setTableClass "ui celled table"
       ]
 
-getAliases :: MonadFail m => Config -> G.ZettelGraph -> m [Alias]
+getAliases :: MonadFail m => Config -> ZettelGraph -> m [Alias]
 getAliases Config {..} graph = do
   let aliasSpecs = case aliases of
         -- In the absence of an index zettel, create an an alias to the z-index
@@ -114,7 +114,7 @@ getAliases Config {..} graph = do
     hasIndexZettel =
       isJust . G.findVertex (Z.parseZettelID "index")
 
-mkAliases :: [Text] -> G.ZettelGraph -> Either Text [Alias]
+mkAliases :: [Text] -> ZettelGraph -> Either Text [Alias]
 mkAliases aliasSpecs graph =
   sequence $ flip fmap aliasSpecs $ \aliasSpec -> runExcept $ do
     alias@Alias {..} <- liftEither $ parse aliasParser configFile aliasSpec

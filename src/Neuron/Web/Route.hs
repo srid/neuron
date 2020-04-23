@@ -14,21 +14,21 @@ module Neuron.Web.Route where
 import qualified Data.Text as T
 import GHC.Stack
 import Neuron.Config
-import Neuron.Zettelkasten.Graph
+import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Rib (IsRoute (..), routeUrlRel)
 import Rib.Extra.OpenGraph
 import qualified Rib.Parser.MMark as MMark
+import Text.MMark.Extension (Extension)
 import qualified Text.URI as URI
 
 data Route graph a where
   Route_Redirect :: ZettelID -> Route ZettelGraph ZettelID
   Route_ZIndex :: Route ZettelGraph ()
   Route_Search :: Route ZettelGraph ()
-  Route_Zettel :: ZettelID -> Route ZettelGraph (Zettel, ZettelQueryResource)
+  Route_Zettel :: ZettelID -> Route ZettelGraph (Zettel, Extension)
 
 instance IsRoute (Route graph) where
   routeFile = \case
