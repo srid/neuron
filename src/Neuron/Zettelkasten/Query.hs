@@ -25,6 +25,7 @@ import Data.Some
 import Data.TagTree (Tag, TagPattern (..), mkTagPattern, tagMatch, tagMatchAny)
 import Lucid
 import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Text.MMark.MarkdownLink (MarkdownLink (..))
@@ -62,12 +63,6 @@ instance ToHtml (Some Query) where
           toHtml $ "Tags matching '" <> qs <> "'"
 
 type QueryResults = [Zettel]
-
-data InvalidQuery
-  = InvalidQuery_InvalidID InvalidID
-  | InvalidQuery_Unsupported
-  | InvalidQuery_UnsupportedHost
-  deriving (Eq, Show)
 
 queryFromURI :: MonadError InvalidQuery m => URI.URI -> m (Some Query)
 queryFromURI uri = do

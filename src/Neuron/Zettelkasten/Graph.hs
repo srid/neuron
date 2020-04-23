@@ -26,9 +26,9 @@ import Development.Shake (Action)
 import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.View (neuronLinkExt)
 import Neuron.Zettelkasten.Query
+import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..), evaluateQueries)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Text.MMark.Extension (Extension)

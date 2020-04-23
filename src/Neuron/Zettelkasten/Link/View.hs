@@ -19,14 +19,14 @@ where
 import Data.Dependent.Sum
 import qualified Data.Map.Strict as Map
 import Data.Some
+import Data.TagTree (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import Data.Tree
 import Lucid
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link
-import Neuron.Zettelkasten.Link.Theme
 import Neuron.Zettelkasten.Query
-import Data.TagTree (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
+import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..), ZettelQueryResource)
+import Neuron.Zettelkasten.Query.Theme (LinkTheme (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -50,20 +50,20 @@ neuronLinkExt zqr =
 renderNeuronLink :: forall m. (Monad m, HasCallStack) => DSum Query EvaluatedQuery -> HtmlT m ()
 renderNeuronLink = \case
   Query_ZettelByID _zid :=> EvaluatedQuery {..} ->
-    renderZettelLink evaluatedQueryViewTheme evaluatedQueryResult
+    renderZettelLink evaluatedQueryTheme evaluatedQueryResult
   q@(Query_ZettelsByTag pats) :=> EvaluatedQuery {..} -> do
     let matches = sortZettelsReverseChronological evaluatedQueryResult
     toHtml $ Some q
-    case zettelsViewGroupByTag evaluatedQueryViewTheme of
+    case zettelsViewGroupByTag evaluatedQueryTheme of
       False ->
         -- Render a list of links
-        renderZettelLinks (zettelsViewLinkTheme evaluatedQueryViewTheme) matches
+        renderZettelLinks (zettelsViewLinkTheme evaluatedQueryTheme) matches
       True ->
         forM_ (Map.toList $ groupZettelsByTagsMatching pats matches) $ \(tag, zettelGrp) -> do
           span_ [class_ "ui basic pointing below grey label"] $ do
             i_ [class_ "tag icon"] mempty
             toHtml $ unTag tag
-          renderZettelLinks (zettelsViewLinkTheme evaluatedQueryViewTheme) zettelGrp
+          renderZettelLinks (zettelsViewLinkTheme evaluatedQueryTheme) zettelGrp
   q@(Query_Tags _) :=> EvaluatedQuery {..} -> do
     -- Render a list of tags
     toHtml $ Some q

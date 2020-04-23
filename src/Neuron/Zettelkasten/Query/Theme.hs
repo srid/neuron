@@ -1,28 +1,28 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Link.Theme
-  ( ZettelsView (..),
-    ZettelView,
-    LinkTheme (..),
-    InvalidLinkTheme (..),
-    zettelsViewFromURI,
-    linkThemeFromURI,
-  )
-where
+module Neuron.Zettelkasten.Query.Theme where
 
 import Control.Monad.Except
+import Data.TagTree (Tag)
+import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
+
+type family QueryTheme q
+
+type instance QueryTheme (Maybe Zettel) = ZettelView
+
+type instance QueryTheme [Zettel] = ZettelsView
+
+type instance QueryTheme (Map Tag Natural) = ()
 
 data ZettelsView = ZettelsView
   { zettelsViewLinkTheme :: LinkTheme,

@@ -3,12 +3,12 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Link.ThemeSpec
+module Neuron.Zettelkasten.Query.ThemeSpec
   ( spec,
   )
 where
 
-import Neuron.Zettelkasten.Link.Theme
+import Neuron.Zettelkasten.Query.Theme
 import Relude
 import Test.Hspec
 import Util

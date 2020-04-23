@@ -56,7 +56,3 @@ mkZettelFromPath path = do
       title = maybe (toText $ "No title for " <> path) Meta.title meta
       tags = fromMaybe [] $ Meta.tags =<< meta
   pure $ Zettel zid title tags doc
-
-hasTag :: Tag -> Zettel -> Bool
-hasTag tag Zettel {..} =
-  isJust $ find (== tag) zettelTags

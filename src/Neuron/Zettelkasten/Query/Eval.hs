@@ -1,18 +1,11 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Special Zettel links in Markdown
-module Neuron.Zettelkasten.Link where
+module Neuron.Zettelkasten.Query.Eval where
 
 import Control.Monad.Except
 import Data.Dependent.Sum
@@ -20,14 +13,13 @@ import qualified Data.Map.Strict as Map
 import Data.Some
 import Data.TagTree (Tag)
 import Data.Traversable (for)
-import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link.Theme
-import Neuron.Zettelkasten.Query (InvalidQuery (..), Query (..), queryFromMarkdownLink, runQuery)
+import Neuron.Zettelkasten.Query
+import Neuron.Zettelkasten.Query.Connection
+import Neuron.Zettelkasten.Query.Error
+import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Text.MMark.MarkdownLink
-import qualified Text.URI as URI
-import Text.URI (URI)
 
 type family QueryResult r
 
@@ -37,27 +29,11 @@ type instance QueryResult [Zettel] = [Zettel]
 
 type instance QueryResult (Map Tag Natural) = Map Tag Natural
 
-type family QueryConnection q
-
-type instance QueryConnection (Maybe Zettel) = Connection
-
-type instance QueryConnection [Zettel] = Connection
-
-type instance QueryConnection (Map Tag Natural) = ()
-
-type family QueryViewTheme q
-
-type instance QueryViewTheme (Maybe Zettel) = ZettelView
-
-type instance QueryViewTheme [Zettel] = ZettelsView
-
-type instance QueryViewTheme (Map Tag Natural) = ()
-
 -- | A query that is fully evaluated.
 data EvaluatedQuery r = EvaluatedQuery
   { evaluatedQueryResult :: QueryResult r,
     evaluatedQueryConnection :: QueryConnection r,
-    evaluatedQueryViewTheme :: QueryViewTheme r
+    evaluatedQueryTheme :: QueryTheme r
   }
 
 type ZettelQueryResource = Map MarkdownLink (DSum Query EvaluatedQuery)
@@ -106,25 +82,3 @@ evaluateQuery zettels ml@MarkdownLink {markdownLinkUri = uri} = liftEither $ run
           pure $ q :=> EvaluatedQuery (runQuery zettels q) conn viewTheme
         q@(Query_Tags _filters) ->
           pure $ q :=> EvaluatedQuery (runQuery zettels q) () ()
-
-data QueryError
-  = QueryError_InvalidQuery URI InvalidQuery
-  | QueryError_InvalidQueryView URI InvalidLinkTheme
-  | QueryError_ZettelNotFound URI ZettelID
-  deriving (Eq, Show)
-
-queryErrorUri :: QueryError -> URI
-queryErrorUri = \case
-  QueryError_InvalidQuery uri _ -> uri
-  QueryError_InvalidQueryView uri _ -> uri
-  QueryError_ZettelNotFound uri _ -> uri
-
-connectionFromURI :: URI.URI -> Connection
-connectionFromURI uri =
-  fromMaybe Folgezettel $
-    case fmap URI.unRText (URI.uriScheme uri) of
-      Just scheme
-        | scheme `elem` ["zcf", "zcfquery"] ->
-          Just OrdinaryConnection
-      _ ->
-        Nothing

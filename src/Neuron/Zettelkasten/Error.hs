@@ -9,9 +9,8 @@ module Neuron.Zettelkasten.Error
 where
 
 import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName, zettelIDText)
-import Neuron.Zettelkasten.Link
-import Neuron.Zettelkasten.Link.Theme (InvalidLinkTheme (..))
-import Neuron.Zettelkasten.Query (InvalidQuery (..))
+import Neuron.Zettelkasten.Query.Error (InvalidQuery (..), QueryError (..), queryErrorUri)
+import Neuron.Zettelkasten.Query.Theme (InvalidLinkTheme (..))
 import Relude
 import qualified Text.Show
 import qualified Text.URI as URI

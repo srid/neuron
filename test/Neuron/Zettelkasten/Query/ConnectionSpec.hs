@@ -2,13 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.LinkSpec
+module Neuron.Zettelkasten.Query.ConnectionSpec
   ( spec,
   )
 where
 
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Link
+import Neuron.Zettelkasten.Query.Connection
 import Relude
 import Test.Hspec
 import Util
