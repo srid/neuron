@@ -16,6 +16,7 @@ import GHC.Stack
 import Neuron.Config
 import Neuron.Zettelkasten.Graph
 import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Rib (IsRoute (..), routeUrlRel)
@@ -27,7 +28,7 @@ data Route graph a where
   Route_Redirect :: ZettelID -> Route ZettelGraph ZettelID
   Route_ZIndex :: Route ZettelGraph ()
   Route_Search :: Route ZettelGraph ()
-  Route_Zettel :: ZettelID -> Route ZettelGraph Zettel
+  Route_Zettel :: ZettelID -> Route ZettelGraph (Zettel, ZettelQueryResource)
 
 instance IsRoute (Route graph) where
   routeFile = \case
@@ -68,7 +69,7 @@ routeTitle' val = \case
   Route_ZIndex -> "Zettel Index"
   Route_Search -> "Search"
   Route_Zettel _ ->
-    zettelTitle val
+    zettelTitle $ fst val
 
 routeOpenGraph :: Config -> a -> Route graph a -> OpenGraph
 routeOpenGraph Config {..} val r =
@@ -80,14 +81,14 @@ routeOpenGraph Config {..} val r =
         Route_ZIndex -> Just "Zettelkasten Index"
         Route_Search -> Just "Search Zettelkasten"
         Route_Zettel _ ->
-          T.take 300 <$> MMark.getFirstParagraphText (zettelContent val),
+          T.take 300 <$> MMark.getFirstParagraphText (zettelContent $ fst val),
       _openGraph_author = author,
       _openGraph_type = case r of
         Route_Zettel _ -> Just $ OGType_Article (Article Nothing Nothing Nothing Nothing mempty)
         _ -> Just OGType_Website,
       _openGraph_image = case r of
         Route_Zettel _ -> do
-          img <- MMark.getFirstImg (zettelContent val)
+          img <- MMark.getFirstImg (zettelContent $ fst val)
           baseUrl <- URI.mkURI =<< siteBaseUrl
           URI.relativeTo img baseUrl
         _ -> Nothing,

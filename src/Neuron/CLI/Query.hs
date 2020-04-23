@@ -10,7 +10,6 @@ where
 
 import Data.Aeson
 import qualified Data.Aeson.Text as Aeson
-import qualified Data.Graph.Labelled as G
 import Data.Some
 import Data.Tree (Tree (..))
 import Development.Shake (Action)
@@ -25,7 +24,7 @@ import System.FilePath
 
 queryZettelkasten :: FilePath -> Some Query -> Action ()
 queryZettelkasten notesDir query = do
-  zettels <- fmap G.getVertices . G.loadZettelkasten =<< Rib.forEvery ["*.md"] pure
+  zettels <- fmap (fmap fst . snd) . G.loadZettelkasten =<< Rib.forEvery ["*.md"] pure
   case query of
     Some (Query_ZettelByID zid) -> do
       let res = runQuery zettels (Query_ZettelByID zid)

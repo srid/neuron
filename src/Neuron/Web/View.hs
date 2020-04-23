@@ -37,6 +37,7 @@ import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
+import Neuron.Zettelkasten.Link
 import Neuron.Zettelkasten.Link.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Link.View (neuronLinkExt, renderZettelLink)
 import Neuron.Zettelkasten.Tag
@@ -137,15 +138,15 @@ renderSearch graph = do
   script_ $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   script_ searchScript
 
-renderZettel :: forall m. Monad m => Config -> (ZettelGraph, Zettel) -> ZettelID -> HtmlT m ()
-renderZettel config@Config {..} (graph, z@Zettel {..}) zid = do
+renderZettel :: forall m. Monad m => Config -> (ZettelGraph, (Zettel, ZettelQueryResource)) -> ZettelID -> HtmlT m ()
+renderZettel config@Config {..} (graph, (z@Zettel {..}, zd)) zid = do
   let neuronTheme = Theme.mkTheme theme
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segments"] $ do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
         let mmarkExts = getMarkdownExtensions config
-        MMark.render $ useExtensions (neuronLinkExt (G.getVertices graph) : mmarkExts) zettelContent
+        MMark.render $ useExtensions (neuronLinkExt zd : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do

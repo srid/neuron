@@ -7,27 +7,47 @@ module Neuron.Zettelkasten.QuerySpec
 where
 
 import Data.Some
+import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Markdown
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Tag
 import Relude
 import Test.Hspec
+import Text.URI
 import Util
 
 spec :: Spec
-spec =
-  describe "Parse query URI" $ do
+spec = do
+  describe "Parse zettels by tag URIs" $ do
     let zettelsByTag = Some . Query_ZettelsByTag . fmap mkTagPattern
     it "Parse all zettels URI" $
-      parseQueryString "zquery://search" `shouldBe` Right (zettelsByTag [])
+      parseURIWith queryFromURI "zquery://search" `shouldBe` Right (zettelsByTag [])
     it "Parse single tag" $
-      parseQueryString "zquery://search?tag=foo" `shouldBe` Right (zettelsByTag ["foo"])
+      parseURIWith queryFromURI "zquery://search?tag=foo" `shouldBe` Right (zettelsByTag ["foo"])
     it "Parse hierarchical tag" $ do
-      parseQueryString "zquery://search?tag=foo/bar" `shouldBe` Right (zettelsByTag ["foo/bar"])
+      parseURIWith queryFromURI "zquery://search?tag=foo/bar" `shouldBe` Right (zettelsByTag ["foo/bar"])
     it "Parse tag pattern" $ do
-      parseQueryString "zquery://search?tag=foo/**/bar/*/baz" `shouldBe` Right (zettelsByTag ["foo/**/bar/*/baz"])
+      parseURIWith queryFromURI "zquery://search?tag=foo/**/bar/*/baz" `shouldBe` Right (zettelsByTag ["foo/**/bar/*/baz"])
     it "Parse multiple tags" $
-      parseQueryString "zquery://search?tag=foo&tag=bar"
+      parseURIWith queryFromURI "zquery://search?tag=foo&tag=bar"
         `shouldBe` Right (zettelsByTag ["foo", "bar"])
-  where
-    parseQueryString =
-      parseURIWith queryFromURI
+  describe "Parse zettels by ID URI" $ do
+    let zid = parseZettelID "1234567"
+        zettelById = Some . Query_ZettelByID
+    it "parses z:/" $
+      queryFromMarkdownLink (mkMarkdownLink "1234567" "z:/")
+        `shouldBe` Right (Just $ zettelById zid)
+    it "parses z:/ ignoring annotation" $
+      queryFromMarkdownLink (mkMarkdownLink "1234567" "z://foo-bar")
+        `shouldBe` Right (Just $ zettelById zid)
+    it "parses zcf:/" $
+      queryFromMarkdownLink (mkMarkdownLink "1234567" "zcf:/")
+        `shouldBe` Right (Just $ zettelById zid)
+  describe "Parse tags URI" $ do
+    it "parses zquery://tags" $
+      queryFromMarkdownLink (mkMarkdownLink "." "zquery://tags?filter=foo/**")
+        `shouldBe` Right (Just $ Some $ Query_Tags [mkTagPattern "foo/**"])
+
+mkMarkdownLink :: Text -> Text -> MarkdownLink
+mkMarkdownLink s l =
+  MarkdownLink s $ either (error . toText . displayException) id $ mkURI l

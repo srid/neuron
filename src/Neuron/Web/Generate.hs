@@ -1,9 +1,7 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Main module for using neuron as a library, instead of as a CLI tool.
@@ -12,7 +10,6 @@ module Neuron.Web.Generate
   )
 where
 
-import qualified Data.Graph.Labelled as G
 import Development.Shake (Action)
 import qualified Neuron.Config as Z
 import Neuron.Version (neuronVersion, olderThan)
@@ -34,14 +31,13 @@ generateSite config writeHtmlRoute' zettelsPat = do
     $ fail
     $ toString
     $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
-  zettelGraph <- G.loadZettelkasten =<< Rib.forEvery zettelsPat pure
+  (zettelGraph, zettels) <- G.loadZettelkasten =<< Rib.forEvery zettelsPat pure
   let writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
-      zettels = G.getVertices zettelGraph
   -- Generate HTML for every zettel
-  forM_ zettels $ \z ->
+  forM_ zettels $ \(z, d) ->
     -- TODO: Should `Zettel` not contain ZettelID?
     -- See duplication in `renderZettel`
-    writeHtmlRoute z $ Z.Route_Zettel (Z.zettelID z)
+    writeHtmlRoute (z, d) $ Z.Route_Zettel (Z.zettelID z)
   -- Generate the z-index
   writeHtmlRoute () Z.Route_ZIndex
   -- Generate search page

@@ -16,6 +16,7 @@ module Neuron.Zettelkasten.Link.View
   )
 where
 
+import Data.Dependent.Sum
 import qualified Data.Map.Strict as Map
 import Data.Some
 import Data.Tree
@@ -35,54 +36,38 @@ import Text.MMark.Extension (Extension, Inline (..))
 import Text.URI.QQ (queryKey)
 
 -- | MMark extension to transform neuron links to custom views
-neuronLinkExt :: HasCallStack => [Zettel] -> Extension
-neuronLinkExt zettels =
+neuronLinkExt :: HasCallStack => ZettelQueryResource -> Extension
+neuronLinkExt zqr =
   Ext.inlineRender $ \f -> \case
     inline@(Link inner uri _title) ->
-      let mlink = MarkdownLink (Ext.asPlainText inner) uri
-       in case neuronLinkFromMarkdownLink mlink of
-            Right (Just nl) ->
-              renderNeuronLink zettels nl
-            Right Nothing ->
-              f inline
-            Left e ->
-              -- TODO: Build the links during graph construction, and pass it to
-              -- the extension from rendering stage. This way we don't have to
-              -- re-parse the URIs and needlessly handle the errors.
-              -- TODO: As well pass query results (computed in
-              -- neuronLinkConnections) to this function..
-              error $ show e
+      MarkdownLink (Ext.asPlainText inner) uri
+        & flip Map.lookup zqr
+        & maybe (f inline) renderNeuronLink
     inline ->
       f inline
 
 -- | Render the custom view for the given neuron link
-renderNeuronLink :: forall m. (Monad m, HasCallStack) => [Zettel] -> NeuronLink -> HtmlT m ()
-renderNeuronLink zettels = \case
-  NeuronLink (q@(Query_ZettelByID _zid), _conn, linkTheme) ->
-    -- Render a single link
-    case runQuery zettels q of
-      Nothing ->
-        -- TODO: See the second TODO above
-        error "No zettel for that ID"
-      Just zettel ->
-        renderZettelLink linkTheme zettel
-  NeuronLink (q@(Query_ZettelsByTag pats), _conn, ZettelsView {..}) -> do
-    let matches = sortZettelsReverseChronological $ runQuery zettels q
+renderNeuronLink :: forall m. (Monad m, HasCallStack) => DSum Query EvaluatedQuery -> HtmlT m ()
+renderNeuronLink = \case
+  Query_ZettelByID _zid :=> EvaluatedQuery {..} ->
+    renderZettelLink evaluatedQueryViewTheme evaluatedQueryResult
+  q@(Query_ZettelsByTag pats) :=> EvaluatedQuery {..} -> do
+    let matches = sortZettelsReverseChronological evaluatedQueryResult
     toHtml $ Some q
-    case zettelsViewGroupByTag of
+    case zettelsViewGroupByTag evaluatedQueryViewTheme of
       False ->
         -- Render a list of links
-        renderZettelLinks zettelsViewLinkTheme matches
+        renderZettelLinks (zettelsViewLinkTheme evaluatedQueryViewTheme) matches
       True ->
         forM_ (Map.toList $ groupZettelsByTagsMatching pats matches) $ \(tag, zettelGrp) -> do
           span_ [class_ "ui basic pointing below grey label"] $ do
             i_ [class_ "tag icon"] mempty
             toHtml $ unTag tag
-          renderZettelLinks zettelsViewLinkTheme zettelGrp
-  NeuronLink (q@(Query_Tags _), (), ()) -> do
+          renderZettelLinks (zettelsViewLinkTheme evaluatedQueryViewTheme) zettelGrp
+  q@(Query_Tags _) :=> EvaluatedQuery {..} -> do
     -- Render a list of tags
     toHtml $ Some q
-    renderTagTree $ foldTagTree $ tagTree $ runQuery zettels q
+    renderTagTree $ foldTagTree $ tagTree evaluatedQueryResult
   where
     sortZettelsReverseChronological =
       sortOn (Down . zettelIDDay . zettelID)

@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
@@ -14,16 +15,27 @@
 module Neuron.Zettelkasten.Link where
 
 import Control.Monad.Except
+import Data.Dependent.Sum
+import qualified Data.Map.Strict as Map
 import Data.Some
+import Data.Traversable (for)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Link.Theme
-import Neuron.Zettelkasten.Markdown (MarkdownLink (..))
+import Neuron.Zettelkasten.Markdown
 import Neuron.Zettelkasten.Query (InvalidQuery (..), Query (..), queryFromMarkdownLink, runQuery)
 import Neuron.Zettelkasten.Tag
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Text.URI as URI
 import Text.URI (URI)
+
+type family QueryResult r
+
+type instance QueryResult (Maybe Zettel) = Zettel
+
+type instance QueryResult [Zettel] = [Zettel]
+
+type instance QueryResult (Map Tag Natural) = Map Tag Natural
 
 type family QueryConnection q
 
@@ -41,59 +53,71 @@ type instance QueryViewTheme [Zettel] = ZettelsView
 
 type instance QueryViewTheme (Map Tag Natural) = ()
 
--- TODO: Refactor to be a GADT using Some, and derive GEq, etc. correctly
-data NeuronLink
-  = forall r.
-    (Show (Query r), Show (QueryConnection r), Show (QueryViewTheme r)) =>
-    NeuronLink (Query r, QueryConnection r, QueryViewTheme r)
+-- | A query that is fully evaluated.
+data EvaluatedQuery r = EvaluatedQuery
+  { evaluatedQueryResult :: QueryResult r,
+    evaluatedQueryConnection :: QueryConnection r,
+    evaluatedQueryViewTheme :: QueryViewTheme r
+  }
 
-deriving instance Show NeuronLink
+type ZettelQueryResource = Map MarkdownLink (DSum Query EvaluatedQuery)
 
-instance Eq NeuronLink where
-  (==) (NeuronLink (Query_ZettelByID zid1, c1, t1)) (NeuronLink (Query_ZettelByID zid2, c2, t2)) =
-    and [zid1 == zid2, c1 == c2, t1 == t2]
-  (==) (NeuronLink (Query_ZettelsByTag p1, c1, t1)) (NeuronLink (Query_ZettelsByTag p2, c2, t2)) =
-    and [p1 == p2, c1 == c2, t1 == t2]
-  (==) (NeuronLink (Query_Tags p1, c1, t1)) (NeuronLink (Query_Tags p2, c2, t2)) =
-    and [p1 == p2, c1 == c2, t1 == t2]
-  (==) _ _ =
-    False
+-- | Evaluate all queries in a zettel
+--
+-- Return the queries with results as a map from the original markdown link.
+evaluateQueries ::
+  MonadError QueryError m =>
+  [Zettel] ->
+  Zettel ->
+  m (Map MarkdownLink (DSum Query EvaluatedQuery))
+evaluateQueries zettels Zettel {..} =
+  fmap (Map.fromList . catMaybes) $ for (extractLinks zettelContent) $ \ml ->
+    fmap (ml,) <$> evaluateQuery zettels ml
 
-data InvalidNeuronLink
-  = InvalidNeuronLink URI (Either InvalidQuery InvalidLinkTheme)
-  deriving (Eq, Show)
-
-neuronLinkFromMarkdownLink :: MonadError InvalidNeuronLink m => MarkdownLink -> m (Maybe NeuronLink)
-neuronLinkFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri} = liftEither $ runExcept $ do
-  l <- withExcept (InvalidNeuronLink uri . Left) $ queryFromMarkdownLink ml
-  case l of
+-- | Evaluate the query in a markdown link.
+evaluateQuery ::
+  MonadError QueryError m =>
+  [Zettel] ->
+  MarkdownLink ->
+  m (Maybe (DSum Query EvaluatedQuery))
+evaluateQuery zettels ml@MarkdownLink {markdownLinkUri = uri} = liftEither $ runExcept $ do
+  mq <-
+    withExcept (QueryError_InvalidQuery uri) $
+      queryFromMarkdownLink ml
+  case mq of
     Nothing -> pure Nothing
     Just someQ -> Just <$> do
-      withSome someQ $ \q -> case q of
-        Query_ZettelByID _ -> do
-          t <- withExcept (InvalidNeuronLink uri . Right) $ linkThemeFromURI uri
-          pure $ NeuronLink (q, connectionFromURI uri, t)
-        Query_ZettelsByTag _ -> do
-          t <- withExcept (InvalidNeuronLink uri . Right) $ zettelsViewFromURI uri
-          pure $ NeuronLink (q, connectionFromURI uri, t)
-        Query_Tags _ ->
-          pure $ NeuronLink (q, (), ())
+      withSome someQ $ \case
+        q@(Query_ZettelByID zid) -> do
+          viewTheme <-
+            withExcept (QueryError_InvalidQueryView uri) $
+              linkThemeFromURI uri
+          let conn = connectionFromURI uri
+          case runQuery zettels q of
+            Nothing ->
+              throwError $ QueryError_ZettelNotFound uri zid
+            Just zettel ->
+              pure $ q :=> EvaluatedQuery zettel conn viewTheme
+        q@(Query_ZettelsByTag _pats) -> do
+          viewTheme <-
+            withExcept (QueryError_InvalidQueryView uri) $
+              zettelsViewFromURI uri
+          let conn = connectionFromURI uri
+          pure $ q :=> EvaluatedQuery (runQuery zettels q) conn viewTheme
+        q@(Query_Tags _filters) ->
+          pure $ q :=> EvaluatedQuery (runQuery zettels q) () ()
 
-data MissingZettel = MissingZettel ZettelID
-  deriving Eq
+data QueryError
+  = QueryError_InvalidQuery URI InvalidQuery
+  | QueryError_InvalidQueryView URI InvalidLinkTheme
+  | QueryError_ZettelNotFound URI ZettelID
+  deriving (Eq, Show)
 
-neuronLinkConnections :: MonadError MissingZettel m => [Zettel] -> NeuronLink -> m [(Connection, Zettel)]
-neuronLinkConnections zettels = \case
-  NeuronLink (q@(Query_ZettelByID zid), conn, _) ->
-    case runQuery zettels q of
-      Nothing ->
-        throwError $ MissingZettel zid
-      Just zettel ->
-        pure [(conn, zettel)]
-  NeuronLink (q@(Query_ZettelsByTag _pats), conn, _) ->
-    pure $ (conn,) <$> runQuery zettels q
-  _ ->
-    pure []
+queryErrorUri :: QueryError -> URI
+queryErrorUri = \case
+  QueryError_InvalidQuery uri _ -> uri
+  QueryError_InvalidQueryView uri _ -> uri
+  QueryError_ZettelNotFound uri _ -> uri
 
 connectionFromURI :: URI.URI -> Connection
 connectionFromURI uri =
