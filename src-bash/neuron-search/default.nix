@@ -16,5 +16,5 @@ pkgs.writeShellScriptBin "neuron-search"
         --preview '${pkgs.bat}/bin/bat --style=plain --color=always {1}' \
         --bind 'ctrl-j:execute(xdg-open https://localhost:8080/(echo {1} | ${pkgs.gnused}/bin/sed "s/\.md/.html/g"))+abort' \
       | ${pkgs.gawk}/bin/awk -F: "{printf \"''${NOTESDIR}/%s\", \$1}" \
-      | xargs -r ''${OPENCMD}
+      | ${pkgs.findutils}/bin/xargs -r ''${OPENCMD}
   ''
