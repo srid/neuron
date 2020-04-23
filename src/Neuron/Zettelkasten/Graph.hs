@@ -28,7 +28,7 @@ import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..), evaluateQueries)
-import Neuron.Zettelkasten.Query.View (neuronLinkExt)
+import Neuron.Zettelkasten.Query.View (queryLinkExt)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Text.MMark.Extension (Extension)
@@ -55,7 +55,7 @@ mkZettelGraph zettels = do
         let conns :: [([Connection], Zettel)] = concatMap getConnections $ Map.elems qm
             connsFiltered = filter (connectionWhitelist . fst) conns
          in flip fmap connsFiltered $ \(cs, z2) -> (cs, z, z2)
-  pure (mkGraphFrom zettels edges, fmap neuronLinkExt <$> zettelsWithQueryResults)
+  pure (mkGraphFrom zettels edges, fmap queryLinkExt <$> zettelsWithQueryResults)
   where
     -- TODO: Handle conflicts in edge monoid operation (same link but with
     -- different connection type), and consequently use a sensible type other

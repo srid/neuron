@@ -104,11 +104,11 @@ queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = li
 
 -- | Run the given query and return the results.
 runQuery :: [Zettel] -> Query r -> r
-runQuery vertices = \case
+runQuery zs = \case
   Query_ZettelByID zid ->
-    find ((== zid) . zettelID) vertices
+    find ((== zid) . zettelID) zs
   Query_ZettelsByTag pats ->
-    flip filter vertices $ \Zettel {..} ->
+    flip filter zs $ \Zettel {..} ->
       and $ flip fmap pats $ \pat ->
         any (tagMatch pat) zettelTags
   Query_Tags [] ->
@@ -119,7 +119,7 @@ runQuery vertices = \case
     allTags :: Map.Map Tag Natural
     allTags =
       Map.fromListWith (+) $
-        concatMap (\Zettel {..} -> (,1) <$> zettelTags) vertices
+        concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
 
 deriveGEq ''Query
 

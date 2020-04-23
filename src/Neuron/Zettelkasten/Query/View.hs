@@ -11,7 +11,7 @@
 
 -- | Extension and render functions for queries
 module Neuron.Zettelkasten.Query.View
-  ( neuronLinkExt,
+  ( queryLinkExt,
     renderZettelLink,
   )
 where
@@ -35,20 +35,20 @@ import Text.MMark.Extension (Extension, Inline (..))
 import Text.MMark.MarkdownLink (MarkdownLink (..))
 import Text.URI.QQ (queryKey)
 
--- | MMark extension to transform neuron links to custom views
-neuronLinkExt :: ZettelQueryResource -> Extension
-neuronLinkExt zqr =
+-- | MMark extension to transform (evaluated) query links to custom views
+queryLinkExt :: ZettelQueryResource -> Extension
+queryLinkExt zqr =
   Ext.inlineRender $ \f -> \case
     inline@(Link inner uri _title) ->
       MarkdownLink (Ext.asPlainText inner) uri
         & flip Map.lookup zqr
-        & maybe (f inline) renderNeuronLink
+        & maybe (f inline) renderQueryLink
     inline ->
       f inline
 
--- | Render the custom view for the given neuron link
-renderNeuronLink :: forall m. (Monad m, HasCallStack) => DSum Query EvaluatedQuery -> HtmlT m ()
-renderNeuronLink = \case
+-- | Render the custom view for the given evaluated query
+renderQueryLink :: forall m. (Monad m, HasCallStack) => DSum Query EvaluatedQuery -> HtmlT m ()
+renderQueryLink = \case
   Query_ZettelByID _zid :=> EvaluatedQuery {..} ->
     renderZettelLink evaluatedQueryTheme evaluatedQueryResult
   q@(Query_ZettelsByTag pats) :=> EvaluatedQuery {..} -> do
@@ -71,6 +71,7 @@ renderNeuronLink = \case
   where
     sortZettelsReverseChronological =
       sortOn (Down . zettelIDDay . zettelID)
+    -- TODO: Instead of doing this here, group the results in runQuery itself.
     groupZettelsByTagsMatching pats matches =
       fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap matches $ \z ->
         flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
