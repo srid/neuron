@@ -3,7 +3,9 @@ let
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
   ribRevision = "2dcd420";
-  nixpkgsRev = "10100a97c896";
+  # We are using the same nixpkgs rev used by rib. Ideally this should be done
+  # automatically.
+  nixpkgsRev = "05f0934825c2";
   projectRoot = ./.;
 in {
 # Rib library source to use
@@ -19,7 +21,8 @@ in {
 }:
 
 let 
-  inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
+  inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { inherit (pkgs) lib; })
+    gitignoreSource;
   neuronSearchScript = pkgs.callPackage ./src-bash/neuron-search { inherit pkgs; };
   additional-packages = pkgs:
   [ neuronSearchScript
@@ -31,7 +34,7 @@ let
   excludeContent = path: typ: 
     let d = baseNameOf (toString path);
     in !(d == "guide" && typ == "directory");
-  neuronSrc = pkgs.lib.cleanSourceWith { filter = excludeContent; src = gitignoreSource projectRoot; };
+  neuronSrc = gitignoreSource projectRoot;
   gitDescribe = pkgs.runCommand "neuron-gitDescribe" 
     { buildInputs = [ pkgs.git ]; }
     ''
