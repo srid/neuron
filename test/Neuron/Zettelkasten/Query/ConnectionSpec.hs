@@ -7,7 +7,7 @@ module Neuron.Zettelkasten.Query.ConnectionSpec
   )
 where
 
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Query.Connection
 import Relude
 import Test.Hspec

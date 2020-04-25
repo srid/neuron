@@ -1,6 +1,4 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -9,7 +7,6 @@
 
 module Neuron.Zettelkasten.ID
   ( ZettelID (..),
-    Connection (..),
     InvalidID (..),
     zettelIDDay,
     zettelIDText,
@@ -28,7 +25,6 @@ import qualified Data.Text as T
 import Data.Time
 import Development.Shake (Action)
 import Lucid
-import Neuron.Parser
 import Relude
 import qualified Rib
 import System.Directory (listDirectory)
@@ -36,28 +32,16 @@ import System.FilePath
 import qualified System.FilePattern as FP
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
+import Text.Megaparsec.Simple
 import Text.Printf
 import qualified Text.Show
 
--- | Short Zettel ID encoding `Day` and a numeric index (on that day).
---
--- Based on https://old.reddit.com/r/Zettelkasten/comments/fa09zw/shorter_zettel_ids/
 data ZettelID
-  = ZettelDateID Day Int
-  | ZettelCustomID Text
+  = -- | Short Zettel ID encoding `Day` and a numeric index (on that day).
+    ZettelDateID Day Int
+  | -- | Arbitrary alphanumeric ID.
+    ZettelCustomID Text
   deriving (Eq, Show, Ord)
-
-data InvalidID = InvalidIDParseError Text
-  deriving (Eq)
-
--- | Represent the connection between zettels
-data Connection
-  = -- | A folgezettel points to a zettel that is conceptually a part of the
-    -- parent zettel.
-    Folgezettel
-  | -- | Any other ordinary connection (eg: "See also")
-    OrdinaryConnection
-  deriving (Eq, Ord, Show, Enum, Bounded)
 
 instance Show InvalidID where
   show (InvalidIDParseError s) =
@@ -104,12 +88,22 @@ zettelNextIdForToday = do
   day <- utctDay <$> liftIO getCurrentTime
   let dayS = toString $ formatDay day
   zettelFiles <- liftIO $ listDirectory inputDir
-  let nums :: [Int] = sort $ catMaybes $ fmap readMaybe $ catMaybes $ catMaybes $ fmap (fmap listToMaybe . FP.match (dayS <> "*.md")) zettelFiles
+  let nums :: [Int] =
+        sort $ mapMaybe readMaybe
+          $ catMaybes
+          $ mapMaybe (fmap listToMaybe . FP.match (dayS <> "*.md")) zettelFiles
   case fmap last (nonEmpty nums) of
     Just lastNum ->
       pure $ ZettelDateID day (lastNum + 1)
     Nothing ->
       pure $ ZettelDateID day 1
+
+---------
+-- Parser
+---------
+
+data InvalidID = InvalidIDParseError Text
+  deriving (Eq)
 
 parseZettelID :: Text -> ZettelID
 parseZettelID =
@@ -138,15 +132,9 @@ dayParser = do
     parseNum n = readNum =<< M.count n M.digitChar
     readNum = maybe (fail "Not a number") pure . readMaybe
     dayFromIdx :: MonadFail m => Int -> m String
-    dayFromIdx = \case
-      1 -> pure "Mon"
-      2 -> pure "Tue"
-      3 -> pure "Wed"
-      4 -> pure "Thu"
-      5 -> pure "Fri"
-      6 -> pure "Sat"
-      7 -> pure "Sun"
-      _ -> fail "Day should be a value from 1 to 7"
+    dayFromIdx idx =
+      maybe (fail "Day should be a value from 1 to 7") pure $
+        ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] !!? (idx - 1)
 
 customIDParser :: Parser Text
 customIDParser = do

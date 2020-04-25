@@ -1,7 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.ConfigSpec
@@ -10,10 +8,10 @@ module Neuron.ConfigSpec
 where
 
 import qualified Neuron.Config as Z
-import Neuron.Parser
 import qualified Neuron.Zettelkasten.ID as Z
 import Relude
 import Test.Hspec
+import Text.Megaparsec.Simple
 
 spec :: Spec
 spec = do

@@ -5,7 +5,7 @@
 module Neuron.Zettelkasten.Query.Connection where
 
 import Data.TagTree (Tag)
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Text.URI as URI

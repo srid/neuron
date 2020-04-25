@@ -23,9 +23,9 @@ import Data.Graph.Labelled
 import qualified Data.Map.Strict as Map
 import Data.Traversable (for)
 import Development.Shake (Action)
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.Graph.Type
-import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..), evaluateQueries)
 import Neuron.Zettelkasten.Query.View (renderQueryLink)

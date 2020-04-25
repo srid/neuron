@@ -78,12 +78,12 @@ library
     Neuron.CLI.Search
     Neuron.CLI.Types
     Neuron.Config
-    Neuron.Parser
     Neuron.Version
     Neuron.Web.Generate
     Neuron.Web.Route
     Neuron.Web.Theme
     Neuron.Web.View
+    Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Error
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.ID
@@ -95,6 +95,7 @@ library
     Neuron.Zettelkasten.Query.View
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
+    Text.Megaparsec.Simple
     Text.MMark.Extension.ReplaceLink
     Text.MMark.Extension.SetTableClass
     Text.MMark.MarkdownLink

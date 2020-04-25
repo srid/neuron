@@ -13,7 +13,7 @@ module Neuron.Zettelkasten.Graph.Type
 where
 
 import Data.Graph.Labelled
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Zettel
 
 -- | The Zettelkasten graph

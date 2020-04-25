@@ -29,7 +29,6 @@ import Development.Shake (Action, readFile')
 import Dhall (FromDhall)
 import qualified Dhall
 import Dhall.TH
-import Neuron.Parser
 import Neuron.Zettelkasten.Graph.Type
 import qualified Neuron.Zettelkasten.ID as Z
 import Relude
@@ -40,6 +39,7 @@ import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension.Common as Ext
 import Text.MMark.Extension.SetTableClass (setTableClass)
 import qualified Text.Megaparsec.Char as M
+import Text.Megaparsec.Simple
 
 -- | Config type for @neuron.dhall@
 --

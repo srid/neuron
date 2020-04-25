@@ -1,9 +1,8 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Parser
+-- | A simple API for megaparsec
+module Text.Megaparsec.Simple
   ( Parser,
     parse,
   )
