@@ -95,6 +95,7 @@ library
     Neuron.Zettelkasten.Query.View
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
+    Text.MMark.Extension.ReplaceLink
     Text.MMark.Extension.SetTableClass
     Text.MMark.MarkdownLink
   other-modules:

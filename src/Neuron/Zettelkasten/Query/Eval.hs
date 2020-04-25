@@ -36,8 +36,6 @@ data EvaluatedQuery r = EvaluatedQuery
     evaluatedQueryTheme :: QueryTheme r
   }
 
-type ZettelQueryResource = Map MarkdownLink (DSum Query EvaluatedQuery)
-
 -- | Evaluate all queries in a zettel
 --
 -- Return the queries with results as a map from the original markdown link.

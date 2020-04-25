@@ -9,9 +9,8 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | Extension and render functions for queries
 module Neuron.Zettelkasten.Query.View
-  ( queryLinkExt,
+  ( renderQueryLink,
     renderZettelLink,
   )
 where
@@ -25,29 +24,15 @@ import Lucid
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..), ZettelQueryResource)
+import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..))
 import Neuron.Zettelkasten.Query.Theme (LinkTheme (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
-import qualified Text.MMark.Extension as Ext
-import Text.MMark.Extension (Extension, Inline (..))
-import Text.MMark.MarkdownLink (MarkdownLink (..))
 import Text.URI.QQ (queryKey)
 
--- | MMark extension to transform (evaluated) query links to custom views
-queryLinkExt :: ZettelQueryResource -> Extension
-queryLinkExt zqr =
-  Ext.inlineRender $ \f -> \case
-    inline@(Link inner uri _title) ->
-      MarkdownLink (Ext.asPlainText inner) uri
-        & flip Map.lookup zqr
-        & maybe (f inline) renderQueryLink
-    inline ->
-      f inline
-
 -- | Render the custom view for the given evaluated query
-renderQueryLink :: forall m. (Monad m, HasCallStack) => DSum Query EvaluatedQuery -> HtmlT m ()
+renderQueryLink :: DSum Query EvaluatedQuery -> Html ()
 renderQueryLink = \case
   Query_ZettelByID _zid :=> EvaluatedQuery {..} ->
     renderZettelLink evaluatedQueryTheme evaluatedQueryResult
@@ -75,7 +60,7 @@ renderQueryLink = \case
     groupZettelsByTagsMatching pats matches =
       fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap matches $ \z ->
         flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
-    renderZettelLinks :: LinkTheme -> [Zettel] -> HtmlT m ()
+    renderZettelLinks :: LinkTheme -> [Zettel] -> Html ()
     renderZettelLinks ltheme zs =
       ul_ $ do
         forM_ zs $ \z ->

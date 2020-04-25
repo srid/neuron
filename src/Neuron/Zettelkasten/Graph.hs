@@ -28,10 +28,11 @@ import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..), evaluateQueries)
-import Neuron.Zettelkasten.Query.View (queryLinkExt)
+import Neuron.Zettelkasten.Query.View (renderQueryLink)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Text.MMark.Extension (Extension)
+import Text.MMark.Extension.ReplaceLink (replaceLink)
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkasten :: [FilePath] -> Action (ZettelGraph, [(Zettel, Extension)])
@@ -51,11 +52,12 @@ mkZettelGraph zettels = do
       for zettels $ \z ->
         withExcept (NeuronError_BadQuery (zettelID z)) $
           (z,) <$> evaluateQueries zettels z
-  let edges :: [([Connection], Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, qm) ->
+  let zettelsWithExtensions = fmap (replaceLink . fmap renderQueryLink) <$> zettelsWithQueryResults
+      edges :: [([Connection], Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, qm) ->
         let conns :: [([Connection], Zettel)] = concatMap getConnections $ Map.elems qm
             connsFiltered = filter (connectionWhitelist . fst) conns
          in flip fmap connsFiltered $ \(cs, z2) -> (cs, z, z2)
-  pure (mkGraphFrom zettels edges, fmap queryLinkExt <$> zettelsWithQueryResults)
+  pure (mkGraphFrom zettels edges, zettelsWithExtensions)
   where
     -- TODO: Handle conflicts in edge monoid operation (same link but with
     -- different connection type), and consequently use a sensible type other
