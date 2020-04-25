@@ -34,6 +34,7 @@ extractLinks = Set.toList . Set.fromList . flip runScanner (Fold go [] id)
     relevantInlines = \case
       Ext.Naked xs -> toList xs
       Ext.Paragraph xs -> toList xs
+      Ext.Blockquote xs -> concatMap relevantInlines xs
       Ext.OrderedList _ xs -> concat $ concatMap (fmap relevantInlines) xs
       Ext.UnorderedList xs -> concat $ concatMap (fmap relevantInlines) xs
       _ -> []

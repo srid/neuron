@@ -21,6 +21,7 @@
   - `neuron ... rib serve` is now `neuron rib -wS`.
 - Bug fixes
   - Fix regression in neuron library use
+  - #130: Handle links inside blockquotes
 - UI
   - Tags are restyled and positioned below
   - Produce compact CSS in HTML head
