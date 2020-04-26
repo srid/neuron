@@ -19,6 +19,7 @@ where
 
 import Data.Some
 import Data.TagTree (mkTagPattern)
+import qualified Data.Text as T
 import qualified Neuron.Zettelkasten.Query as Z
 import Options.Applicative
 import Relude
@@ -88,7 +89,7 @@ commandParser defaultNotesDir = do
           ]
     newCommand = do
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
-      title <- argument str (metavar "TITLE" <> help "Title of the new Zettel")
+      title <- argument nonEmptyTextReder (metavar "TITLE" <> help "Title of the new Zettel")
       return (New NewCommand {..})
     openCommand =
       pure Open
@@ -115,9 +116,16 @@ commandParser defaultNotesDir = do
       ribWatch <- Rib.Cli.watchOption
       ribServe <- Rib.Cli.serveOption
       pure RibConfig {..}
+    uriReader :: ReadM (Some Z.Query)
     uriReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
           first show $ Z.queryFromURI uri
         Left e ->
           Left $ displayException e
+    nonEmptyTextReder :: ReadM Text
+    nonEmptyTextReder =
+      eitherReader $ \(T.strip . toText -> s) ->
+        if T.null s
+          then Left "Empty text is not allowed"
+          else Right s
