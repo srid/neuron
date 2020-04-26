@@ -16,6 +16,7 @@ module Neuron.Zettelkasten.ID
     mkZettelID,
     zettelNextIdForToday,
     zettelIDSourceFileName,
+    zettelPath,
     customIDParser,
   )
 where
@@ -81,6 +82,11 @@ zettelIDDay = \case
   ZettelCustomID _ -> Nothing
   ZettelDateID day _ ->
     Just day
+
+zettelPath :: ZettelID -> Action FilePath
+zettelPath zid = do
+  notesDir <- Rib.ribInputDir
+  pure $ notesDir </> zettelIDSourceFileName zid
 
 zettelNextIdForToday :: Action ZettelID
 zettelNextIdForToday = do
