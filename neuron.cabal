@@ -104,6 +104,7 @@ library
     Data.Graph.Labelled.Type
     Data.Graph.Labelled.Algorithm
     Neuron.Version.RepoVersion
+    Neuron.Zettelkasten.Graph.Type
     Paths_neuron
 
 
