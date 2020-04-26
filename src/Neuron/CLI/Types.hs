@@ -20,6 +20,7 @@ where
 import Data.Some
 import Data.TagTree (mkTagPattern)
 import qualified Data.Text as T
+import Data.Time
 import qualified Neuron.Zettelkasten.Query as Z
 import Options.Applicative
 import Relude
@@ -31,7 +32,11 @@ data App = App
     cmd :: Command
   }
 
-data NewCommand = NewCommand {title :: Text, edit :: Bool}
+data NewCommand = NewCommand
+  { title :: Text,
+    day :: Day,
+    edit :: Bool
+  }
   deriving (Eq, Show)
 
 data SearchCommand = SearchCommand
@@ -67,8 +72,8 @@ data RibConfig = RibConfig
   deriving (Eq, Show)
 
 -- | optparse-applicative parser for neuron CLI
-commandParser :: FilePath -> Parser App
-commandParser defaultNotesDir = do
+commandParser :: FilePath -> Day -> Parser App
+commandParser defaultNotesDir today = do
   notesDir <-
     option
       Rib.Cli.directoryReader
@@ -89,6 +94,12 @@ commandParser defaultNotesDir = do
           ]
     newCommand = do
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
+      day <-
+        option dayReader $
+          long "day"
+            <> metavar "DAY"
+            <> value today
+            <> help ("Creation day of the zettel in UTC (default: " <> show today <> ")")
       title <- argument nonEmptyTextReder (metavar "TITLE" <> help "Title of the new Zettel")
       return (New NewCommand {..})
     openCommand =
@@ -96,7 +107,7 @@ commandParser defaultNotesDir = do
     queryCommand =
       fmap Query $
         fmap (Some . Z.Query_ZettelsByTag) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
-          <|> option uriReader (long "uri" <> short 'u')
+          <|> option queryReader (long "uri" <> short 'u')
     searchCommand = do
       searchBy <-
         bool SearchByTitle SearchByContent
@@ -116,8 +127,8 @@ commandParser defaultNotesDir = do
       ribWatch <- Rib.Cli.watchOption
       ribServe <- Rib.Cli.serveOption
       pure RibConfig {..}
-    uriReader :: ReadM (Some Z.Query)
-    uriReader =
+    queryReader :: ReadM (Some Z.Query)
+    queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
           first show $ Z.queryFromURI uri
@@ -129,3 +140,7 @@ commandParser defaultNotesDir = do
         if T.null s
           then Left "Empty text is not allowed"
           else Right s
+    dayReader :: ReadM Day
+    dayReader =
+      maybeReader $
+        parseTimeM False defaultTimeLocale "%Y-%m-%d"

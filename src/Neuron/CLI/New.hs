@@ -14,7 +14,7 @@ where
 import Data.Text (strip)
 import Development.Shake (Action)
 import Neuron.CLI.Types
-import Neuron.Zettelkasten.ID (zettelNextIdForToday, zettelPath)
+import Neuron.Zettelkasten.ID (zettelNextId, zettelPath)
 import Options.Applicative
 import Relude
 import System.Directory
@@ -26,7 +26,7 @@ import System.Posix.Process
 -- As well as print the path to the created file.
 newZettelFile :: NewCommand -> Action ()
 newZettelFile NewCommand {..} = do
-  path <- zettelPath =<< zettelNextIdForToday
+  path <- zettelPath =<< zettelNextId day
   liftIO $ do
     whenM (doesFileExist path) $
       fail ("File already exists: " <> show path)
@@ -38,7 +38,7 @@ newZettelFile NewCommand {..} = do
     mkEditActionFromEnv :: IO (FilePath -> IO ())
     mkEditActionFromEnv =
       getEnvNonEmpty "EDITOR" >>= \case
-        Nothing -> do
+        Nothing ->
           die "\n-e option can only be used with EDITOR environment variable set"
         Just editorExe ->
           pure $ editAction editorExe

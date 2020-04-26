@@ -10,6 +10,7 @@ module Neuron.CLI
   )
 where
 
+import Data.Time
 import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Query (queryZettelkasten)
@@ -26,20 +27,23 @@ import System.Posix.Process
 
 run :: Action () -> IO ()
 run act = do
+  today <- utctDay <$> liftIO getCurrentTime
   defaultNotesDir <- (</> "zettelkasten") <$> getHomeDirectory
-  runWith act =<< execParser (opts defaultNotesDir)
-  where
-    opts d =
+  let cliParser = commandParser defaultNotesDir today
+  app <-
+    execParser $
       info
-        (versionOption <*> commandParser d <**> helper)
+        (versionOption <*> cliParser <**> helper)
         (fullDesc <> progDesc "Neuron, a Zettelkasten CLI <https://neuron.zettel.page/>")
+  runWith act app
+  where
     versionOption =
       infoOption
         (toString Version.neuronVersionFull)
         (long "version" <> help "Show version")
 
 runWith :: Action () -> App -> IO ()
-runWith act App {..} = do
+runWith act App {..} =
   case cmd of
     Rib ribCfg ->
       runRib act notesDir ribCfg

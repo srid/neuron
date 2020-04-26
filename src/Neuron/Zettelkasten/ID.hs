@@ -14,7 +14,7 @@ module Neuron.Zettelkasten.ID
     parseZettelID',
     idParser,
     mkZettelID,
-    zettelNextIdForToday,
+    zettelNextId,
     zettelIDSourceFileName,
     zettelPath,
     customIDParser,
@@ -88,10 +88,9 @@ zettelPath zid = do
   notesDir <- Rib.ribInputDir
   pure $ notesDir </> zettelIDSourceFileName zid
 
-zettelNextIdForToday :: Action ZettelID
-zettelNextIdForToday = do
+zettelNextId :: Day -> Action ZettelID
+zettelNextId day = do
   inputDir <- Rib.ribInputDir
-  day <- utctDay <$> liftIO getCurrentTime
   let dayS = toString $ formatDay day
   zettelFiles <- liftIO $ listDirectory inputDir
   let nums :: [Int] =
