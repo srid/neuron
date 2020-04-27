@@ -68,8 +68,5 @@ mainStyle cfg = "div#thesite" ? do
   "h1, h2, h3, h4, h5, h6, .ui.header" ? do
     C.fontFamily [headerFont] [C.sansSerif]
   "img" ? do
-    C.maxWidth $ pct 50
-    C.display C.block
-    C.marginLeft C.auto
-    C.marginRight C.auto
+    C.maxWidth $ pct 100 -- Prevents large images from overflowing beyond zettel borders
   style cfg
