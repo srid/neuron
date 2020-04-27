@@ -18,16 +18,20 @@
 module Neuron.Zettelkasten.Query where
 
 import Control.Monad.Except
+import Data.Aeson
+import Data.Aeson.GADT.TH
 import Data.GADT.Compare.TH
 import Data.GADT.Show.TH
 import qualified Data.Map.Strict as Map
 import Data.Some
-import Data.TagTree (Tag, TagPattern (..), mkTagPattern, tagMatch, tagMatchAny)
+import Data.TagTree (Tag, TagPattern (..), mkTagPattern, tagMatch, tagMatchAny, tagTree)
+import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Zettel
 import Relude
+import System.FilePath
 import Text.MMark.MarkdownLink (MarkdownLink (..))
 import qualified Text.URI as URI
 
@@ -120,6 +124,36 @@ runQuery zs = \case
     allTags =
       Map.fromListWith (+) $
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
+
+queryResultJson :: forall r. (ToJSON (Query r)) => FilePath -> Query r -> r -> Value
+queryResultJson notesDir q r =
+  toJSON $
+    object
+      [ "query" .= toJSON q,
+        "result" .= resultJson
+      ]
+  where
+    resultJson :: Value
+    resultJson = case q of
+      Query_ZettelByID _ ->
+        toJSON $ zettelJsonFull <$> r
+      Query_ZettelsByTag _ ->
+        toJSON $ zettelJsonFull <$> r
+      Query_Tags _ ->
+        toJSON $ treeToJson <$> tagTree r
+    zettelJsonFull z@Zettel {..} =
+      object $
+        [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)
+        ]
+          <> zettelJson z
+    treeToJson (Node (tag, count) children) =
+      object
+        [ "name" .= tag,
+          "count" .= count,
+          "children" .= fmap treeToJson children
+        ]
+
+deriveJSONGADT ''Query
 
 deriveGEq ''Query
 

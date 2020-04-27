@@ -41,7 +41,7 @@ newtype Tag = Tag {unTag :: Text}
 --
 -- Eg.: "foo/**" matches both "foo/bar/baz" and "foo/baz"
 newtype TagPattern = TagPattern {unTagPattern :: FilePattern}
-  deriving (Eq, Show)
+  deriving (Eq, Show, ToJSON)
 
 mkTagPattern :: Text -> TagPattern
 mkTagPattern =

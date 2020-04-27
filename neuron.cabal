@@ -63,6 +63,7 @@ common library-common
     some,
     dependent-sum,
     dependent-sum-template,
+    aeson-gadt-th,
     parser-combinators
 
 library

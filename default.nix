@@ -57,7 +57,11 @@ let
     version = "${neuronRev}"
     EOF
     '';
-  dsumSrc = builtins.fetchTarball "https://github.com/obsidiansystems/dependent-sum/archive/73ab6cb.tar.gz";
+  sources = {
+    dsum = builtins.fetchTarball "https://github.com/obsidiansystems/dependent-sum/archive/73ab6cb.tar.gz";
+    # https://github.com/obsidiansystems/aeson-gadt-th/pull/22
+    aeson-gadt-th = builtins.fetchTarball "https://github.com/srid/aeson-gadt-th/archive/ece1007.tar.gz";
+  };
 
 in import rib { 
     inherit name additional-packages; 
@@ -66,8 +70,9 @@ in import rib {
       neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
       which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97.tar.gz";
-      dependent-sum = dsumSrc + "/dependent-sum";
-      dependent-sum-template = dsumSrc + "/dependent-sum-template";
+      dependent-sum = sources.dsum + "/dependent-sum";
+      dependent-sum-template = sources.dsum + "/dependent-sum-template";
+      aeson-gadt-th = sources.aeson-gadt-th;
     } // source-overrides;
     overrides = self: super: with pkgs.haskell.lib; {
       # We must add neuron-search as a runtime dependency to the 'neuron'
