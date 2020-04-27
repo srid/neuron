@@ -21,6 +21,7 @@ import Data.Some
 import Data.TagTree (mkTagPattern)
 import qualified Data.Text as T
 import Data.Time
+import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import qualified Neuron.Zettelkasten.Query as Z
 import Options.Applicative
 import Relude
@@ -106,7 +107,8 @@ commandParser defaultNotesDir today = do
       pure Open
     queryCommand =
       fmap Query $
-        fmap (Some . Z.Query_ZettelsByTag) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
+        fmap (Some . Z.Query_ZettelByID) (option zettelIDReader (long "id"))
+          <|> fmap (Some . Z.Query_ZettelsByTag) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
           <|> option queryReader (long "uri" <> short 'u')
     searchCommand = do
       searchBy <-
@@ -127,6 +129,9 @@ commandParser defaultNotesDir today = do
       ribWatch <- Rib.Cli.watchOption
       ribServe <- Rib.Cli.serveOption
       pure RibConfig {..}
+    zettelIDReader :: ReadM ZettelID
+    zettelIDReader =
+      eitherReader $ first show . parseZettelID' . toText
     queryReader :: ReadM (Some Z.Query)
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
