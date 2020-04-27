@@ -38,6 +38,10 @@ instance Vertex Zettel where
   type VertexID Zettel = ZettelID
   vertexID = zettelID
 
+sortZettelsReverseChronological :: [Zettel] -> [Zettel]
+sortZettelsReverseChronological =
+  sortOn (Down . zettelID)
+
 zettelJson :: KeyValue a => Zettel -> [a]
 zettelJson Zettel {..} =
   [ "id" .= toJSON zettelID,

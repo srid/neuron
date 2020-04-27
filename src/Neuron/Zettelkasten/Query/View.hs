@@ -54,8 +54,6 @@ renderQueryLink = \case
     toHtml $ Some q
     renderTagTree $ foldTagTree $ tagTree evaluatedQueryResult
   where
-    sortZettelsReverseChronological =
-      sortOn (Down . zettelIDDay . zettelID)
     -- TODO: Instead of doing this here, group the results in runQuery itself.
     groupZettelsByTagsMatching pats matches =
       fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap matches $ \z ->
