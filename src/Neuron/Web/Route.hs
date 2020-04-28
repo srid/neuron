@@ -11,6 +11,10 @@
 -- | Zettel site's routes
 module Neuron.Web.Route where
 
+import Control.Monad.Except
+import qualified Data.Graph.Labelled as G
+import Data.Structured.Breadcrumb (Breadcrumb)
+import qualified Data.Structured.Breadcrumb as Breadcrumb
 import qualified Data.Text as T
 import GHC.Stack
 import Neuron.Config
@@ -18,7 +22,7 @@ import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Zettel
 import Relude
-import Rib (IsRoute (..), routeUrlRel)
+import Rib (IsRoute (..), routeUrl, routeUrlRel)
 import Rib.Extra.OpenGraph
 import qualified Rib.Parser.MMark as MMark
 import Text.MMark.Extension (Extension)
@@ -51,6 +55,14 @@ routeUrlRelWithQuery r k v = maybe (error "Bad URI") URI.render $ do
       { URI.uriPath = Just (False, route :| []),
         URI.uriQuery = [param]
       }
+
+routeUri :: (HasCallStack, IsRoute r) => Text -> r a -> URI.URI
+routeUri siteBaseUrl r = either (error . toText . displayException) id $ runExcept $ do
+  baseUrl <- liftEither $ URI.mkURI siteBaseUrl
+  uri <- liftEither $ URI.mkURI $ routeUrl r
+  case URI.relativeTo uri baseUrl of
+    Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
+    Just x -> pure x
 
 -- | Return full title for a route
 routeTitle :: Config -> a -> Route graph a -> Text
@@ -94,3 +106,16 @@ routeOpenGraph Config {..} val r =
         _ -> Nothing,
       _openGraph_url = Nothing
     }
+
+routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
+routeStructuredData Config {..} (graph, val) = \case
+  r@(Route_Zettel _) ->
+    case siteBaseUrl of
+      Nothing -> []
+      Just baseUrl ->
+        let mkCrumb :: Zettel -> Breadcrumb.Item
+            mkCrumb Zettel {..} =
+              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl r)
+         in Breadcrumb.fromForest $ fmap mkCrumb <$> G.dfsForestBackwards (fst val) graph
+  _ ->
+    []

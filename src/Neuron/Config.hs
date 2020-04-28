@@ -16,6 +16,7 @@ module Neuron.Config
   ( Config (..),
     getConfig,
     Alias (..),
+    BaseUrlError (..),
     getAliases,
     aliasParser,
     getMarkdownExtensions,
@@ -51,6 +52,12 @@ makeHaskellTypes
 deriving instance Generic Config
 
 deriving instance FromDhall Config
+
+data BaseUrlError
+  = BaseUrlNotAbsolute
+  deriving (Eq, Show)
+
+instance Exception BaseUrlError
 
 data Alias = Alias
   { aliasZettel :: Z.ZettelID,

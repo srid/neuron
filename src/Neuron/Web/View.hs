@@ -55,11 +55,11 @@ searchScript = $(embedStringFile "./src-js/search.js")
 helloScript :: Text
 helloScript = $(embedStringFile "./src-purescript/hello/index.js")
 
-renderRouteHead :: Monad m => Config -> Route graph a -> a -> HtmlT m ()
+renderRouteHead :: Monad m => Config -> Route graph a -> (graph, a) -> HtmlT m ()
 renderRouteHead config r val = do
   meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
   meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
-  title_ $ toHtml $ routeTitle config val r
+  title_ $ toHtml $ routeTitle config (snd val) r
   link_ [rel_ "shortcut icon", href_ "https://raw.githubusercontent.com/srid/neuron/master/assets/logo.ico"]
   case r of
     Route_Redirect _ ->
@@ -69,7 +69,8 @@ renderRouteHead config r val = do
       with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"]
       with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"]
     _ -> do
-      toHtml $ routeOpenGraph config val r
+      toHtml $ routeOpenGraph config (snd val) r
+      toHtml $ routeStructuredData config val r
       style_ [type_ "text/css"] $ styleToCss tango
 
 renderRouteBody :: Monad m => Config -> Route graph a -> (graph, a) -> HtmlT m ()
