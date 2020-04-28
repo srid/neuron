@@ -37,14 +37,13 @@ renderQueryLink = \case
   Query_ZettelByID _zid :=> EvaluatedQuery {..} ->
     renderZettelLink evaluatedQueryTheme evaluatedQueryResult
   q@(Query_ZettelsByTag pats) :=> EvaluatedQuery {..} -> do
-    let matches = sortZettelsReverseChronological evaluatedQueryResult
     toHtml $ Some q
     case zettelsViewGroupByTag evaluatedQueryTheme of
       False ->
         -- Render a list of links
-        renderZettelLinks (zettelsViewLinkTheme evaluatedQueryTheme) matches
+        renderZettelLinks (zettelsViewLinkTheme evaluatedQueryTheme) evaluatedQueryResult
       True ->
-        forM_ (Map.toList $ groupZettelsByTagsMatching pats matches) $ \(tag, zettelGrp) -> do
+        forM_ (Map.toList $ groupZettelsByTagsMatching pats evaluatedQueryResult) $ \(tag, zettelGrp) -> do
           span_ [class_ "ui basic pointing below grey label"] $ do
             i_ [class_ "tag icon"] mempty
             toHtml $ unTag tag

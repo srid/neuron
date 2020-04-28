@@ -112,7 +112,7 @@ runQuery zs = \case
   Query_ZettelByID zid ->
     find ((== zid) . zettelID) zs
   Query_ZettelsByTag pats ->
-    flip filter zs $ \Zettel {..} ->
+    sortZettelsReverseChronological $ flip filter zs $ \Zettel {..} ->
       and $ flip fmap pats $ \pat ->
         any (tagMatch pat) zettelTags
   Query_Tags [] ->
