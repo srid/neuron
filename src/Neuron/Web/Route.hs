@@ -109,13 +109,13 @@ routeOpenGraph Config {..} val r =
 
 routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
 routeStructuredData Config {..} (graph, val) = \case
-  r@(Route_Zettel _) ->
+  Route_Zettel _ ->
     case siteBaseUrl of
       Nothing -> []
       Just baseUrl ->
         let mkCrumb :: Zettel -> Breadcrumb.Item
             mkCrumb Zettel {..} =
-              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl r)
+              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
          in Breadcrumb.fromForest $ fmap mkCrumb <$> G.dfsForestBackwards (fst val) graph
   _ ->
     []
