@@ -71,7 +71,7 @@ renderZettelLink ltheme Zettel {..} = do
       renderDefault linkInline = do
         span_ [class_ "zettel-link"] $ do
           span_ [class_ "zettel-link-idlink"] $ do
-            a_ [href_ zurl] $ toHtml linkInline
+            a_ [href_ zurl, title_ zettelTitle] $ toHtml linkInline
           span_ [class_ "zettel-link-title"] $ do
             toHtml zettelTitle
   case ltheme of
