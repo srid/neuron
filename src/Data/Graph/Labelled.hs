@@ -13,12 +13,13 @@ module Data.Graph.Labelled
     getVertices,
 
     -- * Algorithms
-    backlinks,
+    preSet,
     topSort,
     clusters,
     dfsForestFrom,
     dfsForestBackwards,
     obviateRootUnlessForest,
+    induceOnEdge,
   )
 where
 

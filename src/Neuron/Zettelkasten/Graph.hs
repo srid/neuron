@@ -4,8 +4,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Graph
@@ -14,14 +14,25 @@ module Neuron.Zettelkasten.Graph
 
     -- * Construction
     loadZettelkasten,
+
+    -- * Graph functions
+    topSort,
+    frontlinkForest,
+    backlinkForest,
+    backlinks,
+    clusters,
+    categoryClusters,
+    getZettels,
   )
 where
 
 import Control.Monad.Except
 import Data.Dependent.Sum
-import Data.Graph.Labelled
+import Data.Foldable (maximum)
+import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
 import Data.Traversable (for)
+import Data.Tree
 import Development.Shake (Action)
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Error
@@ -53,28 +64,53 @@ mkZettelGraph zettels = do
         withExcept (NeuronError_BadQuery (zettelID z)) $
           (z,) <$> evaluateQueries zettels z
   let zettelsWithExtensions = fmap (replaceLink . fmap renderQueryLink) <$> zettelsWithQueryResults
-      edges :: [([Connection], Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, qm) ->
-        let conns :: [([Connection], Zettel)] = concatMap getConnections $ Map.elems qm
-            connsFiltered = filter (connectionWhitelist . fst) conns
-         in flip fmap connsFiltered $ \(cs, z2) -> (cs, z, z2)
-  pure (mkGraphFrom zettels edges, zettelsWithExtensions)
+      edges :: [(Maybe Connection, Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, qm) ->
+        let conns :: [(Connection, Zettel)] = concatMap getConnections $ Map.elems qm
+         in flip fmap conns $ \(cs, z2) -> (Just cs, z, z2)
+  pure (G.mkGraphFrom zettels edges, zettelsWithExtensions)
   where
-    -- TODO: Handle conflicts in edge monoid operation (same link but with
-    -- different connection type), and consequently use a sensible type other
-    -- than list.
-    getConnections :: DSum Query EvaluatedQuery -> [([Connection], Zettel)]
+    getConnections :: DSum Query EvaluatedQuery -> [(Connection, Zettel)]
     getConnections = \case
       Query_ZettelByID _ :=> EvaluatedQuery {..} ->
-        [([evaluatedQueryConnection], evaluatedQueryResult)]
+        [(evaluatedQueryConnection, evaluatedQueryResult)]
       Query_ZettelsByTag _ :=> EvaluatedQuery {..} ->
-        ([evaluatedQueryConnection],) <$> evaluatedQueryResult
+        (evaluatedQueryConnection,) <$> evaluatedQueryResult
       _ ->
         []
-    -- Exclude ordinary connection when building the graph
-    --
-    -- TODO: Build the graph with all connections, but induce a subgraph when
-    -- building category forests. This way we can still show ordinary
-    -- connetions in places (eg: a "backlinks" section) where they are
-    -- relevant. See #34
-    connectionWhitelist cs =
-      OrdinaryConnection `notElem` cs
+
+frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
+frontlinkForest conn z =
+  G.obviateRootUnlessForest z
+    . G.dfsForestFrom [z]
+    . G.induceOnEdge (== Just conn)
+
+backlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
+backlinkForest conn z =
+  G.obviateRootUnlessForest z
+    . G.dfsForestBackwards z
+    . G.induceOnEdge (== Just conn)
+
+backlinks :: Connection -> Zettel -> ZettelGraph -> [Zettel]
+backlinks conn z =
+  G.preSet z . G.induceOnEdge (== Just conn)
+
+categoryClusters :: ZettelGraph -> [Forest Zettel]
+categoryClusters (categoryGraph -> g) =
+  let cs :: [[Zettel]] = sortMothers $ clusters g
+   in flip fmap cs $ \zs -> G.dfsForestFrom zs g
+  where
+    -- Sort clusters with newer mother zettels appearing first.
+    sortMothers :: [NonEmpty Zettel] -> [[Zettel]]
+    sortMothers = sortOn (Down . maximum) . fmap (sortOn Down . toList)
+
+clusters :: ZettelGraph -> [NonEmpty Zettel]
+clusters = G.clusters . categoryGraph
+
+topSort :: ZettelGraph -> Either (NonEmpty Zettel) [Zettel]
+topSort = G.topSort . categoryGraph
+
+categoryGraph :: ZettelGraph -> ZettelGraph
+categoryGraph = G.induceOnEdge (== Just Folgezettel)
+
+getZettels :: ZettelGraph -> [Zettel]
+getZettels = G.getVertices

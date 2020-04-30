@@ -1,7 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -15,6 +12,12 @@ where
 import Data.Graph.Labelled
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Zettel
+import Relude
 
 -- | The Zettelkasten graph
-type ZettelGraph = LabelledGraph Zettel [Connection]
+--
+-- Edges are labelled with `Connection`; Maybe is used to provide the
+-- `Algebra.Graph.Label.zero` value for the edge label, which is `Nothing` in
+-- our case, and is effectively the same as there not being an edge between
+-- those vertices.
+type ZettelGraph = LabelledGraph Zettel (Maybe Connection)

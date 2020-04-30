@@ -29,8 +29,8 @@ getVertices (LabelledGraph _ lm) =
   Map.elems lm
 
 -- | Return the backlinks to the given vertex
-backlinks :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
-backlinks (vertexID -> zid) g =
+preSet :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
+preSet (vertexID -> zid) g =
   fmap (getVertex g) $ toList . LAM.preSet zid $ graph g
 
 topSort :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
@@ -59,6 +59,15 @@ dfsForestBackwards fromV (LabelledGraph g' v') =
 --------------------------
 --- More general utilities
 --------------------------
+
+-- | Like `induce` but operates on edges instead of vertices
+induceOnEdge :: Ord (VertexID v) => (e -> Bool) -> LabelledGraph v e -> LabelledGraph v e
+induceOnEdge f (LabelledGraph g v) =
+  LabelledGraph g' v
+  where
+    g' =
+      let es = mapMaybe (\(e, a, b) -> if f e then Nothing else Just (a, b)) $ LAM.edgeList g
+       in foldl' (\h (a, b) -> LAM.removeEdge a b h) g es
 
 -- | Get the clusters in a graph, as a list of the mother vertices in each
 -- cluster.

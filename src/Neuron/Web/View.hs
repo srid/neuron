@@ -27,7 +27,6 @@ import Data.Aeson ((.=), object)
 import qualified Data.Aeson.Text as Aeson
 import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
-import qualified Data.Graph.Labelled as G
 import qualified Data.Set as Set
 import Data.TagTree (Tag (..))
 import Data.Tree (Tree (..))
@@ -36,6 +35,8 @@ import Neuron.Config
 import Neuron.Version (neuronVersionFull)
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
+import Neuron.Zettelkasten.Connection
+import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Query.Theme (LinkTheme (..))
@@ -97,21 +98,18 @@ renderIndex Config {..} graph = do
         forM_ cyc $ \zettel ->
           li_ $ renderZettelLink LinkTheme_Default zettel
       _ -> mempty
-    let clusters = sortMothers $ G.clusters graph
+    let clusters = G.categoryClusters graph
     p_ $ do
       "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten graph. "
       "Each cluster is rendered as a forest, with their roots (mother zettels) highlighted."
-    forM_ clusters $ \zids ->
+    forM_ clusters $ \forest ->
       div_ [class_ $ "ui stacked " <> Theme.semanticColor neuronTheme <> " segment"] $ do
-        let forest = G.dfsForestFrom zids graph
         -- Forest of zettels, beginning with mother vertices.
         ul_ $ renderForest True Nothing LinkTheme_Default graph forest
     renderBrandFooter True
   -- See ./src-purescript/hello/README.md
   script_ helloScript
   where
-    -- Sort clusters with newer mother zettels appearing first.
-    sortMothers ms = sortOn (Down . maximum) $ fmap (sortOn Down . toList) ms
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
@@ -123,7 +121,7 @@ renderSearch graph = do
     input_ [type_ "text", id_ "search-input"]
     fa "search icon fas fa-search"
   div_ [class_ "ui hidden divider"] mempty
-  let allZettels = G.getVertices graph
+  let allZettels = G.getZettels graph
       allTags = Set.fromList $ concatMap zettelTags allZettels
       index = object ["zettels" .= fmap (object . zettelJson) allZettels, "tags" .= allTags]
   div_ [class_ "ui fluid multiple search selection dropdown", id_ "search-tags"] $ do
@@ -152,14 +150,19 @@ renderZettel config@Config {..} (graph, (z@Zettel {..}, ext)) zid = do
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
-          div_ [class_ "ui header"] "Connections"
-          let forest = G.obviateRootUnlessForest z $ G.dfsForestFrom [z] graph
-          ul_ $ renderForest True (Just 2) LinkTheme_Simple graph forest
+          div_ [class_ "ui header"] "Down"
+          ul_ $ renderForest True (Just 2) LinkTheme_Simple graph $
+            G.frontlinkForest Folgezettel z graph
         div_ [class_ "column"] $ do
-          div_ [class_ "ui header"] "Navigate up"
-          let forestB = G.obviateRootUnlessForest z $ G.dfsForestBackwards z graph
+          div_ [class_ "ui header"] "Up"
           ul_ $ do
-            renderForest True Nothing LinkTheme_Simple graph forestB
+            renderForest True Nothing LinkTheme_Simple graph $
+              G.backlinkForest Folgezettel z graph
+          div_ [class_ "ui header"] "Other backlinks"
+          ul_ $ do
+            renderForest True Nothing LinkTheme_Simple graph
+              $ fmap (flip Node [])
+              $ G.backlinks OrdinaryConnection z graph
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
       div_ [class_ "ui equal width grid"] $ do
         div_ [class_ "center aligned column"] $ do
@@ -224,9 +227,9 @@ renderForest isRoot maxLevel ltheme g trees =
             renderZettelLink ltheme zettel
           when (ltheme == LinkTheme_Default) $ do
             " "
-            case G.backlinks zettel g of
+            case G.backlinks Folgezettel zettel g of
               conns@(_ : _ : _) ->
-                -- Has two or more backlinks
+                -- Has two or more category backlinks
                 forM_ conns $ \zettel2 -> do
                   i_ [class_ "fas fa-link", title_ $ zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2] mempty
               _ -> mempty
