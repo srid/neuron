@@ -14,6 +14,7 @@ where
 import qualified Data.Set as Set
 import Data.Some
 import Data.Text (strip)
+import qualified Data.Text as T
 import Development.Shake (Action)
 import Neuron.CLI.Types
 import qualified Neuron.Zettelkasten.Graph as G
@@ -41,7 +42,16 @@ newZettelFile NewCommand {..} = do
       liftIO $ do
         fileAction :: FilePath -> IO () <-
           bool (pure showAction) mkEditActionFromEnv edit
-        writeFile path $ "---\ntitle: " <> toString title <> "\n---\n\n"
+        writeFileText path $
+          T.intercalate
+            "\n"
+            [ "---",
+              "title: " <> title,
+              "date: " <> show day,
+              "---",
+              "",
+              ""
+            ]
         fileAction path
   where
     mkEditActionFromEnv :: IO (FilePath -> IO ())

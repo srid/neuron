@@ -40,8 +40,7 @@ data NewCommand = NewCommand
     idScheme :: Some IDScheme,
     edit :: Bool
   }
-
--- deriving (Eq, Show)
+  deriving (Eq, Show)
 
 data SearchCommand = SearchCommand
   { searchBy :: SearchBy,
