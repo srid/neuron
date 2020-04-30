@@ -69,9 +69,6 @@ mkZettelGraph zettels = do
          in flip fmap conns $ \(cs, z2) -> (Just cs, z, z2)
   pure (G.mkGraphFrom zettels edges, zettelsWithExtensions)
   where
-    -- TODO: Handle conflicts in edge monoid operation (same link but with
-    -- different connection type), and consequently use a sensible type other
-    -- than list.
     getConnections :: DSum Query EvaluatedQuery -> [(Connection, Zettel)]
     getConnections = \case
       Query_ZettelByID _ :=> EvaluatedQuery {..} ->
