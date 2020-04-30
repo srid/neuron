@@ -11,13 +11,18 @@ module Neuron.CLI.New
   )
 where
 
+import qualified Data.Set as Set
+import Data.Some
 import Data.Text (strip)
+import qualified Data.Text as T
 import Development.Shake (Action)
 import Neuron.CLI.Types
-import Neuron.Zettelkasten.ID (zettelNextId, zettelPath)
+import qualified Neuron.Zettelkasten.Graph as G
+import Neuron.Zettelkasten.ID (zettelPath)
+import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
+import Neuron.Zettelkasten.Zettel (zettelID)
 import Options.Applicative
 import Relude
-import System.Directory
 import qualified System.Posix.Env as Env
 import System.Posix.Process
 
@@ -26,14 +31,28 @@ import System.Posix.Process
 -- As well as print the path to the created file.
 newZettelFile :: NewCommand -> Action ()
 newZettelFile NewCommand {..} = do
-  path <- zettelPath =<< zettelNextId day
-  liftIO $ do
-    whenM (doesFileExist path) $
-      fail ("File already exists: " <> show path)
-    fileAction :: FilePath -> IO () <-
-      bool (pure showAction) mkEditActionFromEnv edit
-    writeFile path $ "---\ntitle: " <> toString title <> "\n---\n\n"
-    fileAction path
+  zettels <- G.loadZettels
+  mzid <- withSome idScheme $ \scheme -> do
+    val <- liftIO $ IDScheme.genVal scheme
+    pure $ IDScheme.nextAvailableZettelID (Set.fromList $ fmap zettelID zettels) val scheme
+  case mzid of
+    Left e -> die $ show e
+    Right zid -> do
+      path <- zettelPath zid
+      liftIO $ do
+        fileAction :: FilePath -> IO () <-
+          bool (pure showAction) mkEditActionFromEnv edit
+        writeFileText path $
+          T.intercalate
+            "\n"
+            [ "---",
+              "title: " <> title,
+              "date: " <> show day,
+              "---",
+              "",
+              ""
+            ]
+        fileAction path
   where
     mkEditActionFromEnv :: IO (FilePath -> IO ())
     mkEditActionFromEnv =

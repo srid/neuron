@@ -13,7 +13,9 @@ module Neuron.Zettelkasten.Graph
     ZettelGraph,
 
     -- * Construction
+    loadZettels,
     loadZettelkasten,
+    loadZettelkastenFrom,
 
     -- * Graph functions
     topSort,
@@ -42,12 +44,21 @@ import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..), evaluateQueries)
 import Neuron.Zettelkasten.Query.View (renderQueryLink)
 import Neuron.Zettelkasten.Zettel
 import Relude
+import qualified Rib
 import Text.MMark.Extension (Extension)
 import Text.MMark.Extension.ReplaceLink (replaceLink)
 
+loadZettels :: Action [Zettel]
+loadZettels =
+  fmap (fmap fst . snd) loadZettelkasten
+
+loadZettelkasten :: Action (ZettelGraph, [(Zettel, Extension)])
+loadZettelkasten =
+  loadZettelkastenFrom =<< Rib.forEvery ["*.md"] pure
+
 -- | Load the Zettelkasten from disk, using the given list of zettel files
-loadZettelkasten :: [FilePath] -> Action (ZettelGraph, [(Zettel, Extension)])
-loadZettelkasten files = do
+loadZettelkastenFrom :: [FilePath] -> Action (ZettelGraph, [(Zettel, Extension)])
+loadZettelkastenFrom files = do
   zettels <- mkZettelFromPath `mapM` files
   either (fail . show) pure $ mkZettelGraph zettels
 

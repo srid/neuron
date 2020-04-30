@@ -18,20 +18,18 @@ import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Zettel as Z
 import Options.Applicative
 import Relude
-import qualified Rib
 
 -- | Generate the Zettelkasten site
 generateSite ::
   Z.Config ->
   (forall a. Z.Route G.ZettelGraph a -> (G.ZettelGraph, a) -> Action ()) ->
-  [FilePath] ->
   Action G.ZettelGraph
-generateSite config writeHtmlRoute' zettelsPat = do
+generateSite config writeHtmlRoute' = do
   when (olderThan $ Z.minVersion config)
     $ fail
     $ toString
     $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
-  (zettelGraph, zettels) <- G.loadZettelkasten =<< Rib.forEvery zettelsPat pure
+  (zettelGraph, zettels) <- G.loadZettelkasten
   let writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
   forM_ zettels $ \(z, d) ->
