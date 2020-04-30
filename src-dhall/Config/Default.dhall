@@ -7,7 +7,7 @@
 , editUrl =
     None Text
 , theme =
-    "teal"
+    "blue"
 , aliases =
     [] : List Text
 , mathJaxSupport =
