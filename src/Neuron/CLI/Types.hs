@@ -96,7 +96,7 @@ commandParser defaultNotesDir today = do
             command "rib" $ info ribCommand $ progDesc "Generate static site via rib"
           ]
     newCommand = do
-      title <- argument nonEmptyTextReder (metavar "TITLE" <> help "Title of the new Zettel")
+      title <- argument nonEmptyTextReader (metavar "TITLE" <> help "Title of the new Zettel")
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
       day <-
         option dayReader $
@@ -153,8 +153,8 @@ commandParser defaultNotesDir today = do
           first show $ Z.queryFromURI uri
         Left e ->
           Left $ displayException e
-    nonEmptyTextReder :: ReadM Text
-    nonEmptyTextReder =
+    nonEmptyTextReader :: ReadM Text
+    nonEmptyTextReader =
       eitherReader $ \(T.strip . toText -> s) ->
         if T.null s
           then Left "Empty text is not allowed"
