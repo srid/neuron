@@ -23,8 +23,6 @@ spec = do
       it "parses a zettel ID from zettel filename" $ do
         Z.mkZettelID "2011401.md" `shouldBe` zid
         Z.zettelIDSourceFileName zid `shouldBe` "2011401.md"
-      it "returns the correct day" $ do
-        Z.zettelIDDay zid `shouldBe` Just day
     context "custom id parsing" $ do
       let zid = Z.ZettelCustomID "20abcde"
       it "parses a custom zettel ID" $ do
