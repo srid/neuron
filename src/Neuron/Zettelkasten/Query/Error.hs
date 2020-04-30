@@ -10,7 +10,7 @@ import Text.URI
 
 data QueryError
   = QueryError_InvalidQuery URI InvalidQuery
-  | QueryError_InvalidQueryView URI InvalidLinkTheme
+  | QueryError_InvalidQueryView URI InvalidLinkView
   | QueryError_ZettelNotFound URI ZettelID
   deriving (Eq, Show)
 

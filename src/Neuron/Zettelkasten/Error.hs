@@ -10,7 +10,7 @@ where
 
 import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Query.Error (InvalidQuery (..), QueryError (..), queryErrorUri)
-import Neuron.Zettelkasten.Query.Theme (InvalidLinkTheme (..))
+import Neuron.Zettelkasten.Query.Theme (InvalidLinkView (..))
 import Relude
 import qualified Text.Show
 import qualified Text.URI as URI
@@ -37,8 +37,8 @@ instance Show NeuronError where
                 InvalidQuery_InvalidID e'' ->
                   "with invalidID: " <> show e''
               QueryError_InvalidQueryView _ e' -> case e' of
-                InvalidLinkTheme theme ->
-                  "with invalid link theme (" <> theme <> ")"
+                InvalidLinkView view ->
+                  "with invalid link view (" <> view <> ")"
      in toString $
           unlines
             [ "",

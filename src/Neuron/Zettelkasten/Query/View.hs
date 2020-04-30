@@ -25,7 +25,7 @@ import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..))
-import Neuron.Zettelkasten.Query.Theme (LinkTheme (..), ZettelsView (..))
+import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -41,13 +41,13 @@ renderQueryLink = \case
     case zettelsViewGroupByTag evaluatedQueryTheme of
       False ->
         -- Render a list of links
-        renderZettelLinks (zettelsViewLinkTheme evaluatedQueryTheme) evaluatedQueryResult
+        renderZettelLinks (zettelsViewLinkView evaluatedQueryTheme) evaluatedQueryResult
       True ->
         forM_ (Map.toList $ groupZettelsByTagsMatching pats evaluatedQueryResult) $ \(tag, zettelGrp) -> do
           span_ [class_ "ui basic pointing below grey label"] $ do
             i_ [class_ "tag icon"] mempty
             toHtml $ unTag tag
-          renderZettelLinks (zettelsViewLinkTheme evaluatedQueryTheme) zettelGrp
+          renderZettelLinks (zettelsViewLinkView evaluatedQueryTheme) zettelGrp
   q@(Query_Tags _) :=> EvaluatedQuery {..} -> do
     -- Render a list of tags
     toHtml $ Some q
@@ -57,44 +57,29 @@ renderQueryLink = \case
     groupZettelsByTagsMatching pats matches =
       fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap matches $ \z ->
         flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
-    renderZettelLinks :: LinkTheme -> [Zettel] -> Html ()
+    renderZettelLinks :: LinkView -> [Zettel] -> Html ()
     renderZettelLinks ltheme zs =
       ul_ $ do
         forM_ zs $ \z ->
           li_ $ renderZettelLink ltheme z
 
 -- | Render a link to an individual zettel.
-renderZettelLink :: forall m. Monad m => LinkTheme -> Zettel -> HtmlT m ()
-renderZettelLink ltheme Zettel {..} = do
+renderZettelLink :: forall m. Monad m => LinkView -> Zettel -> HtmlT m ()
+renderZettelLink LinkView {..} Zettel {..} = do
   let zurl = Rib.routeUrlRel $ Route_Zettel zettelID
-      renderDefault :: ToHtml a => a -> HtmlT m ()
-      renderDefault linkInline = do
-        span_ [class_ "zettel-link"] $ do
-          span_ [class_ "zettel-link-idlink"] $ do
-            a_ [href_ zurl, title_ zettelTitle] $ toHtml linkInline
-          span_ [class_ "zettel-link-title"] $ do
-            toHtml zettelTitle
-  case ltheme of
-    LinkTheme_Default ->
-      -- Special consistent styling for Zettel links
-      -- Uses ZettelID as link text. Title is displayed aside.
-      renderDefault zettelID
-    LinkTheme_WithDate ->
-      case zettelIDDay zettelID of
-        Just day ->
-          renderDefault $ show @Text day
-        Nothing ->
-          -- Fallback to using zid
-          renderDefault zettelID
-    LinkTheme_Simple ->
-      renderZettelLinkSimpleWith zurl (zettelIDText zettelID) zettelTitle
-
--- | Render a normal looking zettel link with a custom body.
-renderZettelLinkSimpleWith :: forall m a. (Monad m, ToHtml a) => Text -> Text -> a -> HtmlT m ()
-renderZettelLinkSimpleWith url title body =
-  a_ [class_ "zettel-link item", href_ url, title_ title] $ do
-    span_ [class_ "zettel-link-title"] $ do
-      toHtml body
+      mextra =
+        if linkViewShowDate
+          then case zettelIDDay zettelID of
+            Just day ->
+              Just $ toHtml $ show @Text day
+            Nothing ->
+              Nothing
+          else Nothing
+  span_ [class_ "zettel-link-container"] $ do
+    forM_ mextra $ \extra ->
+      span_ [class_ "extra"] extra
+    span_ [class_ "zettel-link"] $ do
+      a_ [href_ zurl, title_ (zettelIDText zettelID)] $ toHtml zettelTitle
 
 -- |  Render a tag tree along with the count of zettels tagged with it
 renderTagTree :: forall m. Monad m => Forest (NonEmpty TagNode, Natural) -> HtmlT m ()

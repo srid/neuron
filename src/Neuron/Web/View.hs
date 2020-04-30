@@ -25,6 +25,7 @@ import Clay hiding (id, ms, object, reverse, s, style, type_)
 import qualified Clay as C
 import Data.Aeson ((.=), object)
 import qualified Data.Aeson.Text as Aeson
+import Data.Default (def)
 import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
 import qualified Data.Set as Set
@@ -39,7 +40,6 @@ import Neuron.Zettelkasten.Connection
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
-import Neuron.Zettelkasten.Query.Theme (LinkTheme (..))
 import Neuron.Zettelkasten.Query.View (renderZettelLink)
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -96,7 +96,7 @@ renderIndex Config {..} graph = do
       Left (toList -> cyc) -> div_ [class_ "ui orange segment"] $ do
         h2_ "Cycle detected"
         forM_ cyc $ \zettel ->
-          li_ $ renderZettelLink LinkTheme_Default zettel
+          li_ $ renderZettelLink def zettel
       _ -> mempty
     let clusters = G.categoryClusters graph
     p_ $ do
@@ -105,7 +105,7 @@ renderIndex Config {..} graph = do
     forM_ clusters $ \forest ->
       div_ [class_ $ "ui stacked " <> Theme.semanticColor neuronTheme <> " segment"] $ do
         -- Forest of zettels, beginning with mother vertices.
-        ul_ $ renderForest True Nothing LinkTheme_Default graph forest
+        ul_ $ renderForest True Nothing True graph forest
     renderBrandFooter True
   -- See ./src-purescript/hello/README.md
   script_ helloScript
@@ -151,16 +151,16 @@ renderZettel config@Config {..} (graph, (z@Zettel {..}, ext)) zid = do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Down"
-          ul_ $ renderForest True (Just 2) LinkTheme_Simple graph $
+          ul_ $ renderForest True (Just 2) False graph $
             G.frontlinkForest Folgezettel z graph
         div_ [class_ "column"] $ do
           div_ [class_ "ui header"] "Up"
           ul_ $ do
-            renderForest True Nothing LinkTheme_Simple graph $
+            renderForest True Nothing False graph $
               G.backlinkForest Folgezettel z graph
           div_ [class_ "ui header"] "Other backlinks"
           ul_ $ do
-            renderForest True Nothing LinkTheme_Simple graph
+            renderForest True Nothing False graph
               $ fmap (flip Node [])
               $ G.backlinks OrdinaryConnection z graph
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
@@ -210,11 +210,11 @@ renderForest ::
   Monad m =>
   Bool ->
   Maybe Int ->
-  LinkTheme ->
+  Bool ->
   ZettelGraph ->
   [Tree Zettel] ->
   HtmlT m ()
-renderForest isRoot maxLevel ltheme g trees =
+renderForest isRoot maxLevel renderingFullTree g trees =
   case maxLevel of
     Just 0 -> mempty
     _ -> do
@@ -222,10 +222,10 @@ renderForest isRoot maxLevel ltheme g trees =
         li_ $ do
           let zettelDiv =
                 div_
-                  [class_ $ bool "" "ui black label" $ ltheme == LinkTheme_Default]
+                  [class_ $ bool "" "ui black label" renderingFullTree]
           bool id zettelDiv isRoot $
-            renderZettelLink ltheme zettel
-          when (ltheme == LinkTheme_Default) $ do
+            renderZettelLink def zettel
+          when renderingFullTree $ do
             " "
             case G.backlinks Folgezettel zettel g of
               conns@(_ : _ : _) ->
@@ -234,7 +234,7 @@ renderForest isRoot maxLevel ltheme g trees =
                   i_ [class_ "fas fa-link", title_ $ zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2] mempty
               _ -> mempty
           when (length subtrees > 0) $ do
-            ul_ $ renderForest False ((\n -> n - 1) <$> maxLevel) ltheme g subtrees
+            ul_ $ renderForest False ((\n -> n - 1) <$> maxLevel) renderingFullTree g subtrees
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
@@ -243,19 +243,16 @@ style :: Config -> Css
 style Config {..} = do
   let neuronTheme = Theme.mkTheme theme
       linkColor = Theme.withRgb neuronTheme C.rgb
-      linkTitleColor = C.auto
-  "span.zettel-link span.zettel-link-idlink a" ? do
-    C.fontFamily [] [C.monospace]
+  "span.zettel-link-container span.zettel-link a" ? do
     C.fontWeight C.bold
     C.color linkColor
     C.textDecoration C.none
-  "span.zettel-link span.zettel-link-idlink a:hover" ? do
+  "span.zettel-link-container span.zettel-link a:hover" ? do
     C.backgroundColor linkColor
     C.color C.white
-  ".zettel-link .zettel-link-title" ? do
-    C.paddingLeft $ em 0.3
-    C.fontWeight C.bold
-    C.color linkTitleColor
+  "span.zettel-link-container span.extra" ? do
+    C.color C.auto
+    C.paddingRight $ em 0.3
   "div.z-index" ? do
     C.ul ? do
       C.listStyleType C.square

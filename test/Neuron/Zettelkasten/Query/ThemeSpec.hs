@@ -8,6 +8,7 @@ module Neuron.Zettelkasten.Query.ThemeSpec
   )
 where
 
+import Data.Default (def)
 import Neuron.Zettelkasten.Query.Theme
 import Relude
 import Test.Hspec
@@ -16,15 +17,17 @@ import Util
 spec :: Spec
 spec =
   describe "Link theme extraction from URI" $ do
-    it "Parse basic link theme" $ do
-      parseURIWith linkThemeFromURI "zquery://search?linkTheme=default"
-        `shouldBe` Right LinkTheme_Default
-      parseURIWith linkThemeFromURI "zquery://search?linkTheme=withDate"
-        `shouldBe` Right LinkTheme_WithDate
-      parseURIWith linkThemeFromURI "zcfquery://search?linkTheme=simple"
-        `shouldBe` Right LinkTheme_Simple
+    describe "Legacy link theme" $ do
+      it "Parse linkTheme" $ do
+        parseURIWith linkThemeFromURI "zquery://search?linkTheme=default"
+          `shouldBe` Right (LinkView False)
+        parseURIWith linkThemeFromURI "zquery://search?linkTheme=withDate"
+          `shouldBe` Right (LinkView True)
+      it "Parse 'simple' as default" $ do
+        parseURIWith linkThemeFromURI "zcfquery://search?linkTheme=simple"
+          `shouldBe` Right (LinkView False)
     it "Parse grouped query flag" $ do
       parseURIWith zettelsViewFromURI "zquery://search?tag=foo&grouped"
-        `shouldBe` Right (ZettelsView LinkTheme_Default True)
+        `shouldBe` Right (ZettelsView def True)
       parseURIWith zettelsViewFromURI "zquery://search?tag=foo"
-        `shouldBe` Right (ZettelsView LinkTheme_Default False)
+        `shouldBe` Right (ZettelsView def False)

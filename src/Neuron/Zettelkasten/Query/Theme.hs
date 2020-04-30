@@ -10,6 +10,7 @@
 module Neuron.Zettelkasten.Query.Theme where
 
 import Control.Monad.Except
+import Data.Default
 import Data.TagTree (Tag)
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -25,36 +26,34 @@ type instance QueryTheme [Zettel] = ZettelsView
 type instance QueryTheme (Map Tag Natural) = ()
 
 data ZettelsView = ZettelsView
-  { zettelsViewLinkTheme :: LinkTheme,
+  { zettelsViewLinkView :: LinkView,
     zettelsViewGroupByTag :: Bool
   }
   deriving (Eq, Show, Ord)
 
-type ZettelView = LinkTheme
+type ZettelView = LinkView
 
-data LinkTheme
-  = LinkTheme_Default
-  | LinkTheme_Simple
-  | LinkTheme_WithDate
+data LinkView = LinkView
+  { linkViewShowDate :: Bool
+  }
   deriving (Eq, Show, Ord)
 
-data InvalidLinkTheme = InvalidLinkTheme Text
+instance Default LinkView where
+  def = LinkView False
+
+data InvalidLinkView = InvalidLinkView Text
   deriving (Eq, Show)
 
-zettelsViewFromURI :: MonadError InvalidLinkTheme m => URI.URI -> m ZettelsView
+zettelsViewFromURI :: MonadError InvalidLinkView m => URI.URI -> m ZettelsView
 zettelsViewFromURI uri =
   ZettelsView
     <$> linkThemeFromURI uri
     <*> pure (hasQueryFlag [queryKey|grouped|] uri)
 
-linkThemeFromURI :: MonadError InvalidLinkTheme m => URI.URI -> m LinkTheme
-linkThemeFromURI uri =
-  fmap (fromMaybe LinkTheme_Default) $ case getQueryParam [queryKey|linkTheme|] uri of
-    Just "default" -> pure $ Just LinkTheme_Default
-    Just "simple" -> pure $ Just LinkTheme_Simple
-    Just "withDate" -> pure $ Just LinkTheme_WithDate
-    Just x -> throwError $ InvalidLinkTheme x
-    Nothing -> pure Nothing
+linkThemeFromURI :: MonadError InvalidLinkView m => URI.URI -> m LinkView
+linkThemeFromURI uri = do
+  let showDate = maybe False (bool False True . (== "withDate")) $ getQueryParam [queryKey|linkTheme|] uri
+  pure $ def {linkViewShowDate = showDate}
 
 getQueryParam :: URI.RText 'URI.QueryKey -> URI.URI -> Maybe Text
 getQueryParam k uri =
