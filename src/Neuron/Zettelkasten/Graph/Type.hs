@@ -1,7 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -15,6 +12,7 @@ where
 import Data.Graph.Labelled
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Zettel
+import Relude
 
 -- | The Zettelkasten graph
-type ZettelGraph = LabelledGraph Zettel [Connection]
+type ZettelGraph = LabelledGraph Zettel (Maybe Connection)
