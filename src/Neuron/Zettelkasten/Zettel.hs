@@ -10,6 +10,7 @@ module Neuron.Zettelkasten.Zettel where
 import Data.Aeson
 import Data.Graph.Labelled (Vertex (..))
 import Data.TagTree (Tag)
+import Data.Time.Calendar
 import Development.Shake (Action)
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
@@ -22,6 +23,7 @@ data Zettel = Zettel
   { zettelID :: ZettelID,
     zettelTitle :: Text,
     zettelTags :: [Tag],
+    zettelDay :: Maybe Day,
     zettelContent :: MMark
   }
 
@@ -46,7 +48,8 @@ zettelJson :: KeyValue a => Zettel -> [a]
 zettelJson Zettel {..} =
   [ "id" .= toJSON zettelID,
     "title" .= zettelTitle,
-    "tags" .= zettelTags
+    "tags" .= zettelTags,
+    "day" .= zettelDay
   ]
 
 -- | Load a zettel from a file.
@@ -59,4 +62,9 @@ mkZettelFromPath path = do
       meta = Meta.getMeta doc
       title = maybe (toText $ "No title for " <> path) Meta.title meta
       tags = fromMaybe [] $ Meta.tags =<< meta
-  pure $ Zettel zid title tags doc
+      day = case zid of
+        -- We ignore the "data" meta field on legacy Date IDs, which encode the
+        -- creation date in the ID.
+        ZettelDateID v _ -> Just v
+        ZettelCustomID _ -> Meta.date =<< meta
+  pure $ Zettel zid title tags day doc

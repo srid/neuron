@@ -8,7 +8,6 @@
 module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     InvalidID (..),
-    zettelIDDay,
     zettelIDText,
     parseZettelID,
     parseZettelID',
@@ -76,12 +75,6 @@ formatDay day =
 
 zettelIDSourceFileName :: ZettelID -> FilePath
 zettelIDSourceFileName zid = toString $ zettelIDText zid <> ".md"
-
-zettelIDDay :: ZettelID -> Maybe Day
-zettelIDDay = \case
-  ZettelCustomID _ -> Nothing
-  ZettelDateID day _ ->
-    Just day
 
 zettelPath :: ZettelID -> Action FilePath
 zettelPath zid = do

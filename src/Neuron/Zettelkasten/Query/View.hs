@@ -69,7 +69,7 @@ renderZettelLink LinkView {..} Zettel {..} = do
   let zurl = Rib.routeUrlRel $ Route_Zettel zettelID
       mextra =
         if linkViewShowDate
-          then case zettelIDDay zettelID of
+          then case zettelDay of
             Just day ->
               Just $ toHtml $ show @Text day
             Nothing ->
