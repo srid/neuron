@@ -65,7 +65,8 @@ common library-common
     dependent-sum-template,
     aeson-gadt-th,
     parser-combinators,
-    data-default
+    data-default,
+    uuid,
 
 library
   import: library-common
@@ -90,6 +91,7 @@ library
     Neuron.Zettelkasten.Error
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.ID
+    Neuron.Zettelkasten.ID.Scheme
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Eval
     Neuron.Zettelkasten.Query.Error

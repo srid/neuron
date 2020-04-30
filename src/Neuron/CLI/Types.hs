@@ -22,6 +22,7 @@ import Data.TagTree (mkTagPattern)
 import qualified Data.Text as T
 import Data.Time
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
+import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import qualified Neuron.Zettelkasten.Query as Z
 import Options.Applicative
 import Relude
@@ -36,9 +37,11 @@ data App = App
 data NewCommand = NewCommand
   { title :: Text,
     day :: Day,
+    idScheme :: Some IDScheme,
     edit :: Bool
   }
-  deriving (Eq, Show)
+
+-- deriving (Eq, Show)
 
 data SearchCommand = SearchCommand
   { searchBy :: SearchBy,
@@ -78,8 +81,8 @@ commandParser defaultNotesDir today = do
   notesDir <-
     option
       Rib.Cli.directoryReader
-      ( long "zettelkasten-dir" <> short 'd' <> metavar "NOTESDIR" <> value defaultNotesDir
-          <> help ("Your zettelkasten directory containing the zettel files (" <> "default: " <> defaultNotesDir <> ")")
+      ( long "zettelkasten-dir" <> short 'd' <> metavar "NOTESDIR" <> value defaultNotesDir <> showDefault
+          <> help "Your zettelkasten directory containing the zettel files"
       )
   cmd <- cmdParser
   pure $ App {..}
@@ -94,15 +97,27 @@ commandParser defaultNotesDir today = do
             command "rib" $ info ribCommand $ progDesc "Generate static site via rib"
           ]
     newCommand = do
+      title <- argument nonEmptyTextReder (metavar "TITLE" <> help "Title of the new Zettel")
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
       day <-
         option dayReader $
           long "day"
             <> metavar "DAY"
             <> value today
-            <> help ("Creation day of the zettel in UTC (default: " <> show today <> ")")
-      title <- argument nonEmptyTextReder (metavar "TITLE" <> help "Title of the new Zettel")
-      return (New NewCommand {..})
+            <> showDefault
+            <> help "Zettel creation date in UTC"
+      -- NOTE: optparse-applicative picks the first option as the default.
+      idSchemeF <-
+        fmap
+          (const $ Some . IDSchemeDate)
+          (switch (long "id-date" <> help "Use date encoded ID"))
+          <|> fmap
+            (const $ const $ Some IDSchemeHash)
+            (switch (long "id-hash" <> help "Use random hash ID"))
+          <|> fmap
+            (const . Some . IDSchemeCustom)
+            (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
+      pure $ New $ NewCommand title day (idSchemeF day) edit
     openCommand =
       pure Open
     queryCommand =
@@ -123,8 +138,8 @@ commandParser defaultNotesDir today = do
         optional $
           option
             Rib.Cli.directoryReader
-            ( long "output-dir" <> short 'o' <> metavar "OUTPUTDIR"
-                <> help ("The directory where HTML will be generated (" <> "default: NOTESDIR/.neuron/output)")
+            ( long "output-dir" <> short 'o' <> metavar "OUTPUTDIR" <> showDefault
+                <> help "The directory where HTML will be generated"
             )
       ribWatch <- Rib.Cli.watchOption
       ribServe <- Rib.Cli.serveOption

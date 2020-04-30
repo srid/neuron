@@ -29,7 +29,7 @@ generateMainSite = do
   config <- Config.getConfig
   let writeHtmlRoute :: Route g a -> (g, a) -> Action ()
       writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage config r
-  void $ generateSite config writeHtmlRoute ["*.md"]
+  void $ generateSite config writeHtmlRoute
 
 renderPage :: Config -> Route g a -> (g, a) -> Html ()
 renderPage config r val = html_ [lang_ "en"] $ do
