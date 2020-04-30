@@ -150,11 +150,11 @@ renderZettel config@Config {..} (graph, (z@Zettel {..}, ext)) zid = do
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
-          div_ [class_ "ui header"] "Children"
+          div_ [class_ "ui header"] "Down"
           ul_ $ renderForest True (Just 2) LinkTheme_Simple graph $
             G.frontlinkForest Folgezettel z graph
         div_ [class_ "column"] $ do
-          div_ [class_ "ui header"] "Parent backlinks"
+          div_ [class_ "ui header"] "Up"
           ul_ $ do
             renderForest True Nothing LinkTheme_Simple graph $
               G.backlinkForest Folgezettel z graph
@@ -229,7 +229,7 @@ renderForest isRoot maxLevel ltheme g trees =
             " "
             case G.backlinks Folgezettel zettel g of
               conns@(_ : _ : _) ->
-                -- Has two or more backlinkForest
+                -- Has two or more category backlinks
                 forM_ conns $ \zettel2 -> do
                   i_ [class_ "fas fa-link", title_ $ zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2] mempty
               _ -> mempty

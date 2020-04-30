@@ -14,6 +14,7 @@ data Connection
   deriving (Eq, Ord, Show, Enum, Bounded)
 
 instance Semigroup Connection where
+  -- A folgezettel link trumps all other kinds in that zettel.
   Folgezettel <> _ = Folgezettel
   _ <> Folgezettel = Folgezettel
   OrdinaryConnection <> OrdinaryConnection = OrdinaryConnection
