@@ -13,7 +13,6 @@ module Neuron.Zettelkasten.ID
     parseZettelID',
     idParser,
     mkZettelID,
-    zettelNextId,
     zettelIDSourceFileName,
     zettelPath,
     customIDParser,
@@ -28,9 +27,7 @@ import Development.Shake (Action)
 import Lucid
 import Relude
 import qualified Rib
-import System.Directory (listDirectory)
 import System.FilePath
-import qualified System.FilePattern as FP
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple
@@ -81,21 +78,6 @@ zettelPath :: ZettelID -> Action FilePath
 zettelPath zid = do
   notesDir <- Rib.ribInputDir
   pure $ notesDir </> zettelIDSourceFileName zid
-
-zettelNextId :: Day -> Action ZettelID
-zettelNextId day = do
-  inputDir <- Rib.ribInputDir
-  let dayS = toString $ formatDay day
-  zettelFiles <- liftIO $ listDirectory inputDir
-  let nums :: [Int] =
-        sort $ mapMaybe readMaybe
-          $ catMaybes
-          $ mapMaybe (fmap listToMaybe . FP.match (dayS <> "*.md")) zettelFiles
-  case fmap last (nonEmpty nums) of
-    Just lastNum ->
-      pure $ ZettelDateID day (lastNum + 1)
-    Nothing ->
-      pure $ ZettelDateID day 1
 
 ---------
 -- Parser
