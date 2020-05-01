@@ -108,11 +108,11 @@ commandParser defaultNotesDir today = do
       -- NOTE: optparse-applicative picks the first option as the default.
       idSchemeF <-
         fmap
-          (const $ Some . IDSchemeDate)
-          (switch (long "id-date" <> help "Use date encoded ID"))
+          (const $ const $ Some IDSchemeHash)
+          (switch (long "id-hash" <> help "Use random hash ID (default)"))
           <|> fmap
-            (const $ const $ Some IDSchemeHash)
-            (switch (long "id-hash" <> help "Use random hash ID"))
+            (const $ Some . IDSchemeDate)
+            (switch (long "id-date" <> help "Use date encoded ID"))
           <|> fmap
             (const . Some . IDSchemeCustom)
             (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
