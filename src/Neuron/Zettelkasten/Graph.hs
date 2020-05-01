@@ -74,7 +74,6 @@ mkZettelGraph zettels = do
       for zettels $ \z ->
         withExcept (NeuronError_BadQuery (zettelID z)) $
           (z,) <$> evalLinksInZettel zettels z
-  -- zettelsWithExtensions = fmap (replaceLink . fmap renderQueryLink) <$> zettelsWithQueryResults
   zettelsWithExtensions <- forM zettelsWithQueryResults $ \(z, resMap) -> liftEither $ runExcept $ do
     resMapRendered <-
       flip Map.traverseWithKey resMap $ \_ml qres -> do

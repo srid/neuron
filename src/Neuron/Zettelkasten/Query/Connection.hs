@@ -5,24 +5,13 @@
 
 module Neuron.Zettelkasten.Query.Connection where
 
-import Data.TagTree (Tag)
 import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Zettel
 import Relude
 import Text.MMark.MarkdownLink
 import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (hasQueryFlag)
 
-type family QueryConnection q
-
-type instance QueryConnection (Maybe Zettel) = Maybe Connection
-
-type instance QueryConnection [Zettel] = Maybe Connection
-
-type instance QueryConnection (Map Tag Natural) = ()
-
--- TODO: This should return Maybe Connection.
 connectionFromMarkdownLink :: MarkdownLink -> Maybe Connection
 connectionFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   case fmap URI.unRText (URI.uriScheme uri) of

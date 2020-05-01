@@ -9,38 +9,36 @@ module Neuron.Zettelkasten.Error
 where
 
 import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName, zettelIDText)
-import Neuron.Zettelkasten.Query.Error (InvalidQuery (..), QueryError (..), queryErrorUri)
+import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme (InvalidLinkView (..))
-import Neuron.Zettelkasten.Query.View (QueryNoData (..))
 import Relude
 import qualified Text.Show
 import qualified Text.URI as URI
 
 data NeuronError
   = -- A zettel file contains invalid link that neuron cannot parse
-    NeuronError_BadQuery ZettelID QueryError
+    NeuronError_BadQuery ZettelID QueryParseError
   | -- Running the query did not produce expected result
-    NeuronError_QueryFailed QueryNoData
+    NeuronError_QueryFailed QueryResultError
   deriving (Eq)
 
 instance Show NeuronError where
   show e =
     let fromZid = case e of
           NeuronError_BadQuery zid _ -> zid
-          NeuronError_QueryFailed (QueryNoData_NoSuchZettel zid) -> zid
+          NeuronError_QueryFailed (QueryResultError_NoSuchZettel zid) -> zid
         msg = case e of
           NeuronError_BadQuery _fromZid qe ->
-            "it contains a query URI (" <> URI.render (queryErrorUri qe) <> ") " <> case qe of
-              QueryError_InvalidQuery _ e' -> case e' of
-                InvalidQuery_UnsupportedHost ->
-                  "with unsupported host"
-                InvalidQuery_Unsupported ->
-                  "that is not supported"
-                InvalidQuery_InvalidID e'' ->
-                  "with invalidID: " <> show e''
-                InvalidQuery_BadView (InvalidLinkView view) ->
-                  "with invalid link view (" <> view <> ")"
-          NeuronError_QueryFailed (QueryNoData_NoSuchZettel zid) ->
+            "it contains a query URI (" <> URI.render (queryParseErrorUri qe) <> ") " <> case qe of
+              QueryParseError_UnsupportedHost _uri ->
+                "with unsupported host"
+              QueryParseError_Unsupported _uri ->
+                "that is not supported"
+              QueryParseError_InvalidID _uri e'' ->
+                "with invalidID: " <> show e''
+              QueryParseError_BadView _uri (InvalidLinkView view) ->
+                "with invalid link view (" <> view <> ")"
+          NeuronError_QueryFailed (QueryResultError_NoSuchZettel zid) ->
             "Zettel "
               <> zettelIDText zid
               <> " does not exist"

@@ -3,22 +3,24 @@
 
 module Neuron.Zettelkasten.Query.Error where
 
-import Neuron.Zettelkasten.ID (InvalidID)
+import Neuron.Zettelkasten.ID (InvalidID, ZettelID)
 import Neuron.Zettelkasten.Query.Theme
 import Relude
 import Text.URI
 
-data QueryError
-  = QueryError_InvalidQuery URI InvalidQuery
+data QueryParseError
+  = QueryParseError_InvalidID URI InvalidID
+  | QueryParseError_Unsupported URI
+  | QueryParseError_UnsupportedHost URI
+  | QueryParseError_BadView URI InvalidLinkView
   deriving (Eq, Show)
 
-data InvalidQuery
-  = InvalidQuery_InvalidID InvalidID
-  | InvalidQuery_Unsupported
-  | InvalidQuery_UnsupportedHost
-  | InvalidQuery_BadView InvalidLinkView
+data QueryResultError = QueryResultError_NoSuchZettel ZettelID
   deriving (Eq, Show)
 
-queryErrorUri :: QueryError -> URI
-queryErrorUri = \case
-  QueryError_InvalidQuery uri _ -> uri
+queryParseErrorUri :: QueryParseError -> URI
+queryParseErrorUri = \case
+  QueryParseError_InvalidID uri _ -> uri
+  QueryParseError_Unsupported uri -> uri
+  QueryParseError_UnsupportedHost uri -> uri
+  QueryParseError_BadView uri _ -> uri

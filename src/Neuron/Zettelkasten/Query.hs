@@ -71,24 +71,24 @@ instance ToHtml (Some Query) where
 
 type QueryResults = [Zettel]
 
-queryFromURI :: MonadError InvalidQuery m => URI.URI -> m (Some Query)
+queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Some Query)
 queryFromURI uri = do
   mq <- queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = ""}
   case mq of
     Just q -> pure q
-    Nothing -> throwError InvalidQuery_Unsupported
+    Nothing -> throwError $ QueryParseError_Unsupported uri
 
 -- NOTE: To support legacy links which rely on linkText. New short links shouldn't use this.
-queryFromMarkdownLink :: MonadError InvalidQuery m => MarkdownLink -> m (Maybe (Some Query))
+queryFromMarkdownLink :: MonadError QueryParseError m => MarkdownLink -> m (Maybe (Some Query))
 queryFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   case fmap URI.unRText (URI.uriScheme uri) of
     Just proto | proto `elem` ["z", "zcf"] -> do
-      zid <- liftEither $ first InvalidQuery_InvalidID $ parseZettelID' linkText
+      zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
       pure $ Just $ Some $ Query_ZettelByID zid (connectionFromMarkdownLink ml)
     Just proto | proto `elem` ["zquery", "zcfquery"] ->
       case uriHost uri of
         Right "search" -> do
-          mview <- liftEither $ first InvalidQuery_BadView $ zettelsViewFromURI uri
+          mview <- liftEither $ first (QueryParseError_BadView uri) $ zettelsViewFromURI uri
           pure $ Just $ Some $
             Query_ZettelsByTag
               (mkTagPattern <$> getParamValues "tag" uri)
@@ -97,7 +97,7 @@ queryFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri, markdownLinkText =
         Right "tags" ->
           pure $ Just $ Some $ Query_Tags $ mkTagPattern <$> getParamValues "filter" uri
         _ ->
-          throwError InvalidQuery_UnsupportedHost
+          throwError $ QueryParseError_UnsupportedHost uri
     _ -> pure $ do
       -- Initial support for the upcoming short links.
       -- First, we expect that this is inside <..> (so same link text as link)

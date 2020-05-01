@@ -13,7 +13,6 @@
 module Neuron.Zettelkasten.Query.View
   ( renderQueryLink,
     renderZettelLink,
-    QueryNoData (..),
   )
 where
 
@@ -26,23 +25,20 @@ import Data.TagTree (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatch
 import Data.Tree
 import Lucid
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
-import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
+import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
 import Text.URI.QQ (queryKey)
 
-data QueryNoData = QueryNoData_NoSuchZettel ZettelID
-  deriving (Eq, Show)
-
 -- | Render the custom view for the given evaluated query
-renderQueryLink :: forall m. (MonadError QueryNoData m) => DSum Query Identity -> m (Html ())
+renderQueryLink :: forall m. (MonadError QueryResultError m) => DSum Query Identity -> m (Html ())
 renderQueryLink = \case
   Query_ZettelByID zid _mconn :=> Identity mres ->
     case mres of
-      Nothing -> throwError $ QueryNoData_NoSuchZettel zid
+      Nothing -> throwError $ QueryResultError_NoSuchZettel zid
       Just res ->
         pure $ renderZettelLink Nothing res
   q@(Query_ZettelsByTag pats _mconn mview) :=> Identity res -> pure $ do
