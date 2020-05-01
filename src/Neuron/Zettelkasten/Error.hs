@@ -27,8 +27,6 @@ instance Show NeuronError where
             "it contains a query URI (" <> URI.render (queryParseErrorUri qe) <> ") " <> case qe of
               QueryParseError_UnsupportedHost _uri ->
                 "with unsupported host"
-              QueryParseError_Unsupported _uri ->
-                "that is not supported"
               QueryParseError_InvalidID _uri e'' ->
                 "with invalidID: " <> show e''
               QueryParseError_BadView _uri (InvalidLinkView view) ->

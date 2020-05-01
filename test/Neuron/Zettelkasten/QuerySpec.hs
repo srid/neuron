@@ -24,7 +24,7 @@ spec = do
     for_ [("zquery", Nothing), ("zcfquery", Just OrdinaryConnection)] $ \(scheme, mconn) -> do
       context scheme $ do
         let zettelsByTag pat =
-              Right $ Some $ Query_ZettelsByTag (fmap mkTagPattern pat) mconn Nothing
+              Right $ Just $ Some $ Query_ZettelsByTag (fmap mkTagPattern pat) mconn Nothing
             withScheme s = toText scheme <> s
         it "Parse all zettels URI" $ do
           parseURIWith queryFromURI (withScheme "://search")

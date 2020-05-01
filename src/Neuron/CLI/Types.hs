@@ -150,7 +150,7 @@ commandParser defaultNotesDir today = do
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
-          first show $ Z.queryFromURI uri
+          either (Left . show) (maybe (Left "Unsupported query") Right) $ Z.queryFromURI uri
         Left e ->
           Left $ displayException e
     nonEmptyTextReader :: ReadM Text

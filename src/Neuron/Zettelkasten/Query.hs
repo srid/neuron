@@ -71,14 +71,9 @@ instance ToHtml (Some Query) where
           let qs = intercalate ", " pats
           toHtml $ "Tags matching '" <> qs <> "'"
 
-type QueryResults = [Zettel]
-
-queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Some Query)
+queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Maybe (Some Query))
 queryFromURI uri = do
-  mq <- queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = ""}
-  case mq of
-    Just q -> pure q
-    Nothing -> throwError $ QueryParseError_Unsupported uri
+  queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = ""}
 
 -- NOTE: To support legacy links which rely on linkText. New short links shouldn't use this.
 queryFromMarkdownLink :: MonadError QueryParseError m => MarkdownLink -> m (Maybe (Some Query))
