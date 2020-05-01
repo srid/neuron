@@ -40,7 +40,7 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..), evaluateQueries)
+import Neuron.Zettelkasten.Query.Eval
 import Neuron.Zettelkasten.Query.View (renderQueryLink)
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -73,19 +73,25 @@ mkZettelGraph zettels = do
     liftEither $ runExcept $ do
       for zettels $ \z ->
         withExcept (NeuronError_BadQuery (zettelID z)) $
-          (z,) <$> evaluateQueries zettels z
-  let zettelsWithExtensions = fmap (replaceLink . fmap renderQueryLink) <$> zettelsWithQueryResults
-      edges :: [(Maybe Connection, Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, qm) ->
+          (z,) <$> evalLinksInZettel zettels z
+  -- zettelsWithExtensions = fmap (replaceLink . fmap renderQueryLink) <$> zettelsWithQueryResults
+  zettelsWithExtensions <- forM zettelsWithQueryResults $ \(z, resMap) -> liftEither $ runExcept $ do
+    resMapRendered <-
+      flip Map.traverseWithKey resMap $ \_ml qres -> do
+        withExcept NeuronError_QueryFailed $
+          renderQueryLink qres
+    pure (z, replaceLink resMapRendered)
+  let edges :: [(Maybe Connection, Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, qm) ->
         let conns :: [(Connection, Zettel)] = concatMap getConnections $ Map.elems qm
          in flip fmap conns $ \(cs, z2) -> (Just cs, z, z2)
   pure (G.mkGraphFrom zettels edges, zettelsWithExtensions)
   where
-    getConnections :: DSum Query EvaluatedQuery -> [(Connection, Zettel)]
+    getConnections :: DSum Query Identity -> [(Connection, Zettel)]
     getConnections = \case
-      Query_ZettelByID _ :=> EvaluatedQuery {..} ->
-        [(evaluatedQueryConnection, evaluatedQueryResult)]
-      Query_ZettelsByTag _ :=> EvaluatedQuery {..} ->
-        (evaluatedQueryConnection,) <$> evaluatedQueryResult
+      Query_ZettelByID _ mconn :=> Identity mres ->
+        maybe [] pure $ (fromMaybe Folgezettel mconn,) <$> mres
+      Query_ZettelsByTag _ mconn _mview :=> Identity res ->
+        (fromMaybe Folgezettel mconn,) <$> res
       _ ->
         []
 

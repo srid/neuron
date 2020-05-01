@@ -16,27 +16,27 @@ import Text.URI.Util (hasQueryFlag)
 
 type family QueryConnection q
 
-type instance QueryConnection (Maybe Zettel) = Connection
+type instance QueryConnection (Maybe Zettel) = Maybe Connection
 
-type instance QueryConnection [Zettel] = Connection
+type instance QueryConnection [Zettel] = Maybe Connection
 
 type instance QueryConnection (Map Tag Natural) = ()
 
-connectionFromMarkdownLink :: MarkdownLink -> Connection
+-- TODO: This should return Maybe Connection.
+connectionFromMarkdownLink :: MarkdownLink -> Maybe Connection
 connectionFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
-  fromMaybe Folgezettel $
-    case fmap URI.unRText (URI.uriScheme uri) of
-      Just scheme
-        | scheme `elem` ["zcf", "zcfquery"] ->
-          Just OrdinaryConnection
-      _ -> do
-        -- Try short links (see Query.hs:queryFromMarkdownLink; we need to consolidate these)
-        guard $ URI.render uri == linkText
-        guard
-          `mapM_` [ URI.uriScheme uri == Nothing,
-                    URI.uriAuthority uri == Left False,
-                    URI.uriFragment uri == Nothing
-                  ]
-        if (hasQueryFlag [queryKey|cf|] uri)
-          then pure OrdinaryConnection
-          else Nothing
+  case fmap URI.unRText (URI.uriScheme uri) of
+    Just scheme
+      | scheme `elem` ["zcf", "zcfquery"] ->
+        Just OrdinaryConnection
+    _ -> do
+      -- Try short links (see Query.hs:queryFromMarkdownLink; we need to consolidate these)
+      guard $ URI.render uri == linkText
+      guard
+        `mapM_` [ URI.uriScheme uri == Nothing,
+                  URI.uriAuthority uri == Left False,
+                  URI.uriFragment uri == Nothing
+                ]
+      if (hasQueryFlag [queryKey|cf|] uri)
+        then pure OrdinaryConnection
+        else Nothing

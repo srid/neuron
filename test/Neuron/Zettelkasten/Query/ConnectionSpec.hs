@@ -19,21 +19,21 @@ spec = do
   describe "Connection parsing from URI" $ do
     let mkLink = mkMarkdownLink "."
     it "handles z: connection type" $ do
-      connectionFromMarkdownLink (mkLink "z:/") `shouldBe` Folgezettel
+      connectionFromMarkdownLink (mkLink "z:/") `shouldBe` Nothing
     it "handles zcf: connection type" $ do
-      connectionFromMarkdownLink (mkLink "zcf:/") `shouldBe` OrdinaryConnection
+      connectionFromMarkdownLink (mkLink "zcf:/") `shouldBe` Just OrdinaryConnection
     it "handles zquery: connection type" $ do
-      connectionFromMarkdownLink (mkLink "zquery:/") `shouldBe` Folgezettel
+      connectionFromMarkdownLink (mkLink "zquery:/") `shouldBe` Nothing
     it "handles zcfquery: connection type" $ do
-      connectionFromMarkdownLink (mkLink "zcfquery:/") `shouldBe` OrdinaryConnection
+      connectionFromMarkdownLink (mkLink "zcfquery:/") `shouldBe` Just OrdinaryConnection
   describe "Connection parsing from short links" $ do
     let shortLink s = mkMarkdownLink s s
     it "handles basic short links" $ do
       connectionFromMarkdownLink (shortLink "1234567")
-        `shouldBe` Folgezettel
+        `shouldBe` Nothing
     it "handles cf short links" $ do
       connectionFromMarkdownLink (shortLink "1234567?cf")
-        `shouldBe` OrdinaryConnection
+        `shouldBe` Just OrdinaryConnection
 
 mkMarkdownLink :: Text -> Text -> MarkdownLink
 mkMarkdownLink s l =

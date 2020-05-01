@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -12,9 +13,12 @@
 module Neuron.Zettelkasten.Query.View
   ( renderQueryLink,
     renderZettelLink,
+    QueryNoData (..),
   )
 where
 
+import Control.Monad.Except
+import Data.Default
 import Data.Dependent.Sum
 import qualified Data.Map.Strict as Map
 import Data.Some
@@ -22,35 +26,42 @@ import Data.TagTree (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatch
 import Data.Tree
 import Lucid
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
+import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
 import Text.URI.QQ (queryKey)
 
+data QueryNoData = QueryNoData_NoSuchZettel ZettelID
+  deriving (Eq, Show)
+
 -- | Render the custom view for the given evaluated query
-renderQueryLink :: DSum Query EvaluatedQuery -> Html ()
+renderQueryLink :: forall m. (MonadError QueryNoData m) => DSum Query Identity -> m (Html ())
 renderQueryLink = \case
-  Query_ZettelByID _zid :=> EvaluatedQuery {..} ->
-    renderZettelLink evaluatedQueryTheme evaluatedQueryResult
-  q@(Query_ZettelsByTag pats) :=> EvaluatedQuery {..} -> do
+  Query_ZettelByID zid _mconn :=> Identity mres ->
+    case mres of
+      Nothing -> throwError $ QueryNoData_NoSuchZettel zid
+      Just res ->
+        pure $ renderZettelLink Nothing res
+  q@(Query_ZettelsByTag pats _mconn mview) :=> Identity res -> pure $ do
     toHtml $ Some q
-    case zettelsViewGroupByTag evaluatedQueryTheme of
+    let view = fromMaybe def mview
+    case zettelsViewGroupByTag view of
       False ->
         -- Render a list of links
-        renderZettelLinks (zettelsViewLinkView evaluatedQueryTheme) evaluatedQueryResult
+        renderZettelLinks (zettelsViewLinkView view) res
       True ->
-        forM_ (Map.toList $ groupZettelsByTagsMatching pats evaluatedQueryResult) $ \(tag, zettelGrp) -> do
+        forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
           span_ [class_ "ui basic pointing below grey label"] $ do
             i_ [class_ "tag icon"] mempty
             toHtml $ unTag tag
-          renderZettelLinks (zettelsViewLinkView evaluatedQueryTheme) zettelGrp
-  q@(Query_Tags _) :=> EvaluatedQuery {..} -> do
+          renderZettelLinks (zettelsViewLinkView view) zettelGrp
+  q@(Query_Tags _) :=> Identity res -> pure $ do
     -- Render a list of tags
     toHtml $ Some q
-    renderTagTree $ foldTagTree $ tagTree evaluatedQueryResult
+    renderTagTree $ foldTagTree $ tagTree res
   where
     -- TODO: Instead of doing this here, group the results in runQuery itself.
     groupZettelsByTagsMatching pats matches =
@@ -60,11 +71,11 @@ renderQueryLink = \case
     renderZettelLinks ltheme zs =
       ul_ $ do
         forM_ zs $ \z ->
-          li_ $ renderZettelLink ltheme z
+          li_ $ renderZettelLink (Just ltheme) z
 
 -- | Render a link to an individual zettel.
-renderZettelLink :: forall m. Monad m => LinkView -> Zettel -> HtmlT m ()
-renderZettelLink LinkView {..} Zettel {..} = do
+renderZettelLink :: forall m. Monad m => Maybe LinkView -> Zettel -> HtmlT m ()
+renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
   let zurl = Rib.routeUrlRel $ Route_Zettel zettelID
       mextra =
         if linkViewShowDate
