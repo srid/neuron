@@ -30,6 +30,9 @@ spec = do
       it "parses a custom zettel ID from zettel filename" $ do
         Z.mkZettelID "20abcde.md" `shouldBe` zid
         Z.zettelIDSourceFileName zid `shouldBe` "20abcde.md"
+      let deceptiveZid = Z.ZettelCustomID "2136537e"
+      it "parses a custom zettel ID that looks like date ID" $ do
+        Z.parseZettelID' "2136537e" `shouldBe` Right deceptiveZid
   describe "ID converstion" $ do
     context "JSON encoding" $ do
       let day = fromGregorian 2020 3 19

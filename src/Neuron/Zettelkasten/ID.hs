@@ -86,7 +86,7 @@ zettelPath zid = do
 data InvalidID = InvalidIDParseError Text
   deriving (Eq)
 
-parseZettelID :: Text -> ZettelID
+parseZettelID :: HasCallStack => Text -> ZettelID
 parseZettelID =
   either (error . show) id . parseZettelID'
 
@@ -96,7 +96,7 @@ parseZettelID' =
 
 idParser :: Parser ZettelID
 idParser =
-  M.try (fmap (uncurry ZettelDateID) dayParser)
+  M.try (fmap (uncurry ZettelDateID) $ dayParser <* M.eof)
     <|> fmap ZettelCustomID customIDParser
 
 dayParser :: Parser (Day, Int)
@@ -122,7 +122,7 @@ customIDParser = do
   fmap toText $ M.some $ M.alphaNumChar <|> M.char '_' <|> M.char '-'
 
 -- | Extract ZettelID from the zettel's filename or path.
-mkZettelID :: FilePath -> ZettelID
+mkZettelID :: HasCallStack => FilePath -> ZettelID
 mkZettelID fp =
   let (name, _) = splitExtension $ takeFileName fp
    in parseZettelID $ toText name
