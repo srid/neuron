@@ -42,7 +42,7 @@ instance Vertex Zettel where
 
 sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
-  sortOn (Down . zettelID)
+  sortOn (Down . zettelDay)
 
 zettelJson :: KeyValue a => Zettel -> [a]
 zettelJson Zettel {..} =
