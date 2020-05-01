@@ -92,9 +92,21 @@ queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = li
           throwError InvalidQuery_UnsupportedHost
     _ -> pure $ do
       -- Initial support for the upcoming short links.
+      -- First, we expect that this is inside <..> (so same link text as link)
       guard $ URI.render uri == linkText
-      zid <- rightToMaybe $ parseZettelID' linkText
-      pure $ Some $ Query_ZettelByID zid
+      -- Then, non-relevant parts of the URI should be empty
+      guard
+        `mapM_` [ URI.uriScheme uri == Nothing,
+                  URI.uriAuthority uri == Left False,
+                  URI.uriFragment uri == Nothing
+                ]
+      fmap snd (URI.uriPath uri) >>= \case
+        (URI.unRText -> path) :| [] -> do
+          zid <- rightToMaybe $ parseZettelID' path
+          pure $ Some $ Query_ZettelByID zid
+        _ ->
+          -- Multiple path elements, not supported
+          Nothing
   where
     getParamValues k u =
       flip mapMaybe (URI.uriQuery u) $ \case
