@@ -10,13 +10,16 @@ module Neuron.CLI
   )
 where
 
+import qualified Data.Aeson.Text as Aeson
+import Data.Some
 import Data.Time
 import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
-import Neuron.CLI.Query (queryZettelkasten)
 import Neuron.CLI.Rib
 import Neuron.CLI.Search (interactiveSearch)
 import qualified Neuron.Version as Version
+import qualified Neuron.Zettelkasten.Graph as G
+import qualified Neuron.Zettelkasten.Query as Q
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -56,8 +59,10 @@ runWith act App {..} =
         putStrLn indexHtmlPath
         let opener = if os == "darwin" then "open" else "xdg-open"
         liftIO $ executeFile opener True [indexHtmlPath] Nothing
-    Query q ->
-      runRibOnceQuietly notesDir $
-        queryZettelkasten notesDir q
+    Query someQ ->
+      runRibOnceQuietly notesDir $ do
+        withSome someQ $ \q -> do
+          result <- flip Q.runQuery q <$> G.loadZettels
+          putLTextLn $ Aeson.encodeToLazyText $ Q.queryResultJson notesDir q result
     Search searchCmd ->
       interactiveSearch notesDir searchCmd
