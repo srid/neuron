@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,6 +12,7 @@
 module Neuron.Zettelkasten.Query.Theme where
 
 import Control.Monad.Except
+import Data.Aeson (ToJSON)
 import Data.Default
 import Data.TagTree (Tag)
 import Neuron.Zettelkasten.Zettel
@@ -30,28 +33,28 @@ data ZettelsView = ZettelsView
   { zettelsViewLinkView :: LinkView,
     zettelsViewGroupByTag :: Bool
   }
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, Generic, ToJSON)
 
 type ZettelView = LinkView
 
 data LinkView = LinkView
   { linkViewShowDate :: Bool
   }
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, Generic, ToJSON)
 
 instance Default LinkView where
   def = LinkView False
 
+instance Default ZettelsView where
+  def = ZettelsView def False
+
 data InvalidLinkView = InvalidLinkView Text
   deriving (Eq, Show)
 
-zettelsViewFromURI :: MonadError InvalidLinkView m => URI.URI -> m ZettelsView
-zettelsViewFromURI uri =
-  ZettelsView
-    <$> linkThemeFromURI uri
-    <*> pure (hasQueryFlag [queryKey|grouped|] uri)
-
-linkThemeFromURI :: MonadError InvalidLinkView m => URI.URI -> m LinkView
-linkThemeFromURI uri = do
-  let showDate = maybe False (bool False True . (== "withDate")) $ getQueryParam [queryKey|linkTheme|] uri
-  pure $ def {linkViewShowDate = showDate}
+zettelsViewFromURI :: MonadError InvalidLinkView m => URI.URI -> m (Maybe ZettelsView)
+zettelsViewFromURI uri = do
+  case (getQueryParam [queryKey|linkTheme|] uri, hasQueryFlag [queryKey|grouped|] uri) of
+    (Nothing, False) -> pure Nothing
+    (mlinkTheme, grouped) -> do
+      let lv = LinkView $ mlinkTheme == Just "withDate"
+      pure $ Just $ ZettelsView lv grouped

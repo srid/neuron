@@ -121,8 +121,8 @@ commandParser defaultNotesDir today = do
       pure Open
     queryCommand =
       fmap Query $
-        fmap (Some . Z.Query_ZettelByID) (option zettelIDReader (long "id"))
-          <|> fmap (Some . Z.Query_ZettelsByTag) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
+        fmap (Some . flip Z.Query_ZettelByID Nothing) (option zettelIDReader (long "id"))
+          <|> fmap (\x -> Some $ Z.Query_ZettelsByTag x Nothing Nothing) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
           <|> option queryReader (long "uri" <> short 'u')
     searchCommand = do
       searchBy <-

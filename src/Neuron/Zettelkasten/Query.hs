@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -27,13 +28,17 @@ import Data.Some
 import Data.TagTree (Tag, TagPattern (..), mkTagPattern, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
 import Lucid
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
+import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
 import System.FilePath
 import Text.MMark.MarkdownLink (MarkdownLink (..))
 import qualified Text.URI as URI
+import Text.URI.QQ (queryKey)
+import Text.URI.Util (hasQueryFlag)
 
 -- | Query represents a way to query the Zettelkasten.
 --
@@ -41,8 +46,8 @@ import qualified Text.URI as URI
 --   LinksTo ZettelID
 --   LinksFrom ZettelID
 data Query r where
-  Query_ZettelByID :: ZettelID -> Query (Maybe Zettel)
-  Query_ZettelsByTag :: [TagPattern] -> Query [Zettel]
+  Query_ZettelByID :: ZettelID -> Maybe Connection -> Query (Maybe Zettel)
+  Query_ZettelsByTag :: [TagPattern] -> Maybe Connection -> Maybe ZettelsView -> Query [Zettel]
   Query_Tags :: [TagPattern] -> Query (Map Tag Natural)
 
 instance ToHtml (Some Query) where
@@ -50,11 +55,11 @@ instance ToHtml (Some Query) where
   toHtml q =
     div_ [class_ "ui horizontal divider", title_ "Neuron Query"] $ do
       case q of
-        Some (Query_ZettelByID _) ->
+        Some (Query_ZettelByID _ _) ->
           mempty
-        Some (Query_ZettelsByTag []) ->
+        Some (Query_ZettelsByTag [] _mconn _mview) ->
           "All zettels"
-        Some (Query_ZettelsByTag (fmap unTagPattern -> pats)) -> do
+        Some (Query_ZettelsByTag (fmap unTagPattern -> pats) _mconn _mview) -> do
           let qs = intercalate ", " pats
               desc = toText $ "Zettels tagged '" <> qs <> "'"
            in span_ [class_ "ui basic pointing below black label", title_ desc] $ do
@@ -68,28 +73,32 @@ instance ToHtml (Some Query) where
 
 type QueryResults = [Zettel]
 
-queryFromURI :: MonadError InvalidQuery m => URI.URI -> m (Some Query)
+queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Some Query)
 queryFromURI uri = do
   mq <- queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = ""}
   case mq of
     Just q -> pure q
-    Nothing -> throwError InvalidQuery_Unsupported
+    Nothing -> throwError $ QueryParseError_Unsupported uri
 
 -- NOTE: To support legacy links which rely on linkText. New short links shouldn't use this.
-queryFromMarkdownLink :: MonadError InvalidQuery m => MarkdownLink -> m (Maybe (Some Query))
+queryFromMarkdownLink :: MonadError QueryParseError m => MarkdownLink -> m (Maybe (Some Query))
 queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   case fmap URI.unRText (URI.uriScheme uri) of
     Just proto | proto `elem` ["z", "zcf"] -> do
-      zid <- liftEither $ first InvalidQuery_InvalidID $ parseZettelID' linkText
-      pure $ Just $ Some $ Query_ZettelByID zid
+      zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
+      let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
+      pure $ Just $ Some $ Query_ZettelByID zid mconn
     Just proto | proto `elem` ["zquery", "zcfquery"] ->
       case uriHost uri of
-        Right "search" ->
-          pure $ Just $ Some $ Query_ZettelsByTag $ mkTagPattern <$> getParamValues "tag" uri
+        Right "search" -> do
+          let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
+          mview <- liftEither $ first (QueryParseError_BadView uri) $ zettelsViewFromURI uri
+          pure $ Just $ Some $
+            Query_ZettelsByTag (mkTagPattern <$> getParamValues "tag" uri) mconn mview
         Right "tags" ->
           pure $ Just $ Some $ Query_Tags $ mkTagPattern <$> getParamValues "filter" uri
         _ ->
-          throwError InvalidQuery_UnsupportedHost
+          throwError $ QueryParseError_UnsupportedHost uri
     _ -> pure $ do
       -- Initial support for the upcoming short links.
       -- First, we expect that this is inside <..> (so same link text as link)
@@ -103,7 +112,11 @@ queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = li
       fmap snd (URI.uriPath uri) >>= \case
         (URI.unRText -> path) :| [] -> do
           zid <- rightToMaybe $ parseZettelID' path
-          pure $ Some $ Query_ZettelByID zid
+          let mconn =
+                if hasQueryFlag [queryKey|cf|] uri
+                  then Just OrdinaryConnection
+                  else Nothing
+          pure $ Some $ Query_ZettelByID zid mconn
         _ ->
           -- Multiple path elements, not supported
           Nothing
@@ -121,9 +134,9 @@ queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = li
 -- | Run the given query and return the results.
 runQuery :: [Zettel] -> Query r -> r
 runQuery zs = \case
-  Query_ZettelByID zid ->
+  Query_ZettelByID zid _ ->
     find ((== zid) . zettelID) zs
-  Query_ZettelsByTag pats ->
+  Query_ZettelsByTag pats _mconn _mview ->
     sortZettelsReverseChronological $ flip filter zs $ \Zettel {..} ->
       and $ flip fmap pats $ \pat ->
         any (tagMatch pat) zettelTags
@@ -147,9 +160,9 @@ queryResultJson notesDir q r =
   where
     resultJson :: Value
     resultJson = case q of
-      Query_ZettelByID _ ->
+      Query_ZettelByID _ _mconn ->
         toJSON $ zettelJsonFull <$> r
-      Query_ZettelsByTag _ ->
+      Query_ZettelsByTag _ _mconn _mview ->
         toJSON $ zettelJsonFull <$> r
       Query_Tags _ ->
         toJSON $ treeToJson <$> tagTree r

@@ -29,7 +29,6 @@ module Neuron.Zettelkasten.Graph
 where
 
 import Control.Monad.Except
-import Data.Dependent.Sum
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
@@ -39,9 +38,7 @@ import Development.Shake (Action)
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.Graph.Type
-import Neuron.Zettelkasten.Query
-import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..), evaluateQueries)
-import Neuron.Zettelkasten.Query.View (renderQueryLink)
+import Neuron.Zettelkasten.Query.Eval
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -63,6 +60,8 @@ loadZettelkastenFrom files = do
   either (fail . show) pure $ mkZettelGraph zettels
 
 -- | Build the Zettelkasten graph from a list of zettels
+--
+-- Also return the markdown extension to use for each zettel.
 mkZettelGraph ::
   forall m.
   MonadError NeuronError m =>
@@ -73,21 +72,13 @@ mkZettelGraph zettels = do
     liftEither $ runExcept $ do
       for zettels $ \z ->
         withExcept (NeuronError_BadQuery (zettelID z)) $
-          (z,) <$> evaluateQueries zettels z
-  let zettelsWithExtensions = fmap (replaceLink . fmap renderQueryLink) <$> zettelsWithQueryResults
-      edges :: [(Maybe Connection, Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, qm) ->
-        let conns :: [(Connection, Zettel)] = concatMap getConnections $ Map.elems qm
-         in flip fmap conns $ \(cs, z2) -> (Just cs, z, z2)
+          (z,) <$> evalZettelLinks zettels z
+  zettelsWithExtensions <- for zettelsWithQueryResults $ \(z, resMap) -> liftEither $ runExcept $ do
+    pure $ (z,) $ replaceLink $ snd `Map.map` resMap
+  let edges :: [(Maybe Connection, Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, resMap) ->
+        let conns :: [(Connection, Zettel)] = concatMap fst $ Map.elems resMap
+         in conns <&> \(cs, z2) -> (Just cs, z, z2)
   pure (G.mkGraphFrom zettels edges, zettelsWithExtensions)
-  where
-    getConnections :: DSum Query EvaluatedQuery -> [(Connection, Zettel)]
-    getConnections = \case
-      Query_ZettelByID _ :=> EvaluatedQuery {..} ->
-        [(evaluatedQueryConnection, evaluatedQueryResult)]
-      Query_ZettelsByTag _ :=> EvaluatedQuery {..} ->
-        (evaluatedQueryConnection,) <$> evaluatedQueryResult
-      _ ->
-        []
 
 frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
 frontlinkForest conn z =
