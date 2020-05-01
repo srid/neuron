@@ -7,12 +7,12 @@ module Neuron.Zettelkasten.QuerySpec
 where
 
 import Data.Some
-import Neuron.Zettelkasten.ID
-import Text.MMark.MarkdownLink
-import Neuron.Zettelkasten.Query
 import Data.TagTree
+import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Query
 import Relude
 import Test.Hspec
+import Text.MMark.MarkdownLink
 import Text.URI
 import Util
 
@@ -47,6 +47,15 @@ spec = do
     it "parses zquery://tags" $
       queryFromMarkdownLink (mkMarkdownLink "." "zquery://tags?filter=foo/**")
         `shouldBe` Right (Just $ Some $ Query_Tags [mkTagPattern "foo/**"])
+  describe "short links" $ do
+    let shortLink s = mkMarkdownLink s s
+        zettelById = Some . Query_ZettelByID
+    it "parses date ID" $ do
+      queryFromMarkdownLink (shortLink "1234567")
+        `shouldBe` Right (Just $ zettelById $ parseZettelID "1234567")
+    it "parses custom/hash ID" $ do
+      queryFromMarkdownLink (shortLink "foo-bar")
+        `shouldBe` Right (Just $ zettelById $ parseZettelID "foo-bar")
 
 mkMarkdownLink :: Text -> Text -> MarkdownLink
 mkMarkdownLink s l =
