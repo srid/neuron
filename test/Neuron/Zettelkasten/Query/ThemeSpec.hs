@@ -26,8 +26,12 @@ spec =
       it "Parse 'simple' as default" $ do
         parseURIWith linkThemeFromURI "zcfquery://search?linkTheme=simple"
           `shouldBe` Right (LinkView False)
-    it "Parse grouped query flag" $ do
-      parseURIWith zettelsViewFromURI "zquery://search?tag=foo&grouped"
-        `shouldBe` Right (ZettelsView def True)
-      parseURIWith zettelsViewFromURI "zquery://search?tag=foo"
-        `shouldBe` Right (ZettelsView def False)
+      it "Parse grouped query flag" $ do
+        parseURIWith zettelsViewFromURI "zquery://search?tag=foo&grouped"
+          `shouldBe` Right (ZettelsView def True)
+        parseURIWith zettelsViewFromURI "zquery://search?tag=foo"
+          `shouldBe` Right (ZettelsView def False)
+    describe "Short links, theme" $ do
+      it "accepts basic short link" $ do
+        parseURIWith linkThemeFromURI "1234567"
+          `shouldBe` Right (LinkView False)

@@ -14,7 +14,7 @@ import Test.Hspec
 import Util
 
 spec :: Spec
-spec =
+spec = do
   describe "Connection parsing from URI" $ do
     it "handles z: connection type" $ do
       parseURIWith (liftE connectionFromURI) "z:/" `shouldBe` Right Folgezettel
@@ -24,6 +24,10 @@ spec =
       parseURIWith (liftE connectionFromURI) "zquery:/" `shouldBe` Right Folgezettel
     it "handles zcfquery: connection type" $ do
       parseURIWith (liftE connectionFromURI) "zcfquery:/" `shouldBe` Right OrdinaryConnection
+  describe "Connection parsing from short links" $ do
+    it "handles basic short links" $ do
+      parseURIWith (liftE connectionFromURI) "1234567"
+        `shouldBe` Right Folgezettel
   where
     liftE :: (a -> b) -> a -> Either Text b
     liftE f =
