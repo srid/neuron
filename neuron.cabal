@@ -94,6 +94,7 @@ library
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Eval
     Neuron.Zettelkasten.Query.Error
+    Neuron.Zettelkasten.Query.Parser
     Neuron.Zettelkasten.Query.Theme
     Neuron.Zettelkasten.Query.View
     Neuron.Zettelkasten.Zettel

@@ -19,6 +19,7 @@ import Lucid
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error
+import Neuron.Zettelkasten.Query.Parser (queryFromMarkdownLink)
 import Neuron.Zettelkasten.Query.View (renderQueryLink)
 import Neuron.Zettelkasten.Zettel
 import Relude

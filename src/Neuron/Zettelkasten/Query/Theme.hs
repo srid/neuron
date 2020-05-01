@@ -9,17 +9,7 @@ module Neuron.Zettelkasten.Query.Theme where
 
 import Data.Aeson (ToJSON)
 import Data.Default
-import Data.TagTree (Tag)
-import Neuron.Zettelkasten.Zettel
 import Relude
-
-type family QueryTheme q
-
-type instance QueryTheme (Maybe Zettel) = ZettelView
-
-type instance QueryTheme [Zettel] = ZettelsView
-
-type instance QueryTheme (Map Tag Natural) = ()
 
 data ZettelsView = ZettelsView
   { zettelsViewLinkView :: LinkView,

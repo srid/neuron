@@ -3,15 +3,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -25,20 +21,15 @@ import Data.GADT.Compare.TH
 import Data.GADT.Show.TH
 import qualified Data.Map.Strict as Map
 import Data.Some
-import Data.TagTree (Tag, TagPattern (..), mkTagPattern, tagMatch, tagMatchAny, tagTree)
+import Data.TagTree (Tag, TagPattern (..), tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
 import System.FilePath
-import Text.MMark.MarkdownLink (MarkdownLink (..))
-import qualified Text.URI as URI
-import Text.URI.QQ (queryKey)
-import Text.URI.Util (getQueryParam, hasQueryFlag)
 
 -- | Query represents a way to query the Zettelkasten.
 --
@@ -70,82 +61,6 @@ instance ToHtml (Some Query) where
         Some (Query_Tags (fmap unTagPattern -> pats)) -> do
           let qs = intercalate ", " pats
           toHtml $ "Tags matching '" <> qs <> "'"
-
-queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Maybe (Some Query))
-queryFromURI uri = do
-  queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = ""}
-
--- NOTE: To support legacy links which rely on linkText. New short links shouldn't use this.
-queryFromMarkdownLink :: MonadError QueryParseError m => MarkdownLink -> m (Maybe (Some Query))
-queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
-  case fmap URI.unRText (URI.uriScheme uri) of
-    Just proto | not angleBracketLink && proto `elem` ["z", "zcf"] -> do
-      zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
-      let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
-      pure $ Just $ Some $ Query_ZettelByID zid mconn
-    Just proto | not angleBracketLink && proto `elem` ["zquery", "zcfquery"] ->
-      case uriHost uri of
-        Right "search" -> do
-          let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
-          pure $ Just $ Some $
-            Query_ZettelsByTag (tagPatterns "tag") mconn queryView
-        Right "tags" ->
-          pure $ Just $ Some $ Query_Tags (tagPatterns "filter")
-        _ ->
-          throwError $ QueryParseError_UnsupportedHost uri
-    _ -> pure $ do
-      -- Initial support for the upcoming short links.
-      -- First, we expect that this is inside <..> (so same link text as link)
-      guard angleBracketLink
-      -- Then, non-relevant parts of the URI should be empty
-      guard
-        `mapM_` [ URI.uriAuthority uri == Left False,
-                  URI.uriFragment uri == Nothing
-                ]
-      let mconn =
-            if hasQueryFlag [queryKey|cf|] uri
-              then Just OrdinaryConnection
-              else Nothing
-      case fmap URI.unRText (URI.uriScheme uri) of
-        Just "z" -> do
-          fmap snd (URI.uriPath uri) >>= \case
-            (URI.unRText -> "zettels") :| [] -> do
-              pure $ Some $ Query_ZettelsByTag (tagPatterns "tag") mconn queryView
-            (URI.unRText -> "tags") :| [] -> do
-              pure $ Some $ Query_Tags (tagPatterns "filter")
-            _ ->
-              Nothing
-        Just _ -> do
-          Nothing
-        Nothing -> do
-          -- Alias to short links
-          fmap snd (URI.uriPath uri) >>= \case
-            (URI.unRText -> path) :| [] -> do
-              zid <- rightToMaybe $ parseZettelID' path
-              pure $ Some $ Query_ZettelByID zid mconn
-            _ ->
-              -- Multiple path elements, not supported
-              Nothing
-  where
-    angleBracketLink = URI.render uri == linkText
-    tagPatterns k =
-      mkTagPattern <$> getParamValues k uri
-    queryView =
-      let isTimeline =
-            -- linkTheme=withDate is legacy format; timeline is current standard.
-            getQueryParam [queryKey|linkTheme|] uri == Just "withDate"
-              || hasQueryFlag [queryKey|timeline|] uri
-          isGrouped = hasQueryFlag [queryKey|grouped|] uri
-       in ZettelsView (LinkView isTimeline) isGrouped
-    getParamValues k u =
-      flip mapMaybe (URI.uriQuery u) $ \case
-        URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-          if key == k
-            then Just val
-            else Nothing
-        _ -> Nothing
-    uriHost u =
-      fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
 
 -- | Run the given query and return the results.
 runQuery :: [Zettel] -> Query r -> r

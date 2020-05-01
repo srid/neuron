@@ -24,7 +24,8 @@ import qualified Data.Text as T
 import Data.Time
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
-import qualified Neuron.Zettelkasten.Query as Z
+import Neuron.Zettelkasten.Query as Q
+import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Options.Applicative
 import Relude
 import qualified Rib.Cli
@@ -62,7 +63,7 @@ data Command
   | -- | Search a zettel by title
     Search SearchCommand
   | -- | Run a query against the Zettelkasten
-    Query (Some Z.Query)
+    Query (Some Q.Query)
   | -- | Delegate to Rib's command parser
     Rib RibConfig
 
@@ -122,8 +123,8 @@ commandParser defaultNotesDir today = do
       pure Open
     queryCommand =
       fmap Query $
-        fmap (Some . flip Z.Query_ZettelByID Nothing) (option zettelIDReader (long "id"))
-          <|> fmap (\x -> Some $ Z.Query_ZettelsByTag x Nothing def) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
+        fmap (Some . flip Q.Query_ZettelByID Nothing) (option zettelIDReader (long "id"))
+          <|> fmap (\x -> Some $ Q.Query_ZettelsByTag x Nothing def) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
           <|> option queryReader (long "uri" <> short 'u')
     searchCommand = do
       searchBy <-
@@ -147,11 +148,11 @@ commandParser defaultNotesDir today = do
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
       eitherReader $ first show . parseZettelID' . toText
-    queryReader :: ReadM (Some Z.Query)
+    queryReader :: ReadM (Some Q.Query)
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
-          either (Left . show) (maybe (Left "Unsupported query") Right) $ Z.queryFromURI uri
+          either (Left . show) (maybe (Left "Unsupported query") Right) $ Q.queryFromURI uri
         Left e ->
           Left $ displayException e
     nonEmptyTextReader :: ReadM Text

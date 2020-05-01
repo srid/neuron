@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.QuerySpec
+module Neuron.Zettelkasten.Query.ParserSpec
   ( spec,
   )
 where
@@ -13,6 +13,7 @@ import Data.TagTree
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
+import Neuron.Zettelkasten.Query.Parser
 import Neuron.Zettelkasten.Query.Theme
 import Relude
 import Test.Hspec
