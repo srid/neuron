@@ -147,6 +147,8 @@ renderZettel config@Config {..} (graph, (z@Zettel {..}, ext)) zid = do
         MMark.render $ useExtensions (ext : mmarkExts) zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
+        forM_ zettelDay $ \day ->
+          div_ [class_ "date", title_ "Zettel creation date"] $ toHtml $ show @Text day
     div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do
       div_ [class_ "ui two column grid"] $ do
         div_ [class_ "column"] $ do
@@ -258,6 +260,9 @@ style Config {..} = do
       C.listStyleType C.square
       C.paddingLeft $ em 1.5
   "div.zettel-view" ? do
+    "div.date" ? do
+      C.textAlign C.center
+      C.color C.gray
     C.ul ? do
       C.paddingLeft $ em 1.5
       C.listStyleType C.square

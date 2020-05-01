@@ -22,7 +22,6 @@ import Data.TagTree (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatch
 import Data.Tree
 import Lucid
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
-import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Eval (EvaluatedQuery (..))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
@@ -79,7 +78,7 @@ renderZettelLink LinkView {..} Zettel {..} = do
     forM_ mextra $ \extra ->
       span_ [class_ "extra"] extra
     span_ [class_ "zettel-link"] $ do
-      a_ [href_ zurl, title_ (zettelIDText zettelID)] $ toHtml zettelTitle
+      a_ [href_ zurl] $ toHtml zettelTitle
 
 -- |  Render a tag tree along with the count of zettels tagged with it
 renderTagTree :: forall m. Monad m => Forest (NonEmpty TagNode, Natural) -> HtmlT m ()
