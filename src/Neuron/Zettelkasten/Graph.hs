@@ -60,6 +60,8 @@ loadZettelkastenFrom files = do
   either (fail . show) pure $ mkZettelGraph zettels
 
 -- | Build the Zettelkasten graph from a list of zettels
+--
+-- Also return the markdown extension to use for each zettel.
 mkZettelGraph ::
   forall m.
   MonadError NeuronError m =>
@@ -71,11 +73,11 @@ mkZettelGraph zettels = do
       for zettels $ \z ->
         withExcept (NeuronError_BadQuery (zettelID z)) $
           (z,) <$> evalZettelLinks zettels z
-  zettelsWithExtensions <- forM zettelsWithQueryResults $ \(z, resMap) -> liftEither $ runExcept $ do
-    pure $ (z,) $ replaceLink $ flip Map.map resMap $ \(_, _, view) -> view
-  let edges :: [(Maybe Connection, Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, qm) ->
-        let conns :: [(Connection, Zettel)] = concatMap (\(_, x, _) -> x) $ Map.elems qm
-         in flip fmap conns $ \(cs, z2) -> (Just cs, z, z2)
+  zettelsWithExtensions <- for zettelsWithQueryResults $ \(z, resMap) -> liftEither $ runExcept $ do
+    pure $ (z,) $ replaceLink $ snd `Map.map` resMap
+  let edges :: [(Maybe Connection, Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, resMap) ->
+        let conns :: [(Connection, Zettel)] = concatMap fst $ Map.elems resMap
+         in conns <&> \(cs, z2) -> (Just cs, z, z2)
   pure (G.mkGraphFrom zettels edges, zettelsWithExtensions)
 
 frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel

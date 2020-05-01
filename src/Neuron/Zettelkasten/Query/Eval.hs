@@ -24,7 +24,7 @@ import Neuron.Zettelkasten.Zettel
 import Relude
 import Text.MMark.MarkdownLink
 
-type EvalResult = (Some Query, [(Connection, Zettel)], Html ())
+type EvalResult = ([(Connection, Zettel)], Html ())
 
 -- | Evaluate all queries in a zettel
 --
@@ -39,11 +39,6 @@ evalZettelLinks zettels Zettel {..} =
     fmap (ml,) <$> evalMarkdownLink zettels ml
 
 -- | Fully evaluate the query in a markdown link.
---
--- Return
---  1. query
---  2. connections formed
---  3. HTML view of the results
 evalMarkdownLink ::
   MonadError QueryError m =>
   [Zettel] ->
@@ -61,7 +56,7 @@ evalMarkdownLink zettels ml =
         view <-
           withExcept Right $
             renderQueryLink qres
-        pure (someQ, conns, view)
+        pure (conns, view)
   where
     getConnections :: DSum Query Identity -> [(Connection, Zettel)]
     getConnections = \case
