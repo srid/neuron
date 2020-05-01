@@ -29,7 +29,6 @@ module Neuron.Zettelkasten.Graph
 where
 
 import Control.Monad.Except
-import Data.Dependent.Sum
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
@@ -39,9 +38,7 @@ import Development.Shake (Action)
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.Graph.Type
-import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Eval
-import Neuron.Zettelkasten.Query.View (renderQueryLink)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -73,26 +70,13 @@ mkZettelGraph zettels = do
     liftEither $ runExcept $ do
       for zettels $ \z ->
         withExcept (NeuronError_BadQuery (zettelID z)) $
-          (z,) <$> evalLinksInZettel zettels z
+          (z,) <$> evalZettelLinks zettels z
   zettelsWithExtensions <- forM zettelsWithQueryResults $ \(z, resMap) -> liftEither $ runExcept $ do
-    resMapRendered <-
-      flip Map.traverseWithKey resMap $ \_ml qres -> do
-        withExcept NeuronError_QueryFailed $
-          renderQueryLink qres
-    pure (z, replaceLink resMapRendered)
+    pure $ (z,) $ replaceLink $ flip Map.map resMap $ \(_, _, view) -> view
   let edges :: [(Maybe Connection, Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, qm) ->
-        let conns :: [(Connection, Zettel)] = concatMap getConnections $ Map.elems qm
+        let conns :: [(Connection, Zettel)] = concatMap (\(_, x, _) -> x) $ Map.elems qm
          in flip fmap conns $ \(cs, z2) -> (Just cs, z, z2)
   pure (G.mkGraphFrom zettels edges, zettelsWithExtensions)
-  where
-    getConnections :: DSum Query Identity -> [(Connection, Zettel)]
-    getConnections = \case
-      Query_ZettelByID _ mconn :=> Identity mres ->
-        maybe [] pure $ (fromMaybe Folgezettel mconn,) <$> mres
-      Query_ZettelsByTag _ mconn _mview :=> Identity res ->
-        (fromMaybe Folgezettel mconn,) <$> res
-      _ ->
-        []
 
 frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
 frontlinkForest conn z =
