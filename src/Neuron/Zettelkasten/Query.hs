@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -29,7 +30,6 @@ import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Connection
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel
@@ -37,6 +37,8 @@ import Relude
 import System.FilePath
 import Text.MMark.MarkdownLink (MarkdownLink (..))
 import qualified Text.URI as URI
+import Text.URI.QQ (queryKey)
+import Text.URI.Util (hasQueryFlag)
 
 -- | Query represents a way to query the Zettelkasten.
 --
@@ -80,20 +82,19 @@ queryFromURI uri = do
 
 -- NOTE: To support legacy links which rely on linkText. New short links shouldn't use this.
 queryFromMarkdownLink :: MonadError QueryParseError m => MarkdownLink -> m (Maybe (Some Query))
-queryFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
+queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   case fmap URI.unRText (URI.uriScheme uri) of
     Just proto | proto `elem` ["z", "zcf"] -> do
       zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
-      pure $ Just $ Some $ Query_ZettelByID zid (connectionFromMarkdownLink ml)
+      let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
+      pure $ Just $ Some $ Query_ZettelByID zid mconn
     Just proto | proto `elem` ["zquery", "zcfquery"] ->
       case uriHost uri of
         Right "search" -> do
+          let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
           mview <- liftEither $ first (QueryParseError_BadView uri) $ zettelsViewFromURI uri
           pure $ Just $ Some $
-            Query_ZettelsByTag
-              (mkTagPattern <$> getParamValues "tag" uri)
-              (connectionFromMarkdownLink ml)
-              mview
+            Query_ZettelsByTag (mkTagPattern <$> getParamValues "tag" uri) mconn mview
         Right "tags" ->
           pure $ Just $ Some $ Query_Tags $ mkTagPattern <$> getParamValues "filter" uri
         _ ->
@@ -111,7 +112,11 @@ queryFromMarkdownLink ml@MarkdownLink {markdownLinkUri = uri, markdownLinkText =
       fmap snd (URI.uriPath uri) >>= \case
         (URI.unRText -> path) :| [] -> do
           zid <- rightToMaybe $ parseZettelID' path
-          pure $ Some $ Query_ZettelByID zid (connectionFromMarkdownLink ml)
+          let mconn =
+                if hasQueryFlag [queryKey|cf|] uri
+                  then Just OrdinaryConnection
+                  else Nothing
+          pure $ Some $ Query_ZettelByID zid mconn
         _ ->
           -- Multiple path elements, not supported
           Nothing
