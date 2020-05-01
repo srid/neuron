@@ -10,7 +10,6 @@ where
 
 import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Query.Error
-import Neuron.Zettelkasten.Query.Theme (InvalidLinkView (..))
 import Relude
 import qualified Text.Show
 import qualified Text.URI as URI
@@ -29,8 +28,6 @@ instance Show NeuronError where
                 "with unsupported host"
               QueryParseError_InvalidID _uri e'' ->
                 "with invalidID: " <> show e''
-              QueryParseError_BadView _uri (InvalidLinkView view) ->
-                "with invalid link view (" <> view <> ")"
           Right (QueryResultError_NoSuchZettel zid) ->
             "Zettel "
               <> zettelIDText zid

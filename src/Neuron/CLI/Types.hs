@@ -17,6 +17,7 @@ module Neuron.CLI.Types
   )
 where
 
+import Data.Default (def)
 import Data.Some
 import Data.TagTree (mkTagPattern)
 import qualified Data.Text as T
@@ -122,7 +123,7 @@ commandParser defaultNotesDir today = do
     queryCommand =
       fmap Query $
         fmap (Some . flip Z.Query_ZettelByID Nothing) (option zettelIDReader (long "id"))
-          <|> fmap (\x -> Some $ Z.Query_ZettelsByTag x Nothing Nothing) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
+          <|> fmap (\x -> Some $ Z.Query_ZettelsByTag x Nothing def) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
           <|> option queryReader (long "uri" <> short 'u')
     searchCommand = do
       searchBy <-

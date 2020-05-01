@@ -41,9 +41,8 @@ renderQueryLink = \case
       Nothing -> throwError $ QueryResultError_NoSuchZettel zid
       Just res ->
         pure $ renderZettelLink Nothing res
-  q@(Query_ZettelsByTag pats _mconn mview) :=> Identity res -> pure $ do
+  q@(Query_ZettelsByTag pats _mconn view) :=> Identity res -> pure $ do
     toHtml $ Some q
-    let view = fromMaybe def mview
     case zettelsViewGroupByTag view of
       False ->
         -- Render a list of links
