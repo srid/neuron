@@ -66,7 +66,7 @@ evaluateQuery zettels ml@MarkdownLink {markdownLinkUri = uri} = liftEither $ run
           viewTheme <-
             withExcept (QueryError_InvalidQueryView uri) $
               linkThemeFromURI uri
-          let conn = connectionFromURI uri
+          let conn = connectionFromMarkdownLink ml
           case runQuery zettels q of
             Nothing ->
               throwError $ QueryError_ZettelNotFound uri zid
@@ -76,7 +76,7 @@ evaluateQuery zettels ml@MarkdownLink {markdownLinkUri = uri} = liftEither $ run
           viewTheme <-
             withExcept (QueryError_InvalidQueryView uri) $
               zettelsViewFromURI uri
-          let conn = connectionFromURI uri
+          let conn = connectionFromMarkdownLink ml
           pure $ q :=> EvaluatedQuery (runQuery zettels q) conn viewTheme
         q@(Query_Tags _filters) ->
           pure $ q :=> EvaluatedQuery (runQuery zettels q) () ()

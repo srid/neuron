@@ -56,6 +56,9 @@ spec = do
     it "parses custom/hash ID" $ do
       queryFromMarkdownLink (shortLink "foo-bar")
         `shouldBe` Right (Just $ zettelById $ parseZettelID "foo-bar")
+    it "even with ?cf" $ do
+      queryFromMarkdownLink (shortLink "foo-bar?cf")
+        `shouldBe` Right (Just $ zettelById $ parseZettelID "foo-bar")
 
 mkMarkdownLink :: Text -> Text -> MarkdownLink
 mkMarkdownLink s l =

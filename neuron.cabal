@@ -104,6 +104,7 @@ library
     Text.MMark.Extension.ReplaceLink
     Text.MMark.Extension.SetTableClass
     Text.MMark.MarkdownLink
+    Text.URI.Util
   other-modules:
     Data.Graph.Labelled.Build
     Data.Graph.Labelled.Type
