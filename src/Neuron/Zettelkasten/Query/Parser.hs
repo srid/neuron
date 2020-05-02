@@ -25,11 +25,16 @@ import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam, hasQueryFlag)
 
+-- | Parse a query from the given URI.
+--
+-- This function is used only in the CLI. For handling links in a Markdown file,
+-- your want `queryFromMarkdownLink` which allows specifying the link text as
+-- well.
 queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Maybe (Some Query))
 queryFromURI uri = do
-  queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = ""}
+  -- We are setting markdownLinkText to the URI to support the new short links
+  queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = URI.render uri}
 
--- NOTE: To support legacy links which rely on linkText. New short links shouldn't use this.
 queryFromMarkdownLink :: MonadError QueryParseError m => MarkdownLink -> m (Maybe (Some Query))
 queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
   case fmap URI.unRText (URI.uriScheme uri) of
@@ -37,7 +42,7 @@ queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = li
       zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
       let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
       pure $ Just $ Some $ Query_ZettelByID zid mconn
-    Just proto | not angleBracketLink && proto `elem` ["zquery", "zcfquery"] ->
+    Just proto | proto `elem` ["zquery", "zcfquery"] ->
       case uriHost uri of
         Right "search" -> do
           let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing

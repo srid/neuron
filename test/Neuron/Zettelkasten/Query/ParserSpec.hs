@@ -19,7 +19,6 @@ import Relude
 import Test.Hspec
 import Text.MMark.MarkdownLink
 import Text.URI
-import Util
 
 spec :: Spec
 spec = do
@@ -34,26 +33,27 @@ legacyLinks = do
         let zettelsByTag pat mview =
               Right $ Just $ Some $ Query_ZettelsByTag (fmap mkTagPattern pat) mconn mview
             withScheme s = toText scheme <> s
+            legacyLink l = mkMarkdownLink "." l
         it "Parse all zettels URI" $ do
-          parseURIWith queryFromURI (withScheme "://search")
+          queryFromMarkdownLink (legacyLink $ withScheme "://search")
             `shouldBe` zettelsByTag [] def
         it "Parse single tag" $
-          parseURIWith queryFromURI (withScheme "://search?tag=foo")
+          queryFromMarkdownLink (legacyLink $ withScheme "://search?tag=foo")
             `shouldBe` zettelsByTag ["foo"] def
         it "Parse hierarchical tag" $ do
-          parseURIWith queryFromURI (withScheme "://search?tag=foo/bar")
+          queryFromMarkdownLink (legacyLink $ withScheme "://search?tag=foo/bar")
             `shouldBe` zettelsByTag ["foo/bar"] def
         it "Parse tag pattern" $ do
-          parseURIWith queryFromURI (withScheme "://search?tag=foo/**/bar/*/baz")
+          queryFromMarkdownLink (legacyLink $ withScheme "://search?tag=foo/**/bar/*/baz")
             `shouldBe` zettelsByTag ["foo/**/bar/*/baz"] def
         it "Parse multiple tags" $
-          parseURIWith queryFromURI (withScheme "://search?tag=foo&tag=bar")
+          queryFromMarkdownLink (legacyLink $ withScheme "://search?tag=foo&tag=bar")
             `shouldBe` zettelsByTag ["foo", "bar"] def
         it "Handles ?grouped" $ do
-          parseURIWith queryFromURI (withScheme "://search?grouped")
+          queryFromMarkdownLink (legacyLink $ withScheme "://search?grouped")
             `shouldBe` zettelsByTag [] (ZettelsView def True)
         it "Handles ?linkTheme=withDate" $ do
-          parseURIWith queryFromURI (withScheme "://search?linkTheme=withDate")
+          queryFromMarkdownLink (legacyLink $ withScheme "://search?linkTheme=withDate")
             `shouldBe` zettelsByTag [] (ZettelsView (LinkView True) False)
   describe "Parse zettels by ID URI" $ do
     let zid = parseZettelID "1234567"
