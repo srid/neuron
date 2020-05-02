@@ -9,10 +9,10 @@ This site itself is a Zettelkasten and is managed by *neuron*; you may view its 
 
 ## Getting started
 
-* [2011501](z://installing)
-* [2011502](z://tutorial)
-* [2011402](z://concepts)
-* [2013101](z://examples)
+* <2011501>
+* <2011502>
+* <2011402>
+* <2013101>
 
 ## External links
 
