@@ -22,8 +22,10 @@ import Data.Dependent.Sum
 import qualified Data.Map.Strict as Map
 import Data.Some
 import Data.TagTree (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
+import qualified Data.Text as T
 import Data.Tree
 import Lucid
+import Lucid.Base (makeAttribute)
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
@@ -83,8 +85,21 @@ renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
   span_ [class_ "zettel-link-container"] $ do
     forM_ mextra $ \extra ->
       span_ [class_ "extra"] extra
-    span_ [class_ "zettel-link"] $ do
+    let linkTooltip =
+          if null zettelTags
+            then Nothing
+            else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
+    span_ ([class_ "zettel-link"] <> withTooltip linkTooltip) $ do
       a_ [href_ zurl] $ toHtml zettelTitle
+  where
+    withTooltip :: Maybe Text -> [Attribute]
+    withTooltip = \case
+      Nothing -> []
+      Just s ->
+        [ makeAttribute "data-tooltip" s,
+          makeAttribute "data-inverted" "",
+          makeAttribute "data-position" "right center"
+        ]
 
 -- |  Render a tag tree along with the count of zettels tagged with it
 renderTagTree :: forall m. Monad m => Forest (NonEmpty TagNode, Natural) -> HtmlT m ()

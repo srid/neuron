@@ -321,6 +321,8 @@ style Config {..} = do
     C.fontWeight C.bold
   ".footer-version" ? do
     C.fontSize $ em 0.7
+  "[data-tooltip]:after" ? do
+    C.fontSize $ em 0.7
   where
     codeStyle = do
       C.code ? do
