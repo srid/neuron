@@ -94,45 +94,6 @@ executable neuron
   -- We include library modules here, so that ghcid knows to reload when they change.
   import: app-common
   main-is: Main.hs
-  exposed-modules:
-    Data.Graph.Labelled
-    Data.TagTree
-    Data.PathTree
-    Data.Structured.Breadcrumb
-    Neuron.CLI
-    Neuron.CLI.New
-    Neuron.CLI.Rib
-    Neuron.CLI.Search
-    Neuron.CLI.Types
-    Neuron.Config
-    Neuron.Config.Alias
-    Neuron.Version
-    Neuron.Web.Generate
-    Neuron.Web.Route
-    Neuron.Web.Theme
-    Neuron.Web.View
-    Neuron.Zettelkasten.Connection
-    Neuron.Zettelkasten.Error
-    Neuron.Zettelkasten.Graph
-    Neuron.Zettelkasten.ID.Scheme
-    Neuron.Zettelkasten.Query
-    Neuron.Zettelkasten.Query.Eval
-    Neuron.Zettelkasten.Query.Error
-    Neuron.Zettelkasten.Query.Parser
-    Neuron.Zettelkasten.Query.Theme
-    Neuron.Zettelkasten.Query.View
-    Neuron.Zettelkasten.Zettel
-    Neuron.Zettelkasten.Zettel.Meta
-    Text.MMark.Extension.ReplaceLink
-    Text.MMark.Extension.SetTableClass
-    Text.MMark.MarkdownLink
-    Text.URI.Util
-    Data.Graph.Labelled.Build
-    Data.Graph.Labelled.Type
-    Data.Graph.Labelled.Algorithm
-    Neuron.Version.RepoVersion
-    Neuron.Zettelkasten.Graph.Type
-    Paths_neuron
 
 
 test-suite neuron-test
