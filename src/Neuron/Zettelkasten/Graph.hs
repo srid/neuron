@@ -18,13 +18,14 @@ module Neuron.Zettelkasten.Graph
     loadZettelkastenFrom,
 
     -- * Graph functions
+    getZettels,
+    getZettel,
     topSort,
     frontlinkForest,
     backlinkForest,
     backlinks,
     clusters,
     categoryClusters,
-    getZettels,
   )
 where
 
@@ -38,6 +39,7 @@ import Development.Shake (Action)
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.Graph.Type
+import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Eval
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -116,3 +118,6 @@ categoryGraph = G.induceOnEdge (== Just Folgezettel)
 
 getZettels :: ZettelGraph -> [Zettel]
 getZettels = G.getVertices
+
+getZettel :: ZettelID -> ZettelGraph -> Maybe Zettel
+getZettel = G.findVertex

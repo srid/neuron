@@ -11,7 +11,8 @@ module Neuron.Web.Generate
 where
 
 import Development.Shake (Action)
-import qualified Neuron.Config as Z
+import Neuron.Config (Config (..))
+import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph as G
@@ -21,14 +22,14 @@ import Relude
 
 -- | Generate the Zettelkasten site
 generateSite ::
-  Z.Config ->
+  Config ->
   (forall a. Z.Route G.ZettelGraph a -> (G.ZettelGraph, a) -> Action ()) ->
   Action G.ZettelGraph
 generateSite config writeHtmlRoute' = do
-  when (olderThan $ Z.minVersion config)
+  when (olderThan $ minVersion config)
     $ fail
     $ toString
-    $ "Require neuron mininum version " <> Z.minVersion config <> ", but your neuron version is " <> neuronVersion
+    $ "Require neuron mininum version " <> minVersion config <> ", but your neuron version is " <> neuronVersion
   (zettelGraph, zettels) <- G.loadZettelkasten
   let writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
@@ -41,7 +42,7 @@ generateSite config writeHtmlRoute' = do
   -- Generate search page
   writeHtmlRoute () Z.Route_Search
   -- Write alias redirects, unless a zettel with that name exists.
-  aliases <- Z.getAliases config zettelGraph
-  forM_ aliases $ \Z.Alias {..} ->
+  aliases <- getAliases config zettelGraph
+  forM_ aliases $ \Alias {..} ->
     writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
   pure zettelGraph

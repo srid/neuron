@@ -14,24 +14,19 @@
 
 module Neuron.Config
   ( Config (..),
+    configFile,
     getConfig,
-    Alias (..),
     BaseUrlError (..),
-    getAliases,
-    aliasParser,
     getMarkdownExtensions,
   )
 where
 
 import Control.Monad.Except
 import Data.FileEmbed (embedFile)
-import Data.Graph.Labelled (findVertex)
 import Development.Shake (Action, readFile')
 import Dhall (FromDhall)
 import qualified Dhall
 import Dhall.TH
-import Neuron.Zettelkasten.Graph.Type
-import qualified Neuron.Zettelkasten.ID as Z
 import Relude
 import qualified Rib
 import System.Directory
@@ -39,8 +34,6 @@ import System.FilePath
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension.Common as Ext
 import Text.MMark.Extension.SetTableClass (setTableClass)
-import qualified Text.Megaparsec.Char as M
-import Text.Megaparsec.Simple
 
 -- | Config type for @neuron.dhall@
 --
@@ -58,12 +51,6 @@ data BaseUrlError
   deriving (Eq, Show)
 
 instance Exception BaseUrlError
-
-data Alias = Alias
-  { aliasZettel :: Z.ZettelID,
-    targetZettel :: Z.ZettelID
-  }
-  deriving (Eq, Show)
 
 defaultConfig :: ByteString
 defaultConfig = $(embedFile "./src-dhall/Config/Default.dhall")
@@ -105,34 +92,3 @@ getMarkdownExtensions Config {..} =
         Ext.skylighting,
         setTableClass "ui celled table"
       ]
-
-getAliases :: MonadFail m => Config -> ZettelGraph -> m [Alias]
-getAliases Config {..} graph = do
-  let aliasSpecs = case aliases of
-        -- In the absence of an index zettel, create an an alias to the z-index
-        [] -> bool ["index:z-index"] [] $ hasIndexZettel graph
-        as -> as
-  case mkAliases aliasSpecs graph of
-    Left err ->
-      fail $ "Bad aliases in config: " <> toString err
-    Right v ->
-      pure v
-  where
-    hasIndexZettel =
-      isJust . findVertex (Z.parseZettelID "index")
-
-mkAliases :: [Text] -> ZettelGraph -> Either Text [Alias]
-mkAliases aliasSpecs graph =
-  sequence $ flip fmap aliasSpecs $ \aliasSpec -> runExcept $ do
-    alias@Alias {..} <- liftEither $ parse aliasParser configFile aliasSpec
-    when (isJust $ findVertex aliasZettel graph) $ do
-      throwError $
-        "Cannot create redirect from '" <> Z.zettelIDText aliasZettel <> "', because a zettel with that ID already exists"
-    when (Z.zettelIDText targetZettel /= "z-index" && isNothing (findVertex targetZettel graph)) $ do
-      throwError $
-        "Target zettel '" <> Z.zettelIDText targetZettel <> "' does not exist"
-    pure alias
-
-aliasParser :: Parser Alias
-aliasParser =
-  Alias <$> (Z.idParser <* M.char ':') <*> Z.idParser

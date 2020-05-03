@@ -81,6 +81,7 @@ library
     Neuron.CLI.Search
     Neuron.CLI.Types
     Neuron.Config
+    Neuron.Config.Alias
     Neuron.Version
     Neuron.Web.Generate
     Neuron.Web.Route
