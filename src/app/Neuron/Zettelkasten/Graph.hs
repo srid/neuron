@@ -35,15 +35,16 @@ import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
 import Data.Traversable (for)
 import Data.Tree
-import Development.Shake (Action)
+import Development.Shake
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Error
 import Neuron.Zettelkasten.Graph.Type
-import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Eval
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
+import System.FilePath
 import Text.MMark.Extension (Extension)
 import Text.MMark.Extension.ReplaceLink (replaceLink)
 
@@ -58,7 +59,14 @@ loadZettelkasten =
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFrom :: [FilePath] -> Action (ZettelGraph, [(Zettel, Extension)])
 loadZettelkastenFrom files = do
-  zettels <- mkZettelFromPath `mapM` files
+  notesDir <- Rib.ribInputDir
+  zettels <- forM files $ \((notesDir </>) -> path) -> do
+    s <- fmap toText $ readFile' path
+    let zid = mkZettelID path
+    case mkZettelFromMarkdown zid s snd of
+      Left e -> fail $ toString e
+      Right zettel -> pure zettel
+  -- zettels <- mkZettelFromPath `mapM` files
   either (fail . show) pure $ mkZettelGraph zettels
 
 -- | Build the Zettelkasten graph from a list of zettels
