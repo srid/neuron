@@ -32,7 +32,27 @@ common library-common
   hs-source-dirs: src/lib
   default-language: Haskell2010
   build-depends:
-    base >=4.7 && <5,
+    base,
+    aeson,
+    mtl,
+    text,
+    time,
+    relude,
+    filepath,
+    megaparsec
+
+library
+  import: library-common
+  exposed-modules:
+    Neuron.Zettelkasten.ID
+    Text.Megaparsec.Simple
+
+common app-common
+  import: library-common
+  hs-source-dirs: src/app
+  default-language: Haskell2010
+  build-depends:
+    base,
     aeson,
     clay -any,
     mtl,
@@ -66,9 +86,13 @@ common library-common
     parser-combinators,
     data-default,
     uuid,
+    shake,
+    with-utf8
 
-library
-  import: library-common
+executable neuron
+  -- We include library modules here, so that ghcid knows to reload when they change.
+  import: app-common
+  main-is: Main.hs
   exposed-modules:
     Data.Graph.Labelled
     Data.TagTree
@@ -89,7 +113,6 @@ library
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Error
     Neuron.Zettelkasten.Graph
-    Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.ID.Scheme
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Eval
@@ -99,12 +122,10 @@ library
     Neuron.Zettelkasten.Query.View
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
-    Text.Megaparsec.Simple
     Text.MMark.Extension.ReplaceLink
     Text.MMark.Extension.SetTableClass
     Text.MMark.MarkdownLink
     Text.URI.Util
-  other-modules:
     Data.Graph.Labelled.Build
     Data.Graph.Labelled.Type
     Data.Graph.Labelled.Algorithm
@@ -113,23 +134,8 @@ library
     Paths_neuron
 
 
-executable neuron
-  -- We include library modules here, so that ghcid knows to reload when they change.
-  import: library-common
-  hs-source-dirs: src/app
-  main-is: Main.hs
-  build-depends:
-    base,
-    rib,
-    relude,
-    path,
-    shake,
-    clay,
-    lucid,
-    with-utf8
-
 test-suite neuron-test
-  import: library-common 
+  import: app-common
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Spec.hs
