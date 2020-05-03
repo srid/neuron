@@ -60,7 +60,6 @@ common library-common
     which,
     unix,
     megaparsec >= 8.0,
-    some,
     dependent-sum,
     dependent-sum-template,
     aeson-gadt-th,
