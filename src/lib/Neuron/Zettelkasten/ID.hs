@@ -18,7 +18,6 @@ module Neuron.Zettelkasten.ID
   )
 where
 
-import Control.Monad.Except
 import Data.Aeson (ToJSON (toJSON))
 import qualified Data.Text as T
 import Data.Time
