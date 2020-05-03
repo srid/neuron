@@ -183,7 +183,8 @@ renderZettel config@Config {..} (graph, (z@Zettel {..}, ext)) zid = do
     div_ [class_ "ui inverted black bottom attached footer segment"] $ do
       div_ [class_ "ui equal width grid"] $ do
         div_ [class_ "center aligned column"] $ do
-          a_ [href_ ".", title_ "/"] $ fa "fas fa-home"
+          let homeUrl = maybe "." (const "index.html") $ G.getZettel (ZettelCustomID "index") graph
+          a_ [href_ homeUrl, title_ "/"] $ fa "fas fa-home"
         whenJust editUrl $ \urlPrefix ->
           div_ [class_ "center aligned column"] $ do
             a_ [href_ $ urlPrefix <> toText (zettelIDSourceFileName zid), title_ "Edit this Zettel"] $ fa "fas fa-edit"
