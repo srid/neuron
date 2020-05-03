@@ -48,7 +48,7 @@ let
     mkdir $out
     cp -r -p ${neuronSrc}/* $out/
     chmod -R u+w $out/
-    cat << EOF > $out/src/lib/Neuron/Version/RepoVersion.hs
+    cat << EOF > $out/src/app/Neuron/Version/RepoVersion.hs
     {-# LANGUAGE OverloadedStrings #-}
     {-# LANGUAGE NoImplicitPrelude #-}
     module Neuron.Version.RepoVersion (version) where
