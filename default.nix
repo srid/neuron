@@ -23,7 +23,7 @@ in {
 let 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { inherit (pkgs) lib; })
     gitignoreSource;
-  neuronSearchScript = pkgs.callPackage ./neuron/src-bash/neuron-search { inherit pkgs; };
+  neuronSearchScript = pkgs.callPackage ./src-bash/neuron-search { inherit pkgs; };
   additional-packages = pkgs:
   [ neuronSearchScript
     # For PureScript dev
@@ -48,7 +48,7 @@ let
     mkdir $out
     cp -r -p ${neuronSrc}/* $out/
     chmod -R u+w $out/
-    cat << EOF > $out/neuron/src/Neuron/Version/RepoVersion.hs
+    cat << EOF > $out/src/Neuron/Version/RepoVersion.hs
     {-# LANGUAGE OverloadedStrings #-}
     {-# LANGUAGE NoImplicitPrelude #-}
     module Neuron.Version.RepoVersion (version) where
@@ -65,9 +65,9 @@ let
 
 in import rib { 
     inherit name additional-packages; 
-    root = if root == "" then (neuronRoot + "/neuron") else root;
+    root = if root == "" then neuronRoot else root;
     source-overrides = {
-      neuron = neuronRoot + "/neuron";
+      neuron = neuronRoot;
       # Until https://github.com/obsidiansystems/which/pull/6 is merged
       which = builtins.fetchTarball "https://github.com/srid/which/archive/5061a97.tar.gz";
       dependent-sum = sources.dsum + "/dependent-sum";
