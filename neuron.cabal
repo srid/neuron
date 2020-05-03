@@ -54,6 +54,7 @@ library
     Neuron.Zettelkasten.Zettel.Meta
     Text.Megaparsec.Simple
     Data.TagTree
+    Data.PathTree
     Data.Graph.Labelled
     Data.Graph.Labelled.Type
     Data.Graph.Labelled.Algorithm
