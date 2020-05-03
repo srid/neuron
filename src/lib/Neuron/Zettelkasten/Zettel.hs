@@ -12,12 +12,12 @@ import Data.Aeson
 import Data.Graph.Labelled (Vertex (..))
 import Data.TagTree (Tag)
 import Data.Time.Calendar
-import Development.Shake
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude hiding (show)
-import qualified Rib.Parser.MMark as MMark
 import Text.MMark (MMark)
+import qualified Text.MMark as MMark
+import qualified Text.Megaparsec as M
 import Text.Show (Show (show))
 
 data ZettelT content = Zettel
@@ -55,28 +55,13 @@ zettelJson Zettel {..} =
     "day" .= zettelDay
   ]
 
--- | Load a zettel from a file.
-mkZettelFromPath :: FilePath -> Action Zettel
-mkZettelFromPath path = do
-  -- Extensions are computed and applied during rendering, not here.
-  let noExts = []
-  doc <- MMark.parseWith noExts path
-  let zid = mkZettelID path
-      meta = Meta.getMeta doc
-      title = maybe (toText $ "No title for " <> path) Meta.title meta
-      tags = fromMaybe [] $ Meta.tags =<< meta
-      day = case zid of
-        -- We ignore the "data" meta field on legacy Date IDs, which encode the
-        -- creation date in the ID.
-        ZettelDateID v _ -> Just v
-        ZettelCustomID _ -> Meta.date =<< meta
-  pure $ Zettel zid title tags day doc
-
--- TODO: This is used in another project; and it needs to be refactored with the
--- other function once stable.
-mkZettelFromMarkdown :: ZettelID -> Text -> Either Text (ZettelT ())
-mkZettelFromMarkdown zid s = do
-  doc <- MMark.parsePureWith [] "<mkZettelFromMarkdown>" s
+mkZettelFromMarkdown ::
+  ZettelID ->
+  Text ->
+  ((Text, MMark) -> content) ->
+  Either Text (ZettelT content)
+mkZettelFromMarkdown zid s selectContent = do
+  doc <- parseMarkdown (toString $ zettelIDText zid) s
   let meta = Meta.getMeta doc
       title = maybe "Missing title" Meta.title meta
       tags = fromMaybe [] $ Meta.tags =<< meta
@@ -86,4 +71,7 @@ mkZettelFromMarkdown zid s = do
         ZettelDateID v _ -> Just v
         ZettelCustomID _ -> Meta.date =<< meta
   pure $
-    Zettel zid title tags day ()
+    Zettel zid title tags day (selectContent (s, doc))
+  where
+    parseMarkdown k =
+      first (toText . M.errorBundlePretty) . MMark.parse k

@@ -29,10 +29,45 @@ common ghc-common
 
 common library-common
   import: ghc-common
-  hs-source-dirs: src 
   default-language: Haskell2010
   build-depends:
-    base >=4.7 && <5,
+    base,
+    aeson,
+    mtl,
+    text,
+    time,
+    relude,
+    filepath,
+    algebraic-graphs >= 0.5,
+    parser-combinators,
+    containers,
+    filepattern,
+    mmark,
+    megaparsec
+
+library
+  import: library-common
+  hs-source-dirs: src/lib
+  exposed-modules:
+    Neuron.Zettelkasten.ID
+    Neuron.Zettelkasten.Zettel
+    Neuron.Zettelkasten.Zettel.Meta
+    Text.Megaparsec.Simple
+    Data.TagTree
+    Data.PathTree
+    Data.Graph.Labelled
+    Data.Graph.Labelled.Type
+    Data.Graph.Labelled.Algorithm
+    Data.Graph.Labelled.Build
+
+-- A trick to make ghcid reload if library dependencies change
+-- https://haskell.zettel.page/2012605.html
+common app-common
+  import: library-common
+  hs-source-dirs: src/app src/lib
+  default-language: Haskell2010
+  build-depends:
+    base,
     aeson,
     clay -any,
     mtl,
@@ -53,9 +88,7 @@ common library-common
     mmark-ext,
     modern-uri,
     foldl,
-    filepattern,
     filepath,
-    algebraic-graphs >= 0.5,
     dhall >= 1.30,
     which,
     unix,
@@ -63,73 +96,13 @@ common library-common
     dependent-sum,
     dependent-sum-template,
     aeson-gadt-th,
-    parser-combinators,
     data-default,
     uuid,
-
-library
-  import: library-common
-  exposed-modules:
-    Data.Graph.Labelled
-    Data.TagTree
-    Data.PathTree
-    Data.Structured.Breadcrumb
-    Neuron.CLI
-    Neuron.CLI.New
-    Neuron.CLI.Rib
-    Neuron.CLI.Search
-    Neuron.CLI.Types
-    Neuron.Config
-    Neuron.Config.Alias
-    Neuron.Version
-    Neuron.Web.Generate
-    Neuron.Web.Route
-    Neuron.Web.Theme
-    Neuron.Web.View
-    Neuron.Zettelkasten.Connection
-    Neuron.Zettelkasten.Error
-    Neuron.Zettelkasten.Graph
-    Neuron.Zettelkasten.ID
-    Neuron.Zettelkasten.ID.Scheme
-    Neuron.Zettelkasten.Query
-    Neuron.Zettelkasten.Query.Eval
-    Neuron.Zettelkasten.Query.Error
-    Neuron.Zettelkasten.Query.Parser
-    Neuron.Zettelkasten.Query.Theme
-    Neuron.Zettelkasten.Query.View
-    Neuron.Zettelkasten.Zettel
-    Neuron.Zettelkasten.Zettel.Meta
-    Text.Megaparsec.Simple
-    Text.MMark.Extension.ReplaceLink
-    Text.MMark.Extension.SetTableClass
-    Text.MMark.MarkdownLink
-    Text.URI.Util
-  other-modules:
-    Data.Graph.Labelled.Build
-    Data.Graph.Labelled.Type
-    Data.Graph.Labelled.Algorithm
-    Neuron.Version.RepoVersion
-    Neuron.Zettelkasten.Graph.Type
-    Paths_neuron
-
-
-executable neuron
-  -- We include library modules here, so that ghcid knows to reload when they change.
-  import: library-common
-  hs-source-dirs: src-bin
-  main-is: Main.hs
-  build-depends:
-    base,
-    rib,
-    relude,
-    path,
     shake,
-    clay,
-    lucid,
     with-utf8
 
 test-suite neuron-test
-  import: library-common 
+  import: app-common
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Spec.hs
@@ -140,3 +113,9 @@ test-suite neuron-test
     QuickCheck,
     time
   default-language:    Haskell2010
+
+-- The executable stanza should always be at the end. The other project will
+-- strip it to avoid non-core dependencies.
+executable neuron
+  import: app-common
+  main-is: Main.hs
