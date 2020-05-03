@@ -38,6 +38,11 @@ common library-common
     time,
     relude,
     filepath,
+    algebraic-graphs >= 0.5,
+    parser-combinators,
+    containers,
+    filepattern,
+    mmark,
     megaparsec
 
 library
@@ -45,7 +50,14 @@ library
   hs-source-dirs: src/lib
   exposed-modules:
     Neuron.Zettelkasten.ID
+    Neuron.Zettelkasten.Zettel
+    Neuron.Zettelkasten.Zettel.Meta
     Text.Megaparsec.Simple
+    Data.TagTree
+    Data.Graph.Labelled
+    Data.Graph.Labelled.Type
+    Data.Graph.Labelled.Algorithm
+    Data.Graph.Labelled.Build
 
 -- A trick to make ghcid reload if library dependencies change
 -- https://haskell.zettel.page/2012605.html
@@ -75,9 +87,7 @@ common app-common
     mmark-ext,
     modern-uri,
     foldl,
-    filepattern,
     filepath,
-    algebraic-graphs >= 0.5,
     dhall >= 1.30,
     which,
     unix,
@@ -85,7 +95,6 @@ common app-common
     dependent-sum,
     dependent-sum-template,
     aeson-gadt-th,
-    parser-combinators,
     data-default,
     uuid,
     shake,
