@@ -14,7 +14,6 @@ module Neuron.Zettelkasten.ID
     idParser,
     mkZettelID,
     zettelIDSourceFileName,
-    zettelPath,
     customIDParser,
   )
 where
@@ -23,10 +22,7 @@ import Control.Monad.Except
 import Data.Aeson (ToJSON (toJSON))
 import qualified Data.Text as T
 import Data.Time
-import Development.Shake (Action)
-import Lucid
 import Relude
-import qualified Rib
 import System.FilePath
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
@@ -47,10 +43,6 @@ instance Show InvalidID where
 
 instance ToJSON ZettelID where
   toJSON = toJSON . zettelIDText
-
-instance ToHtml ZettelID where
-  toHtmlRaw = toHtml
-  toHtml = toHtml . zettelIDText
 
 zettelIDText :: ZettelID -> Text
 zettelIDText = \case
@@ -73,11 +65,6 @@ formatDay day =
 
 zettelIDSourceFileName :: ZettelID -> FilePath
 zettelIDSourceFileName zid = toString $ zettelIDText zid <> ".md"
-
-zettelPath :: ZettelID -> Action FilePath
-zettelPath zid = do
-  notesDir <- Rib.ribInputDir
-  pure $ notesDir </> zettelIDSourceFileName zid
 
 ---------
 -- Parser

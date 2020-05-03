@@ -18,11 +18,13 @@ import qualified Data.Text as T
 import Development.Shake (Action)
 import Neuron.CLI.Types
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID (zettelPath)
+import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
 import Options.Applicative
 import Relude
+import qualified Rib
+import System.FilePath
 import qualified System.Posix.Env as Env
 import System.Posix.Process
 
@@ -72,3 +74,8 @@ newZettelFile NewCommand {..} = do
         Nothing -> pure Nothing
         Just (toString . strip . toText -> v) ->
           if null v then pure Nothing else pure (Just v)
+
+zettelPath :: ZettelID -> Action FilePath
+zettelPath zid = do
+  notesDir <- Rib.ribInputDir
+  pure $ notesDir </> zettelIDSourceFileName zid
