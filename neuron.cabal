@@ -29,7 +29,7 @@ common ghc-common
 
 common library-common
   import: ghc-common
-  hs-source-dirs: src 
+  hs-source-dirs: src/lib
   default-language: Haskell2010
   build-depends:
     base >=4.7 && <5,
@@ -116,7 +116,7 @@ library
 executable neuron
   -- We include library modules here, so that ghcid knows to reload when they change.
   import: library-common
-  hs-source-dirs: src-bin
+  hs-source-dirs: src/app
   main-is: Main.hs
   build-depends:
     base,
