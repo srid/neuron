@@ -12,9 +12,6 @@
 module Neuron.Web.Route where
 
 import Control.Monad.Except
-import qualified Data.Graph.Labelled as G
-import Data.Structured.Breadcrumb (Breadcrumb)
-import qualified Data.Structured.Breadcrumb as Breadcrumb
 import qualified Data.Text as T
 import GHC.Stack
 import Neuron.Config
@@ -106,16 +103,3 @@ routeOpenGraph Config {..} val r =
         _ -> Nothing,
       _openGraph_url = Nothing
     }
-
-routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
-routeStructuredData Config {..} (graph, val) = \case
-  Route_Zettel _ ->
-    case siteBaseUrl of
-      Nothing -> []
-      Just baseUrl ->
-        let mkCrumb :: Zettel -> Breadcrumb.Item
-            mkCrumb Zettel {..} =
-              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
-         in Breadcrumb.fromForest $ fmap mkCrumb <$> G.dfsForestBackwards (fst val) graph
-  _ ->
-    []

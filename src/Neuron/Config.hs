@@ -25,7 +25,7 @@ where
 
 import Control.Monad.Except
 import Data.FileEmbed (embedFile)
-import qualified Data.Graph.Labelled as G
+import Data.Graph.Labelled (findVertex)
 import Development.Shake (Action, readFile')
 import Dhall (FromDhall)
 import qualified Dhall
@@ -119,16 +119,16 @@ getAliases Config {..} graph = do
       pure v
   where
     hasIndexZettel =
-      isJust . G.findVertex (Z.parseZettelID "index")
+      isJust . findVertex (Z.parseZettelID "index")
 
 mkAliases :: [Text] -> ZettelGraph -> Either Text [Alias]
 mkAliases aliasSpecs graph =
   sequence $ flip fmap aliasSpecs $ \aliasSpec -> runExcept $ do
     alias@Alias {..} <- liftEither $ parse aliasParser configFile aliasSpec
-    when (isJust $ G.findVertex aliasZettel graph) $ do
+    when (isJust $ findVertex aliasZettel graph) $ do
       throwError $
         "Cannot create redirect from '" <> Z.zettelIDText aliasZettel <> "', because a zettel with that ID already exists"
-    when (Z.zettelIDText targetZettel /= "z-index" && isNothing (G.findVertex targetZettel graph)) $ do
+    when (Z.zettelIDText targetZettel /= "z-index" && isNothing (findVertex targetZettel graph)) $ do
       throwError $
         "Target zettel '" <> Z.zettelIDText targetZettel <> "' does not exist"
     pure alias

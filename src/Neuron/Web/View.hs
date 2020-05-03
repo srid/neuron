@@ -29,6 +29,8 @@ import Data.Default (def)
 import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
 import qualified Data.Set as Set
+import Data.Structured.Breadcrumb (Breadcrumb)
+import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
 import Data.Tree (Tree (..))
 import Lucid
@@ -73,6 +75,19 @@ renderRouteHead config r val = do
       toHtml $ routeOpenGraph config (snd val) r
       toHtml $ routeStructuredData config val r
       style_ [type_ "text/css"] $ styleToCss tango
+  where
+    routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
+    routeStructuredData Config {..} (graph, v) = \case
+      Route_Zettel _ ->
+        case siteBaseUrl of
+          Nothing -> []
+          Just baseUrl ->
+            let mkCrumb :: Zettel -> Breadcrumb.Item
+                mkCrumb Zettel {..} =
+                  Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
+             in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (fst v) graph
+      _ ->
+        []
 
 renderRouteBody :: Monad m => Config -> Route graph a -> (graph, a) -> HtmlT m ()
 renderRouteBody config r (g, x) = do
