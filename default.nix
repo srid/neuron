@@ -56,8 +56,8 @@ let
     {-# LANGUAGE NoImplicitPrelude #-}
     module Neuron.Version.RepoVersion (version) where
     import Relude
-    version :: Text
-    version = "${neuronRev}"
+    version :: Maybe Text
+    version = Just "${neuronRev}"
     EOF
     '';
   sources = {

@@ -17,8 +17,9 @@ neuronVersion = toText $ showVersion version
 
 -- | Neuron full version (cabal library version + git revision)
 neuronVersionFull :: Text
-neuronVersionFull =
-  T.concat [neuronVersion, " (", RepoVersion.version, ")"]
+neuronVersionFull
+  | Just gitVersion <- RepoVersion.version =  T.concat [neuronVersion, " (", gitVersion, ")"]
+  | otherwise = neuronVersion
 
 -- | Check if `neuronVersion` is older than the given version
 olderThan :: Text -> Bool
