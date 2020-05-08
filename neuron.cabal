@@ -43,7 +43,10 @@ common library-common
     containers,
     filepattern,
     mmark,
-    megaparsec
+    megaparsec,
+    commonmark,
+    commonmark-extensions,
+    commonmark-pandoc,
 
 library
   import: library-common

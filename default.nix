@@ -2,10 +2,8 @@ let
   # To upgrade rib, go to https://github.com/srid/rib/commits/master, select the
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
-  ribRevision = "b38ee96";
-  # We are using the same nixpkgs rev used by rib. Ideally this should be done
-  # automatically.
-  nixpkgsRev = "05f0934825c2";
+  ribRevision = "d7d98f7";
+  nixpkgsRev = "5f14d99efed3";
   projectRoot = ./.;
 in {
 # Rib library source to use
@@ -61,6 +59,9 @@ let
     dsum = builtins.fetchTarball "https://github.com/obsidiansystems/dependent-sum/archive/73ab6cb.tar.gz";
     # https://github.com/obsidiansystems/aeson-gadt-th/pull/22
     aeson-gadt-th = builtins.fetchTarball "https://github.com/srid/aeson-gadt-th/archive/ece1007.tar.gz";
+
+    # commonmark is not on Hackage
+    commonmark = import ./dep/commonmark-hs/thunk.nix;
   };
 
 in import rib { 
@@ -73,8 +74,22 @@ in import rib {
       dependent-sum = sources.dsum + "/dependent-sum";
       dependent-sum-template = sources.dsum + "/dependent-sum-template";
       aeson-gadt-th = sources.aeson-gadt-th;
+
+      # commonmark
+      commonmark = sources.commonmark + "/commonmark";
+      commonmark-extensions = sources.commonmark + "/commonmark-extensions";
+      commonmark-pandoc = sources.commonmark + "/commonmark-pandoc";
+      emojis = import ./dep/emojis/thunk.nix;
+      pandoc-types = import ./dep/pandoc-types/thunk.nix;
+      pandoc = import ./dep/pandoc/thunk.nix;
+      texmath = import ./dep/texmath/thunk.nix;
+      hslua = import ./dep/hslua/thunk.nix;
+      doctemplates = import ./dep/doctemplates/thunk.nix;
+      doclayout = import ./dep/doclayout/thunk.nix;
+      jira-wiki-markup = import ./dep/jira-wiki-markup/thunk.nix;
     } // source-overrides;
     overrides = self: super: with pkgs.haskell.lib; {
+      texmath = doJailbreak super.texmath;
       # We must add neuron-search as a runtime dependency to the 'neuron'
       # Haskell package so that other apps `import`ing this defafult.nix would
       # know where to find when building the neuron library dependency through
