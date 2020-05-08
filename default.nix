@@ -23,7 +23,10 @@ in {
 let 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { inherit (pkgs) lib; })
     gitignoreSource;
-  neuronSearchScript = pkgs.callPackage ./src-bash/neuron-search { inherit pkgs; };
+    neuronSearchScript = pkgs.runCommand "neuron-search" { buildInputs = [ pkgs.makeWrapper ]; } ''
+    mkdir -p $out/bin
+    makeWrapper ${./.}/src-bash/neuron-search $out/bin/neuron-search --prefix 'PATH' ':' \
+      "${pkgs.fzf}/bin:${pkgs.ripgrep}/bin:${pkgs.gawk}/bin:${pkgs.bat}/bin:${pkgs.findutils}/bin:${pkgs.envsubst}/bin"'';
   additional-packages = pkgs:
   [ neuronSearchScript
     # For PureScript dev
