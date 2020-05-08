@@ -80,7 +80,7 @@ common app-common
     optparse-applicative,
     pandoc,
     relude,
-    rib ^>=0.9,
+    rib ^>=0.10,
     shake -any,
     time,
     text,

@@ -2,7 +2,7 @@ let
   # To upgrade rib, go to https://github.com/srid/rib/commits/master, select the
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
-  ribRevision = "2dcd420";
+  ribRevision = "b38ee96";
   # We are using the same nixpkgs rev used by rib. Ideally this should be done
   # automatically.
   nixpkgsRev = "05f0934825c2";
