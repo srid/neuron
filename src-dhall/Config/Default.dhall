@@ -13,5 +13,5 @@
 , mathJaxSupport =
     True
 , minVersion =
-    "0.3"
+    "0.4"
 }

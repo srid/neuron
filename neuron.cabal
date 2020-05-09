@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 0.3.1.0
+version: 0.4.0.0
 license: BSD-3-Clause
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -39,7 +39,7 @@ common library-common
   import: ghc-common
   default-language: Haskell2010
   build-depends:
-    base,
+    base >=4.12 && < 4.14,
     aeson,
     mtl,
     text,
@@ -75,7 +75,7 @@ common app-common
   hs-source-dirs: src/app src/lib
   default-language: Haskell2010
   build-depends:
-    base,
+    base >=4.12 && < 4.14,
     aeson,
     clay -any,
     mtl,
@@ -109,6 +109,8 @@ common app-common
     shake,
     with-utf8
   if (!flag(ghcid))
+    autogen-modules:
+      Paths_neuron
     other-modules:
       Data.Graph.Labelled
       Data.Graph.Labelled.Algorithm
@@ -157,7 +159,7 @@ test-suite neuron-test
   hs-source-dirs: test
   main-is: Spec.hs
   build-depends:
-    base,
+    base >=4.12 && < 4.14,
     relude,
     hspec,
     QuickCheck,
