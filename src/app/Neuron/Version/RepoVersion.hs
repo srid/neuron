@@ -13,5 +13,9 @@ where
 import Development.GitRev (gitDescribe, gitDirty)
 import Relude
 
-version :: Text
-version = toText $ $(gitDescribe) <> bool "" "-dirty" $(gitDirty)
+version :: Maybe Text
+version
+   | versionByGit == toText "UNKNOWN" = Nothing
+   | otherwise = Just versionByGit
+ where
+   versionByGit = toText $ $(gitDescribe) <> bool "" "-dirty" $(gitDirty)
