@@ -55,9 +55,6 @@ import Text.URI.QQ
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
 
-helloScript :: Text
-helloScript = $(embedStringFile "./src-purescript/hello/index.js")
-
 renderRouteHead :: Monad m => Config -> Route graph a -> (graph, a) -> HtmlT m ()
 renderRouteHead config r val = do
   meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
@@ -122,8 +119,6 @@ renderIndex Config {..} graph = do
         -- Forest of zettels, beginning with mother vertices.
         ul_ $ renderForest True Nothing True graph forest
     renderBrandFooter True
-  -- See ./src-purescript/hello/README.md
-  script_ helloScript
   where
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun

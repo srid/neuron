@@ -29,10 +29,6 @@ let
       "${pkgs.fzf}/bin:${pkgs.ripgrep}/bin:${pkgs.gawk}/bin:${pkgs.bat}/bin:${pkgs.findutils}/bin:${pkgs.envsubst}/bin"'';
   additional-packages = pkgs:
   [ neuronSearchScript
-    # For PureScript dev
-    pkgs.purescript
-    pkgs.spago
-    pkgs.pscid
   ];
   excludeContent = path: typ: 
     let d = baseNameOf (toString path);

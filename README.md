@@ -42,22 +42,3 @@ Unit tests can be run via ghcid as follows:
 ```
 bin/test
 ```
-
-## Developing PureScript code
-
-If you are modifying the PureScript sources under `./src-purescript`, you must
-run the following to compile them to JavaScript code that will be used when
-later building Neuron.
-
-``` bash
-bin/ps/build
-```
-
-Then commit the resulting `.js` files to the git repo.
-
-During development of PureScript code you may also use `pscid` to get instant
-feedback on compile errors:
-
-``` bash
-bin/ps/pscid
-```
