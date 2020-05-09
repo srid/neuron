@@ -39,7 +39,7 @@ common library-common
   import: ghc-common
   default-language: Haskell2010
   build-depends:
-    base,
+    base >=4.12 && < 4.14,
     aeson,
     mtl,
     text,
@@ -75,7 +75,7 @@ common app-common
   hs-source-dirs: src/app src/lib
   default-language: Haskell2010
   build-depends:
-    base,
+    base >=4.12 && < 4.14,
     aeson,
     clay -any,
     mtl,
@@ -159,7 +159,7 @@ test-suite neuron-test
   hs-source-dirs: test
   main-is: Spec.hs
   build-depends:
-    base,
+    base >=4.12 && < 4.14,
     relude,
     hspec,
     QuickCheck,
