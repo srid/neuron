@@ -109,6 +109,8 @@ common app-common
     shake,
     with-utf8
   if (!flag(ghcid))
+    autogen-modules:
+      Paths_neuron
     other-modules:
       Data.Graph.Labelled
       Data.Graph.Labelled.Algorithm
