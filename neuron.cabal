@@ -47,6 +47,8 @@ common library-common
     commonmark,
     commonmark-extensions,
     commonmark-pandoc,
+    pandoc-types,
+    parsec,
 
 library
   import: library-common

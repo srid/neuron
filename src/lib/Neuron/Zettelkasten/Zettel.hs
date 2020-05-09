@@ -12,6 +12,7 @@ import Data.Aeson
 import Data.Graph.Labelled (Vertex (..))
 import Data.TagTree (Tag)
 import Data.Time.Calendar
+import Neuron.Markdown
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude hiding (show)
@@ -61,7 +62,7 @@ mkZettelFromMarkdown ::
   ((Text, MMark) -> content) ->
   Either Text (ZettelT content)
 mkZettelFromMarkdown zid s selectContent = do
-  doc <- parseMarkdown (toString $ zettelIDText zid) s
+  doc <- parse (toString $ zettelIDText zid) s
   let meta = Meta.getMeta doc
       title = maybe "Missing title" Meta.title meta
       tags = fromMaybe [] $ Meta.tags =<< meta
@@ -73,5 +74,5 @@ mkZettelFromMarkdown zid s selectContent = do
   pure $
     Zettel zid title tags day (selectContent (s, doc))
   where
-    parseMarkdown k =
+    parse k =
       first (toText . M.errorBundlePretty) . MMark.parse k
