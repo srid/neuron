@@ -26,6 +26,10 @@ source-repository head
     type: git
     location: https://github.com/srid/neuron
 
+flag ghcid
+    default: False
+    manual: True
+
 common ghc-common
   ghc-options:
     -Wall
@@ -105,45 +109,46 @@ common app-common
     uuid,
     shake,
     with-utf8
-  other-modules:
-    Data.Graph.Labelled
-    Data.Graph.Labelled.Algorithm
-    Data.Graph.Labelled.Build
-    Data.Graph.Labelled.Type                                                                                                                                Data.PathTree
-    Data.Structured.Breadcrumb
-    Data.TagTree                                                                                                                                            Neuron.CLI
-    Neuron.CLI.New
-    Neuron.CLI.Rib
-    Neuron.CLI.Search
-    Neuron.CLI.Types
-    Neuron.Config
-    Neuron.Config.Alias
-    Neuron.Version
-    Neuron.Version.RepoVersion
-    Neuron.Web.Generate
-    Neuron.Web.Route
-    Neuron.Web.Theme
-    Neuron.Web.View
-    Neuron.Zettelkasten.Connection
-    Neuron.Zettelkasten.Error
-    Neuron.Zettelkasten.Graph
-    Neuron.Zettelkasten.Graph.Type
-    Neuron.Zettelkasten.ID
-    Neuron.Zettelkasten.ID.Scheme
-    Neuron.Zettelkasten.Query
-    Neuron.Zettelkasten.Query.Error
-    Neuron.Zettelkasten.Query.Eval
-    Neuron.Zettelkasten.Query.Parser
-    Neuron.Zettelkasten.Query.Theme
-    Neuron.Zettelkasten.Query.View
-    Neuron.Zettelkasten.Zettel
-    Neuron.Zettelkasten.Zettel.Meta
-    Paths_neuron
-    Text.MMark.Extension.ReplaceLink
-    Text.MMark.Extension.SetTableClass
-    Text.MMark.MarkdownLink
-    Text.Megaparsec.Simple
-    Text.URI.Util
+  if (!flag(ghcid))
+    other-modules:
+      Data.Graph.Labelled
+      Data.Graph.Labelled.Algorithm
+      Data.Graph.Labelled.Build
+      Data.Graph.Labelled.Type                                                                                                                                Data.PathTree
+      Data.Structured.Breadcrumb
+      Data.TagTree                                                                                                                                            Neuron.CLI
+      Neuron.CLI.New
+      Neuron.CLI.Rib
+      Neuron.CLI.Search
+      Neuron.CLI.Types
+      Neuron.Config
+      Neuron.Config.Alias
+      Neuron.Version
+      Neuron.Version.RepoVersion
+      Neuron.Web.Generate
+      Neuron.Web.Route
+      Neuron.Web.Theme
+      Neuron.Web.View
+      Neuron.Zettelkasten.Connection
+      Neuron.Zettelkasten.Error
+      Neuron.Zettelkasten.Graph
+      Neuron.Zettelkasten.Graph.Type
+      Neuron.Zettelkasten.ID
+      Neuron.Zettelkasten.ID.Scheme
+      Neuron.Zettelkasten.Query
+      Neuron.Zettelkasten.Query.Error
+      Neuron.Zettelkasten.Query.Eval
+      Neuron.Zettelkasten.Query.Parser
+      Neuron.Zettelkasten.Query.Theme
+      Neuron.Zettelkasten.Query.View
+      Neuron.Zettelkasten.Zettel
+      Neuron.Zettelkasten.Zettel.Meta
+      Paths_neuron
+      Text.MMark.Extension.ReplaceLink
+      Text.MMark.Extension.SetTableClass
+      Text.MMark.MarkdownLink
+      Text.Megaparsec.Simple
+      Text.URI.Util
 
 test-suite neuron-test
   import: app-common
@@ -157,15 +162,16 @@ test-suite neuron-test
     QuickCheck,
     time
   default-language:    Haskell2010
-  other-modules:
-    Data.PathTreeSpec
-    Data.TagTreeSpec
-    Neuron.Config.AliasSpec
-    Neuron.VersionSpec
-    Neuron.Zettelkasten.ID.SchemeSpec
-    Neuron.Zettelkasten.IDSpec
-    Neuron.Zettelkasten.Query.ParserSpec
-    Neuron.Zettelkasten.ZettelSpec
+  if (!flag(ghcid))
+    other-modules:
+      Data.PathTreeSpec
+      Data.TagTreeSpec
+      Neuron.Config.AliasSpec
+      Neuron.VersionSpec
+      Neuron.Zettelkasten.ID.SchemeSpec
+      Neuron.Zettelkasten.IDSpec
+      Neuron.Zettelkasten.Query.ParserSpec
+      Neuron.Zettelkasten.ZettelSpec
 
 -- The executable stanza should always be at the end. The other project will
 -- strip it to avoid non-core dependencies.
