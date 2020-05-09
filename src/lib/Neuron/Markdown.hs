@@ -12,7 +12,6 @@ import qualified Commonmark.Pandoc as CP
 import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Relude
-import Text.MMark.MarkdownLink -- TODO: make it not mmark specific
 import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Pandoc.Walk as W
@@ -36,6 +35,12 @@ parseMarkdown s =
       Either P.ParseError (CP.Cm () B.Blocks)
     commonmarkPandocWith spec n =
       join . CM.commonmarkWith spec n
+
+data MarkdownLink = MarkdownLink
+  { markdownLinkText :: Text,
+    markdownLinkUri :: URI.URI
+  }
+  deriving (Eq, Ord)
 
 extractAutoLinks :: Pandoc -> [MarkdownLink]
 extractAutoLinks = W.query go

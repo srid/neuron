@@ -49,11 +49,13 @@ common library-common
     commonmark-pandoc,
     pandoc-types,
     parsec,
+    modern-uri,
 
 library
   import: library-common
   hs-source-dirs: src/lib
   exposed-modules:
+    Neuron.Markdown
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
