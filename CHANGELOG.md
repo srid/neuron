@@ -1,6 +1,6 @@
 # Change Log for neuron
 
-## UNRELEASED
+## 0.4.0.0
 
 - Notable changes
   - More convenient links; `<foobar>` instead of `[foobar](z:/)` (#59)
