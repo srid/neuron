@@ -114,9 +114,11 @@ common app-common
       Data.Graph.Labelled
       Data.Graph.Labelled.Algorithm
       Data.Graph.Labelled.Build
-      Data.Graph.Labelled.Type                                                                                                                                Data.PathTree
+      Data.Graph.Labelled.Type
+      Data.PathTree
       Data.Structured.Breadcrumb
-      Data.TagTree                                                                                                                                            Neuron.CLI
+      Data.TagTree
+      Neuron.CLI
       Neuron.CLI.New
       Neuron.CLI.Rib
       Neuron.CLI.Search
