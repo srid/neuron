@@ -21,7 +21,7 @@ import Data.Default
 import Data.Dependent.Sum
 import qualified Data.Map.Strict as Map
 import Data.Some
-import Data.TagTree (Tag (..), TagNode (..), constructTag, foldTagTree, tagMatchAny, tagTree)
+import Data.TagTree (Tag (..), TagNode (..), TagPattern (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import qualified Data.Text as T
 import Data.Tree
 import Lucid
@@ -45,65 +45,98 @@ buildQueryView = \case
       Nothing -> throwError $ QueryResultError_NoSuchZettel zid
       Just target -> do
         -- pure $ renderZettelLink Nothing res
-        pure $ Left $ buildZettelLink target
-  _q@(Query_ZettelsByTag _pats _mconn view) :=> Identity res -> pure $ Right $ do
-    case zettelsViewGroupByTag view of
-      False ->
-        buildZettelsLinks res
-      True ->
-        B.Para [B.Str "Zettel Links, grouped TODO"]
-  _q@(Query_Tags _) :=> Identity res -> pure $ Right $ do
-    -- Render a list of tags
-    -- toHtml $ Some q
-    renderTagTree $ foldTagTree $ tagTree res
+        pure $ Left $ buildZettelLink Nothing target
+  q@(Query_ZettelsByTag pats _mconn view) :=> Identity res ->
+    pure $ Right $
+      B.Div
+        B.nullAttr
+        [ buildQueryName $ Some q,
+          case zettelsViewGroupByTag view of
+            False ->
+              buildZettelsLinks (zettelsViewLinkView view) res
+            True ->
+              B.Div B.nullAttr
+                $ flip fmap (Map.toList $ groupZettelsByTagsMatching pats res)
+                $ \(tag, zettelGrp) ->
+                  B.Div
+                    B.nullAttr
+                    [ B.Plain $ pure $
+                        B.Span
+                          (mkAttr "ui basic pointing below grey label" mempty)
+                          [ fontAwesomeIcon "tag icon",
+                            B.Str (unTag tag)
+                          ],
+                      buildZettelsLinks (zettelsViewLinkView view) zettelGrp
+                    ]
+        ]
+  q@(Query_Tags _) :=> Identity res ->
+    pure $ Right $
+      B.Div
+        B.nullAttr
+        [ buildQueryName $ Some q,
+          renderTagTree $ foldTagTree $ tagTree res
+        ]
   where
-    mkAttr cls kvs =
-      ("", words cls, kvs)
-    buildZettelLink Zettel {..} =
-      -- TODO: not using Rib for ghcjs, but factorizew this
-      let zurl = "/" <> zettelIDText zettelID <> ".html"
-       in B.Span
-            (mkAttr "zettel-link-container" mempty)
-            [ B.Span (mkAttr "zettel-link" mempty) $ pure $
-                B.Link mempty [B.Str zettelTitle] (zurl, "TODO: No title")
-            ]
-    buildZettelsLinks _zs =
-      B.Para [B.Str "Zettel Links TODO"]
-
--- | Render the custom view for the given evaluated query
-_renderQueryLink :: forall m. (MonadError QueryResultError m) => DSum Query Identity -> m (Html ())
-_renderQueryLink = \case
-  Query_ZettelByID zid _mconn :=> Identity mres ->
-    case mres of
-      Nothing -> throwError $ QueryResultError_NoSuchZettel zid
-      Just res ->
-        pure $ renderZettelLink Nothing res
-  q@(Query_ZettelsByTag pats _mconn view) :=> Identity res -> pure $ do
-    toHtml $ Some q
-    case zettelsViewGroupByTag view of
-      False ->
-        -- Render a list of links
-        renderZettelLinks (zettelsViewLinkView view) res
-      True ->
-        forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
-          span_ [class_ "ui basic pointing below grey label"] $ do
-            i_ [class_ "tag icon"] mempty
-            toHtml $ unTag tag
-          renderZettelLinks (zettelsViewLinkView view) zettelGrp
-  q@(Query_Tags _) :=> Identity _res -> pure $ do
-    -- Render a list of tags
-    -- renderTagTree $ foldTagTree $ tagTree res
-    toHtml $ Some q
-  where
+    -- TODO: This doesn't work because semantic UI needs <i> but Pandoc can't create it with a class. Fuck.
+    fontAwesomeIcon name =
+      B.Span (mkAttr name mempty) []
     -- TODO: Instead of doing this here, group the results in runQuery itself.
     groupZettelsByTagsMatching pats matches =
       fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap matches $ \z ->
         flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
-    renderZettelLinks :: LinkView -> [Zettel] -> Html ()
-    renderZettelLinks ltheme zs =
-      ul_ $ do
-        forM_ zs $ \z ->
-          li_ $ renderZettelLink (Just ltheme) z
+    mkAttr :: Text -> [(Text, Text)] -> B.Attr
+    mkAttr cls kvs =
+      ("", words cls, kvs)
+    buildZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} =
+      -- TODO: not using Rib for ghcjs, but factorizew this
+      let zurl = "/" <> zettelIDText zettelID <> ".html"
+          linkTooltip =
+            if null zettelTags
+              then Nothing
+              else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
+       in B.Span
+            (mkAttr "zettel-link-container" mempty)
+            $ catMaybes
+              [ if linkViewShowDate
+                  then case zettelDay of
+                    Just day ->
+                      Just $ B.Span (mkAttr "extra" mempty) $ pure $ B.Str $ show day
+                    Nothing -> Nothing
+                  else Nothing,
+                Just $ B.Span (mkAttr "zettel-link" $ semanticUITooltipAttrs linkTooltip) $ pure $
+                  B.Link mempty [B.Str zettelTitle] (zurl, "")
+              ]
+    buildZettelsLinks view zs =
+      B.BulletList $
+        zs <&> \z ->
+          [B.Plain $ pure $ buildZettelLink (Just view) z]
+    semanticUITooltipAttrs :: Maybe Text -> [(Text, Text)]
+    semanticUITooltipAttrs = maybe [] $ \s ->
+      [ ("data-tooltip", s),
+        ("data-inverted", ""),
+        ("data-position", "right center")
+      ]
+    buildQueryName :: Some Query -> B.Block
+    buildQueryName someQ =
+      B.Div (mkAttr "ui horizontal divider" [("title", "Neuron Query")]) $
+        case someQ of
+          Some (Query_ZettelByID _ _) ->
+            []
+          Some (Query_ZettelsByTag [] _mconn _mview) ->
+            [B.Plain [B.Str "All zettels"]]
+          Some (Query_ZettelsByTag (fmap unTagPattern -> pats) _mconn _mview) ->
+            let qs = toText $ intercalate ", " pats
+                desc = toText $ "Zettels tagged '" <> qs <> "'"
+             in [ B.Plain $ pure $
+                    B.Span
+                      (mkAttr "ui basic pointing below black label" [("title", desc)])
+                      [fontAwesomeIcon "tags icon", B.Str qs]
+                ]
+          Some (Query_Tags []) ->
+            [B.Plain $ pure $ B.Str $ "All tags"]
+          Some (Query_Tags (fmap unTagPattern -> pats)) -> do
+            let qs = toText $ intercalate ", " pats
+            [B.Plain $ pure $ B.Str $ "Tags matching '" <> qs <> "'"]
 
 -- | Render a link to an individual zettel.
 -- TODO: Remove and consolidate with pandoc renderer

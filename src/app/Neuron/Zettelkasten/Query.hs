@@ -20,10 +20,8 @@ import Data.Aeson.GADT.TH
 import Data.GADT.Compare.TH
 import Data.GADT.Show.TH
 import qualified Data.Map.Strict as Map
-import Data.Some
 import Data.TagTree (Tag, TagPattern (..), tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
-import Lucid
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Theme
@@ -40,27 +38,6 @@ data Query r where
   Query_ZettelByID :: ZettelID -> Maybe Connection -> Query (Maybe Zettel)
   Query_ZettelsByTag :: [TagPattern] -> Maybe Connection -> ZettelsView -> Query [Zettel]
   Query_Tags :: [TagPattern] -> Query (Map Tag Natural)
-
-instance ToHtml (Some Query) where
-  toHtmlRaw = toHtml
-  toHtml q =
-    div_ [class_ "ui horizontal divider", title_ "Neuron Query"] $ do
-      case q of
-        Some (Query_ZettelByID _ _) ->
-          mempty
-        Some (Query_ZettelsByTag [] _mconn _mview) ->
-          "All zettels"
-        Some (Query_ZettelsByTag (fmap unTagPattern -> pats) _mconn _mview) -> do
-          let qs = intercalate ", " pats
-              desc = toText $ "Zettels tagged '" <> qs <> "'"
-           in span_ [class_ "ui basic pointing below black label", title_ desc] $ do
-                i_ [class_ "tags icon"] mempty
-                toHtml qs
-        Some (Query_Tags []) ->
-          "All tags"
-        Some (Query_Tags (fmap unTagPattern -> pats)) -> do
-          let qs = intercalate ", " pats
-          toHtml $ "Tags matching '" <> qs <> "'"
 
 -- | Run the given query and return the results.
 runQuery :: [Zettel] -> Query r -> r
