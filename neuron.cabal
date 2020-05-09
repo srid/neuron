@@ -50,7 +50,6 @@ common library-common
     parser-combinators,
     containers,
     filepattern,
-    mmark,
     megaparsec,
     commonmark,
     commonmark-extensions,
@@ -115,7 +114,8 @@ common app-common
     data-default,
     uuid,
     shake,
-    with-utf8
+    with-utf8,
+    shower
   if (!flag(ghcid))
     autogen-modules:
       Paths_neuron

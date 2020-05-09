@@ -1,9 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -30,9 +27,9 @@ module Neuron.Zettelkasten.Graph
 where
 
 import Control.Monad.Except
+import Control.Monad.Writer
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
-import qualified Data.Map.Strict as Map
 import Data.Traversable (for)
 import Data.Tree
 import Development.Shake
@@ -48,23 +45,22 @@ import System.FilePath
 
 loadZettels :: Action [Zettel]
 loadZettels =
-  fmap snd loadZettelkasten
+  fmap getZettels loadZettelkasten
 
-loadZettelkasten :: Action (ZettelGraph, [Zettel])
+loadZettelkasten :: Action ZettelGraph
 loadZettelkasten =
   loadZettelkastenFrom =<< Rib.forEvery ["*.md"] pure
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
-loadZettelkastenFrom :: [FilePath] -> Action (ZettelGraph, [Zettel])
+loadZettelkastenFrom :: [FilePath] -> Action ZettelGraph
 loadZettelkastenFrom files = do
   notesDir <- Rib.ribInputDir
   zettels <- forM files $ \((notesDir </>) -> path) -> do
-    s <- fmap toText $ readFile' path
+    s <- toText <$> readFile' path
     let zid = mkZettelID path
     case mkZettelFromMarkdown zid s snd of
       Left e -> fail $ toString e
       Right zettel -> pure zettel
-  -- zettels <- mkZettelFromPath `mapM` files
   either (fail . show) pure $ mkZettelGraph zettels
 
 -- | Build the Zettelkasten graph from a list of zettels
@@ -74,20 +70,15 @@ mkZettelGraph ::
   forall m.
   MonadError NeuronError m =>
   [Zettel] ->
-  m (ZettelGraph, [Zettel])
+  m ZettelGraph
 mkZettelGraph zettels = do
-  zettelsWithQueryResults <-
-    liftEither $ runExcept $ do
-      for zettels $ \z ->
-        withExcept (NeuronError_BadQuery (zettelID z)) $
-          (z,) <$> evalZettelLinks zettels z
-  -- zettelsWithExtensions <- for zettelsWithQueryResults $ \(z, resMap) -> liftEither $ runExcept $ do
-  --  pure z -- replaceLink $ snd `Map.map` resMap
-  let edges :: [(Maybe Connection, Zettel, Zettel)] = flip concatMap zettelsWithQueryResults $ \(z, resMap) ->
-        let conns :: [(Connection, Zettel)] = concatMap fst $ Map.elems resMap
-         in conns <&> \(cs, z2) -> (Just cs, z, z2)
-      processedZettels = fst <$> zettelsWithQueryResults
-  pure (G.mkGraphFrom zettels edges, processedZettels)
+  res :: [(Zettel, [(Connection, Zettel)])] <- liftEither =<< do
+    flip runReaderT zettels $ runExceptT $ do
+      for zettels $ \z -> withExceptT (NeuronError_BadQuery (zettelID z)) $ do
+        runWriterT $ expandQueries z
+  let g :: ZettelGraph = G.mkGraphFrom (fst <$> res) $ flip concatMap res $ \(z1, conns) ->
+        conns <&> \(c, z2) -> (Just c, z1, z2)
+  pure g
 
 frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
 frontlinkForest conn z =

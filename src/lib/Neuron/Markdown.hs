@@ -105,7 +105,7 @@ angleBracketLinkSpec =
       x <- some (noneOfToks [Symbol '>', Spaces, UnicodeSpace, LineEnd])
       let s = CM.untokenize x
       void $ symbol '>'
-      pure $! CM.link ("/" <> s) (show x) $ CM.str s
+      pure $! CM.link s (show x) $ CM.str s
 
 -- rawHtmlSpec eats angle bracket links as html tags
 defaultBlockSpecsSansRawHtml :: (Monad m, CM.IsBlock il bl) => [CM.BlockSpec m il bl]

@@ -30,10 +30,10 @@ generateSite config writeHtmlRoute' = do
     $ fail
     $ toString
     $ "Require neuron mininum version " <> minVersion config <> ", but your neuron version is " <> neuronVersion
-  (zettelGraph, zettels) <- G.loadZettelkasten
+  zettelGraph <- G.loadZettelkasten
   let writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
-  forM_ zettels $ \z ->
+  forM_ (G.getZettels zettelGraph) $ \z ->
     -- TODO: Should `Zettel` not contain ZettelID?
     -- See duplication in `renderZettel`
     writeHtmlRoute z $ Z.Route_Zettel (Z.zettelID z)
