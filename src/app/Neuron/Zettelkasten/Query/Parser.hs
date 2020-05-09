@@ -14,13 +14,13 @@ module Neuron.Zettelkasten.Query.Parser where
 import Control.Monad.Except
 import Data.Some
 import Data.TagTree (mkTagPattern)
+import Neuron.Markdown
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
 import Relude
-import Text.MMark.MarkdownLink (MarkdownLink (..))
 import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam, hasQueryFlag)

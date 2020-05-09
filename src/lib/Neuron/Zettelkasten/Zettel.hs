@@ -16,9 +16,7 @@ import Neuron.Markdown
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude hiding (show)
-import Text.MMark (MMark)
-import qualified Text.MMark as MMark
-import qualified Text.Megaparsec as M
+import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
 
 data ZettelT content = Zettel
@@ -29,7 +27,7 @@ data ZettelT content = Zettel
     zettelContent :: content
   }
 
-type Zettel = ZettelT MMark
+type Zettel = ZettelT Pandoc
 
 instance Eq (ZettelT c) where
   (==) = (==) `on` zettelID
@@ -59,11 +57,11 @@ zettelJson Zettel {..} =
 mkZettelFromMarkdown ::
   ZettelID ->
   Text ->
-  ((Text, MMark) -> content) ->
+  ((Text, Pandoc) -> content) ->
   Either Text (ZettelT content)
 mkZettelFromMarkdown zid s selectContent = do
-  doc <- parse (toString $ zettelIDText zid) s
-  let meta = Meta.getMeta doc
+  doc <- parseMarkdown s
+  let meta = Nothing -- Meta.getMeta doc TODO
       title = maybe "Missing title" Meta.title meta
       tags = fromMaybe [] $ Meta.tags =<< meta
       day = case zid of
@@ -73,6 +71,3 @@ mkZettelFromMarkdown zid s selectContent = do
         ZettelCustomID _ -> Meta.date =<< meta
   pure $
     Zettel zid title tags day (selectContent (s, doc))
-  where
-    parse k =
-      first (toText . M.errorBundlePretty) . MMark.parse k

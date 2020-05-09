@@ -47,8 +47,7 @@ import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
-import qualified Rib.Parser.MMark as MMark
-import Text.MMark (Extension, useExtensions)
+import qualified Rib.Parser.Pandoc as Pandoc
 import Text.Pandoc.Highlighting (styleToCss, tango)
 import Text.URI.QQ
 
@@ -82,7 +81,7 @@ renderRouteHead config r val = do
             let mkCrumb :: Zettel -> Breadcrumb.Item
                 mkCrumb Zettel {..} =
                   Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
-             in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (fst v) graph
+             in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel v graph
       _ ->
         []
 
@@ -146,15 +145,17 @@ renderSearch graph = do
   script_ $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   script_ searchScript
 
-renderZettel :: forall m. Monad m => Config -> (ZettelGraph, (Zettel, Extension)) -> ZettelID -> HtmlT m ()
-renderZettel config@Config {..} (graph, (z@Zettel {..}, ext)) zid = do
+renderZettel :: forall m. Monad m => Config -> (ZettelGraph, Zettel) -> ZettelID -> HtmlT m ()
+renderZettel Config {..} (graph, z@Zettel {..}) zid = do
   let neuronTheme = Theme.mkTheme theme
   div_ [class_ "zettel-view"] $ do
     div_ [class_ "ui raised segments"] $ do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
-        let mmarkExts = getMarkdownExtensions config
-        MMark.render $ useExtensions (ext : mmarkExts) zettelContent
+        -- let mmarkExts = getMarkdownExtensions config
+        -- MMark.render $ useExtensions (ext : mmarkExts) zettelContent
+        -- TODO: Use reflex-dom-pandoc eventually
+        Pandoc.render zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
         forM_ zettelDay $ \day ->

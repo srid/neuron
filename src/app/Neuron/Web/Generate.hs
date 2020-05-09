@@ -33,10 +33,10 @@ generateSite config writeHtmlRoute' = do
   (zettelGraph, zettels) <- G.loadZettelkasten
   let writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
-  forM_ zettels $ \(z, d) ->
+  forM_ zettels $ \z ->
     -- TODO: Should `Zettel` not contain ZettelID?
     -- See duplication in `renderZettel`
-    writeHtmlRoute (z, d) $ Z.Route_Zettel (Z.zettelID z)
+    writeHtmlRoute z $ Z.Route_Zettel (Z.zettelID z)
   -- Generate the z-index
   writeHtmlRoute () Z.Route_ZIndex
   -- Generate search page

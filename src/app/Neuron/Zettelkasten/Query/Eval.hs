@@ -16,6 +16,7 @@ import qualified Data.Map.Strict as Map
 import Data.Some
 import Data.Traversable (for)
 import Lucid
+import Neuron.Markdown
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error
@@ -23,7 +24,6 @@ import Neuron.Zettelkasten.Query.Parser (queryFromMarkdownLink)
 import Neuron.Zettelkasten.Query.View (renderQueryLink)
 import Neuron.Zettelkasten.Zettel
 import Relude
-import Text.MMark.MarkdownLink
 
 type EvalResult = ([(Connection, Zettel)], Html ())
 
@@ -36,7 +36,7 @@ evalZettelLinks ::
   Zettel ->
   m (Map MarkdownLink EvalResult)
 evalZettelLinks zettels Zettel {..} =
-  fmap (Map.fromList . catMaybes) $ for (extractLinks zettelContent) $ \ml ->
+  fmap (Map.fromList . catMaybes) $ for (extractAutoLinks zettelContent) $ \ml ->
     fmap (ml,) <$> evalMarkdownLink zettels ml
 
 -- | Fully evaluate the query in a markdown link.
