@@ -158,8 +158,8 @@ renderZettel Config {..} (graph, z@Zettel {..}) zid = do
         -- TODO: Use reflex-dom-pandoc eventually
         Pandoc.render zettelContent
         -- DEBUG
-        hr_ mempty
-        pre_ $ do
+        pre_ [style_ "display: none"] $ do
+          hr_ mempty
           toHtml @String $ shower zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags

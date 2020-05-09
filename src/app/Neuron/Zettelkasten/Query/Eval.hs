@@ -25,7 +25,7 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Parser (queryFromMarkdownLink)
-import Neuron.Zettelkasten.Query.View (renderQueryLink)
+import Neuron.Zettelkasten.Query.View (buildQueryView, renderQueryLink)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Text.Pandoc.Builder as B
@@ -58,7 +58,7 @@ expandQueries z@Zettel {..} = do
               tell conns
               -- create Inline for ml here.
               -- TODO delineate and render
-              pure $ B.Link mempty [B.Str $ "TODO:" <> markdownLinkText ml] (URI.render uri, "No title")
+              liftEither $ runExcept $ withExcept Right $ buildQueryView qres
     x -> pure x
   pure $ z {zettelContent = newPandoc}
   where

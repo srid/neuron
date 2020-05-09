@@ -13,6 +13,7 @@
 module Neuron.Zettelkasten.Query.View
   ( renderQueryLink,
     renderZettelLink,
+    buildQueryView,
   )
 where
 
@@ -27,13 +28,37 @@ import Data.Tree
 import Lucid
 import Lucid.Base (makeAttribute)
 import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
+import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
+import qualified Text.Pandoc.Builder as B
 import Text.URI.QQ (queryKey)
+
+-- | Build the Pandoc AST for query results
+buildQueryView :: MonadError QueryResultError m => DSum Query Identity -> m B.Inline
+buildQueryView = \case
+  Query_ZettelByID zid _mconn :=> Identity mres ->
+    case mres of
+      Nothing -> throwError $ QueryResultError_NoSuchZettel zid
+      Just (target :: Zettel) -> do
+        -- pure $ renderZettelLink Nothing res
+        -- TODO: not using Rib for ghcjs, but factorizew this
+        let zurl = "/" <> zettelIDText (zettelID target) <> ".html"
+        pure $
+          B.Span
+            (mkAttr "zettel-link-container" mempty)
+            [ B.Span (mkAttr "zettel-link" mempty) $ pure $
+                B.Link mempty [B.Str $ zettelTitle target] (zurl, "TODO: No title")
+            ]
+  _ ->
+    pure $ B.Link mempty [B.Str $ "TODO:"] ("/unkonwn", "No title")
+  where
+    mkAttr cls kvs =
+      ("", words cls, kvs)
 
 -- | Render the custom view for the given evaluated query
 renderQueryLink :: forall m. (MonadError QueryResultError m) => DSum Query Identity -> m (Html ())
