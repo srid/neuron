@@ -58,6 +58,7 @@ common library-common
     pandoc-types,
     parsec,
     modern-uri,
+    HsYAML,
 
 library
   import: library-common

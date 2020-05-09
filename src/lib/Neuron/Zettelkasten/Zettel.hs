@@ -60,9 +60,8 @@ mkZettelFromMarkdown ::
   ((Text, Pandoc) -> content) ->
   Either Text (ZettelT content)
 mkZettelFromMarkdown zid s selectContent = do
-  doc <- parseMarkdown s
-  let meta = Nothing -- Meta.getMeta doc TODO
-      title = maybe "Missing title" Meta.title meta
+  (meta, doc) <- parseMarkdown (zettelIDSourceFileName zid) s
+  let title = maybe "Missing title" Meta.title meta
       tags = fromMaybe [] $ Meta.tags =<< meta
       day = case zid of
         -- We ignore the "data" meta field on legacy Date IDs, which encode the
