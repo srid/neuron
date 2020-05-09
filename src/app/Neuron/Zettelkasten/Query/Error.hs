@@ -12,6 +12,7 @@ type QueryError = Either QueryParseError QueryResultError
 data QueryParseError
   = QueryParseError_InvalidID URI InvalidID
   | QueryParseError_UnsupportedHost URI
+  | QueryParseError_BadLocation URI
   deriving (Eq, Show)
 
 -- | This error is only thrown when *using* (eg: in HTML) the query results.
@@ -22,3 +23,4 @@ queryParseErrorUri :: QueryParseError -> URI
 queryParseErrorUri = \case
   QueryParseError_InvalidID uri _ -> uri
   QueryParseError_UnsupportedHost uri -> uri
+  QueryParseError_BadLocation uri -> uri

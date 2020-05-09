@@ -34,19 +34,40 @@ import qualified Text.URI as URI
 
 -- TODO: Use MonadReader and MonadWriter
 expandQueries ::
+  forall m.
   (MonadError QueryError m, MonadReader [Zettel] m, MonadWriter [(Connection, Zettel)] m) =>
   Zettel ->
   m Zettel
 expandQueries z@Zettel {..} = do
-  newPandoc <- flip W.walkM zettelContent $ \case
+  -- Transform block links (paragraph with one link)
+  -- Only block links can contain multi-zettel queries as they produce Block (not Inline) view.
+  ast1 <- flip W.walkM zettelContent $ \case
+    x@(B.Para [B.Link _attr [B.Str linkText] (url, _title)]) ->
+      expandAST linkText url >>= \case
+        Just (_uri, Right block) ->
+          pure block
+        _ -> pure x
+    x -> pure x
+  -- Transform the rest (by scanning all inline)
+  ast2 <- flip W.walkM ast1 $ \case
     x@(B.Link _attr [B.Str linkText] (url, _title)) -> do
-      case URI.mkURI url of
+      expandAST linkText url >>= \case
         Nothing -> pure x
+        Just (_uri, Left inline) -> pure inline
+        Just (uri, Right _block) ->
+          throwError $ Left $ QueryParseError_BadLocation uri
+    x -> pure x
+  pure $ z {zettelContent = ast2}
+  where
+    expandAST :: Text -> Text -> m (Maybe (URI.URI, Either B.Inline B.Block))
+    expandAST linkText url = do
+      case URI.mkURI url of
+        Nothing -> pure Nothing
         Just uri -> do
           let ml = MarkdownLink linkText uri
           mq <- liftEither $ runExcept $ withExceptT Left (queryFromMarkdownLink ml)
           case mq of
-            Nothing -> pure x
+            Nothing -> pure Nothing
             Just someQ -> do
               qres <- withSome someQ $ \q -> do
                 zs <- ask
@@ -58,10 +79,10 @@ expandQueries z@Zettel {..} = do
               tell conns
               -- create Inline for ml here.
               -- TODO delineate and render
-              liftEither $ runExcept $ withExcept Right $ buildQueryView qres
-    x -> pure x
-  pure $ z {zettelContent = newPandoc}
-  where
+              liftEither $ runExcept $ do
+                Just . (uri,) <$> withExcept Right (buildQueryView qres)
+    -- FIXME: This is ugly; need to handle at type level.
+    -- Right _ -> throwError $ Left $ QueryParseError_BadLocation uri
     getConnections :: DSum Query Identity -> [(Connection, Zettel)]
     getConnections = \case
       Query_ZettelByID _ mconn :=> Identity mres ->

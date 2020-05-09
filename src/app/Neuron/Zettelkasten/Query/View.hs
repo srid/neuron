@@ -39,26 +39,35 @@ import qualified Text.Pandoc.Builder as B
 import Text.URI.QQ (queryKey)
 
 -- | Build the Pandoc AST for query results
-buildQueryView :: MonadError QueryResultError m => DSum Query Identity -> m B.Inline
+buildQueryView :: MonadError QueryResultError m => DSum Query Identity -> m (Either B.Inline B.Block)
 buildQueryView = \case
   Query_ZettelByID zid _mconn :=> Identity mres ->
     case mres of
       Nothing -> throwError $ QueryResultError_NoSuchZettel zid
-      Just (target :: Zettel) -> do
+      Just target -> do
         -- pure $ renderZettelLink Nothing res
-        -- TODO: not using Rib for ghcjs, but factorizew this
-        let zurl = "/" <> zettelIDText (zettelID target) <> ".html"
-        pure $
-          B.Span
-            (mkAttr "zettel-link-container" mempty)
-            [ B.Span (mkAttr "zettel-link" mempty) $ pure $
-                B.Link mempty [B.Str $ zettelTitle target] (zurl, "TODO: No title")
-            ]
+        pure $ Left $ buildZettelLink target
+  _q@(Query_ZettelsByTag _pats _mconn view) :=> Identity res -> pure $ Right $ do
+    case zettelsViewGroupByTag view of
+      False ->
+        buildZettelsLinks res
+      True ->
+        B.Para [B.Str "Zettel Links, grouped TODO"]
   _ ->
-    pure $ B.Link mempty [B.Str $ "TODO:"] ("/unkonwn", "No title")
+    pure $ Left $ B.Link mempty [B.Str $ "TODO:"] ("/unkonwn", "No title")
   where
     mkAttr cls kvs =
       ("", words cls, kvs)
+    buildZettelLink Zettel {..} =
+      -- TODO: not using Rib for ghcjs, but factorizew this
+      let zurl = "/" <> zettelIDText zettelID <> ".html"
+       in B.Span
+            (mkAttr "zettel-link-container" mempty)
+            [ B.Span (mkAttr "zettel-link" mempty) $ pure $
+                B.Link mempty [B.Str zettelTitle] (zurl, "TODO: No title")
+            ]
+    buildZettelsLinks _zs =
+      B.Para [B.Str "Zettel Links TODO"]
 
 -- | Render the custom view for the given evaluated query
 renderQueryLink :: forall m. (MonadError QueryResultError m) => DSum Query Identity -> m (Html ())
