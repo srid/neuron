@@ -76,7 +76,6 @@ buildQueryView = \case
           renderTagTree $ foldTagTree $ tagTree res
         ]
   where
-    -- TODO: This doesn't work because semantic UI needs <i> but Pandoc can't create it with a class. Fuck.
     fontAwesomeIcon name =
       B.Span (mkAttr name mempty) []
     -- TODO: Instead of doing this here, group the results in runQuery itself.
@@ -87,7 +86,7 @@ buildQueryView = \case
     mkAttr cls kvs =
       ("", words cls, kvs)
     buildZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} =
-      -- TODO: not using Rib for ghcjs, but factorizew this
+      -- TODO: not using Rib for ghcjs, but factorize this
       let zurl = "/" <> zettelIDText zettelID <> ".html"
           linkTooltip =
             if null zettelTags

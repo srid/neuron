@@ -86,6 +86,16 @@ extractAutoLinks = W.query go
           pure $ MarkdownLink linkText uri
       _ -> []
 
+getFirstParagraphText :: Pandoc -> Maybe [B.Inline]
+getFirstParagraphText = listToMaybe . W.query go
+  where
+    go :: B.Block -> [[B.Inline]]
+    go = \case
+      B.Para inlines ->
+        [inlines]
+      _ ->
+        []
+
 neuronSpec ::
   ( Monad m,
     CM.IsBlock il bl,

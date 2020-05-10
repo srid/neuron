@@ -28,7 +28,6 @@ import qualified Text.Pandoc.Builder as B
 import qualified Text.Pandoc.Walk as W
 import qualified Text.URI as URI
 
--- TODO: Use MonadReader and MonadWriter
 expandQueries ::
   forall m.
   (MonadError QueryError m, MonadReader [Zettel] m, MonadWriter [(Connection, Zettel)] m) =>
@@ -74,7 +73,6 @@ expandQueries z@Zettel {..} = do
               let conns = getConnections qres
               tell conns
               -- create Inline for ml here.
-              -- TODO delineate and render
               liftEither $ runExcept $ do
                 Just . (uri,) <$> withExcept Right (buildQueryView qres)
     -- FIXME: This is ugly; need to handle at type level.

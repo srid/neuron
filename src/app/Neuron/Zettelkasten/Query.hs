@@ -30,10 +30,6 @@ import Relude
 import System.FilePath
 
 -- | Query represents a way to query the Zettelkasten.
---
--- TODO: Support querying connections, a la:
---   LinksTo ZettelID
---   LinksFrom ZettelID
 data Query r where
   Query_ZettelByID :: ZettelID -> Maybe Connection -> Query (Maybe Zettel)
   Query_ZettelsByTag :: [TagPattern] -> Maybe Connection -> ZettelsView -> Query [Zettel]

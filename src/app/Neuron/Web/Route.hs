@@ -12,8 +12,10 @@
 module Neuron.Web.Route where
 
 import Control.Monad.Except
+import qualified Data.Text as T
 import GHC.Stack
 import Neuron.Config
+import Neuron.Markdown (getFirstParagraphText)
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Zettel
@@ -21,6 +23,7 @@ import Relude
 import Rib (IsRoute (..), routeUrl, routeUrlRel)
 import Rib.Extra.OpenGraph
 import qualified Rib.Parser.Pandoc as Pandoc
+import Text.Pandoc
 import qualified Text.URI as URI
 
 data Route graph a where
@@ -87,9 +90,10 @@ routeOpenGraph Config {..} val r =
         Route_Redirect _ -> Nothing
         Route_ZIndex -> Just "Zettelkasten Index"
         Route_Search -> Just "Search Zettelkasten"
-        Route_Zettel _ ->
-          -- T.take 300 <$> MMark.getFirstParagraphText (zettelContent $ fst val),
-          Nothing, -- TODO
+        Route_Zettel _ -> do
+          para <- getFirstParagraphText $ zettelContent val
+          paraText <- renderPandocAsText para
+          pure $ T.take 300 paraText,
       _openGraph_author = author,
       _openGraph_type = case r of
         Route_Zettel _ -> Just $ OGType_Article (Article Nothing Nothing Nothing Nothing mempty)
@@ -102,3 +106,7 @@ routeOpenGraph Config {..} val r =
         _ -> Nothing,
       _openGraph_url = Nothing
     }
+  where
+    renderPandocAsText :: [Inline] -> Maybe Text
+    renderPandocAsText =
+      either (const Nothing) Just . runPure . writePlain def . Pandoc mempty . pure . Plain

@@ -152,8 +152,6 @@ renderZettel Config {..} (graph, z@Zettel {..}) zid = do
     div_ [class_ "ui raised segments"] $ do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
-        -- let mmarkExts = getMarkdownExtensions config
-        -- MMark.render $ useExtensions (ext : mmarkExts) zettelContent
         -- TODO: Use reflex-dom-pandoc eventually
         Pandoc.render zettelContent
         whenNotNull zettelTags $ \_ ->
@@ -205,7 +203,7 @@ renderBrandFooter withVersion =
 renderTags :: Monad m => [Tag] -> HtmlT m ()
 renderTags tags = do
   forM_ tags $ \(unTag -> tag) -> do
-    -- TODO: Ideally this should be at the top, not bottom. But putting it at
+    -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
     -- the top pushes the zettel content down, introducing unnecessary white
     -- space below the title. So we put it at the bottom for now.
     span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
