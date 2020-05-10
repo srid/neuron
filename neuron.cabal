@@ -58,6 +58,10 @@ common library-common
     parsec,
     modern-uri,
     HsYAML,
+    aeson-gadt-th,
+    dependent-sum,
+    dependent-sum-template,
+    data-default,
 
 library
   import: library-common
@@ -67,7 +71,15 @@ library
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
+    Neuron.Zettelkasten.Connection
+    Neuron.Zettelkasten.Query
+    Neuron.Zettelkasten.Query.Error
+    Neuron.Zettelkasten.Query.Eval
+    Neuron.Zettelkasten.Query.Parser
+    Neuron.Zettelkasten.Query.Theme
+    Neuron.Zettelkasten.Query.View
     Text.Megaparsec.Simple
+    Text.URI.Util
     Data.TagTree
     Data.PathTree
     Data.Graph.Labelled
@@ -110,7 +122,6 @@ common app-common
     megaparsec >= 8.0,
     dependent-sum,
     dependent-sum-template,
-    aeson-gadt-th,
     data-default,
     uuid,
     shake,
@@ -141,26 +152,15 @@ common app-common
       Neuron.Web.Theme
       Neuron.Web.View
       Neuron.Markdown
-      Neuron.Zettelkasten.Connection
       Neuron.Zettelkasten.Error
       Neuron.Zettelkasten.Graph
       Neuron.Zettelkasten.Graph.Type
-      Neuron.Zettelkasten.ID
       Neuron.Zettelkasten.ID.Scheme
-      Neuron.Zettelkasten.Query
-      Neuron.Zettelkasten.Query.Error
-      Neuron.Zettelkasten.Query.Eval
-      Neuron.Zettelkasten.Query.Parser
-      Neuron.Zettelkasten.Query.Theme
-      Neuron.Zettelkasten.Query.View
-      Neuron.Zettelkasten.Zettel
-      Neuron.Zettelkasten.Zettel.Meta
       Paths_neuron
       Text.MMark.Extension.ReplaceLink
       Text.MMark.Extension.SetTableClass
       Text.MMark.MarkdownLink
       Text.Megaparsec.Simple
-      Text.URI.Util
 
 test-suite neuron-test
   import: app-common

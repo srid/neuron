@@ -11,8 +11,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Query.View
-  ( renderZettelLink,
-    buildQueryView,
+  ( buildQueryView,
+    zettelUrl,
   )
 where
 
@@ -24,18 +24,13 @@ import Data.Some
 import Data.TagTree (Tag (..), TagNode (..), TagPattern (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import qualified Data.Text as T
 import Data.Tree
-import Lucid
-import Lucid.Base (makeAttribute)
-import Neuron.Web.Route (Route (..), routeUrlRelWithQuery)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
 import Relude
-import qualified Rib
 import qualified Text.Pandoc.Builder as B
-import Text.URI.QQ (queryKey)
 
 -- | Build the Pandoc AST for query results
 buildQueryView :: MonadError QueryResultError m => DSum Query Identity -> m (Either B.Inline B.Block)
@@ -86,9 +81,7 @@ buildQueryView = \case
     mkAttr cls kvs =
       ("", words cls, kvs)
     buildZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} =
-      -- TODO: not using Rib for ghcjs, but factorize this
-      let zurl = "/" <> zettelIDText zettelID <> ".html"
-          linkTooltip =
+      let linkTooltip =
             if null zettelTags
               then Nothing
               else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
@@ -102,7 +95,7 @@ buildQueryView = \case
                     Nothing -> Nothing
                   else Nothing,
                 Just $ B.Span (mkAttr "zettel-link" $ semanticUITooltipAttrs linkTooltip) $ pure $
-                  B.Link mempty [B.Str zettelTitle] (zurl, "")
+                  B.Link mempty [B.Str zettelTitle] (zettelUrl zettelID, "")
               ]
     buildZettelsLinks view zs =
       B.BulletList $
@@ -136,37 +129,14 @@ buildQueryView = \case
             let qs = toText $ intercalate ", " pats
             [B.Plain $ pure $ B.Str $ "Tags matching '" <> qs <> "'"]
 
--- | Render a link to an individual zettel.
--- TODO: Remove and consolidate with pandoc renderer
-renderZettelLink :: forall m. Monad m => Maybe LinkView -> Zettel -> HtmlT m ()
-renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
-  let zurl = Rib.routeUrlRel $ Route_Zettel zettelID
-      mextra =
-        if linkViewShowDate
-          then case zettelDay of
-            Just day ->
-              Just $ toHtml $ show @Text day
-            Nothing ->
-              Nothing
-          else Nothing
-  span_ [class_ "zettel-link-container"] $ do
-    forM_ mextra $ \extra ->
-      span_ [class_ "extra"] extra
-    let linkTooltip =
-          if null zettelTags
-            then Nothing
-            else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
-    span_ ([class_ "zettel-link"] <> withTooltip linkTooltip) $ do
-      a_ [href_ zurl] $ toHtml zettelTitle
-  where
-    withTooltip :: Maybe Text -> [Attribute]
-    withTooltip = \case
-      Nothing -> []
-      Just s ->
-        [ makeAttribute "data-tooltip" s,
-          makeAttribute "data-inverted" "",
-          makeAttribute "data-position" "right center"
-        ]
+-- TODO: not using Rib for ghcjs, but factorize this
+zettelUrl :: ZettelID -> Text
+zettelUrl zid =
+  "/" <> zettelIDText zid <> ".html"
+
+tagUrl :: Tag -> Text
+tagUrl (Tag s) =
+  "/search.html?tag=" <> s
 
 -- |  Render a tag tree along with the count of zettels tagged with it
 renderTagTree :: Forest (NonEmpty TagNode, Natural) -> B.Block
@@ -187,14 +157,13 @@ renderTagTree t =
         ]
     renderTag :: [TagNode] -> (NonEmpty TagNode, Natural) -> B.Block
     renderTag ancestors (tagNode, count) =
-      let Tag tag = constructTag $ maybe tagNode (<> tagNode) $ nonEmpty ancestors
-          url = routeUrlRelWithQuery Route_Search [queryKey|tag|] tag
+      let tag = constructTag $ maybe tagNode (<> tagNode) $ nonEmpty ancestors
           tit = show count <> " zettels tagged"
        in B.Div (mkAttr "node" mempty) $ pure $ B.Plain $ pure $
             B.Link
               (mkAttr (bool "" "inactive" $ count == 0) mempty)
               [B.Str $ renderTagNode tagNode]
-              (url, tit)
+              (tagUrl tag, tit)
     renderTagNode :: NonEmpty TagNode -> Text
     renderTagNode = \case
       n :| (nonEmpty -> mrest) ->

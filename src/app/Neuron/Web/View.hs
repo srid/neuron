@@ -32,8 +32,10 @@ import qualified Data.Set as Set
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
+import qualified Data.Text as T
 import Data.Tree (Tree (..))
 import Lucid
+import Lucid.Base (makeAttribute)
 import Neuron.Config
 import Neuron.Version (neuronVersionFull)
 import Neuron.Web.Route
@@ -42,7 +44,8 @@ import Neuron.Zettelkasten.Connection
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
-import Neuron.Zettelkasten.Query.View (renderZettelLink)
+import Neuron.Zettelkasten.Query.Theme (LinkView (..))
+import Neuron.Zettelkasten.Query.View (zettelUrl)
 import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Rib
@@ -250,6 +253,37 @@ renderForest isRoot maxLevel renderingFullTree g trees =
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
+
+-- | Render a link to an individual zettel.
+-- TODO: Remove and consolidate this with pandoc AST function in `Query.View` module
+renderZettelLink :: forall m. Monad m => Maybe LinkView -> Zettel -> HtmlT m ()
+renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
+  let mextra =
+        if linkViewShowDate
+          then case zettelDay of
+            Just day ->
+              Just $ toHtml $ show @Text day
+            Nothing ->
+              Nothing
+          else Nothing
+  span_ [class_ "zettel-link-container"] $ do
+    forM_ mextra $ \extra ->
+      span_ [class_ "extra"] extra
+    let linkTooltip =
+          if null zettelTags
+            then Nothing
+            else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
+    span_ ([class_ "zettel-link"] <> withTooltip linkTooltip) $ do
+      a_ [href_ (zettelUrl zettelID)] $ toHtml zettelTitle
+  where
+    withTooltip :: Maybe Text -> [Attribute]
+    withTooltip = \case
+      Nothing -> []
+      Just s ->
+        [ makeAttribute "data-tooltip" s,
+          makeAttribute "data-inverted" "",
+          makeAttribute "data-position" "right center"
+        ]
 
 style :: Config -> Css
 style Config {..} = do
