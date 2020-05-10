@@ -26,62 +26,60 @@ import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Text.Pandoc.Builder as B
 import qualified Text.Pandoc.Walk as W
-import qualified Text.URI as URI
 
+-- | Expand query links in the Pandoc document.
+--
+-- * Report any errors via MonadError
+-- * Write connections detected in MonadWriter
+-- * Do a two-stage transform, to handle block links and inline links separately.
 expandQueries ::
   forall m.
-  (MonadError QueryError m, MonadReader [Zettel] m, MonadWriter [(Connection, Zettel)] m) =>
+  (MonadError QueryError m, MonadReader [Zettel] m, MonadWriter [(Maybe Connection, Zettel)] m) =>
   Zettel ->
   m Zettel
 expandQueries z@Zettel {..} = do
   -- Transform block links (paragraph with one link)
   -- Only block links can contain multi-zettel queries as they produce Block (not Inline) view.
-  ast1 <- flip W.walkM zettelContent $ \case
-    x@(B.Para [B.Link _attr [B.Str linkText] (url, _title)]) ->
-      expandAST linkText url >>= \case
-        Just (_uri, Right block) ->
-          pure block
-        _ -> pure x
-    x -> pure x
-  -- Transform the rest (by scanning all inline)
-  ast2 <- flip W.walkM ast1 $ \case
-    x@(B.Link _attr [B.Str linkText] (url, _title)) -> do
-      expandAST linkText url >>= \case
-        Nothing -> pure x
-        Just (_uri, Left inline) -> pure inline
-        Just (uri, Right _block) ->
-          throwError $ Left $ QueryParseError_BadLocation uri
-    x -> pure x
+  ast1 <- flip W.walkM zettelContent $ \blk ->
+    case pandocLinkBlock blk of
+      Just ml -> do
+        expandAST ml >>= \case
+          Just (Right newBlk) -> pure newBlk
+          _ -> pure blk
+      _ -> pure blk
+  -- Transform the rest (by scanning all inline links)
+  ast2 <- flip W.walkM ast1 $ \inline ->
+    case pandocLinkInline inline of
+      Just ml -> do
+        expandAST ml >>= \case
+          Just (Left newInline) -> pure newInline
+          _ -> pure inline
+      _ -> pure inline
   pure $ z {zettelContent = ast2}
   where
-    expandAST :: Text -> Text -> m (Maybe (URI.URI, Either B.Inline B.Block))
-    expandAST linkText url = do
-      case URI.mkURI url of
+    -- Replace the link node with the query result AST node.
+    --
+    -- Depending on the link time, we replace with an inline or a block.
+    expandAST :: MarkdownLink -> m (Maybe (Either B.Inline B.Block))
+    expandAST ml = do
+      mq <- liftEither $ runExcept $ withExceptT Left (queryFromMarkdownLink ml)
+      case mq of
         Nothing -> pure Nothing
-        Just uri -> do
-          let ml = MarkdownLink linkText uri
-          mq <- liftEither $ runExcept $ withExceptT Left (queryFromMarkdownLink ml)
-          case mq of
-            Nothing -> pure Nothing
-            Just someQ -> do
-              qres <- withSome someQ $ \q -> do
-                zs <- ask
-                -- run query using data from MonadReader
-                let res = q :=> Identity (runQuery zs q)
-                pure res
-              -- tell connections using MonadWriter
-              let conns = getConnections qres
-              tell conns
-              -- create Inline for ml here.
-              liftEither $ runExcept $ do
-                Just . (uri,) <$> withExcept Right (buildQueryView qres)
-    -- FIXME: This is ugly; need to handle at type level.
-    -- Right _ -> throwError $ Left $ QueryParseError_BadLocation uri
-    getConnections :: DSum Query Identity -> [(Connection, Zettel)]
+        Just someQ -> fmap Just $ do
+          qres <- withSome someQ $ \q -> do
+            zs <- ask
+            -- run query using data from MonadReader
+            pure $ q :=> Identity (runQuery zs q)
+          -- tell connections using MonadWriter
+          tell $ getConnections qres
+          -- create Inline for ml here.
+          liftEither $ runExcept $ do
+            withExcept Right (buildQueryView qres)
+    getConnections :: DSum Query Identity -> [(Maybe Connection, Zettel)]
     getConnections = \case
       Query_ZettelByID _ mconn :=> Identity mres ->
-        maybe [] pure $ (fromMaybe Folgezettel mconn,) <$> mres
+        maybe [] pure $ (mconn,) <$> mres
       Query_ZettelsByTag _ mconn _mview :=> Identity res ->
-        (fromMaybe Folgezettel mconn,) <$> res
-      _ ->
-        []
+        (mconn,) <$> res
+      Query_Tags _ :=> _ ->
+        mempty

@@ -72,13 +72,15 @@ mkZettelGraph ::
   [Zettel] ->
   m ZettelGraph
 mkZettelGraph zettels = do
-  res :: [(Zettel, [(Connection, Zettel)])] <- liftEither =<< do
+  res :: [(Zettel, [(Maybe Connection, Zettel)])] <- liftEither =<< do
     flip runReaderT zettels $ runExceptT $ do
       for zettels $ \z -> withExceptT (NeuronError_BadQuery (zettelID z)) $ do
         runWriterT $ expandQueries z
   let g :: ZettelGraph = G.mkGraphFrom (fst <$> res) $ flip concatMap res $ \(z1, conns) ->
-        conns <&> \(c, z2) -> (Just c, z1, z2)
+        conns <&> \(c, z2) -> (connectionMonoid (fromMaybe Folgezettel c), z1, z2)
   pure g
+  where
+    connectionMonoid = Just
 
 frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
 frontlinkForest conn z =
