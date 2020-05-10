@@ -9,6 +9,7 @@ module Neuron.Markdown where
 
 import qualified Commonmark as CM
 import qualified Commonmark.Blocks as CM
+import qualified Commonmark.Extensions as CE
 -- import qualified Commonmark.Html as CM
 import qualified Commonmark.Pandoc as CP
 import Commonmark.TokParsers (noneOfToks, symbol)
@@ -85,10 +86,24 @@ extractAutoLinks = W.query go
           pure $ MarkdownLink linkText uri
       _ -> []
 
-neuronSpec :: (Monad m, CM.IsBlock il bl, CM.IsInline il) => CM.SyntaxSpec m il bl
+neuronSpec ::
+  ( Monad m,
+    CM.IsBlock il bl,
+    CM.IsInline il,
+    Typeable m,
+    Typeable il,
+    Typeable bl,
+    CE.HasEmoji il,
+    CE.HasStrikethrough il,
+    CE.HasPipeTable il bl,
+    CE.HasTaskList il bl,
+    CM.ToPlainText il
+  ) =>
+  CM.SyntaxSpec m il bl
 neuronSpec =
   mconcat
     [ angleBracketLinkSpec,
+      CE.gfmExtensions,
       CM.defaultSyntaxSpec {CM.syntaxBlockSpecs = defaultBlockSpecsSansRawHtml}
     ]
 
