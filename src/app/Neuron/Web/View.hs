@@ -48,7 +48,6 @@ import Relude
 import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
 import qualified Rib.Parser.Pandoc as Pandoc
-import Shower
 import Text.Pandoc.Highlighting (styleToCss, tango)
 import Text.URI.QQ
 
@@ -157,10 +156,6 @@ renderZettel Config {..} (graph, z@Zettel {..}) zid = do
         -- MMark.render $ useExtensions (ext : mmarkExts) zettelContent
         -- TODO: Use reflex-dom-pandoc eventually
         Pandoc.render zettelContent
-        -- DEBUG
-        pre_ [style_ "display: none"] $ do
-          hr_ mempty
-          toHtml @String $ shower zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
         forM_ zettelDay $ \day ->
@@ -262,6 +257,8 @@ style :: Config -> Css
 style Config {..} = do
   let neuronTheme = Theme.mkTheme theme
       linkColor = Theme.withRgb neuronTheme C.rgb
+  ".ui.label span.fas" ? do
+    C.marginRight $ em 0.3
   "span.zettel-link-container span.zettel-link a" ? do
     C.fontWeight C.bold
     C.color linkColor

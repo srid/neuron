@@ -140,6 +140,7 @@ common app-common
       Neuron.Web.Route
       Neuron.Web.Theme
       Neuron.Web.View
+      Neuron.Markdown
       Neuron.Zettelkasten.Connection
       Neuron.Zettelkasten.Error
       Neuron.Zettelkasten.Graph
@@ -186,6 +187,7 @@ test-suite neuron-test
 
 -- The executable stanza should always be at the end. The other project will
 -- strip it to avoid non-core dependencies.
+-- To profile: ghc-options: -fexternal-interpreter -prof -fprof-auto -rtsopts
 executable neuron
   import: app-common
   main-is: Main.hs

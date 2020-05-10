@@ -44,7 +44,6 @@ buildQueryView = \case
     case mres of
       Nothing -> throwError $ QueryResultError_NoSuchZettel zid
       Just target -> do
-        -- pure $ renderZettelLink Nothing res
         pure $ Left $ buildZettelLink Nothing target
   q@(Query_ZettelsByTag pats _mconn view) :=> Identity res ->
     pure $ Right $
@@ -63,7 +62,7 @@ buildQueryView = \case
                     [ B.Plain $ pure $
                         B.Span
                           (mkAttr "ui basic pointing below grey label" mempty)
-                          [ fontAwesomeIcon "tag icon",
+                          [ fontAwesomeIcon "fas fa-tag",
                             B.Str (unTag tag)
                           ],
                       buildZettelsLinks (zettelsViewLinkView view) zettelGrp
@@ -130,7 +129,7 @@ buildQueryView = \case
              in [ B.Plain $ pure $
                     B.Span
                       (mkAttr "ui basic pointing below black label" [("title", desc)])
-                      [fontAwesomeIcon "tags icon", B.Str qs]
+                      [fontAwesomeIcon "fas fa-tags", B.Str qs]
                 ]
           Some (Query_Tags []) ->
             [B.Plain $ pure $ B.Str $ "All tags"]
