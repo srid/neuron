@@ -15,6 +15,7 @@ import qualified Commonmark.Pandoc as CP
 import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
+import Control.Monad.Except
 import qualified Data.YAML as YAML
 import Relude
 import qualified Text.Megaparsec as M
@@ -31,28 +32,28 @@ import qualified Text.URI as URI
 -- We are not using the Pandoc AST "metadata" field (as it is not clear whether
 -- we actually need it), and instead directly decoding the metadata as Haskell
 -- object.
---
--- TODO: Avoid error here
-parseMarkdown :: (HasCallStack, YAML.FromYAML meta) => FilePath -> Text -> Either Text (meta, Pandoc)
-parseMarkdown fn (partitionMarkdown fn -> (metaVal, s)) =
-  case commonmarkPandocWith neuronSpec "markdown" s of
-    Left e ->
-      Left $ show e
-    Right v ->
-      Right (meta, Pandoc mempty $ B.toList (CP.unCm v))
+parseMarkdown :: forall meta. YAML.FromYAML meta => FilePath -> Text -> Either Text (meta, Pandoc)
+parseMarkdown fn (partitionMarkdown fn -> (metaVal, s)) = do
+  v <- commonmarkPandocWith neuronSpec "markdown" s
+  meta <- parseMeta metaVal
+  pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
   where
-    meta =
-      either (error . show) (maybe (error "No yaml val") head . nonEmpty)
-        $ YAML.decode
-        $ encodeUtf8 metaVal
+    -- NOTE: HsYAML parsing is rather slow due to its use of DList.
+    -- See https://github.com/haskell-hvr/HsYAML/issues/40
+    parseMeta :: Text -> Either Text meta
+    parseMeta v = do
+      vals <- bimap show nonEmpty $ YAML.decode (encodeUtf8 v)
+      case vals of
+        Just valsNE -> pure $ head valsNE
+        Nothing -> throwError "No YAML values"
     -- Like commonmarkWith, but parses directly into the Pandoc AST.
     commonmarkPandocWith ::
       CM.SyntaxSpec (Either P.ParseError) (CP.Cm () B.Inlines) (CP.Cm () B.Blocks) ->
       String ->
       Text ->
-      Either P.ParseError (CP.Cm () B.Blocks)
+      Either Text (CP.Cm () B.Blocks)
     commonmarkPandocWith spec n =
-      join . CM.commonmarkWith spec n
+      first show . join . CM.commonmarkWith spec n
 
 -- | Identify metadata block at the top, and split it from markdown body.
 partitionMarkdown :: FilePath -> Text -> (Text, Text)
@@ -128,6 +129,7 @@ neuronSpec =
         <> CE.autoIdentifiersSpec
         <> CE.taskListSpec
 
+-- | Unconditionally treat <...> as a `B.Link`.
 angleBracketLinkSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
   CM.SyntaxSpec m il bl
@@ -139,9 +141,10 @@ angleBracketLinkSpec =
     pLink = P.try $ do
       void $ symbol '<'
       x <- some (noneOfToks [Symbol '>', Spaces, UnicodeSpace, LineEnd])
-      let s = CM.untokenize x
+      let url = CM.untokenize x
+          title = show x
       void $ symbol '>'
-      pure $! CM.link s (show x) $ CM.str s
+      pure $! CM.link url title $ CM.str url
 
 -- rawHtmlSpec eats angle bracket links as html tags
 defaultBlockSpecsSansRawHtml :: (Monad m, CM.IsBlock il bl) => [CM.BlockSpec m il bl]

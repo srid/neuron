@@ -23,13 +23,6 @@ data Meta = Meta
   }
   deriving (Eq, Show, Generic)
 
---getMeta :: MMark -> Maybe Meta
---getMeta src = do
---  val <- projectYaml src
---  case fromJSON val of
---    Error e -> error $ "JSON error: " <> toText e
---    Success v -> pure v
-
 instance FromYAML Meta where
   parseYAML =
     withMap "Meta" $ \m ->
