@@ -97,15 +97,26 @@ neuronSpec ::
     CE.HasStrikethrough il,
     CE.HasPipeTable il bl,
     CE.HasTaskList il bl,
-    CM.ToPlainText il
+    CM.ToPlainText il,
+    CE.HasFootnote il bl,
+    CE.HasMath il
   ) =>
   CM.SyntaxSpec m il bl
 neuronSpec =
   mconcat
     [ angleBracketLinkSpec,
-      CE.gfmExtensions,
+      gfmExtensionsWithEmoji,
+      -- TODO: This needs a proper renderer in reflex-dom-pandoc
+      CE.footnoteSpec,
+      CE.mathSpec,
       CM.defaultSyntaxSpec {CM.syntaxBlockSpecs = defaultBlockSpecsSansRawHtml}
     ]
+  where
+    -- Emoji extension introduces ghcjs linker issues
+    gfmExtensionsWithEmoji =
+      CE.strikethroughSpec <> CE.pipeTableSpec <> CE.autolinkSpec
+        <> CE.autoIdentifiersSpec
+        <> CE.taskListSpec
 
 angleBracketLinkSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
