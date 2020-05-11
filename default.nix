@@ -2,7 +2,7 @@ let
   # To upgrade rib, go to https://github.com/srid/rib/commits/master, select the
   # revision you would like to upgrade to and set it here. Consult rib's
   # ChangeLog.md to check any notes on API migration.
-  ribRevision = "d7d98f7";
+  ribRevision = "7d345d8ee0cbe78009427935641afb074abd68b0 ";
   nixpkgsRev = "5f14d99efed3";
   projectRoot = ./.;
 in {
@@ -15,6 +15,7 @@ in {
 , gitRev ? ""
 , source-overrides ? {}
 , pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
+, compiler ? pkgs.haskell.packages.ghc865
 , ...
 }:
 
@@ -55,16 +56,17 @@ let
     EOF
     '';
   sources = {
-    dsum = builtins.fetchTarball "https://github.com/obsidiansystems/dependent-sum/archive/73ab6cb.tar.gz";
+    dsum = builtins.fetchTarball "https://github.com/obsidiansystems/dependent-sum/archive/dependent-sum-0.6.2.2.tar.gz";
     # https://github.com/obsidiansystems/aeson-gadt-th/pull/22
     aeson-gadt-th = builtins.fetchTarball "https://github.com/srid/aeson-gadt-th/archive/ece1007.tar.gz";
+    reflex-dom = builtins.fetchTarball "https://github.com/reflex-frp/reflex-dom/archive/94c26076a71f229b5bd27128cf6fc0dbcba011ac.tar.gz";
 
     # commonmark is not on Hackage
     commonmark = import ./dep/commonmark-hs/thunk.nix;
   };
 
 in import rib { 
-    inherit name additional-packages; 
+    inherit name compiler additional-packages; 
     root = if root == "" then neuronRoot else root;
     source-overrides = {
       neuron = neuronRoot;
@@ -86,8 +88,25 @@ in import rib {
       doctemplates = import ./dep/doctemplates/thunk.nix;
       doclayout = import ./dep/doclayout/thunk.nix;
       jira-wiki-markup = import ./dep/jira-wiki-markup/thunk.nix;
+
+      # reflex-platform: matching its reflex overlay
+      prim-uniq = builtins.fetchTarball "https://github.com/obsidiansystems/prim-uniq/archive/0.1.0.1.tar.gz";
+      patch = builtins.fetchTarball "https://github.com/reflex-frp/patch/archive/25f202b4c05fe7f319a606667bb6873e1d386f56.tar.gz";
+      reflex-dom-core = sources.reflex-dom + "/reflex-dom-core";
+      chrome-test-utils = sources.reflex-dom + "/chrome-test-utils";
+      reflex = builtins.fetchTarball "https://github.com/reflex-frp/reflex/archive/3e81151f7d9a8b0e5d735ae2e0e438b3acc64e7b.tar.gz";
     } // source-overrides;
+
     overrides = self: super: with pkgs.haskell.lib; {
+      base-noprelude = null;
+
+      dependent-map = self.callHackage "dependent-map" "0.3.1.0" {};
+      witherable = self.callHackage "witherable" "0.3.1" {};
+      some = self.callHackage "some" "1.0.0.3" {};
+      reflex = dontCheck super.reflex;
+      reflex-dom-core = dontCheck super.reflex-dom-core;
+      patch = dontCheck super.patch;
+
       # We must add neuron-search as a runtime dependency to the 'neuron'
       # Haskell package so that other apps `import`ing this defafult.nix would
       # know where to find when building the neuron library dependency through

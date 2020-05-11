@@ -6,6 +6,7 @@
   - Markdown parsing is consequently less strict and more permissive
   - With this change, neuron can potentially support other text formats (org,
     reST, etc.)
+- Switch to GHC 8.6 (for reflex-dom)
 
 ## 0.4.0.0
 
