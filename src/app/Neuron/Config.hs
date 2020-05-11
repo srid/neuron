@@ -17,7 +17,6 @@ module Neuron.Config
     configFile,
     getConfig,
     BaseUrlError (..),
-    getMarkdownExtensions,
   )
 where
 
@@ -31,9 +30,6 @@ import Relude
 import qualified Rib
 import System.Directory
 import System.FilePath
-import qualified Text.MMark as MMark
-import qualified Text.MMark.Extension.Common as Ext
-import Text.MMark.Extension.SetTableClass (setTableClass)
 
 -- | Config type for @neuron.dhall@
 --
@@ -76,19 +72,3 @@ getConfig = do
 parseConfig :: MonadIO m => Text -> m Config
 parseConfig s =
   liftIO $ Dhall.input Dhall.auto s
-
-getMarkdownExtensions :: Config -> [MMark.Extension]
-getMarkdownExtensions Config {..} =
-  defaultExts
-    <> bool [] [Ext.mathJax (Just '$')] mathJaxSupport
-  where
-    defaultExts :: [MMark.Extension]
-    defaultExts =
-      [ Ext.fontAwesome,
-        Ext.footnotes,
-        Ext.kbd,
-        Ext.linkTarget,
-        Ext.punctuationPrettifier,
-        Ext.skylighting,
-        setTableClass "ui celled table"
-      ]

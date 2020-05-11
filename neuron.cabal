@@ -157,9 +157,6 @@ common app-common
       Neuron.Zettelkasten.Graph.Type
       Neuron.Zettelkasten.ID.Scheme
       Paths_neuron
-      Text.MMark.Extension.ReplaceLink
-      Text.MMark.Extension.SetTableClass
-      Text.MMark.MarkdownLink
       Text.Megaparsec.Simple
 
 test-suite neuron-test
