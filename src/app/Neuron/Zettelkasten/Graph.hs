@@ -26,8 +26,8 @@ module Neuron.Zettelkasten.Graph
   )
 where
 
-import Control.Monad.Except
-import Control.Monad.Writer
+import Control.Monad.Except (MonadError, liftEither, runExceptT, withExceptT)
+import Control.Monad.Writer (runWriterT)
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
 import Data.Traversable (for)
