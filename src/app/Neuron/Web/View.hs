@@ -268,7 +268,7 @@ renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
           else Nothing
   span_ [class_ "zettel-link-container"] $ do
     forM_ mextra $ \extra ->
-      span_ [class_ "extra"] extra
+      span_ [class_ "extra monoFont"] extra
     let linkTooltip =
           if null zettelTags
             then Nothing

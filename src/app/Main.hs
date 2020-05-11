@@ -69,6 +69,6 @@ mainStyle cfg = "div#thesite" ? do
     C.fontFamily [headerFont] [C.sansSerif]
   "img" ? do
     C.maxWidth $ pct 100 -- Prevents large images from overflowing beyond zettel borders
-  "code, pre, tt" ? do
+  "code, pre, tt, .monoFont" ? do
     fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [monospace]
   style cfg

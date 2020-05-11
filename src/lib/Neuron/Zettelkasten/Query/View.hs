@@ -91,7 +91,7 @@ buildQueryView = \case
               [ if linkViewShowDate
                   then case zettelDay of
                     Just day ->
-                      Just $ B.Span (mkAttr "extra" mempty) $ pure $ B.Str $ show day
+                      Just $ B.Span (mkAttr "extra monoFont" mempty) $ pure $ B.Str $ show day
                     Nothing -> Nothing
                   else Nothing,
                 Just $ B.Span (mkAttr "zettel-link" $ semanticUITooltipAttrs linkTooltip) $ pure $
