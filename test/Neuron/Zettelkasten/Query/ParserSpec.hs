@@ -10,6 +10,7 @@ where
 import Data.Default (def)
 import Data.Some
 import Data.TagTree
+import Neuron.Markdown
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
@@ -17,7 +18,6 @@ import Neuron.Zettelkasten.Query.Parser
 import Neuron.Zettelkasten.Query.Theme
 import Relude
 import Test.Hspec
-import Text.MMark.MarkdownLink
 import Text.URI
 
 spec :: Spec
