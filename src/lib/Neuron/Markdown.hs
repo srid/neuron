@@ -33,8 +33,9 @@ import qualified Text.URI as URI
 -- we actually need it), and instead directly decoding the metadata as Haskell
 -- object.
 parseMarkdown :: forall meta. YAML.FromYAML meta => FilePath -> Text -> Either Text (meta, Pandoc)
-parseMarkdown fn (partitionMarkdown fn -> (metaVal, s)) = do
-  v <- commonmarkPandocWith neuronSpec "markdown" s
+parseMarkdown fn s = do
+  (metaVal, markdown) <- partitionMarkdown fn s
+  v <- commonmarkPandocWith neuronSpec "markdown" markdown
   meta <- parseMeta metaVal
   pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
   where
@@ -56,9 +57,9 @@ parseMarkdown fn (partitionMarkdown fn -> (metaVal, s)) = do
       first show . join . CM.commonmarkWith spec n
 
 -- | Identify metadata block at the top, and split it from markdown body.
-partitionMarkdown :: FilePath -> Text -> (Text, Text)
+partitionMarkdown :: FilePath -> Text -> Either Text (Text, Text)
 partitionMarkdown fn =
-  either error id . parse splitP fn
+  parse splitP fn
   where
     separatorP :: Parser ()
     separatorP =

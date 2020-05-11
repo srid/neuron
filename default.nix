@@ -88,7 +88,6 @@ in import rib {
       jira-wiki-markup = import ./dep/jira-wiki-markup/thunk.nix;
     } // source-overrides;
     overrides = self: super: with pkgs.haskell.lib; {
-      texmath = doJailbreak super.texmath;
       # We must add neuron-search as a runtime dependency to the 'neuron'
       # Haskell package so that other apps `import`ing this defafult.nix would
       # know where to find when building the neuron library dependency through

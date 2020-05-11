@@ -28,8 +28,6 @@ instance Show NeuronError where
                 "with unsupported host"
               QueryParseError_InvalidID _uri e'' ->
                 "with invalidID: " <> show e''
-              QueryParseError_BadLocation _uri ->
-                "is located in bad location in source"
           Right (QueryResultError_NoSuchZettel zid) ->
             "Zettel "
               <> zettelIDText zid
