@@ -13,6 +13,10 @@ let
     '';
 
 in {
+  shellToolOverrides = ghc: super: {
+    inherit neuronSearchScript;
+  };
+
   packages = {
     neuron = ./.;
     # TODO: expose these overrides so it can be used in the other project
