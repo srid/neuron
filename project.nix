@@ -181,6 +181,18 @@ in {
     hslua = dontCheck super.hslua;
     parsers = dontCheck super.parsers;
 
+    # Try to use the latest version for fixes.
+    skylighting-core = dontCheck (self.callHackageDirect {
+        pkg = "skylighting-core";
+        ver = "0.8.4";
+        sha256 = "10k7r67a14pxlwd4zd0j06s3gdh09g6bjgsn6mlg3aha9nj52rgl"; 
+    } {});
+    skylighting = dontCheck (self.callHackageDirect {
+        pkg = "skylighting";
+        ver = "0.8.4";
+        sha256 = "0vcw9p0hs0s21xrxymbpbjzz6f8x7683y25p5kl4d9m9x6kblb9c"; 
+    } {});
+
     #skylighting-core = skylighting-core;
     #skylighting = overrideCabal super.skylighting (drv: {
     #  preConfigure = ''
