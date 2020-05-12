@@ -64,6 +64,20 @@ in {
       isLibrary = true;
       configureFlags = [ "-fexecutable" ];  # We need the CLI tool later.
     });
+
+    # Strip off the library part, so we trim out dependencies to only those
+    # needed by the executable.
+    #
+    # FIXME: This causes cyclic references, with the binary depending on the
+    # library derivation (`strings` on the executable reports
+    # "lib/ghc-8.6.5/x86_64-linux-ghc-8.6.5" etc).
+    #
+    # Might also be related to this:
+    #  https://github.com/NixOS/cabal2nix/issues/433
+    makeExecutable = x: overrideCabal x (drv: {
+      enableSeparateBinOutput = true;
+      enableSeparateDataOutput = true;
+    });
   in {
     neuron = super.neuron.overrideDerivation (drv: {
         propagatedBuildInputs = drv.propagatedBuildInputs ++ [neuronSearchScript];
