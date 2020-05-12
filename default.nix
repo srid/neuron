@@ -91,13 +91,11 @@ in {
         sha256 = "05mcxhnclblzaqq4blmpk4mp37rq7b19jfq6vwxz15629gfxby7p"; 
     } {}));
 
-
     relude = self.callHackageDirect {
         pkg = "relude";
         ver = "0.6.0.0";
         sha256 = "1x2d7w3dm10lcz5k9ryy1hy8mwh53cjnriqzz7rqfxxcxnsgzl5l";
     } {};
-
 
     with-utf8 = self.callHackageDirect {
         pkg = "with-utf8";
@@ -145,7 +143,6 @@ in {
         sha256 = "1s7pv3jz8s1qb0ydcc5nra9f63jp4ay4d0vncv919bakf8snj4vw"; 
     } {});
 
-
     algebraic-graphs = dontCheck super.algebraic-graphs;
     clay = dontCheck super.clay;
     Glob = dontCheck super.Glob;
@@ -180,7 +177,6 @@ in {
       isLibrary = true;
     }); 
   };
-
 
   shells = {
     ghc = ["neuron"];

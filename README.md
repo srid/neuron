@@ -21,7 +21,7 @@ See [neuron.zettel.page](https://neuron.zettel.page/) for the full guide to inst
 
 ## Developing
 
-When modifying `src/Neuron`, use ghcid as instructed as follows to monitor compile errors:
+When modifying `src`, use ghcid as instructed as follows to monitor compile errors:
 
 ```bash
 nix-shell --run ghcid
