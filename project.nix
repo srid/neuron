@@ -44,8 +44,8 @@ in {
 
     # pandoc
     pandoc = hackGet ./dep/pandoc;
-    skylighting = skylighting + "/skylighting";
-    skylighting-core = skylighting + "/skylighting-core";
+    #skylighting = skylighting + "/skylighting";
+    #skylighting-core = skylighting + "/skylighting-core";
     regex-base = hackGet ./dep/regex-base;
     regex-posix = hackGet ./dep/regex-posix;
     regex-pcre = hackGet ./dep/regex-pcre;
@@ -181,15 +181,16 @@ in {
     hslua = dontCheck super.hslua;
     parsers = dontCheck super.parsers;
 
-    skylighting-core = skylighting-core;
-    skylighting = overrideCabal super.skylighting (drv: {
-      preConfigure = ''
-        ${skylighting-core}/bin/skylighting-extract ${skylighting-core}/xml/*.xml
-        rm -f changelog.md; touch changelog.md  # Workaround failing symlink access
-      '';
-      isExecutable = true;
-      isLibrary = true;
-    }); 
+    #skylighting-core = skylighting-core;
+    #skylighting = overrideCabal super.skylighting (drv: {
+    #  preConfigure = ''
+    #    ls -l ${skylighting-core}/xml/*.xml
+    #    ${skylighting-core}/bin/skylighting-extract ${skylighting-core}/xml/*.xml
+    #    rm -f changelog.md; touch changelog.md  # Workaround failing symlink access
+    #  '';
+    #  isExecutable = true;
+    #  isLibrary = true;
+    #}); 
   };
 
   shells = {
