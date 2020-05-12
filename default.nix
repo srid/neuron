@@ -22,6 +22,7 @@ in {
     # TODO: expose these overrides so it can be used in the other project
     #that uses neuron as a thunk.
 
+    reflex-dom-pandoc = hackGet ./dep/reflex-dom-pandoc;
     shake = hackGet ./dep/shake;
     
     # commonmark

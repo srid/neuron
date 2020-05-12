@@ -63,7 +63,8 @@ common library-common
     dependent-sum-template,
     data-default,
     reflex,
-    reflex-dom-core
+    reflex-dom-core,
+    reflex-dom-pandoc,
 
 library
   import: library-common

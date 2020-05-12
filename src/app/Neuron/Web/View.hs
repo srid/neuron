@@ -47,10 +47,13 @@ import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDTe
 import Neuron.Zettelkasten.Query.Theme (LinkView (..))
 import Neuron.Zettelkasten.Query.View (zettelUrl)
 import Neuron.Zettelkasten.Zettel
+import Reflex.Dom.Core (renderStatic)
+import Reflex.Dom.Pandoc.Document (elPandocDoc)
 import Relude
 import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
-import qualified Rib.Parser.Pandoc as Pandoc
+-- TODO: nope.
+import System.IO.Unsafe (unsafePerformIO)
 import Text.Pandoc.Highlighting (styleToCss, tango)
 import Text.URI.QQ
 
@@ -155,8 +158,8 @@ renderZettel Config {..} (graph, z@Zettel {..}) zid = do
     div_ [class_ "ui raised segments"] $ do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
-        -- TODO: Use reflex-dom-pandoc eventually
-        Pandoc.render zettelContent
+        -- TODO: Won't need IO once we switch over completely to reflex-dom.
+        toHtmlRaw $ unsafePerformIO $ fmap snd $ renderStatic $ elPandocDoc zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
         forM_ zettelDay $ \day ->
