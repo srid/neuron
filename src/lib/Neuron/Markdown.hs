@@ -10,7 +10,6 @@ module Neuron.Markdown where
 import qualified Commonmark as CM
 import qualified Commonmark.Blocks as CM
 import qualified Commonmark.Extensions as CE
--- import qualified Commonmark.Html as CM
 import qualified Commonmark.Pandoc as CP
 import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
@@ -143,7 +142,7 @@ neuronSpec =
   where
     -- Emoji extension introduces ghcjs linker issues
     gfmExtensionsWithEmoji =
-      CE.strikethroughSpec <> CE.pipeTableSpec <> CE.autolinkSpec
+      CE.strikethroughSpec <> CE.pipeTableSpec -- <> CE.autolinkSpec
         <> CE.autoIdentifiersSpec
         <> CE.taskListSpec
 
