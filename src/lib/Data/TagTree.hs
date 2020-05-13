@@ -23,6 +23,7 @@ import qualified Data.Map.Strict as Map
 import Data.PathTree (annotatePathsWith, foldSingleParentsWith, mkTreeFromPaths)
 import qualified Data.Text as T
 import Data.Tree (Forest)
+import Data.YAML (FromYAML)
 import Relude
 import System.FilePattern
 import qualified Text.Megaparsec as M
@@ -31,7 +32,7 @@ import Text.Megaparsec.Simple
 
 -- | Tag metadata field in Zettel notes
 newtype Tag = Tag {unTag :: Text}
-  deriving (Eq, Ord, Show, ToJSON, FromJSON)
+  deriving (Eq, Ord, Show, ToJSON, FromJSON, FromYAML)
 
 --------------
 -- Tag Pattern

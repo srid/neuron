@@ -1,5 +1,13 @@
 # Change Log for neuron
 
+## 0.5.0.0 (UNRELEASED)
+
+- Markdown: switch to Pandoc, and commonmark. #166
+  - Markdown parsing is consequently less strict and more permissive
+  - With this change, neuron can potentially support other text formats (org,
+    reST, etc.)
+- Switch to GHC 8.6 (for reflex-dom)
+
 ## 0.4.0.0
 
 - Notable changes

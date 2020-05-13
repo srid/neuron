@@ -12,12 +12,11 @@ import Data.Aeson
 import Data.Graph.Labelled (Vertex (..))
 import Data.TagTree (Tag)
 import Data.Time.Calendar
+import Neuron.Markdown
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude hiding (show)
-import Text.MMark (MMark)
-import qualified Text.MMark as MMark
-import qualified Text.Megaparsec as M
+import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
 
 data ZettelT content = Zettel
@@ -28,7 +27,7 @@ data ZettelT content = Zettel
     zettelContent :: content
   }
 
-type Zettel = ZettelT MMark
+type Zettel = ZettelT Pandoc
 
 instance Eq (ZettelT c) where
   (==) = (==) `on` zettelID
@@ -58,12 +57,11 @@ zettelJson Zettel {..} =
 mkZettelFromMarkdown ::
   ZettelID ->
   Text ->
-  ((Text, MMark) -> content) ->
+  ((Text, Pandoc) -> content) ->
   Either Text (ZettelT content)
 mkZettelFromMarkdown zid s selectContent = do
-  doc <- parseMarkdown (toString $ zettelIDText zid) s
-  let meta = Meta.getMeta doc
-      title = maybe "Missing title" Meta.title meta
+  (meta, doc) <- parseMarkdown (zettelIDSourceFileName zid) s
+  let title = maybe "Missing title" Meta.title meta
       tags = fromMaybe [] $ Meta.tags =<< meta
       day = case zid of
         -- We ignore the "data" meta field on legacy Date IDs, which encode the
@@ -72,6 +70,3 @@ mkZettelFromMarkdown zid s selectContent = do
         ZettelCustomID _ -> Meta.date =<< meta
   pure $
     Zettel zid title tags day (selectContent (s, doc))
-  where
-    parseMarkdown k =
-      first (toText . M.errorBundlePretty) . MMark.parse k

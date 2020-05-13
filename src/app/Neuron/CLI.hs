@@ -42,7 +42,7 @@ run act = do
   where
     versionOption =
       infoOption
-        (toString Version.neuronVersionFull)
+        (toString Version.neuronVersion)
         (long "version" <> help "Show version")
 
 runWith :: Action () -> App -> IO ()

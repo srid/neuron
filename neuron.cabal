@@ -1,8 +1,8 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 0.4.0.0
-license: BSD-3-Clause
+version: 0.5.0.0
+license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
 author: Sridhar Ratnakumar
@@ -50,17 +50,39 @@ common library-common
     parser-combinators,
     containers,
     filepattern,
-    mmark,
-    megaparsec
+    megaparsec,
+    commonmark,
+    commonmark-extensions,
+    commonmark-pandoc,
+    pandoc-types,
+    parsec,
+    modern-uri,
+    HsYAML,
+    aeson-gadt-th,
+    dependent-sum,
+    dependent-sum-template,
+    data-default,
+    reflex,
+    reflex-dom-core,
+    reflex-dom-pandoc,
 
 library
   import: library-common
   hs-source-dirs: src/lib
   exposed-modules:
+    Neuron.Markdown
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
+    Neuron.Zettelkasten.Connection
+    Neuron.Zettelkasten.Query
+    Neuron.Zettelkasten.Query.Error
+    Neuron.Zettelkasten.Query.Eval
+    Neuron.Zettelkasten.Query.Parser
+    Neuron.Zettelkasten.Query.Theme
+    Neuron.Zettelkasten.Query.View
     Text.Megaparsec.Simple
+    Text.URI.Util
     Data.TagTree
     Data.PathTree
     Data.Graph.Labelled
@@ -83,17 +105,15 @@ common app-common
     directory,
     exceptions,
     file-embed,
-    gitrev,
     lucid -any,
     optparse-applicative,
     pandoc,
+    skylighting-core,
     relude,
-    rib ^>=0.10,
+    rib ^>=0.11,
     shake -any,
     time,
     text,
-    mmark,
-    mmark-ext,
     modern-uri,
     foldl,
     filepath,
@@ -103,11 +123,11 @@ common app-common
     megaparsec >= 8.0,
     dependent-sum,
     dependent-sum-template,
-    aeson-gadt-th,
     data-default,
     uuid,
     shake,
-    with-utf8
+    with-utf8,
+    shower
   if (!flag(ghcid))
     autogen-modules:
       Paths_neuron
@@ -127,31 +147,17 @@ common app-common
       Neuron.Config
       Neuron.Config.Alias
       Neuron.Version
-      Neuron.Version.RepoVersion
       Neuron.Web.Generate
       Neuron.Web.Route
       Neuron.Web.Theme
       Neuron.Web.View
-      Neuron.Zettelkasten.Connection
+      Neuron.Markdown
       Neuron.Zettelkasten.Error
       Neuron.Zettelkasten.Graph
       Neuron.Zettelkasten.Graph.Type
-      Neuron.Zettelkasten.ID
       Neuron.Zettelkasten.ID.Scheme
-      Neuron.Zettelkasten.Query
-      Neuron.Zettelkasten.Query.Error
-      Neuron.Zettelkasten.Query.Eval
-      Neuron.Zettelkasten.Query.Parser
-      Neuron.Zettelkasten.Query.Theme
-      Neuron.Zettelkasten.Query.View
-      Neuron.Zettelkasten.Zettel
-      Neuron.Zettelkasten.Zettel.Meta
       Paths_neuron
-      Text.MMark.Extension.ReplaceLink
-      Text.MMark.Extension.SetTableClass
-      Text.MMark.MarkdownLink
       Text.Megaparsec.Simple
-      Text.URI.Util
 
 test-suite neuron-test
   import: app-common
@@ -178,6 +184,7 @@ test-suite neuron-test
 
 -- The executable stanza should always be at the end. The other project will
 -- strip it to avoid non-core dependencies.
+-- To profile: ghc-options: -fexternal-interpreter -prof -fprof-auto -rtsopts
 executable neuron
   import: app-common
   main-is: Main.hs

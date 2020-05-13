@@ -50,13 +50,13 @@ renderPage config r val = html_ [lang_ "en"] $ do
     $ renderRouteBody config r val
 
 headerFont :: Text
-headerFont = "Oswald"
+headerFont = "DM Serif Text"
 
 bodyFont :: Text
-bodyFont = "Open Sans"
+bodyFont = "DM Sans"
 
 monoFont :: Text
-monoFont = "Roboto Mono"
+monoFont = "DM Mono"
 
 mainStyle :: Config -> Css
 mainStyle cfg = "div#thesite" ? do
@@ -65,8 +65,10 @@ mainStyle cfg = "div#thesite" ? do
   C.paddingBottom $ em 1
   "p" ? do
     C.lineHeight $ pct 150
-  "h1, h2, h3, h4, h5, h6, .ui.header" ? do
+  "h1, h2, h3, h4, h5, h6, .ui.header, .headerFont" ? do
     C.fontFamily [headerFont] [C.sansSerif]
   "img" ? do
     C.maxWidth $ pct 100 -- Prevents large images from overflowing beyond zettel borders
+  "code, pre, tt, .monoFont" ? do
+    fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [monospace]
   style cfg
