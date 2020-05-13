@@ -320,17 +320,13 @@ style Config {..} = do
       C.paddingTop $ em 0.2
       C.paddingBottom $ em 0.2
       C.textAlign C.center
-      C.fontWeight $ weight 700
       C.backgroundColor $ Theme.withRgb neuronTheme C.rgba 0.1
     C.h2 ? do
-      C.fontWeight $ weight 600
       C.borderBottom C.solid (px 1) C.steelblue
       C.marginBottom $ em 0.5
     C.h3 ? do
-      C.fontWeight $ weight 400
       C.margin (px 0) (px 0) (em 0.4) (px 0)
     C.h4 ? do
-      C.fontWeight $ weight 300
       C.opacity 0.8
     codeStyle
     blockquoteStyle
