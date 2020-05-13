@@ -4,9 +4,7 @@
 
 module Neuron.Version where
 
-import qualified Data.Text as T
 import Data.Version (parseVersion, showVersion)
-import qualified Neuron.Version.RepoVersion as RepoVersion
 import Paths_neuron (version)
 import Relude
 import Text.ParserCombinators.ReadP (readP_to_S)
@@ -14,12 +12,6 @@ import Text.ParserCombinators.ReadP (readP_to_S)
 -- | Neuron cabal library version
 neuronVersion :: Text
 neuronVersion = toText $ showVersion version
-
--- | Neuron full version (cabal library version + git revision)
-neuronVersionFull :: Text
-neuronVersionFull
-  | Just gitVersion <- RepoVersion.version =  T.concat [neuronVersion, " (", gitVersion, ")"]
-  | otherwise = neuronVersion
 
 -- | Check if `neuronVersion` is older than the given version
 olderThan :: Text -> Bool

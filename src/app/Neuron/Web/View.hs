@@ -37,7 +37,7 @@ import Data.Tree (Tree (..))
 import Lucid
 import Lucid.Base (makeAttribute)
 import Neuron.Config
-import Neuron.Version (neuronVersionFull)
+import Neuron.Version (neuronVersion)
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
@@ -206,7 +206,7 @@ renderBrandFooter withVersion =
         a_ [href_ "https://neuron.zettel.page"] "Neuron"
         when withVersion $ do
           " "
-          code_ $ toHtml @Text neuronVersionFull
+          code_ $ toHtml @Text neuronVersion
 
 renderTags :: Monad m => [Tag] -> HtmlT m ()
 renderTags tags = do

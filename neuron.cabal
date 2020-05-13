@@ -105,7 +105,6 @@ common app-common
     directory,
     exceptions,
     file-embed,
-    gitrev,
     lucid -any,
     optparse-applicative,
     pandoc,
@@ -148,7 +147,6 @@ common app-common
       Neuron.Config
       Neuron.Config.Alias
       Neuron.Version
-      Neuron.Version.RepoVersion
       Neuron.Web.Generate
       Neuron.Web.Route
       Neuron.Web.Theme

@@ -192,17 +192,6 @@ in {
         ver = "0.8.4";
         sha256 = "0vcw9p0hs0s21xrxymbpbjzz6f8x7683y25p5kl4d9m9x6kblb9c"; 
     } {});
-
-    #skylighting-core = skylighting-core;
-    #skylighting = overrideCabal super.skylighting (drv: {
-    #  preConfigure = ''
-    #    ls -l ${skylighting-core}/xml/*.xml
-    #    ${skylighting-core}/bin/skylighting-extract ${skylighting-core}/xml/*.xml
-    #    rm -f changelog.md; touch changelog.md  # Workaround failing symlink access
-    #  '';
-    #  isExecutable = true;
-    #  isLibrary = true;
-    #}); 
   };
 
   shells = {
