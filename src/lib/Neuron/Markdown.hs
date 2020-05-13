@@ -66,7 +66,7 @@ partitionMarkdown fn =
     splitP :: Parser (Text, Text)
     splitP = do
       separatorP
-      a <- toText <$> manyTill M.anySingle separatorP
+      a <- toText <$> manyTill M.anySingle (M.try $ M.eol *> separatorP)
       b <- M.takeRest
       pure (a, b)
 
