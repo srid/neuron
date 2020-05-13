@@ -1,8 +1,8 @@
 {
-  "owner": "jgm",
+  "owner": "srid",
   "repo": "commonmark-hs",
-  "branch": "master",
+  "branch": "rawHtmlSpec",
   "private": false,
-  "rev": "c9afe7c1ca25dbc1f0580187bb422bd1681ae1b5",
-  "sha256": "0dhj554jfa5m4s4dfbwnbrkxfnk22b7bgrsjdl5fijw3m6lslfyk"
+  "rev": "0104cbd7261bf96a27a921c286f4f4882e297f54",
+  "sha256": "0j2sdv80xg109zbnk40rx282rj885lm2wswy527mrdg71vh0ff73"
 }

@@ -175,6 +175,6 @@ defaultBlockSpecsSansRawHtml =
     CM.setextHeadingSpec,
     CM.thematicBreakSpec,
     CM.listItemSpec (CM.bulletListMarker <|> CM.orderedListMarker),
-    -- , rawHtmlSpec
+    CM.rawHtmlSpec False,
     CM.attributeSpec
   ]
