@@ -362,6 +362,7 @@ style Config {..} = do
   "div#footnotes" ? do
     C.marginTop $ em 4
     C.borderTop C.groove (px 2) linkColor
+    C.fontSize $ em 0.9
   -- reflex-dom-pandoc footnote aside elements
   -- (only used for footnotes defined inside footnotes)
   "aside.footnote-inline" ? do
