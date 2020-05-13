@@ -1,6 +1,16 @@
 { system ? builtins.currentSystem }:
 (import ./dep/reflex-platform { inherit system; }).project ({ pkgs, hackGet, ... }: 
 let 
+  gitignoreSrc = pkgs.fetchFromGitHub { 
+    owner = "hercules-ci";
+    repo = "gitignore";
+    # put the latest commit sha of gitignore Nix library here:
+    rev = "00b237f";
+    # use what nix suggests in the mismatch message here:
+    sha256 = "sha256:186pvp1y5fid8mm8c7ycjzwzhv7i6s3hh33rbi05ggrs7r3as3yy";
+  };
+  inherit (import gitignoreSrc { inherit (pkgs) lib; }) gitignoreSource;
+
   commonmark = hackGet ./dep/commonmark-hs;
   skylighting = hackGet ./dep/skylighting;
   test-framework = hackGet ./dep/test-framework;
@@ -18,7 +28,7 @@ in {
   };
 
   packages = {
-    neuron = ./.;
+    neuron = gitignoreSource ./.;
     # TODO: expose these overrides so it can be used in the other project
     #that uses neuron as a thunk.
 
