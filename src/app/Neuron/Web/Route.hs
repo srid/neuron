@@ -23,7 +23,8 @@ import Relude
 import Rib (IsRoute (..), routeUrl, routeUrlRel)
 import Rib.Extra.OpenGraph
 import qualified Rib.Parser.Pandoc as Pandoc
-import Text.Pandoc
+import Text.Pandoc (def, runPure, writePlain)
+import Text.Pandoc.Definition (Block (Plain), Inline, Pandoc (..))
 import qualified Text.URI as URI
 
 data Route graph a where

@@ -53,8 +53,10 @@ import Relude
 import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
 -- TODO: nope.
+
+import qualified Skylighting.Format.HTML as Skylighting
+import qualified Skylighting.Styles as Skylighting
 import System.IO.Unsafe (unsafePerformIO)
-import Text.Pandoc.Highlighting (styleToCss, tango)
 import Text.URI.QQ
 
 searchScript :: Text
@@ -76,7 +78,7 @@ renderRouteHead config r val = do
     _ -> do
       toHtml $ routeOpenGraph config (snd val) r
       toHtml $ routeStructuredData config val r
-      style_ [type_ "text/css"] $ styleToCss tango
+      style_ [type_ "text/css"] $ Skylighting.styleToCss Skylighting.tango
   where
     routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
     routeStructuredData Config {..} (graph, v) = \case
@@ -371,7 +373,7 @@ style Config {..} = do
         sym padding $ em 0.5
         C.overflow auto
         C.maxWidth $ pct 100
-      "div.source-code" ? do
+      "div.pandoc-code" ? do
         marginLeft auto
         marginRight auto
         pre ? do
