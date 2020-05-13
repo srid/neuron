@@ -10,6 +10,9 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- TODO: This module currently uses Pandoc AST to "render" stuff, but soonish it
+-- will all be replaced by reflex-dom. See
+-- https://github.com/srid/neuron/issues/170
 module Neuron.Zettelkasten.Query.View
   ( buildQueryView,
     zettelUrl,

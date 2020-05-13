@@ -135,7 +135,6 @@ neuronSpec =
   mconcat
     [ angleBracketLinkSpec,
       gfmExtensionsWithEmoji,
-      -- TODO: This needs a proper renderer in reflex-dom-pandoc
       CE.footnoteSpec,
       CE.mathSpec,
       CE.smartPunctuationSpec,

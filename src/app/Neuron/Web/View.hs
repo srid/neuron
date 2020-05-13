@@ -52,8 +52,6 @@ import Reflex.Dom.Pandoc.Document (elPandocDoc)
 import Relude
 import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
--- TODO: nope.
-
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
 import System.IO.Unsafe (unsafePerformIO)
@@ -260,7 +258,6 @@ renderForest isRoot maxLevel renderingFullTree g trees =
     sortForest = reverse . sortOn maximum
 
 -- | Render a link to an individual zettel.
--- TODO: Remove and consolidate this with pandoc AST function in `Query.View` module
 renderZettelLink :: forall m. Monad m => Maybe LinkView -> Zettel -> HtmlT m ()
 renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
   let mextra =
