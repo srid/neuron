@@ -1,5 +1,5 @@
 let search = "",
-    selectedTags = [];
+  selectedTags = [];
 
 let searchResults = document.getElementById("search-results"); // ul element
 let searchInput = document.getElementById("search-input");
@@ -7,24 +7,20 @@ let searchInput = document.getElementById("search-input");
 
 // Create a zettel link from a zettel object
 function makeZettelLink(zettel) {
+  let container = document.createElement("span");
+  container.classList.add("zettel-link-container");
+
   let zettelLink = document.createElement("span");
   zettelLink.classList.add("zettel-link");
 
-  let idLink = document.createElement("span");
-  idLink.classList.add("zettel-link-idlink");
-
   let actualLink = document.createElement("a");
   actualLink.href = zettel.id + ".html";
-  actualLink.innerHTML = zettel.id;
-  idLink.appendChild(actualLink);
-  zettelLink.appendChild(idLink);
+  actualLink.innerHTML = zettel.title;
 
-  let linkTitle = document.createElement("span");
-  linkTitle.classList.add("zettel-link-title");
-  linkTitle.innerHTML = zettel.title;
-  zettelLink.appendChild(linkTitle);
+  zettelLink.appendChild(actualLink);
+  container.appendChild(zettelLink);
 
-  return zettelLink;
+  return container;
 }
 
 // Renders the results as a list
@@ -91,7 +87,7 @@ rebuildSearchIndex();
 initializeSearchFromURL();
 
 $('#search-input').on("change paste keyup", runSearch)
-                  .focus();
+  .focus();
 
 $('#search-tags').dropdown({
   onChange: (value) => {
