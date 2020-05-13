@@ -35,18 +35,17 @@ import qualified Text.URI as URI
 parseMarkdown :: forall meta. YAML.FromYAML meta => FilePath -> Text -> Either Text (meta, Pandoc)
 parseMarkdown fn s = do
   (metaVal, markdown) <- partitionMarkdown fn s
-  v <- commonmarkPandocWith neuronSpec "markdown" markdown
-  meta <- parseMeta metaVal
+  v <- commonmarkPandocWith neuronSpec fn markdown
+  meta <- parseMeta fn metaVal
   pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
   where
     -- NOTE: HsYAML parsing is rather slow due to its use of DList.
     -- See https://github.com/haskell-hvr/HsYAML/issues/40
-    parseMeta :: Text -> Either Text meta
-    parseMeta v = do
-      vals <- bimap show nonEmpty $ YAML.decode (encodeUtf8 v)
-      case vals of
-        Just valsNE -> pure $ head valsNE
-        Nothing -> throwError "No YAML values"
+    parseMeta :: FilePath -> Text -> Either Text meta
+    parseMeta n v = do
+      let raw = encodeUtf8 v
+      let mkError (loc, emsg) = toText $ n <> ":" <> YAML.prettyPosWithSource loc raw " error" <> emsg
+      first mkError $ YAML.decode1 raw
     -- Like commonmarkWith, but parses directly into the Pandoc AST.
     commonmarkPandocWith ::
       CM.SyntaxSpec (Either P.ParseError) (CP.Cm () B.Inlines) (CP.Cm () B.Blocks) ->
