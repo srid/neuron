@@ -37,7 +37,7 @@ import Data.Tree (Tree (..))
 import Lucid
 import Lucid.Base (makeAttribute)
 import Neuron.Config
-import Neuron.Version (neuronVersionFull)
+import Neuron.Version (neuronVersion)
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
@@ -47,11 +47,16 @@ import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDTe
 import Neuron.Zettelkasten.Query.Theme (LinkView (..))
 import Neuron.Zettelkasten.Query.View (zettelUrl)
 import Neuron.Zettelkasten.Zettel
+import Reflex.Dom.Core (renderStatic)
+import Reflex.Dom.Pandoc.Document (elPandocDoc)
 import Relude
 import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
-import qualified Rib.Parser.Pandoc as Pandoc
-import Text.Pandoc.Highlighting (styleToCss, tango)
+-- TODO: nope.
+
+import qualified Skylighting.Format.HTML as Skylighting
+import qualified Skylighting.Styles as Skylighting
+import System.IO.Unsafe (unsafePerformIO)
 import Text.URI.QQ
 
 searchScript :: Text
@@ -73,7 +78,7 @@ renderRouteHead config r val = do
     _ -> do
       toHtml $ routeOpenGraph config (snd val) r
       toHtml $ routeStructuredData config val r
-      style_ [type_ "text/css"] $ styleToCss tango
+      style_ [type_ "text/css"] $ Skylighting.styleToCss Skylighting.tango
   where
     routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
     routeStructuredData Config {..} (graph, v) = \case
@@ -155,8 +160,8 @@ renderZettel Config {..} (graph, z@Zettel {..}) zid = do
     div_ [class_ "ui raised segments"] $ do
       div_ [class_ "ui top attached segment"] $ do
         h1_ [class_ "header"] $ toHtml zettelTitle
-        -- TODO: Use reflex-dom-pandoc eventually
-        Pandoc.render zettelContent
+        -- TODO: Won't need IO once we switch over completely to reflex-dom.
+        toHtmlRaw $ unsafePerformIO $ fmap snd $ renderStatic $ elPandocDoc zettelContent
         whenNotNull zettelTags $ \_ ->
           renderTags zettelTags
         forM_ zettelDay $ \day ->
@@ -201,7 +206,7 @@ renderBrandFooter withVersion =
         a_ [href_ "https://neuron.zettel.page"] "Neuron"
         when withVersion $ do
           " "
-          code_ $ toHtml @Text neuronVersionFull
+          code_ $ toHtml @Text neuronVersion
 
 renderTags :: Monad m => [Tag] -> HtmlT m ()
 renderTags tags = do
@@ -354,6 +359,18 @@ style Config {..} = do
     C.fontSize $ em 0.7
   "[data-tooltip]:after" ? do
     C.fontSize $ em 0.7
+  "div#footnotes" ? do
+    C.marginTop $ em 4
+    C.borderTop C.groove (px 2) linkColor
+    C.fontSize $ em 0.9
+  -- reflex-dom-pandoc footnote aside elements
+  -- (only used for footnotes defined inside footnotes)
+  "aside.footnote-inline" ? do
+    C.width $ pct 30
+    C.paddingLeft $ px 15
+    C.marginLeft $ px 15
+    C.float C.floatRight
+    C.backgroundColor C.lightgray
   where
     codeStyle = do
       C.code ? do
@@ -368,7 +385,7 @@ style Config {..} = do
         sym padding $ em 0.5
         C.overflow auto
         C.maxWidth $ pct 100
-      "div.source-code" ? do
+      "div.pandoc-code" ? do
         marginLeft auto
         marginRight auto
         pre ? do
