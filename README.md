@@ -42,3 +42,29 @@ Unit tests can be run via ghcid as follows:
 ```
 bin/test
 ```
+
+### Developing on reflex-dom-pandoc
+
+Neuron delegates HTML rendering of the Pandoc AST to reflex-dom-pandoc. To hack on it, first [install Obelisk](https://github.com/obsidiansystems/obelisk#installing-obelisk) and then:
+
+```sh
+# This will clone the git repo of reflex-dom-pandoc at dep/reflex-dom-pandoc
+ob thunk unpack dep/reflex-dom-pandoc
+
+# Let's work on that repo
+cd dep/reflex-dom-pandoc
+
+# Run ghcid (using neuron's nix config)
+nix-shell ../../shell.nix --run ghcid
+```
+
+Now as you edit the reflex-dom-pandoc sources, ghcid should give you compiler feedback. Once you are done with your changes, simply re-run neuron's ghcid or bin/run (see further above) and it should reflect your changes.
+
+When you are done, commit your changes to reflex-dom-pandoc (presumably in a branch) and then `git push` it. Finally, you must "pack" the thunk and commit the changes to the neuron repo:
+
+```sh
+cd ../..  # Back to neuron
+rm -rf dep/reflex-platform/dist-newstyle # cleanup build artifacts before packing
+ob thunk pack dep/reflex-dom-pandoc
+git add dep/reflex-dom-pandoc
+```
