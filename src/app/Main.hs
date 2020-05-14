@@ -16,9 +16,11 @@ import qualified Neuron.Config as Config
 import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Route (Route (..))
 import Neuron.Web.View (renderRouteBody, renderRouteHead, style)
+import Reflex.Dom.Core
 import Relude
 import qualified Rib
 import Rib.Extra.CSS (googleFonts, stylesheet)
+import System.IO.Unsafe (unsafePerformIO)
 
 main :: IO ()
 main = withUtf8 $ run generateMainSite
@@ -47,7 +49,14 @@ renderPage config r val = html_ [lang_ "en"] $ do
           with (script_ mempty) [id_ "MathJax-script", src_ "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", async_ ""]
   body_
     $ div_ [class_ "ui text container", id_ "thesite"]
+    $ reflexToLucid
     $ renderRouteBody config r val
+
+-- TODO: Won't need this or unsafe IO once we switch over completely to reflex-dom.
+-- See https://github.com/srid/neuron/issues/170
+reflexToLucid :: Monad m => StaticWidget x a -> HtmlT m ()
+reflexToLucid =
+  toHtmlRaw . unsafePerformIO . fmap snd . renderStatic
 
 headerFont :: Text
 headerFont = "DM Serif Text"
