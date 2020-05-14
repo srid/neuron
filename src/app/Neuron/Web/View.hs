@@ -53,6 +53,7 @@ import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
+import System.IO.Unsafe (unsafePerformIO)
 import Text.URI.QQ
 
 searchScript :: Text
@@ -73,9 +74,10 @@ renderRouteHead config r val = do
       with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"]
     _ -> do
       toHtml $ routeOpenGraph config (snd val) r
-      toHtml $ routeStructuredData config val r
+      r2l $ Breadcrumb.renderBreadcrumbs $ routeStructuredData config val r
       style_ [type_ "text/css"] $ Skylighting.styleToCss Skylighting.tango
   where
+    r2l = toHtmlRaw . unsafePerformIO . fmap snd . renderStatic
     routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
     routeStructuredData Config {..} (graph, v) = \case
       Route_Zettel _ ->
