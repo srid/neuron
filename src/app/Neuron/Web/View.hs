@@ -216,7 +216,7 @@ renderTags tags = do
     elAttr "span" ("class" =: "ui black right ribbon label" <> "title" =: "Tag") $ do
       elAttr
         "a"
-        ( "href" =: (routeUrlRelWithQuery Route_Search [queryKey|t|] t)
+        ( "href" =: (routeUrlRelWithQuery Route_Search [queryKey|tag|] t)
             <> "title" =: ("See all zettels tagged '" <> t <> "'")
         )
         $ text t
