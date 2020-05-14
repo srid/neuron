@@ -370,8 +370,16 @@ style Config {..} = do
     C.marginLeft $ px 15
     C.float C.floatRight
     C.backgroundColor C.lightgray
+  -- CSS library for use with commonmark attributes
   ".overflows" ? do
-    C.overflow auto
+    C.overflowX auto
+  -- WIP: TODO this doesn't work with overflows
+  ".stickyTableHeader" ? do
+    "table" ? do
+      position relative
+    "th" ? do
+      position sticky
+      top $ px 0
   where
     codeStyle = do
       C.code ? do
