@@ -120,7 +120,7 @@ renderIndex Config {..} graph = do
     forM_ clusters $ \forest ->
       divClass ("ui stacked " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
-        el "ul" $ renderForest True Nothing True graph forest
+        el "ul" $ renderForest True Nothing (Just graph) forest
     renderBrandFooter True
   where
     countNounBe noun nounPlural = \case
@@ -149,32 +149,34 @@ renderSearch graph = do
   el "script" $ text $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   el "script" $ text searchScript
 
+renderZettelContent :: DomBuilder t m => Zettel -> m ()
+renderZettelContent Zettel {..} = do
+  divClass "ui raised segment zettel-content" $ do
+    elClass "h1" "header" $ text zettelTitle
+    elPandocDoc zettelContent
+    renderTags zettelTags
+    whenJust zettelDay $ \day ->
+      elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ text $ show day
+
 renderZettel :: DomBuilder t m => Config -> (ZettelGraph, Zettel) -> ZettelID -> m ()
 renderZettel Config {..} (graph, z@Zettel {..}) zid = do
   let neuronTheme = Theme.mkTheme theme
   divClass "zettel-view" $ do
-    divClass "ui raised segments" $ do
-      divClass "ui top attached segment" $ do
-        elClass "h1" "header" $ text zettelTitle
-        elPandocDoc zettelContent
-        whenNotNull zettelTags $ \_ ->
-          renderTags zettelTags
-        forM_ zettelDay $ \day ->
-          elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ text $ show day
+    renderZettelContent z
     divClass ("ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment") $ do
       divClass "ui two column grid" $ do
         divClass "column" $ do
           divClass "ui header" $ text "Down"
-          el "ul" $ renderForest True (Just 2) False graph $
+          el "ul" $ renderForest True (Just 2) Nothing $
             G.frontlinkForest Folgezettel z graph
         divClass "column" $ do
           divClass "ui header" $ text "Up"
           el "ul" $ do
-            renderForest True Nothing False graph $
+            renderForest True Nothing Nothing $
               G.backlinkForest Folgezettel z graph
           divClass "ui header" $ text "Other backlinks"
           el "ul" $ do
-            renderForest True Nothing False graph
+            renderForest True Nothing Nothing
               $ fmap (flip Node [])
               $ G.backlinks OrdinaryConnection z graph
     divClass "ui inverted black bottom attached footer segment" $ do
@@ -226,11 +228,12 @@ renderForest ::
   DomBuilder t m =>
   Bool ->
   Maybe Int ->
-  Bool ->
-  ZettelGraph ->
+  -- When given the zettelkasten graph, also show non-parent backlinks.
+  -- The dfsForest tree is "incomplete" in that it lacks these references.
+  Maybe ZettelGraph ->
   [Tree Zettel] ->
   m ()
-renderForest isRoot maxLevel renderingFullTree g trees =
+renderForest isRoot maxLevel mg trees =
   case maxLevel of
     Just 0 -> blank
     _ -> do
@@ -238,10 +241,10 @@ renderForest isRoot maxLevel renderingFullTree g trees =
         el "li" $ do
           let zettelDiv =
                 divClass
-                  (bool "" "ui black label" renderingFullTree)
+                  (maybe "" (const "ui black label") mg)
           bool id zettelDiv isRoot $
             renderZettelLink def zettel
-          when renderingFullTree $ do
+          whenJust mg $ \g -> do
             text " "
             case G.backlinks Folgezettel zettel g of
               conns@(_ : _ : _) ->
@@ -251,7 +254,7 @@ renderForest isRoot maxLevel renderingFullTree g trees =
                   elAttr "i" ("class" =: "fas fa-link" <> "title" =: connTitle) blank
               _ -> blank
           when (length subtrees > 0) $ do
-            el "ul" $ renderForest False ((\n -> n - 1) <$> maxLevel) renderingFullTree g subtrees
+            el "ul" $ renderForest False ((\n -> n - 1) <$> maxLevel) mg subtrees
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
@@ -307,29 +310,33 @@ style Config {..} = do
       C.listStyleType C.square
       C.paddingLeft $ em 1.5
   "div.zettel-view" ? do
-    "div.date" ? do
-      C.textAlign C.center
-      C.color C.gray
+    -- This list styling applies both to zettel content, and the rest of the
+    -- view (eg: connections pane)
     C.ul ? do
       C.paddingLeft $ em 1.5
       C.listStyleType C.square
       C.li ? do
         mempty -- C.paddingBottom $ em 1
-    C.h1 ? do
-      C.paddingTop $ em 0.2
-      C.paddingBottom $ em 0.2
-      C.textAlign C.center
-      C.backgroundColor $ Theme.withRgb neuronTheme C.rgba 0.1
-    C.h2 ? do
-      C.borderBottom C.solid (px 1) C.steelblue
-      C.marginBottom $ em 0.5
-    C.h3 ? do
-      C.margin (px 0) (px 0) (em 0.4) (px 0)
-    C.h4 ? do
-      C.opacity 0.8
-    codeStyle
-    blockquoteStyle
-    kbd ? mozillaKbdStyle
+    "div.zettel-content" ? do
+      -- All of these apply to the zettel content card only.
+      "div.date" ? do
+        C.textAlign C.center
+        C.color C.gray
+      C.h1 ? do
+        C.paddingTop $ em 0.2
+        C.paddingBottom $ em 0.2
+        C.textAlign C.center
+        C.backgroundColor $ Theme.withRgb neuronTheme C.rgba 0.1
+      C.h2 ? do
+        C.borderBottom C.solid (px 1) C.steelblue
+        C.marginBottom $ em 0.5
+      C.h3 ? do
+        C.margin (px 0) (px 0) (em 0.4) (px 0)
+      C.h4 ? do
+        C.opacity 0.8
+      codeStyle
+      blockquoteStyle
+      kbd ? mozillaKbdStyle
   "div.tag-tree" ? do
     "div.node" ? do
       C.fontWeight C.bold
@@ -363,6 +370,8 @@ style Config {..} = do
     C.marginLeft $ px 15
     C.float C.floatRight
     C.backgroundColor C.lightgray
+  ".overflows" ? do
+    C.overflow auto
   where
     codeStyle = do
       C.code ? do
