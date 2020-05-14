@@ -334,9 +334,25 @@ style Config {..} = do
         C.margin (px 0) (px 0) (em 0.4) (px 0)
       C.h4 ? do
         C.opacity 0.8
+      "div#footnotes" ? do
+        C.marginTop $ em 4
+        C.borderTop C.groove (px 2) linkColor
+        C.fontSize $ em 0.9
+      -- reflex-dom-pandoc footnote aside elements
+      -- (only used for footnotes defined inside footnotes)
+      "aside.footnote-inline" ? do
+        C.width $ pct 30
+        C.paddingLeft $ px 15
+        C.marginLeft $ px 15
+        C.float C.floatRight
+        C.backgroundColor C.lightgray
+      -- CSS library for users to use in their Pandoc attributes blocks
+      ".overflows" ? do
+        C.overflow auto
       codeStyle
       blockquoteStyle
       kbd ? mozillaKbdStyle
+  -- End of div.zettel-content
   "div.tag-tree" ? do
     "div.node" ? do
       C.fontWeight C.bold
@@ -358,20 +374,6 @@ style Config {..} = do
     C.fontSize $ em 0.7
   "[data-tooltip]:after" ? do
     C.fontSize $ em 0.7
-  "div#footnotes" ? do
-    C.marginTop $ em 4
-    C.borderTop C.groove (px 2) linkColor
-    C.fontSize $ em 0.9
-  -- reflex-dom-pandoc footnote aside elements
-  -- (only used for footnotes defined inside footnotes)
-  "aside.footnote-inline" ? do
-    C.width $ pct 30
-    C.paddingLeft $ px 15
-    C.marginLeft $ px 15
-    C.float C.floatRight
-    C.backgroundColor C.lightgray
-  ".overflows" ? do
-    C.overflow auto
   where
     codeStyle = do
       C.code ? do
