@@ -65,6 +65,7 @@ common library-common
     reflex,
     reflex-dom-core,
     reflex-dom-pandoc,
+    clay,
 
 library
   import: library-common
@@ -74,6 +75,7 @@ library
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
+    Neuron.Zettelkasten.Zettel.View
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Error
@@ -81,6 +83,7 @@ library
     Neuron.Zettelkasten.Query.Parser
     Neuron.Zettelkasten.Query.Theme
     Neuron.Zettelkasten.Query.View
+    Neuron.Web.Theme
     Text.Megaparsec.Simple
     Text.URI.Util
     Data.TagTree
@@ -149,7 +152,6 @@ common app-common
       Neuron.Version
       Neuron.Web.Generate
       Neuron.Web.Route
-      Neuron.Web.Theme
       Neuron.Web.View
       Neuron.Markdown
       Neuron.Zettelkasten.Error

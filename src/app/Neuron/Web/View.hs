@@ -32,7 +32,6 @@ import qualified Data.Set as Set
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
-import qualified Data.Text as T
 import Data.Time.ISO8601 (formatISO8601)
 import Data.Tree (Tree (..))
 import Neuron.Config
@@ -43,19 +42,15 @@ import Neuron.Zettelkasten.Connection
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
-import Neuron.Zettelkasten.Query.Theme (LinkView (..))
-import Neuron.Zettelkasten.Query.View (zettelUrl)
 import Neuron.Zettelkasten.Zettel
+import qualified Neuron.Zettelkasten.Zettel.View as ZettelView
 import Reflex.Dom.Core
-import Reflex.Dom.Pandoc.Document (elPandocDoc)
 import Relude
 import qualified Rib
-import Rib.Extra.CSS (mozillaKbdStyle)
 import Rib.Extra.OpenGraph
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
 import qualified Text.URI as URI
-import Text.URI.QQ
 
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
@@ -133,8 +128,8 @@ renderRouteBody config r (g, x) = do
       renderIndex config g
     Route_Search {} ->
       renderSearch g
-    Route_Zettel zid ->
-      renderZettel config (g, x) zid
+    Route_Zettel _ ->
+      renderZettel config (g, x)
     Route_Redirect _ ->
       elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
 
@@ -148,7 +143,7 @@ renderIndex Config {..} graph = do
       Left (toList -> cyc) -> divClass "ui orange segment" $ do
         el "h2" $ text "Cycle detected"
         forM_ cyc $ \zettel ->
-          el "li" $ renderZettelLink def zettel
+          el "li" $ ZettelView.renderZettelLink def zettel
       _ -> blank
     let clusters = G.categoryClusters graph
     el "p" $ do
@@ -186,50 +181,45 @@ renderSearch graph = do
   el "script" $ text $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   el "script" $ text searchScript
 
-renderZettelContent :: DomBuilder t m => Zettel -> m ()
-renderZettelContent Zettel {..} = do
-  divClass "ui raised segment zettel-content" $ do
-    elClass "h1" "header" $ text zettelTitle
-    elPandocDoc zettelContent
-    renderTags zettelTags
-    whenJust zettelDay $ \day ->
-      elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ text $ show day
-
-renderZettel :: DomBuilder t m => Config -> (ZettelGraph, Zettel) -> ZettelID -> m ()
-renderZettel Config {..} (graph, z@Zettel {..}) zid = do
-  let neuronTheme = Theme.mkTheme theme
+renderZettel :: DomBuilder t m => Config -> (ZettelGraph, Zettel) -> m ()
+renderZettel config (graph, z@Zettel {..}) = do
   divClass "zettel-view" $ do
-    renderZettelContent z
-    divClass ("ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment") $ do
-      divClass "ui two column grid" $ do
-        divClass "column" $ do
-          divClass "ui header" $ text "Down"
-          el "ul" $ renderForest True (Just 2) Nothing $
-            G.frontlinkForest Folgezettel z graph
-        divClass "column" $ do
-          divClass "ui header" $ text "Up"
-          el "ul" $ do
-            renderForest True Nothing Nothing $
-              G.backlinkForest Folgezettel z graph
-          divClass "ui header" $ text "Other backlinks"
-          el "ul" $ do
-            renderForest True Nothing Nothing
-              $ fmap (flip Node [])
-              $ G.backlinks OrdinaryConnection z graph
-    divClass "ui inverted black bottom attached footer segment" $ do
-      divClass "ui equal width grid" $ do
+    ZettelView.renderZettelContent z
+    renderZettelPanel config graph z
+
+renderZettelPanel :: DomBuilder t m => Config -> ZettelGraph -> Zettel -> m ()
+renderZettelPanel Config {..} graph z@Zettel {..} = do
+  let neuronTheme = Theme.mkTheme theme
+  divClass ("ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment") $ do
+    divClass "ui two column grid" $ do
+      divClass "column" $ do
+        divClass "ui header" $ text "Down"
+        el "ul" $ renderForest True (Just 2) Nothing $
+          G.frontlinkForest Folgezettel z graph
+      divClass "column" $ do
+        divClass "ui header" $ text "Up"
+        el "ul" $ do
+          renderForest True Nothing Nothing $
+            G.backlinkForest Folgezettel z graph
+        divClass "ui header" $ text "Other backlinks"
+        el "ul" $ do
+          renderForest True Nothing Nothing
+            $ fmap (flip Node [])
+            $ G.backlinks OrdinaryConnection z graph
+  divClass "ui inverted black bottom attached footer segment" $ do
+    divClass "ui equal width grid" $ do
+      divClass "center aligned column" $ do
+        let homeUrl = maybe "." (const "index.html") $ G.getZettel (ZettelCustomID "index") graph
+        elAttr "a" ("href" =: homeUrl <> "title" =: "/") $ fa "fas fa-home"
+      whenJust editUrl $ \urlPrefix ->
         divClass "center aligned column" $ do
-          let homeUrl = maybe "." (const "index.html") $ G.getZettel (ZettelCustomID "index") graph
-          elAttr "a" ("href" =: homeUrl <> "title" =: "/") $ fa "fas fa-home"
-        whenJust editUrl $ \urlPrefix ->
-          divClass "center aligned column" $ do
-            elAttr "a" ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zid)) <> "title" =: "Edit this Zettel") $ fa "fas fa-edit"
-        divClass "center aligned column" $ do
-          elAttr "a" ("href" =: (Rib.routeUrlRel Route_Search) <> "title" =: "Search Zettels") $ fa "fas fa-search"
-        divClass "center aligned column" $ do
-          elAttr "a" ("href" =: (Rib.routeUrlRel Route_ZIndex) <> "title" =: "All Zettels (z-index)") $
-            fa "fas fa-tree"
-    renderBrandFooter False
+          elAttr "a" ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel") $ fa "fas fa-edit"
+      divClass "center aligned column" $ do
+        elAttr "a" ("href" =: (Rib.routeUrlRel Route_Search) <> "title" =: "Search Zettels") $ fa "fas fa-search"
+      divClass "center aligned column" $ do
+        elAttr "a" ("href" =: (Rib.routeUrlRel Route_ZIndex) <> "title" =: "All Zettels (z-index)") $
+          fa "fas fa-tree"
+  renderBrandFooter False
 
 renderBrandFooter :: DomBuilder t m => Bool -> m ()
 renderBrandFooter withVersion =
@@ -241,21 +231,6 @@ renderBrandFooter withVersion =
         when withVersion $ do
           text " "
           el "code" $ text neuronVersion
-
-renderTags :: DomBuilder t m => [Tag] -> m ()
-renderTags tags = do
-  forM_ tags $ \(unTag -> t) -> do
-    -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
-    -- the top pushes the zettel content down, introducing unnecessary white
-    -- space below the title. So we put it at the bottom for now.
-    elAttr "span" ("class" =: "ui black right ribbon label" <> "title" =: "Tag") $ do
-      elAttr
-        "a"
-        ( "href" =: (routeUrlRelWithQuery Route_Search [queryKey|tag|] t)
-            <> "title" =: ("See all zettels tagged '" <> t <> "'")
-        )
-        $ text t
-    el "p" blank
 
 -- | Font awesome element
 fa :: DomBuilder t m => Text -> m ()
@@ -280,7 +255,7 @@ renderForest isRoot maxLevel mg trees =
                 divClass
                   (maybe "" (const "ui black label") mg)
           bool id zettelDiv isRoot $
-            renderZettelLink def zettel
+            ZettelView.renderZettelLink def zettel
           whenJust mg $ \g -> do
             text " "
             case G.backlinks Folgezettel zettel g of
@@ -295,36 +270,6 @@ renderForest isRoot maxLevel mg trees =
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
-
--- | Render a link to an individual zettel.
-renderZettelLink :: forall t m. DomBuilder t m => Maybe LinkView -> Zettel -> m ()
-renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
-  let mextra =
-        if linkViewShowDate
-          then case zettelDay of
-            Just day ->
-              Just $ show @Text day
-            Nothing ->
-              Nothing
-          else Nothing
-  elClass "span" "zettel-link-container" $ do
-    forM_ mextra $ \extra ->
-      elClass "span" "extra monoFont" $ text extra
-    let linkTooltip =
-          if null zettelTags
-            then Nothing
-            else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
-    elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
-      elAttr "a" ("href" =: (zettelUrl zettelID)) $ text zettelTitle
-  where
-    withTooltip :: Maybe Text -> Map Text Text
-    withTooltip = \case
-      Nothing -> mempty
-      Just s ->
-        ( "data-tooltip" =: s
-            <> "data-inverted" =: ""
-            <> "data-position" =: "right center"
-        )
 
 style :: Config -> Css
 style Config {..} = do
@@ -354,42 +299,7 @@ style Config {..} = do
       C.listStyleType C.square
       C.li ? do
         mempty -- C.paddingBottom $ em 1
-    "div.zettel-content" ? do
-      -- All of these apply to the zettel content card only.
-      "div.date" ? do
-        C.textAlign C.center
-        C.color C.gray
-      C.h1 ? do
-        C.paddingTop $ em 0.2
-        C.paddingBottom $ em 0.2
-        C.textAlign C.center
-        C.backgroundColor $ Theme.withRgb neuronTheme C.rgba 0.1
-      C.h2 ? do
-        C.borderBottom C.solid (px 1) C.steelblue
-        C.marginBottom $ em 0.5
-      C.h3 ? do
-        C.margin (px 0) (px 0) (em 0.4) (px 0)
-      C.h4 ? do
-        C.opacity 0.8
-      "div#footnotes" ? do
-        C.marginTop $ em 4
-        C.borderTop C.groove (px 2) linkColor
-        C.fontSize $ em 0.9
-      -- reflex-dom-pandoc footnote aside elements
-      -- (only used for footnotes defined inside footnotes)
-      "aside.footnote-inline" ? do
-        C.width $ pct 30
-        C.paddingLeft $ px 15
-        C.marginLeft $ px 15
-        C.float C.floatRight
-        C.backgroundColor C.lightgray
-      -- CSS library for users to use in their Pandoc attributes blocks
-      ".overflows" ? do
-        C.overflow auto
-      codeStyle
-      blockquoteStyle
-      kbd ? mozillaKbdStyle
-  -- End of div.zettel-content
+    ZettelView.zettelCss neuronTheme
   "div.tag-tree" ? do
     "div.node" ? do
       C.fontWeight C.bold
@@ -411,29 +321,3 @@ style Config {..} = do
     C.fontSize $ em 0.7
   "[data-tooltip]:after" ? do
     C.fontSize $ em 0.7
-  where
-    codeStyle = do
-      C.code ? do
-        sym margin auto
-        fontSize $ pct 100
-      -- This pretty much selects inline code elements
-      "p code, li code, ol code" ? do
-        sym padding $ em 0.2
-        backgroundColor "#f8f8f8"
-      -- This selects block code elements
-      pre ? do
-        sym padding $ em 0.5
-        C.overflow auto
-        C.maxWidth $ pct 100
-      "div.pandoc-code" ? do
-        marginLeft auto
-        marginRight auto
-        pre ? do
-          backgroundColor "#f8f8f8"
-    -- https://css-tricks.com/snippets/css/simple-and-nice-blockquote-styling/
-    blockquoteStyle =
-      C.blockquote ? do
-        C.backgroundColor "#f9f9f9"
-        C.borderLeft C.solid (px 10) "#ccc"
-        sym2 C.margin (em 1.5) (px 0)
-        sym2 C.padding (em 0.5) (px 10)
