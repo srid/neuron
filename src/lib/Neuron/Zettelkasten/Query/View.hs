@@ -135,7 +135,7 @@ buildQueryView = \case
 -- TODO: not using Rib for ghcjs, but factorize this
 zettelUrl :: ZettelID -> Text
 zettelUrl zid =
-  "/" <> zettelIDText zid <> ".html"
+  zettelIDText zid <> ".html"
 
 tagUrl :: Tag -> Text
 tagUrl (Tag s) =
