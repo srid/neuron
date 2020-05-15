@@ -5,7 +5,6 @@ builtins.mapAttrs (system: _v:
     pkgs = import (builtins.fetchTarball url) { inherit system; };
   in
   pkgs.recurseIntoAttrs {
-  
     # Build both default.nix and shell.nix so that both derivations are pushed
     # to cachix. This allows the development workflow (bin/run, etc.) to use
     # cachix to full extent.
@@ -16,4 +15,3 @@ builtins.mapAttrs (system: _v:
   x86_64-linux = {};
   x86_64-darwin = {};
 }
-
