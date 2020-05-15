@@ -35,7 +35,6 @@ import Data.TagTree (Tag (..))
 import qualified Data.Text as T
 import Data.Time.ISO8601 (formatISO8601)
 import Data.Tree (Tree (..))
-import Lucid
 import Neuron.Config
 import Neuron.Version (neuronVersion)
 import Neuron.Web.Route
@@ -55,32 +54,34 @@ import Rib.Extra.CSS (mozillaKbdStyle)
 import Rib.Extra.OpenGraph
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
-import System.IO.Unsafe (unsafePerformIO)
 import qualified Text.URI as URI
 import Text.URI.QQ
 
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
 
-renderRouteHead :: Monad m => Config -> Route graph a -> (graph, a) -> HtmlT m ()
+renderRouteHead :: DomBuilder t m => Config -> Route graph a -> (graph, a) -> m ()
 renderRouteHead config r val = do
-  meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
-  meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
-  title_ $ toHtml $ routeTitle config (snd val) r
-  link_ [rel_ "shortcut icon", href_ "https://raw.githubusercontent.com/srid/neuron/master/assets/logo.ico"]
+  elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
+  elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
+  el "title" $ text $ routeTitle config (snd val) r
+  elAttr "link" ("rel" =: "shortcut icon" <> "href" =: "https://raw.githubusercontent.com/srid/neuron/master/assets/logo.ico") blank
   case r of
     Route_Redirect _ ->
-      mempty
+      blank
     Route_Search {} -> do
-      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js"]
-      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"]
-      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"]
-    _ -> r2l $ do
+      forM_
+        [ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js",
+          "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js",
+          "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"
+        ]
+        $ \scrpt -> do
+          elAttr "script" ("src" =: scrpt) blank
+    _ -> do
       renderOpenGraph $ routeOpenGraph config (snd val) r
       Breadcrumb.renderBreadcrumbs $ routeStructuredData config val r
       elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
   where
-    r2l = toHtmlRaw . unsafePerformIO . fmap snd . renderStatic
     routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
     routeStructuredData Config {..} (graph, v) = \case
       Route_Zettel _ ->

@@ -36,7 +36,7 @@ generateMainSite = do
 renderPage :: Config -> Route g a -> (g, a) -> Html ()
 renderPage config r val = html_ [lang_ "en"] $ do
   head_ $ do
-    renderRouteHead config r val
+    reflexToLucid $ renderRouteHead config r val
     case r of
       Route_Redirect _ ->
         mempty
