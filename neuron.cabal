@@ -105,7 +105,6 @@ common app-common
     directory,
     exceptions,
     file-embed,
-    lucid -any,
     optparse-applicative,
     pandoc,
     skylighting-core,
