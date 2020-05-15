@@ -138,6 +138,7 @@ neuronSpec =
       CE.mathSpec,
       CE.smartPunctuationSpec,
       CE.attributesSpec,
+      CE.rawAttributeSpec,
       CM.defaultSyntaxSpec {CM.syntaxBlockSpecs = defaultBlockSpecsSansRawHtml}
     ]
   where
