@@ -1,14 +1,15 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Main where
 
-import Clay hiding (s, style, type_)
+import Clay ((?), Css, em, pct)
 import qualified Clay as C
+import qualified Data.Text as T
 import Development.Shake
-import Lucid
 import Main.Utf8
 import Neuron.CLI (run)
 import Neuron.Config (Config)
@@ -16,9 +17,9 @@ import qualified Neuron.Config as Config
 import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Route (Route (..))
 import Neuron.Web.View (renderRouteBody, renderRouteHead, style)
+import Reflex.Dom.Core
 import Relude
 import qualified Rib
-import Rib.Extra.CSS (googleFonts, stylesheet)
 
 main :: IO ()
 main = withUtf8 $ run generateMainSite
@@ -28,26 +29,39 @@ generateMainSite = do
   Rib.buildStaticFiles ["static/**"]
   config <- Config.getConfig
   let writeHtmlRoute :: Route g a -> (g, a) -> Action ()
-      writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage config r
+      writeHtmlRoute r x = do
+        html <- liftIO $ fmap snd $ renderStatic $ renderPage config r x
+        -- FIXME: Make rib take bytestrings
+        Rib.writeRoute r $ decodeUtf8 @Text html
   void $ generateSite config writeHtmlRoute
 
-renderPage :: Config -> Route g a -> (g, a) -> Html ()
-renderPage config r val = html_ [lang_ "en"] $ do
-  head_ $ do
+renderPage :: DomBuilder t m => Config -> Route g a -> (g, a) -> m ()
+renderPage config r val = elAttr "html" ("lang" =: "en") $ do
+  el "head" $ do
     renderRouteHead config r val
     case r of
       Route_Redirect _ ->
-        mempty
+        blank
       _ -> do
-        stylesheet "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
-        stylesheet "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
-        style_ [type_ "text/css"] $ C.renderWith C.compact [] $ mainStyle config
+        forM_
+          [ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css",
+            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
+          ]
+          $ \url ->
+            elAttr "link" ("rel" =: "stylesheet" <> "href" =: url) blank
+        elAttr "style" ("type" =: "text/css") $ text $ toText $ C.renderWith C.compact [] $ mainStyle config
         googleFonts [headerFont, bodyFont, monoFont]
         when (Config.mathJaxSupport config) $
-          with (script_ mempty) [id_ "MathJax-script", src_ "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js", async_ ""]
-  body_
-    $ div_ [class_ "ui text container", id_ "thesite"]
-    $ renderRouteBody config r val
+          elAttr "script" ("id" =: "MathJax-script" <> "src" =: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" <> "async" =: "") blank
+  el "body" $ do
+    elAttr "div" ("id" =: "thesite" <> "class" =: "ui text container") $ do
+      renderRouteBody config r val
+  where
+    googleFonts :: DomBuilder t m => [Text] -> m ()
+    googleFonts fs =
+      let fsEncoded = T.intercalate "|" $ T.replace " " "+" <$> fs
+          fsUrl = "https://fonts.googleapis.com/css?family=" <> fsEncoded <> "&display=swap"
+       in elAttr "link" ("rel" =: "stylesheet" <> "href" =: fsUrl) blank
 
 headerFont :: Text
 headerFont = "DM Serif Text"
@@ -70,5 +84,5 @@ mainStyle cfg = "div#thesite" ? do
   "img" ? do
     C.maxWidth $ pct 100 -- Prevents large images from overflowing beyond zettel borders
   "code, pre, tt, .monoFont" ? do
-    fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [monospace]
+    C.fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [C.monospace]
   style cfg
