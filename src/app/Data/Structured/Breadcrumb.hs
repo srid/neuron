@@ -13,7 +13,7 @@ module Data.Structured.Breadcrumb where
 
 import Data.Aeson
 import Data.Tree
-import Lucid
+import Reflex.Dom.Core hiding (mapMaybe)
 import Relude
 import Text.URI (URI)
 import qualified Text.URI as URI
@@ -27,11 +27,9 @@ data Item = Item
 newtype Breadcrumb = Breadcrumb {unBreadcrumb :: NonEmpty Item}
   deriving (Eq, Show, Generic)
 
-instance ToHtml [Breadcrumb] where
-  toHtmlRaw = toHtml
-  toHtml bs =
-    script_ [type_ "application/ld+json"] $
-      encode bs
+renderBreadcrumbs :: DomBuilder t m => [Breadcrumb] -> m ()
+renderBreadcrumbs bs =
+  elAttr "script" ("type" =: "application/ld+json") $ text $ decodeUtf8 $ encode bs
 
 instance ToJSON Breadcrumb where
   toJSON (Breadcrumb (toList -> crumbs)) =

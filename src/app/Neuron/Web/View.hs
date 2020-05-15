@@ -32,10 +32,8 @@ import qualified Data.Set as Set
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
-import qualified Data.Text as T
+import Data.Time.ISO8601 (formatISO8601)
 import Data.Tree (Tree (..))
-import Lucid
-import Lucid.Base (makeAttribute)
 import Neuron.Config
 import Neuron.Version (neuronVersion)
 import Neuron.Web.Route
@@ -44,39 +42,41 @@ import Neuron.Zettelkasten.Connection
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
-import Neuron.Zettelkasten.Query.Theme (LinkView (..))
-import Neuron.Zettelkasten.Query.View (zettelUrl)
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Core (renderStatic)
-import Reflex.Dom.Pandoc.Document (elPandocDoc)
+import qualified Neuron.Zettelkasten.Zettel.View as ZettelView
+import Reflex.Dom.Core
+import Reflex.Dom.Pandoc.Document (PandocBuilder)
 import Relude
 import qualified Rib
-import Rib.Extra.CSS (mozillaKbdStyle)
+import Rib.Extra.OpenGraph
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
-import System.IO.Unsafe (unsafePerformIO)
-import Text.URI.QQ
+import qualified Text.URI as URI
 
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
 
-renderRouteHead :: Monad m => Config -> Route graph a -> (graph, a) -> HtmlT m ()
+renderRouteHead :: DomBuilder t m => Config -> Route graph a -> (graph, a) -> m ()
 renderRouteHead config r val = do
-  meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
-  meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
-  title_ $ toHtml $ routeTitle config (snd val) r
-  link_ [rel_ "shortcut icon", href_ "https://raw.githubusercontent.com/srid/neuron/master/assets/logo.ico"]
+  elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
+  elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
+  el "title" $ text $ routeTitle config (snd val) r
+  elAttr "link" ("rel" =: "shortcut icon" <> "href" =: "https://raw.githubusercontent.com/srid/neuron/master/assets/logo.ico") blank
   case r of
     Route_Redirect _ ->
-      mempty
+      blank
     Route_Search {} -> do
-      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js"]
-      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"]
-      with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"]
+      forM_
+        [ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js",
+          "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js",
+          "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"
+        ]
+        $ \scrpt -> do
+          elAttr "script" ("src" =: scrpt) blank
     _ -> do
-      toHtml $ routeOpenGraph config (snd val) r
-      toHtml $ routeStructuredData config val r
-      style_ [type_ "text/css"] $ Skylighting.styleToCss Skylighting.tango
+      renderOpenGraph $ routeOpenGraph config (snd val) r
+      Breadcrumb.renderBreadcrumbs $ routeStructuredData config val r
+      elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
   where
     routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
     routeStructuredData Config {..} (graph, v) = \case
@@ -91,201 +91,186 @@ renderRouteHead config r val = do
       _ ->
         []
 
-renderRouteBody :: Monad m => Config -> Route graph a -> (graph, a) -> HtmlT m ()
+renderOpenGraph :: forall t m. DomBuilder t m => OpenGraph -> m ()
+renderOpenGraph OpenGraph {..} = do
+  meta' "author" `mapM_` _openGraph_author
+  meta' "description" `mapM_` _openGraph_description
+  requireAbsolute "OGP URL" (\ourl -> elAttr "link" ("rel" =: "canonical" <> "href" =: ourl) blank) `mapM_` _openGraph_url
+  metaOg "title" _openGraph_title
+  metaOg "site_name" _openGraph_siteName
+  whenJust _openGraph_type $ \case
+    OGType_Article (Article {..}) -> do
+      metaOg "type" "article"
+      metaOg "article:section" `mapM_` _article_section
+      metaOgTime "article:modified_time" `mapM_` _article_modifiedTime
+      metaOgTime "article:published_time" `mapM_` _article_publishedTime
+      metaOgTime "article:expiration_time" `mapM_` _article_expirationTime
+      metaOg "article:tag" `mapM_` _article_tag
+    OGType_Website -> do
+      metaOg "type" "website"
+  requireAbsolute "OGP image URL" (metaOg "image") `mapM_` _openGraph_image
+  where
+    meta' k v =
+      elAttr "meta" ("name" =: k <> "content" =: v) blank
+    metaOg k v =
+      elAttr "meta" ("property" =: ("og:" <> k) <> "content" =: v) blank
+    metaOgTime k t =
+      metaOg k $ toText $ formatISO8601 t
+    requireAbsolute :: Text -> (Text -> m ()) -> URI.URI -> m ()
+    requireAbsolute description f uri' =
+      if isJust (URI.uriScheme uri')
+        then f $ URI.render uri'
+        else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
+
+renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m ()
 renderRouteBody config r (g, x) = do
   case r of
     Route_ZIndex ->
       renderIndex config g
     Route_Search {} ->
       renderSearch g
-    Route_Zettel zid ->
-      renderZettel config (g, x) zid
+    Route_Zettel _ ->
+      renderZettel config (g, x)
     Route_Redirect _ ->
-      meta_ [httpEquiv_ "Refresh", content_ $ "0; url=" <> (Rib.routeUrlRel $ Route_Zettel x)]
+      elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
 
-renderIndex :: Monad m => Config -> ZettelGraph -> HtmlT m ()
+renderIndex :: DomBuilder t m => Config -> ZettelGraph -> m ()
 renderIndex Config {..} graph = do
   let neuronTheme = Theme.mkTheme theme
-  h1_ [class_ "header"] $ "Zettel Index"
-  div_ [class_ "z-index"] $ do
+  elClass "h1" "header" $ text "Zettel Index"
+  divClass "z-index" $ do
     -- Cycle detection.
     case G.topSort graph of
-      Left (toList -> cyc) -> div_ [class_ "ui orange segment"] $ do
-        h2_ "Cycle detected"
+      Left (toList -> cyc) -> divClass "ui orange segment" $ do
+        el "h2" $ text "Cycle detected"
         forM_ cyc $ \zettel ->
-          li_ $ renderZettelLink def zettel
-      _ -> mempty
+          el "li" $ ZettelView.renderZettelLink def zettel
+      _ -> blank
     let clusters = G.categoryClusters graph
-    p_ $ do
-      "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten graph. "
-      "Each cluster is rendered as a forest, with their roots (mother zettels) highlighted."
+    el "p" $ do
+      text $ "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten graph. "
+      text "Each cluster is rendered as a forest, with their roots (mother zettels) highlighted."
     forM_ clusters $ \forest ->
-      div_ [class_ $ "ui stacked " <> Theme.semanticColor neuronTheme <> " segment"] $ do
+      divClass ("ui stacked " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
-        ul_ $ renderForest True Nothing True graph forest
+        el "ul" $ renderForest True Nothing (Just graph) forest
     renderBrandFooter True
   where
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderSearch :: forall m. Monad m => ZettelGraph -> HtmlT m ()
+renderSearch :: DomBuilder t m => ZettelGraph -> m ()
 renderSearch graph = do
-  h1_ [class_ "header"] $ "Search"
-  div_ [class_ "ui fluid icon input search"] $ do
-    input_ [type_ "text", id_ "search-input"]
+  elClass "h1" "header" $ text "Search"
+  divClass "ui fluid icon input search" $ do
+    elAttr "input" ("type" =: "text" <> "id" =: "search-input") blank
     fa "search icon fas fa-search"
-  div_ [class_ "ui hidden divider"] mempty
+  divClass "ui hidden divider" blank
   let allZettels = G.getZettels graph
       allTags = Set.fromList $ concatMap zettelTags allZettels
       index = object ["zettels" .= fmap (object . zettelJson) allZettels, "tags" .= allTags]
-  div_ [class_ "ui fluid multiple search selection dropdown", id_ "search-tags"] $ do
-    with (input_ mempty) [name_ "tags", type_ "hidden"]
-    with (i_ mempty) [class_ "dropdown icon"]
-    div_ [class_ "default text"] "Select tags…"
-    div_ [class_ "menu"] $ do
-      forM_ allTags $ \tag -> do
-        div_ [class_ "item"] $ toHtml (unTag tag)
-  div_ [class_ "ui divider"] mempty
-  ul_ [id_ "search-results", class_ "zettel-list"] mempty
-  script_ $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
-  script_ searchScript
+  elAttr "div" ("class" =: "ui fluid multiple search selection dropdown" <> "id" =: "search-tags") $ do
+    elAttr "input" ("name" =: "tags" <> "type" =: "hidden") blank
+    elClass "i" "dropdown icon" blank
+    divClass "default text" $ text "Select tags…"
+    divClass "menu" $ do
+      forM_ allTags $ \t -> do
+        divClass "item" $ text (unTag t)
+  divClass "ui divider" blank
+  elAttr "ul" ("id" =: "search-results" <> "class" =: "zettel-list") blank
+  el "script" $ text $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
+  el "script" $ text searchScript
 
-renderZettel :: forall m. Monad m => Config -> (ZettelGraph, Zettel) -> ZettelID -> HtmlT m ()
-renderZettel Config {..} (graph, z@Zettel {..}) zid = do
+renderZettel :: PandocBuilder t m => Config -> (ZettelGraph, Zettel) -> m ()
+renderZettel config (graph, z@Zettel {..}) = do
+  divClass "zettel-view" $ do
+    ZettelView.renderZettelContent z
+    renderZettelPanel config graph z
+
+renderZettelPanel :: DomBuilder t m => Config -> ZettelGraph -> Zettel -> m ()
+renderZettelPanel Config {..} graph z@Zettel {..} = do
   let neuronTheme = Theme.mkTheme theme
-  div_ [class_ "zettel-view"] $ do
-    div_ [class_ "ui raised segments"] $ do
-      div_ [class_ "ui top attached segment"] $ do
-        h1_ [class_ "header"] $ toHtml zettelTitle
-        -- TODO: Won't need IO once we switch over completely to reflex-dom.
-        toHtmlRaw $ unsafePerformIO $ fmap snd $ renderStatic $ elPandocDoc zettelContent
-        whenNotNull zettelTags $ \_ ->
-          renderTags zettelTags
-        forM_ zettelDay $ \day ->
-          div_ [class_ "date", title_ "Zettel creation date"] $ toHtml $ show @Text day
-    div_ [class_ $ "ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment"] $ do
-      div_ [class_ "ui two column grid"] $ do
-        div_ [class_ "column"] $ do
-          div_ [class_ "ui header"] "Down"
-          ul_ $ renderForest True (Just 2) False graph $
-            G.frontlinkForest Folgezettel z graph
-        div_ [class_ "column"] $ do
-          div_ [class_ "ui header"] "Up"
-          ul_ $ do
-            renderForest True Nothing False graph $
-              G.backlinkForest Folgezettel z graph
-          div_ [class_ "ui header"] "Other backlinks"
-          ul_ $ do
-            renderForest True Nothing False graph
-              $ fmap (flip Node [])
-              $ G.backlinks OrdinaryConnection z graph
-    div_ [class_ "ui inverted black bottom attached footer segment"] $ do
-      div_ [class_ "ui equal width grid"] $ do
-        div_ [class_ "center aligned column"] $ do
-          let homeUrl = maybe "." (const "index.html") $ G.getZettel (ZettelCustomID "index") graph
-          a_ [href_ homeUrl, title_ "/"] $ fa "fas fa-home"
-        whenJust editUrl $ \urlPrefix ->
-          div_ [class_ "center aligned column"] $ do
-            a_ [href_ $ urlPrefix <> toText (zettelIDSourceFileName zid), title_ "Edit this Zettel"] $ fa "fas fa-edit"
-        div_ [class_ "center aligned column"] $ do
-          a_ [href_ (Rib.routeUrlRel Route_Search), title_ "Search Zettels"] $ fa "fas fa-search"
-        div_ [class_ "center aligned column"] $ do
-          a_ [href_ (Rib.routeUrlRel Route_ZIndex), title_ "All Zettels (z-index)"] $
-            fa "fas fa-tree"
-    renderBrandFooter False
+  divClass ("ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment") $ do
+    divClass "ui two column grid" $ do
+      divClass "column" $ do
+        divClass "ui header" $ text "Down"
+        el "ul" $ renderForest True (Just 2) Nothing $
+          G.frontlinkForest Folgezettel z graph
+      divClass "column" $ do
+        divClass "ui header" $ text "Up"
+        el "ul" $ do
+          renderForest True Nothing Nothing $
+            G.backlinkForest Folgezettel z graph
+        divClass "ui header" $ text "Other backlinks"
+        el "ul" $ do
+          renderForest True Nothing Nothing
+            $ fmap (flip Node [])
+            $ G.backlinks OrdinaryConnection z graph
+  divClass "ui inverted black bottom attached footer segment" $ do
+    divClass "ui equal width grid" $ do
+      divClass "center aligned column" $ do
+        let homeUrl = maybe "." (const "index.html") $ G.getZettel (ZettelCustomID "index") graph
+        elAttr "a" ("href" =: homeUrl <> "title" =: "/") $ fa "fas fa-home"
+      whenJust editUrl $ \urlPrefix ->
+        divClass "center aligned column" $ do
+          elAttr "a" ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel") $ fa "fas fa-edit"
+      divClass "center aligned column" $ do
+        elAttr "a" ("href" =: (Rib.routeUrlRel Route_Search) <> "title" =: "Search Zettels") $ fa "fas fa-search"
+      divClass "center aligned column" $ do
+        elAttr "a" ("href" =: (Rib.routeUrlRel Route_ZIndex) <> "title" =: "All Zettels (z-index)") $
+          fa "fas fa-tree"
+  renderBrandFooter False
 
-renderBrandFooter :: Monad m => Bool -> HtmlT m ()
+renderBrandFooter :: DomBuilder t m => Bool -> m ()
 renderBrandFooter withVersion =
-  div_ [class_ "ui one column grid footer-version"] $ do
-    div_ [class_ "center aligned column"] $ do
-      p_ $ do
-        "Generated by "
-        a_ [href_ "https://neuron.zettel.page"] "Neuron"
+  divClass "ui one column grid footer-version" $ do
+    divClass "center aligned column" $ do
+      el "p" $ do
+        text "Generated by "
+        elAttr "a" ("href" =: "https://neuron.zettel.page") $ text "Neuron"
         when withVersion $ do
-          " "
-          code_ $ toHtml @Text neuronVersion
-
-renderTags :: Monad m => [Tag] -> HtmlT m ()
-renderTags tags = do
-  forM_ tags $ \(unTag -> tag) -> do
-    -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
-    -- the top pushes the zettel content down, introducing unnecessary white
-    -- space below the title. So we put it at the bottom for now.
-    span_ [class_ "ui black right ribbon label", title_ "Tag"] $ do
-      a_
-        [ href_ $ routeUrlRelWithQuery Route_Search [queryKey|tag|] tag,
-          title_ ("See all zettels tagged '" <> tag <> "'")
-        ]
-        $ toHtml tag
-    p_ mempty
+          text " "
+          el "code" $ text neuronVersion
 
 -- | Font awesome element
-fa :: Monad m => Text -> HtmlT m ()
-fa k = with i_ [class_ k] mempty
+fa :: DomBuilder t m => Text -> m ()
+fa k = elClass "i" k blank
 
 renderForest ::
-  Monad m =>
+  DomBuilder t m =>
   Bool ->
   Maybe Int ->
-  Bool ->
-  ZettelGraph ->
+  -- When given the zettelkasten graph, also show non-parent backlinks.
+  -- The dfsForest tree is "incomplete" in that it lacks these references.
+  Maybe ZettelGraph ->
   [Tree Zettel] ->
-  HtmlT m ()
-renderForest isRoot maxLevel renderingFullTree g trees =
+  m ()
+renderForest isRoot maxLevel mg trees =
   case maxLevel of
-    Just 0 -> mempty
+    Just 0 -> blank
     _ -> do
       forM_ (sortForest trees) $ \(Node zettel subtrees) ->
-        li_ $ do
+        el "li" $ do
           let zettelDiv =
-                div_
-                  [class_ $ bool "" "ui black label" renderingFullTree]
+                divClass
+                  (maybe "" (const "ui black label") mg)
           bool id zettelDiv isRoot $
-            renderZettelLink def zettel
-          when renderingFullTree $ do
-            " "
+            ZettelView.renderZettelLink def zettel
+          whenJust mg $ \g -> do
+            text " "
             case G.backlinks Folgezettel zettel g of
               conns@(_ : _ : _) ->
                 -- Has two or more category backlinks
                 forM_ conns $ \zettel2 -> do
-                  i_ [class_ "fas fa-link", title_ $ zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2] mempty
-              _ -> mempty
+                  let connTitle = (zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2)
+                  elAttr "i" ("class" =: "fas fa-link" <> "title" =: connTitle) blank
+              _ -> blank
           when (length subtrees > 0) $ do
-            ul_ $ renderForest False ((\n -> n - 1) <$> maxLevel) renderingFullTree g subtrees
+            el "ul" $ renderForest False ((\n -> n - 1) <$> maxLevel) mg subtrees
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
-
--- | Render a link to an individual zettel.
-renderZettelLink :: forall m. Monad m => Maybe LinkView -> Zettel -> HtmlT m ()
-renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
-  let mextra =
-        if linkViewShowDate
-          then case zettelDay of
-            Just day ->
-              Just $ toHtml $ show @Text day
-            Nothing ->
-              Nothing
-          else Nothing
-  span_ [class_ "zettel-link-container"] $ do
-    forM_ mextra $ \extra ->
-      span_ [class_ "extra monoFont"] extra
-    let linkTooltip =
-          if null zettelTags
-            then Nothing
-            else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
-    span_ ([class_ "zettel-link"] <> withTooltip linkTooltip) $ do
-      a_ [href_ (zettelUrl zettelID)] $ toHtml zettelTitle
-  where
-    withTooltip :: Maybe Text -> [Attribute]
-    withTooltip = \case
-      Nothing -> []
-      Just s ->
-        [ makeAttribute "data-tooltip" s,
-          makeAttribute "data-inverted" "",
-          makeAttribute "data-position" "right center"
-        ]
 
 style :: Config -> Css
 style Config {..} = do
@@ -308,29 +293,14 @@ style Config {..} = do
       C.listStyleType C.square
       C.paddingLeft $ em 1.5
   "div.zettel-view" ? do
-    "div.date" ? do
-      C.textAlign C.center
-      C.color C.gray
+    -- This list styling applies both to zettel content, and the rest of the
+    -- view (eg: connections pane)
     C.ul ? do
       C.paddingLeft $ em 1.5
       C.listStyleType C.square
       C.li ? do
         mempty -- C.paddingBottom $ em 1
-    C.h1 ? do
-      C.paddingTop $ em 0.2
-      C.paddingBottom $ em 0.2
-      C.textAlign C.center
-      C.backgroundColor $ Theme.withRgb neuronTheme C.rgba 0.1
-    C.h2 ? do
-      C.borderBottom C.solid (px 1) C.steelblue
-      C.marginBottom $ em 0.5
-    C.h3 ? do
-      C.margin (px 0) (px 0) (em 0.4) (px 0)
-    C.h4 ? do
-      C.opacity 0.8
-    codeStyle
-    blockquoteStyle
-    kbd ? mozillaKbdStyle
+    ZettelView.zettelCss neuronTheme
   "div.tag-tree" ? do
     "div.node" ? do
       C.fontWeight C.bold
@@ -352,41 +322,3 @@ style Config {..} = do
     C.fontSize $ em 0.7
   "[data-tooltip]:after" ? do
     C.fontSize $ em 0.7
-  "div#footnotes" ? do
-    C.marginTop $ em 4
-    C.borderTop C.groove (px 2) linkColor
-    C.fontSize $ em 0.9
-  -- reflex-dom-pandoc footnote aside elements
-  -- (only used for footnotes defined inside footnotes)
-  "aside.footnote-inline" ? do
-    C.width $ pct 30
-    C.paddingLeft $ px 15
-    C.marginLeft $ px 15
-    C.float C.floatRight
-    C.backgroundColor C.lightgray
-  where
-    codeStyle = do
-      C.code ? do
-        sym margin auto
-        fontSize $ pct 100
-      -- This pretty much selects inline code elements
-      "p code, li code, ol code" ? do
-        sym padding $ em 0.2
-        backgroundColor "#f8f8f8"
-      -- This selects block code elements
-      pre ? do
-        sym padding $ em 0.5
-        C.overflow auto
-        C.maxWidth $ pct 100
-      "div.pandoc-code" ? do
-        marginLeft auto
-        marginRight auto
-        pre ? do
-          backgroundColor "#f8f8f8"
-    -- https://css-tricks.com/snippets/css/simple-and-nice-blockquote-styling/
-    blockquoteStyle =
-      C.blockquote ? do
-        C.backgroundColor "#f9f9f9"
-        C.borderLeft C.solid (px 10) "#ccc"
-        sym2 C.margin (em 1.5) (px 0)
-        sym2 C.padding (em 0.5) (px 10)

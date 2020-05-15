@@ -16,6 +16,7 @@
 module Neuron.Zettelkasten.Query.View
   ( buildQueryView,
     zettelUrl,
+    tagUrl,
   )
 where
 
@@ -135,11 +136,11 @@ buildQueryView = \case
 -- TODO: not using Rib for ghcjs, but factorize this
 zettelUrl :: ZettelID -> Text
 zettelUrl zid =
-  "/" <> zettelIDText zid <> ".html"
+  zettelIDText zid <> ".html"
 
 tagUrl :: Tag -> Text
 tagUrl (Tag s) =
-  "/search.html?tag=" <> s
+  "search.html?tag=" <> s
 
 -- |  Render a tag tree along with the count of zettels tagged with it
 renderTagTree :: Forest (NonEmpty TagNode, Natural) -> B.Block

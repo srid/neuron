@@ -12,7 +12,6 @@ let
   inherit (import gitignoreSrc { inherit (pkgs) lib; }) gitignoreSource;
 
   commonmark = hackGet ./dep/commonmark-hs;
-  skylighting = hackGet ./dep/skylighting;
   test-framework = hackGet ./dep/test-framework;
 
   neuronSearchScript = pkgs.runCommand "neuron-search" { buildInputs = [ pkgs.makeWrapper ]; } 
@@ -54,8 +53,6 @@ in {
 
     # pandoc
     pandoc = hackGet ./dep/pandoc;
-    #skylighting = skylighting + "/skylighting";
-    #skylighting-core = skylighting + "/skylighting-core";
     regex-base = hackGet ./dep/regex-base;
     regex-posix = hackGet ./dep/regex-posix;
     regex-pcre = hackGet ./dep/regex-pcre;

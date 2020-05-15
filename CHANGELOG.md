@@ -7,6 +7,7 @@
   - With this change, neuron can potentially support other text formats (org,
     reST, etc.)
 - Switch to GHC 8.6 (for reflex-dom)
+- Raw HTML support (#191)
 
 ## 0.4.0.0
 
