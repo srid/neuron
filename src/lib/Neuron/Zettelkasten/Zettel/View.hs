@@ -26,7 +26,7 @@ import Reflex.Dom.Core
 import Reflex.Dom.Pandoc.Document
 import Relude
 
-renderZettelContent :: DomBuilder t m => Zettel -> m ()
+renderZettelContent :: PandocBuilder t m => Zettel -> m ()
 renderZettelContent Zettel {..} = do
   divClass "ui raised segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle

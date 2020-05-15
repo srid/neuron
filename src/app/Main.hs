@@ -18,6 +18,7 @@ import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Route (Route (..))
 import Neuron.Web.View (renderRouteBody, renderRouteHead, style)
 import Reflex.Dom.Core
+import Reflex.Dom.Pandoc.Document (PandocBuilder)
 import Relude
 import qualified Rib
 
@@ -35,7 +36,7 @@ generateMainSite = do
         Rib.writeRoute r $ decodeUtf8 @Text html
   void $ generateSite config writeHtmlRoute
 
-renderPage :: DomBuilder t m => Config -> Route g a -> (g, a) -> m ()
+renderPage :: PandocBuilder t m => Config -> Route g a -> (g, a) -> m ()
 renderPage config r val = elAttr "html" ("lang" =: "en") $ do
   el "head" $ do
     renderRouteHead config r val
