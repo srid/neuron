@@ -26,11 +26,11 @@ import Reflex.Dom.Core
 import Reflex.Dom.Pandoc.Document
 import Relude
 
-renderZettelContent :: DomBuilder t m => Zettel -> m ()
+renderZettelContent :: PandocBuilder t m => Zettel -> m ()
 renderZettelContent Zettel {..} = do
   divClass "ui raised segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
-    elPandocDoc zettelContent
+    elPandoc zettelContent
     renderTags zettelTags
     whenJust zettelDay $ \day ->
       elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ text $ show day

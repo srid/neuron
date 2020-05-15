@@ -45,6 +45,7 @@ import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDTe
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.View as ZettelView
 import Reflex.Dom.Core
+import Reflex.Dom.Pandoc.Document (PandocBuilder)
 import Relude
 import qualified Rib
 import Rib.Extra.OpenGraph
@@ -121,7 +122,7 @@ renderOpenGraph OpenGraph {..} = do
         then f $ URI.render uri'
         else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
 
-renderRouteBody :: DomBuilder t m => Config -> Route graph a -> (graph, a) -> m ()
+renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m ()
 renderRouteBody config r (g, x) = do
   case r of
     Route_ZIndex ->
@@ -181,7 +182,7 @@ renderSearch graph = do
   el "script" $ text $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   el "script" $ text searchScript
 
-renderZettel :: DomBuilder t m => Config -> (ZettelGraph, Zettel) -> m ()
+renderZettel :: PandocBuilder t m => Config -> (ZettelGraph, Zettel) -> m ()
 renderZettel config (graph, z@Zettel {..}) = do
   divClass "zettel-view" $ do
     ZettelView.renderZettelContent z
