@@ -110,6 +110,7 @@ common app-common
     pandoc,
     skylighting-core,
     relude,
+    iso8601-time,
     rib ^>=0.11,
     shake -any,
     time,

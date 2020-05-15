@@ -33,6 +33,7 @@ import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
 import qualified Data.Text as T
+import Data.Time.ISO8601 (formatISO8601)
 import Data.Tree (Tree (..))
 import Lucid
 import Neuron.Config
@@ -51,9 +52,11 @@ import Reflex.Dom.Pandoc.Document (elPandocDoc)
 import Relude
 import qualified Rib
 import Rib.Extra.CSS (mozillaKbdStyle)
+import Rib.Extra.OpenGraph
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
 import System.IO.Unsafe (unsafePerformIO)
+import qualified Text.URI as URI
 import Text.URI.QQ
 
 searchScript :: Text
@@ -72,10 +75,10 @@ renderRouteHead config r val = do
       with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js"]
       with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js"]
       with (script_ mempty) [src_ "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"]
-    _ -> do
-      toHtml $ routeOpenGraph config (snd val) r
-      r2l $ Breadcrumb.renderBreadcrumbs $ routeStructuredData config val r
-      style_ [type_ "text/css"] $ Skylighting.styleToCss Skylighting.tango
+    _ -> r2l $ do
+      renderOpenGraph $ routeOpenGraph config (snd val) r
+      Breadcrumb.renderBreadcrumbs $ routeStructuredData config val r
+      elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
   where
     r2l = toHtmlRaw . unsafePerformIO . fmap snd . renderStatic
     routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
@@ -90,6 +93,37 @@ renderRouteHead config r val = do
              in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel v graph
       _ ->
         []
+
+renderOpenGraph :: forall t m. DomBuilder t m => OpenGraph -> m ()
+renderOpenGraph OpenGraph {..} = do
+  meta' "author" `mapM_` _openGraph_author
+  meta' "description" `mapM_` _openGraph_description
+  requireAbsolute "OGP URL" (\ourl -> elAttr "link" ("rel" =: "canonical" <> "href" =: ourl) blank) `mapM_` _openGraph_url
+  metaOg "title" _openGraph_title
+  metaOg "site_name" _openGraph_siteName
+  whenJust _openGraph_type $ \case
+    OGType_Article (Article {..}) -> do
+      metaOg "type" "article"
+      metaOg "article:section" `mapM_` _article_section
+      metaOgTime "article:modified_time" `mapM_` _article_modifiedTime
+      metaOgTime "article:published_time" `mapM_` _article_publishedTime
+      metaOgTime "article:expiration_time" `mapM_` _article_expirationTime
+      metaOg "article:tag" `mapM_` _article_tag
+    OGType_Website -> do
+      metaOg "type" "website"
+  requireAbsolute "OGP image URL" (metaOg "image") `mapM_` _openGraph_image
+  where
+    meta' k v =
+      elAttr "meta" ("name" =: k <> "content" =: v) blank
+    metaOg k v =
+      elAttr "meta" ("property" =: ("og:" <> k) <> "content" =: v) blank
+    metaOgTime k t =
+      metaOg k $ toText $ formatISO8601 t
+    requireAbsolute :: Text -> (Text -> m ()) -> URI.URI -> m ()
+    requireAbsolute description f uri' =
+      if isJust (URI.uriScheme uri')
+        then f $ URI.render uri'
+        else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
 
 renderRouteBody :: DomBuilder t m => Config -> Route graph a -> (graph, a) -> m ()
 renderRouteBody config r (g, x) = do
