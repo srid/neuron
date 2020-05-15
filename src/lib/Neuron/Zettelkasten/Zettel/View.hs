@@ -20,7 +20,7 @@ import Data.TagTree
 import qualified Data.Text as T
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Query.Theme (LinkView (..))
-import Neuron.Zettelkasten.Query.View (zettelUrl)
+import Neuron.Zettelkasten.Query.View (tagUrl, zettelUrl)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc.Document
@@ -37,7 +37,7 @@ renderZettelContent Zettel {..} = do
 
 renderTags :: DomBuilder t m => [Tag] -> m ()
 renderTags tags = do
-  forM_ tags $ \(unTag -> t) -> do
+  forM_ tags $ \t -> do
     -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
     -- the top pushes the zettel content down, introducing unnecessary white
     -- space below the title. So we put it at the bottom for now.
@@ -45,12 +45,11 @@ renderTags tags = do
       elAttr
         "a"
         ( "href" =: (tagUrl t)
-            <> "title" =: ("See all zettels tagged '" <> t <> "'")
+            <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
         )
-        $ text t
+        $ text
+        $ unTag t
     el "p" blank
-  where
-    tagUrl s = "/search.html?tag=" <> s
 
 -- | Render a link to an individual zettel.
 renderZettelLink :: DomBuilder t m => Maybe LinkView -> Zettel -> m ()

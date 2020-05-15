@@ -16,6 +16,7 @@
 module Neuron.Zettelkasten.Query.View
   ( buildQueryView,
     zettelUrl,
+    tagUrl,
   )
 where
 
@@ -139,7 +140,7 @@ zettelUrl zid =
 
 tagUrl :: Tag -> Text
 tagUrl (Tag s) =
-  "/search.html?tag=" <> s
+  "search.html?tag=" <> s
 
 -- |  Render a tag tree along with the count of zettels tagged with it
 renderTagTree :: Forest (NonEmpty TagNode, Natural) -> B.Block
