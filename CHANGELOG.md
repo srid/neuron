@@ -8,6 +8,8 @@
     reST, etc.)
 - Switch to GHC 8.6 (for reflex-dom)
 - Raw HTML support (#191)
+- Bug fixes
+  - Fix 'neuron new' generating invalid Markdown when title contains special characters (#163)
 
 ## 0.4.0.0
 

@@ -25,6 +25,7 @@ import Data.Time
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import Neuron.Zettelkasten.Query as Q
+import Neuron.Zettelkasten.Zettel.Meta (zettelDateFormat)
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Options.Applicative
 import Relude
@@ -164,4 +165,4 @@ commandParser defaultNotesDir today = do
     dayReader :: ReadM Day
     dayReader =
       maybeReader $
-        parseTimeM False defaultTimeLocale "%Y-%m-%d"
+        parseTimeM False defaultTimeLocale zettelDateFormat

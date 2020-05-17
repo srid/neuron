@@ -15,6 +15,7 @@ import qualified Data.Set as Set
 import Data.Some
 import Data.Text (strip)
 import qualified Data.Text as T
+import qualified Data.YAML as YAML
 import Development.Shake (Action)
 import Neuron.CLI.Types
 import qualified Neuron.Zettelkasten.Graph as G
@@ -48,11 +49,10 @@ newZettelFile NewCommand {..} = do
           T.intercalate
             "\n"
             [ "---",
-              "title: " <> title,
-              "date: " <> show day,
+              "title: " <> T.strip (decodeUtf8 (YAML.encode1 title)),
+              "date: " <> T.strip (decodeUtf8 (YAML.encode1 day)),
               "---",
-              "",
-              ""
+              "\n"
             ]
         fileAction path
   where
