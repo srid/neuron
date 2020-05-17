@@ -162,7 +162,7 @@ angleBracketLinkSpec =
     pLink = P.try $ do
       x <- angleBracketLinkP
       let url = CM.untokenize x
-          title = show x
+          title = ""
       pure $! CM.link url title $ CM.str url
 
 angleBracketLinkP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
