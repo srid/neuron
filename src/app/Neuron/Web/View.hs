@@ -189,13 +189,16 @@ renderZettel :: PandocBuilder t m => Config -> (ZettelGraph, Zettel) -> m ()
 renderZettel config (graph, z@Zettel {..}) = do
   let upTree = G.backlinkForest Folgezettel z graph
   whenNotNull upTree $ \_ -> do
-    elAttr "div" ("class" =: "flipped tree" <> "style" =: "transform-origin: 50%") $ do
+    elAttr "div" ("class" =: "flipped tree" <> "id" =: "zettel-uptree" <> "style" =: "transform-origin: 50%") $ do
       el "ul" $ do
         el "li" $ do
           divClass "forest-link" $ el "a" $ text zettelTitle
           el "ul" $ do
             renderForestNG True Nothing Nothing upTree
-  divClass "ui text container" $ do
+  elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
+    -- zettel-container-anchor is a trick used by the scrollIntoView JS below
+    -- cf. https://stackoverflow.com/a/49968820/55246
+    elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -14px; left: 0") blank
     divClass "zettel-view" $ do
       ZettelView.renderZettelContent z
       let cfBacklinks = G.backlinks OrdinaryConnection z graph
@@ -206,6 +209,11 @@ renderZettel config (graph, z@Zettel {..}) = do
           renderForest True Nothing Nothing $
             fmap (flip Node []) cfBacklinks
       renderFooter config graph (Just z)
+  -- Because the tree above can be pretty large, we scroll past it
+  -- automatically when the page loads.
+  -- TODO: Do this only if we have rendered the tree.
+  el "script" $ text $
+    "document.getElementById(\"zettel-container-anchor\").scrollIntoView({behavior: \"smooth\", block: \"start\"});"
   -- renderZettelPanel config graph z
   -- elAttr "div" ("class" =: "tree" <> "style" =: "transform-origin: 50%") $ do
   --   el "ul" $ do
