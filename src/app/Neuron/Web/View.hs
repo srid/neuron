@@ -128,14 +128,14 @@ renderRouteBody config r (g, x) = do
     Route_ZIndex ->
       renderIndex config g
     Route_Search {} ->
-      renderSearch g
+      renderSearch config g
     Route_Zettel _ ->
       renderZettel config (g, x)
     Route_Redirect _ ->
       elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
 
 renderIndex :: DomBuilder t m => Config -> ZettelGraph -> m ()
-renderIndex Config {..} graph = do
+renderIndex config@Config {..} graph = do
   let neuronTheme = Theme.mkTheme theme
   elClass "h1" "header" $ text "Zettel Index"
   divClass "z-index" $ do
@@ -151,17 +151,18 @@ renderIndex Config {..} graph = do
       text $ "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten graph. "
       text "Each cluster is rendered as a forest, with their roots (mother zettels) highlighted."
     forM_ clusters $ \forest ->
-      divClass ("ui stacked " <> Theme.semanticColor neuronTheme <> " segment") $ do
+      divClass ("ui " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
         el "ul" $ renderForest True Nothing (Just graph) forest
-    renderBrandFooter True
+    renderFooter config graph Nothing
+    renderBrandFooter
   where
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderSearch :: DomBuilder t m => ZettelGraph -> m ()
-renderSearch graph = do
+renderSearch :: DomBuilder t m => Config -> ZettelGraph -> m ()
+renderSearch config graph = do
   elClass "h1" "header" $ text "Search"
   divClass "ui fluid icon input search" $ do
     elAttr "input" ("type" =: "text" <> "id" =: "search-input") blank
@@ -181,6 +182,8 @@ renderSearch graph = do
   elAttr "ul" ("id" =: "search-results" <> "class" =: "zettel-list") blank
   el "script" $ text $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   el "script" $ text searchScript
+  renderFooter config graph Nothing
+  renderBrandFooter
 
 renderZettel :: PandocBuilder t m => Config -> (ZettelGraph, Zettel) -> m ()
 renderZettel config (graph, z@Zettel {..}) = do
@@ -189,30 +192,40 @@ renderZettel config (graph, z@Zettel {..}) = do
     renderZettelPanel config graph z
 
 renderZettelPanel :: DomBuilder t m => Config -> ZettelGraph -> Zettel -> m ()
-renderZettelPanel Config {..} graph z@Zettel {..} = do
+renderZettelPanel config@Config {..} graph z@Zettel {..} = do
   let neuronTheme = Theme.mkTheme theme
   divClass ("ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment") $ do
     divClass "ui two column grid" $ do
       divClass "column" $ do
-        divClass "ui header" $ text "Down"
-        el "ul" $ renderForest True (Just 2) Nothing $
-          G.frontlinkForest Folgezettel z graph
-      divClass "column" $ do
-        divClass "ui header" $ text "Up"
+        elAttr "div" ("class" =: "ui header" <> title =: "The following zettels branch to this zettel") $
+          text "Uplinks"
         el "ul" $ do
           renderForest True Nothing Nothing $
             G.backlinkForest Folgezettel z graph
-        divClass "ui header" $ text "Other backlinks"
-        el "ul" $ do
-          renderForest True Nothing Nothing
-            $ fmap (flip Node [])
-            $ G.backlinks OrdinaryConnection z graph
-  divClass "ui inverted black bottom attached footer segment" $ do
+        let cfBacklinks = G.backlinks OrdinaryConnection z graph
+        whenNotNull cfBacklinks $ \_ -> do
+          elAttr "div" ("class" =: "ui header" <> title =: "Zettels that link here, but without branching") $
+            text "Backlinks"
+          el "ul" $ do
+            renderForest True Nothing Nothing $
+              fmap (flip Node []) cfBacklinks
+      divClass "column" $ do
+        elAttr "div" ("class" =: "ui header" <> title =: "This zettel branches to the following zettels") $
+          text "Downlinks"
+        el "ul" $ renderForest True (Just 2) Nothing $
+          G.frontlinkForest Folgezettel z graph
+  renderFooter config graph (Just z)
+  renderBrandFooter
+
+renderFooter :: DomBuilder t m => Config -> ZettelGraph -> Maybe Zettel -> m ()
+renderFooter Config {..} graph mzettel = do
+  let attachClass = maybe "" (const "bottom attached") mzettel
+  divClass ("ui inverted black " <> attachClass <> " footer segment") $ do
     divClass "ui equal width grid" $ do
       divClass "center aligned column" $ do
         let homeUrl = maybe "." (const "index.html") $ G.getZettel (ZettelCustomID "index") graph
         elAttr "a" ("href" =: homeUrl <> "title" =: "/") $ fa "fas fa-home"
-      whenJust editUrl $ \urlPrefix ->
+      whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) ->
         divClass "center aligned column" $ do
           elAttr "a" ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel") $ fa "fas fa-edit"
       divClass "center aligned column" $ do
@@ -220,18 +233,16 @@ renderZettelPanel Config {..} graph z@Zettel {..} = do
       divClass "center aligned column" $ do
         elAttr "a" ("href" =: (Rib.routeUrlRel Route_ZIndex) <> "title" =: "All Zettels (z-index)") $
           fa "fas fa-tree"
-  renderBrandFooter False
 
-renderBrandFooter :: DomBuilder t m => Bool -> m ()
-renderBrandFooter withVersion =
+renderBrandFooter :: DomBuilder t m => m ()
+renderBrandFooter =
   divClass "ui one column grid footer-version" $ do
     divClass "center aligned column" $ do
       el "p" $ do
         text "Generated by "
         elAttr "a" ("href" =: "https://neuron.zettel.page") $ text "Neuron"
-        when withVersion $ do
-          text " "
-          el "code" $ text neuronVersion
+        text " "
+        el "code" $ text neuronVersion
 
 -- | Font awesome element
 fa :: DomBuilder t m => Text -> m ()
