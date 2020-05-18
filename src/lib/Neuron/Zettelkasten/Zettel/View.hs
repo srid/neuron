@@ -28,7 +28,7 @@ import Relude
 
 renderZettelContent :: PandocBuilder t m => Zettel -> m ()
 renderZettelContent Zettel {..} = do
-  divClass "ui raised segment zettel-content" $ do
+  divClass "ui raised top attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
     elPandoc zettelContent
     renderTags zettelTags

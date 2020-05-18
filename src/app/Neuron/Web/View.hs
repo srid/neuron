@@ -44,9 +44,9 @@ import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.View as ZettelView
-import Reflex.Dom.Core
+import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc.Document (PandocBuilder)
-import Relude
+import Relude hiding ((&))
 import qualified Rib
 import Rib.Extra.OpenGraph
 import qualified Skylighting.Format.HTML as Skylighting
@@ -135,7 +135,7 @@ renderRouteBody config r (g, x) = do
       elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
 
 renderIndex :: DomBuilder t m => Config -> ZettelGraph -> m ()
-renderIndex config@Config {..} graph = do
+renderIndex config@Config {..} graph = divClass "ui text container" $ do
   let neuronTheme = Theme.mkTheme theme
   elClass "h1" "header" $ text "Zettel Index"
   divClass "z-index" $ do
@@ -162,7 +162,7 @@ renderIndex config@Config {..} graph = do
       n -> "are " <> show n <> " " <> nounPlural
 
 renderSearch :: DomBuilder t m => Config -> ZettelGraph -> m ()
-renderSearch config graph = do
+renderSearch config graph = divClass "ui text container" $ do
   elClass "h1" "header" $ text "Search"
   divClass "ui fluid icon input search" $ do
     elAttr "input" ("type" =: "text" <> "id" =: "search-input") blank
@@ -187,12 +187,36 @@ renderSearch config graph = do
 
 renderZettel :: PandocBuilder t m => Config -> (ZettelGraph, Zettel) -> m ()
 renderZettel config (graph, z@Zettel {..}) = do
-  divClass "zettel-view" $ do
-    ZettelView.renderZettelContent z
-    renderZettelPanel config graph z
+  let upTree = G.backlinkForest Folgezettel z graph
+  whenNotNull upTree $ \_ -> do
+    elAttr "div" ("class" =: "flipped tree" <> "style" =: "transform-origin: 50%") $ do
+      el "ul" $ do
+        el "li" $ do
+          divClass "forest-link" $ el "a" $ text zettelTitle
+          el "ul" $ do
+            renderForestNG True Nothing Nothing upTree
+  divClass "ui text container" $ do
+    divClass "zettel-view" $ do
+      ZettelView.renderZettelContent z
+      let cfBacklinks = G.backlinks OrdinaryConnection z graph
+      whenNotNull cfBacklinks $ \_ -> divClass "ui attached segment backlinks" $ do
+        elAttr "div" ("class" =: "ui header" <> title =: "Zettels that link here, but without branching") $
+          text "Backlinks"
+        el "ul" $ do
+          renderForest True Nothing Nothing $
+            fmap (flip Node []) cfBacklinks
+      renderFooter config graph (Just z)
+  -- renderZettelPanel config graph z
+  -- elAttr "div" ("class" =: "tree" <> "style" =: "transform-origin: 50%") $ do
+  --   el "ul" $ do
+  --     el "li" $ do
+  --       divClass "forest-link" $ el "a" $ text zettelTitle
+  --       el "ul" $ do
+  --         renderForestNG True (Just 2) Nothing $ G.frontlinkForest Folgezettel z graph
+  renderBrandFooter
 
-renderZettelPanel :: DomBuilder t m => Config -> ZettelGraph -> Zettel -> m ()
-renderZettelPanel config@Config {..} graph z@Zettel {..} = do
+_renderZettelPanel :: DomBuilder t m => Config -> ZettelGraph -> Zettel -> m ()
+_renderZettelPanel config@Config {..} graph z@Zettel {..} = do
   let neuronTheme = Theme.mkTheme theme
   divClass ("ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment") $ do
     divClass "ui two column grid" $ do
@@ -283,6 +307,39 @@ renderForest isRoot maxLevel mg trees =
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
 
+renderForestNG ::
+  DomBuilder t m =>
+  Bool ->
+  Maybe Int ->
+  -- When given the zettelkasten graph, also show non-parent backlinks.
+  -- The dfsForest tree is "incomplete" in that it lacks these references.
+  Maybe ZettelGraph ->
+  [Tree Zettel] ->
+  m ()
+renderForestNG _isRoot maxLevel mg trees =
+  case maxLevel of
+    Just 0 -> blank
+    _ -> do
+      forM_ (sortForest trees) $ \(Node zettel subtrees) ->
+        el "li" $ do
+          let linkDivClass = maybe "forest-link" (const "ui black label forest-link") mg
+          divClass linkDivClass $
+            ZettelView.renderZettelLink def zettel
+          whenJust mg $ \g -> do
+            text " "
+            case G.backlinks Folgezettel zettel g of
+              conns@(_ : _ : _) ->
+                -- Has two or more category backlinks
+                forM_ conns $ \zettel2 -> do
+                  let connTitle = (zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2)
+                  elAttr "i" ("class" =: "fas fa-link" <> "title" =: connTitle) blank
+              _ -> blank
+          when (length subtrees > 0) $ do
+            el "ul" $ renderForestNG False ((\n -> n - 1) <$> maxLevel) mg subtrees
+  where
+    -- Sort trees so that trees containing the most recent zettel (by ID) come first.
+    sortForest = reverse . sortOn maximum
+
 style :: Config -> Css
 style Config {..} = do
   let neuronTheme = Theme.mkTheme theme
@@ -333,3 +390,94 @@ style Config {..} = do
     C.fontSize $ em 0.7
   "[data-tooltip]:after" ? do
     C.fontSize $ em 0.7
+  pureCssTreeDiagram
+  ".backlinks" ? do
+    opacity 0.5
+
+-- https://codepen.io/philippkuehn/pen/QbrOaN
+pureCssTreeDiagram :: Css
+pureCssTreeDiagram = do
+  -- TODO: should only apply for folgezettel
+  ".zettel-link-container::after" ? do
+    C.paddingLeft $ em 0.3
+    C.content $ stringContent "ᛦ"
+  let cellBorderWidth = px 2
+      flipTree = False
+      rotateDeg = deg 180
+  ".tree.flipped" ? do
+    C.transform $ C.rotate rotateDeg
+  ".tree" ? do
+    C.overflow auto
+    fontSize $ em 0.9
+    when flipTree $ do
+      C.transform $ C.rotate rotateDeg
+    -- Clay does not support this; doing it inline in div style.
+    -- C.transformOrigin $ pct 50
+    "ul" ? do
+      C.position relative
+      sym2 C.padding (em 1) 0
+      C.whiteSpace nowrap
+      sym2 C.margin (px 0) auto
+      C.textAlign center
+      C.after & do
+        C.content $ stringContent ""
+        C.display C.displayTable
+        C.clear both
+    "li" ? do
+      C.display C.inlineBlock
+      C.verticalAlign C.vAlignTop
+      C.textAlign C.center
+      C.listStyleType none
+      C.position relative
+      C.padding (em 1) (em 0.5) (em 0) (em 0.5)
+      forM_ [C.before, C.after] $ \sel -> sel & do
+        C.content $ stringContent ""
+        C.position absolute
+        C.top $ px 0
+        C.right $ pct 50
+        C.borderTop solid cellBorderWidth "#ccc"
+        C.width $ pct 50
+        C.height $ em 1.2
+      C.after & do
+        C.right auto
+        C.left $ pct 50
+        C.borderLeft solid cellBorderWidth "#ccc"
+      C.onlyChild & do
+        C.paddingTop $ em 0
+        forM_ [C.after, C.before] $ \sel -> sel & do
+          C.display none
+      C.firstChild & do
+        C.before & do
+          C.borderStyle none
+          C.borderWidth $ px 0
+        C.after & do
+          C.borderRadius (px 5) 0 0 0
+      C.lastChild & do
+        C.after & do
+          C.borderStyle none
+          C.borderWidth $ px 0
+        C.before & do
+          C.borderRight solid cellBorderWidth "#ccc"
+          C.borderRadius 0 (px 5) 0 0
+    "ul ul::before" ? do
+      C.content $ stringContent ""
+      C.position absolute
+      C.top $ px 0
+      C.left $ pct 50
+      C.borderLeft solid cellBorderWidth "#ccc"
+      C.width $ px 0
+      C.height $ em 1.2
+    "li" ? do
+      "div.forest-link" ? do
+        border solid cellBorderWidth "#ccc"
+        sym2 C.padding (em 0.5) (em 0.75)
+        C.textDecoration none
+        C.display inlineBlock
+        sym C.borderRadius (px 5)
+        C.color "#333"
+        C.position relative
+        C.top cellBorderWidth
+        when flipTree $ do
+          C.transform $ C.rotate rotateDeg
+  ".tree.flipped li div.forest-link" ? do
+    C.transform $ C.rotate rotateDeg
