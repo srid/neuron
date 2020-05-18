@@ -45,7 +45,7 @@ renderPage config r val = elAttr "html" ("lang" =: "en") $ do
         blank
       _ -> do
         forM_
-          [ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css",
+          [ "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.4/dist/semantic.min.css",
             "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
           ]
           $ \url ->
