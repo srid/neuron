@@ -11,6 +11,7 @@ module Data.Graph.Labelled
     -- * Querying
     findVertex,
     getVertices,
+    hasEdge,
 
     -- * Algorithms
     preSet,

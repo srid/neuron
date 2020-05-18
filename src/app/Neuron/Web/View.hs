@@ -201,7 +201,7 @@ renderZettel config (graph, z@Zettel {..}) = do
       let cfBacklinks = G.backlinks OrdinaryConnection z graph
       whenNotNull cfBacklinks $ \_ -> divClass "ui attached segment backlinks" $ do
         elAttr "div" ("class" =: "ui header" <> title =: "Zettels that link here, but without branching") $
-          text "Backlinks"
+          text "More backlinks"
         el "ul" $ do
           renderForest True Nothing Nothing $
             fmap (flip Node []) cfBacklinks

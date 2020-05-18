@@ -95,8 +95,10 @@ backlinkForest conn z =
     . G.induceOnEdge (== Just conn)
 
 backlinks :: Connection -> Zettel -> ZettelGraph -> [Zettel]
-backlinks conn z =
-  G.preSet z . G.induceOnEdge (== Just conn)
+backlinks conn z g =
+  filter (not . branches) $ G.preSet z $ G.induceOnEdge (== Just conn) g
+  where
+    branches bz = G.hasEdge g z bz
 
 categoryClusters :: ZettelGraph -> [Forest Zettel]
 categoryClusters (categoryGraph -> g) =

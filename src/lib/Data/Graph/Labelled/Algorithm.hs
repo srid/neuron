@@ -28,6 +28,10 @@ getVertices :: LabelledGraph v e -> [v]
 getVertices (LabelledGraph _ lm) =
   Map.elems lm
 
+hasEdge :: (Ord (VertexID v), Vertex v) => LabelledGraph v e -> v -> v -> Bool
+hasEdge (LabelledGraph g _) x y =
+  LAM.hasEdge (vertexID x) (vertexID y) g
+
 -- | Return the backlinks to the given vertex
 preSet :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
 preSet (vertexID -> zid) g =
