@@ -3,7 +3,5 @@ dist-*
 .ghc.environment.*
 result
 .shake
-
-guide/.neuron
-
+.neuron
 neuron.prof

@@ -27,7 +27,7 @@ in {
   };
 
   packages = {
-    neuron = gitignoreSource ./.;
+    neuron = pkgs.lib.cleanSource (gitignoreSource ./.);
     # TODO: expose these overrides so it can be used in the other project
     #that uses neuron as a thunk.
 
