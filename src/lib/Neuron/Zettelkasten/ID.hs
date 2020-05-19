@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -18,7 +19,7 @@ module Neuron.Zettelkasten.ID
   )
 where
 
-import Data.Aeson (ToJSON (toJSON))
+import Data.Aeson (FromJSON (..), ToJSON (toJSON))
 import qualified Data.Text as T
 import Data.Time
 import Relude
@@ -34,11 +35,18 @@ data ZettelID
     ZettelDateID Day Int
   | -- | Arbitrary alphanumeric ID.
     ZettelCustomID Text
-  deriving (Eq, Show, Ord)
+  deriving (Eq, Show, Ord, Generic)
 
 instance Show InvalidID where
   show (InvalidIDParseError s) =
     "Invalid Zettel ID: " <> toString s
+
+instance FromJSON ZettelID where
+  parseJSON x = do
+    s <- parseJSON x
+    case parseZettelID' s of
+      Left e -> fail $ show e
+      Right zid -> pure zid
 
 instance ToJSON ZettelID where
   toJSON = toJSON . zettelIDText
