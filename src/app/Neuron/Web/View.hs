@@ -209,45 +209,14 @@ renderZettel config (graph, z@Zettel {..}) = do
           renderForest True Nothing Nothing $
             fmap (flip Node []) cfBacklinks
       renderFooter config graph (Just z)
+  renderBrandFooter
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
   -- TODO: Do this only if we have rendered the tree.
+  -- FIXME: This may not scroll sufficiently if the images in the zettel haven't
+  -- loaded (thus the browser doesn't known the final height yet.)
   el "script" $ text $
     "document.getElementById(\"zettel-container-anchor\").scrollIntoView({behavior: \"smooth\", block: \"start\"});"
-  -- renderZettelPanel config graph z
-  -- elAttr "div" ("class" =: "tree" <> "style" =: "transform-origin: 50%") $ do
-  --   el "ul" $ do
-  --     el "li" $ do
-  --       divClass "forest-link" $ el "a" $ text zettelTitle
-  --       el "ul" $ do
-  --         renderForestNG True (Just 2) Nothing $ G.frontlinkForest Folgezettel z graph
-  renderBrandFooter
-
-_renderZettelPanel :: DomBuilder t m => Config -> ZettelGraph -> Zettel -> m ()
-_renderZettelPanel config@Config {..} graph z@Zettel {..} = do
-  let neuronTheme = Theme.mkTheme theme
-  divClass ("ui inverted " <> Theme.semanticColor neuronTheme <> " top attached connections segment") $ do
-    divClass "ui two column grid" $ do
-      divClass "column" $ do
-        elAttr "div" ("class" =: "ui header" <> title =: "The following zettels branch to this zettel") $
-          text "Uplinks"
-        el "ul" $ do
-          renderForest True Nothing Nothing $
-            G.backlinkForest Folgezettel z graph
-        let cfBacklinks = G.backlinks OrdinaryConnection z graph
-        whenNotNull cfBacklinks $ \_ -> do
-          elAttr "div" ("class" =: "ui header" <> title =: "Zettels that link here, but without branching") $
-            text "Backlinks"
-          el "ul" $ do
-            renderForest True Nothing Nothing $
-              fmap (flip Node []) cfBacklinks
-      divClass "column" $ do
-        elAttr "div" ("class" =: "ui header" <> title =: "This zettel branches to the following zettels") $
-          text "Downlinks"
-        el "ul" $ renderForest True (Just 2) Nothing $
-          G.frontlinkForest Folgezettel z graph
-  renderFooter config graph (Just z)
-  renderBrandFooter
 
 renderFooter :: DomBuilder t m => Config -> ZettelGraph -> Maybe Zettel -> m ()
 renderFooter Config {..} graph mzettel = do
