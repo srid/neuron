@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -27,6 +28,15 @@ getVertex (LabelledGraph _ vm) x =
 getVertices :: LabelledGraph v e -> [v]
 getVertices (LabelledGraph _ lm) =
   Map.elems lm
+
+hasEdge :: (Ord (VertexID v), Vertex v) => LabelledGraph v e -> v -> v -> Bool
+hasEdge (LabelledGraph g _) x y =
+  LAM.hasEdge (vertexID x) (vertexID y) g
+
+edgeLabel :: (Monoid e, Ord (VertexID v), Vertex v) => LabelledGraph v e -> v -> v -> Maybe e
+edgeLabel lg@(LabelledGraph g _) x y = do
+  guard $ hasEdge lg x y
+  pure $ LAM.edgeLabel (vertexID x) (vertexID y) g
 
 -- | Return the backlinks to the given vertex
 preSet :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]

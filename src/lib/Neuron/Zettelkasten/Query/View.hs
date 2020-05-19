@@ -28,6 +28,7 @@ import Data.Some
 import Data.TagTree (Tag (..), TagNode (..), TagPattern (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import qualified Data.Text as T
 import Data.Tree
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
@@ -39,19 +40,19 @@ import qualified Text.Pandoc.Builder as B
 -- | Build the Pandoc AST for query results
 buildQueryView :: MonadError QueryResultError m => DSum Query Identity -> m (Either B.Inline B.Block)
 buildQueryView = \case
-  Query_ZettelByID zid _mconn :=> Identity mres ->
+  Query_ZettelByID zid (fromMaybe def -> conn) :=> Identity mres ->
     case mres of
       Nothing -> throwError $ QueryResultError_NoSuchZettel zid
       Just target -> do
-        pure $ Left $ buildZettelLink Nothing target
-  q@(Query_ZettelsByTag pats _mconn view) :=> Identity res ->
+        pure $ Left $ buildZettelLink (Just conn) Nothing target
+  q@(Query_ZettelsByTag pats (fromMaybe def -> conn) view) :=> Identity res ->
     pure $ Right $
       B.Div
         B.nullAttr
         [ buildQueryName $ Some q,
           case zettelsViewGroupByTag view of
             False ->
-              buildZettelsLinks (zettelsViewLinkView view) res
+              buildZettelsLinks (Just conn) (zettelsViewLinkView view) res
             True ->
               B.Div B.nullAttr
                 $ flip fmap (Map.toList $ groupZettelsByTagsMatching pats res)
@@ -64,7 +65,7 @@ buildQueryView = \case
                           [ fontAwesomeIcon "fas fa-tag",
                             B.Str (unTag tag)
                           ],
-                      buildZettelsLinks (zettelsViewLinkView view) zettelGrp
+                      buildZettelsLinks (Just conn) (zettelsViewLinkView view) zettelGrp
                     ]
         ]
   q@(Query_Tags _) :=> Identity res ->
@@ -84,13 +85,17 @@ buildQueryView = \case
     mkAttr :: Text -> [(Text, Text)] -> B.Attr
     mkAttr cls kvs =
       ("", words cls, kvs)
-    buildZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} =
-      let linkTooltip =
+    -- TODO: This should be consolidated with renderZettelLink in Zettel/View.hs
+    -- (see module comment in this file)
+    buildZettelLink :: Maybe Connection -> Maybe LinkView -> Zettel -> B.Inline
+    buildZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} =
+      let connClass = bool "cf" "folgezettel" $ conn == Just Folgezettel
+          linkTooltip =
             if null zettelTags
               then Nothing
               else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
        in B.Span
-            (mkAttr "zettel-link-container" mempty)
+            (mkAttr ("zettel-link-container " <> connClass) mempty)
             $ catMaybes
               [ if linkViewShowDate
                   then case zettelDay of
@@ -101,10 +106,10 @@ buildQueryView = \case
                 Just $ B.Span (mkAttr "zettel-link" $ semanticUITooltipAttrs linkTooltip) $ pure $
                   B.Link mempty [B.Str zettelTitle] (zettelUrl zettelID, "")
               ]
-    buildZettelsLinks view zs =
+    buildZettelsLinks mconn view zs =
       B.BulletList $
         zs <&> \z ->
-          [B.Plain $ pure $ buildZettelLink (Just view) z]
+          [B.Plain $ pure $ buildZettelLink mconn (Just view) z]
     semanticUITooltipAttrs :: Maybe Text -> [(Text, Text)]
     semanticUITooltipAttrs = maybe [] $ \s ->
       [ ("data-tooltip", s),

@@ -45,7 +45,7 @@ renderPage config r val = elAttr "html" ("lang" =: "en") $ do
         blank
       _ -> do
         forM_
-          [ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css",
+          [ "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.4/dist/semantic.min.css",
             "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
           ]
           $ \url ->
@@ -55,7 +55,7 @@ renderPage config r val = elAttr "html" ("lang" =: "en") $ do
         when (Config.mathJaxSupport config) $
           elAttr "script" ("id" =: "MathJax-script" <> "src" =: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" <> "async" =: "") blank
   el "body" $ do
-    elAttr "div" ("id" =: "thesite" <> "class" =: "ui text container") $ do
+    elAttr "div" ("id" =: "thesite" <> "class" =: "ui fluid container") $ do
       renderRouteBody config r val
   where
     googleFonts :: DomBuilder t m => [Text] -> m ()
@@ -74,16 +74,19 @@ monoFont :: Text
 monoFont = "DM Mono"
 
 mainStyle :: Config -> Css
-mainStyle cfg = "div#thesite" ? do
-  C.fontFamily [bodyFont] [C.serif]
-  C.paddingTop $ em 1
-  C.paddingBottom $ em 1
-  "p" ? do
-    C.lineHeight $ pct 150
-  "h1, h2, h3, h4, h5, h6, .ui.header, .headerFont" ? do
-    C.fontFamily [headerFont] [C.sansSerif]
-  "img" ? do
-    C.maxWidth $ pct 100 -- Prevents large images from overflowing beyond zettel borders
-  "code, pre, tt, .monoFont" ? do
-    C.fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [C.monospace]
-  style cfg
+mainStyle cfg = do
+  "body" ? do
+    C.important $ C.backgroundColor "#eee"
+  "div#thesite" ? do
+    C.fontFamily [bodyFont] [C.serif]
+    C.paddingTop $ em 1
+    C.paddingBottom $ em 1
+    "p" ? do
+      C.lineHeight $ pct 150
+    "h1, h2, h3, h4, h5, h6, .ui.header, .headerFont" ? do
+      C.fontFamily [headerFont] [C.sansSerif]
+    "img" ? do
+      C.maxWidth $ pct 100 -- Prevents large images from overflowing beyond zettel borders
+    "code, pre, tt, .monoFont" ? do
+      C.fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [C.monospace]
+    style cfg

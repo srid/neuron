@@ -10,6 +10,7 @@ module Neuron.Zettelkasten.Zettel.View
   ( renderZettelContent,
     renderZettelLink,
     zettelCss,
+    zettelLinkCss,
   )
 where
 
@@ -19,6 +20,7 @@ import qualified Clay as C
 import Data.TagTree
 import qualified Data.Text as T
 import qualified Neuron.Web.Theme as Theme
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Query.Theme (LinkView (..))
 import Neuron.Zettelkasten.Query.View (tagUrl, zettelUrl)
 import Neuron.Zettelkasten.Zettel
@@ -28,7 +30,7 @@ import Relude
 
 renderZettelContent :: PandocBuilder t m => Zettel -> m ()
 renderZettelContent Zettel {..} = do
-  divClass "ui raised segment zettel-content" $ do
+  divClass "ui raised top attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
     elPandoc zettelContent
     renderTags zettelTags
@@ -52,9 +54,10 @@ renderTags tags = do
     el "p" blank
 
 -- | Render a link to an individual zettel.
-renderZettelLink :: DomBuilder t m => Maybe LinkView -> Zettel -> m ()
-renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
-  let mextra =
+renderZettelLink :: DomBuilder t m => Maybe Connection -> Maybe LinkView -> Zettel -> m ()
+renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
+  let connClass = maybe "" show conn
+      mextra =
         if linkViewShowDate
           then case zettelDay of
             Just day ->
@@ -62,7 +65,7 @@ renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
             Nothing ->
               Nothing
           else Nothing
-  elClass "span" "zettel-link-container" $ do
+  elClass "span" ("zettel-link-container " <> connClass) $ do
     forM_ mextra $ \extra ->
       elClass "span" "extra monoFont" $ text extra
     let linkTooltip =
@@ -80,6 +83,25 @@ renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
             <> "data-inverted" =: ""
             <> "data-position" =: "right center"
         )
+
+zettelLinkCss :: Theme.Theme -> Css
+zettelLinkCss neuronTheme = do
+  let linkColor = Theme.withRgb neuronTheme C.rgb
+  "span.zettel-link-container span.zettel-link a" ? do
+    C.fontWeight C.bold
+    C.color linkColor
+    C.textDecoration C.none
+  "span.zettel-link-container span.zettel-link a:hover" ? do
+    C.backgroundColor linkColor
+    C.color C.white
+  "span.zettel-link-container span.extra" ? do
+    C.color C.auto
+    C.paddingRight $ em 0.3
+  "span.zettel-link-container.folgezettel::after" ? do
+    C.paddingLeft $ em 0.3
+    C.content $ C.stringContent "ᛦ"
+  "[data-tooltip]:after" ? do
+    C.fontSize $ em 0.7
 
 zettelCss :: Theme.Theme -> Css
 zettelCss neuronTheme = do
