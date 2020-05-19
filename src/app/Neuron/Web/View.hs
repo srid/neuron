@@ -193,7 +193,7 @@ renderZettel config (graph, z@Zettel {..}) = do
       elClass "ul" "root" $ do
         el "li" $ do
           el "ul" $ do
-            renderForestNG (\z2 -> G.getConnection z z2 graph) True Nothing Nothing upTree
+            renderUplinkForest (\z2 -> G.getConnection z z2 graph) upTree
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     -- zettel-container-anchor is a trick used by the scrollIntoView JS below
     -- cf. https://stackoverflow.com/a/49968820/55246
@@ -248,6 +248,7 @@ renderBrandFooter =
 fa :: DomBuilder t m => Text -> m ()
 fa k = elClass "i" k blank
 
+-- | Used in z-index page
 renderForest ::
   DomBuilder t m =>
   Bool ->
@@ -283,36 +284,18 @@ renderForest isRoot maxLevel mg trees =
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
 
-renderForestNG ::
+renderUplinkForest ::
   DomBuilder t m =>
   (Zettel -> Maybe Connection) ->
-  Bool ->
-  Maybe Int ->
-  -- When given the zettelkasten graph, also show non-parent backlinks.
-  -- The dfsForest tree is "incomplete" in that it lacks these references.
-  Maybe ZettelGraph ->
   [Tree Zettel] ->
   m ()
-renderForestNG getConn _isRoot maxLevel mg trees =
-  case maxLevel of
-    Just 0 -> blank
-    _ -> do
-      forM_ (sortForest trees) $ \(Node zettel subtrees) ->
-        el "li" $ do
-          let linkDivClass = maybe "forest-link" (const "ui black label forest-link") mg
-          divClass linkDivClass $
-            ZettelView.renderZettelLink (getConn zettel) def zettel
-          whenJust mg $ \g -> do
-            text " "
-            case G.backlinks Folgezettel zettel g of
-              conns@(_ : _ : _) ->
-                -- Has two or more category backlinks
-                forM_ conns $ \zettel2 -> do
-                  let connTitle = (zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2)
-                  elAttr "i" ("class" =: "fas fa-link" <> "title" =: connTitle) blank
-              _ -> blank
-          when (length subtrees > 0) $ do
-            el "ul" $ renderForestNG getConn False ((\n -> n - 1) <$> maxLevel) mg subtrees
+renderUplinkForest getConn trees = do
+  forM_ (sortForest trees) $ \(Node zettel subtrees) ->
+    el "li" $ do
+      divClass "forest-link" $
+        ZettelView.renderZettelLink (getConn zettel) def zettel
+      when (length subtrees > 0) $ do
+        el "ul" $ renderUplinkForest getConn subtrees
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
