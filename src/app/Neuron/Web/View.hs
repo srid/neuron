@@ -189,7 +189,7 @@ renderZettel :: PandocBuilder t m => Config -> (ZettelGraph, Zettel) -> m ()
 renderZettel config (graph, z@Zettel {..}) = do
   let upTree = G.backlinkForest Folgezettel z graph
   whenNotNull upTree $ \_ -> do
-    elAttr "div" ("class" =: "flipped tree" <> "id" =: "zettel-uptree" <> "style" =: "transform-origin: 50%") $ do
+    elAttr "div" ("class" =: "flipped tree deemphasized" <> "id" =: "zettel-uptree" <> "style" =: "transform-origin: 50%") $ do
       elClass "ul" "root" $ do
         el "li" $ do
           el "ul" $ do
@@ -201,12 +201,12 @@ renderZettel config (graph, z@Zettel {..}) = do
     divClass "zettel-view" $ do
       ZettelView.renderZettelContent z
       let cfBacklinks = G.backlinks OrdinaryConnection z graph
-      whenNotNull cfBacklinks $ \_ -> divClass "ui attached segment backlinks" $ do
+      whenNotNull cfBacklinks $ \_ -> divClass "ui attached segment deemphasized" $ do
         elAttr "div" ("class" =: "ui header" <> title =: "Zettels that link here, but without branching") $
           text "More backlinks"
         el "ul" $ do
-          renderForest True Nothing Nothing $
-            fmap (flip Node []) cfBacklinks
+          forM_ cfBacklinks $ \zl ->
+            el "li" $ ZettelView.renderZettelLink Nothing def zl
       renderFooter config graph (Just z)
   renderBrandFooter
   -- Because the tree above can be pretty large, we scroll past it
@@ -351,10 +351,13 @@ style Config {..} = do
   ".footer-version" ? do
     C.fontSize $ em 0.7
   pureCssTreeDiagram
-  ".backlinks:hover" ? do
+  ".deemphasized" ? do
+    fontSize $ em 0.85
+  ".deemphasized:hover" ? do
     opacity 1
-  ".backlinks" ? do
+  ".deemphasized:not(:hover)" ? do
     opacity 0.5
+    "a" ? important (color gray)
 
 -- https://codepen.io/philippkuehn/pen/QbrOaN
 pureCssTreeDiagram :: Css
@@ -364,12 +367,8 @@ pureCssTreeDiagram = do
       rotateDeg = deg 180
   ".tree.flipped" ? do
     C.transform $ C.rotate rotateDeg
-  ".tree:hover" ? do
-    C.opacity 1
   ".tree" ? do
     C.overflow auto
-    C.opacity 0.5
-    fontSize $ em 0.9
     when flipTree $ do
       C.transform $ C.rotate rotateDeg
     -- Clay does not support this; doing it inline in div style.
