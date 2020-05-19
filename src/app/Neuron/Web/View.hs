@@ -148,8 +148,8 @@ renderIndex config@Config {..} graph = divClass "ui text container" $ do
       _ -> blank
     let clusters = G.categoryClusters graph
     el "p" $ do
-      text $ "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten graph. "
-      text "Each cluster is rendered as a forest, with their roots (mother zettels) highlighted."
+      text $ "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten folgezettel graph. "
+      text "Each cluster is rendered as a forest."
     forM_ clusters $ \forest ->
       divClass ("ui " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
@@ -266,7 +266,7 @@ renderForest isRoot maxLevel mg trees =
         el "li" $ do
           let zettelDiv =
                 divClass
-                  (maybe "" (const "ui black label") mg)
+                  (maybe "" (const "ui ") mg)
           bool id zettelDiv isRoot $
             ZettelView.renderZettelLink Nothing def zettel
           whenJust mg $ \g -> do
