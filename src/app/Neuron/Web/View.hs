@@ -190,9 +190,8 @@ renderZettel config (graph, z@Zettel {..}) = do
   let upTree = G.backlinkForest Folgezettel z graph
   whenNotNull upTree $ \_ -> do
     elAttr "div" ("class" =: "flipped tree" <> "id" =: "zettel-uptree" <> "style" =: "transform-origin: 50%") $ do
-      el "ul" $ do
+      elClass "ul" "root" $ do
         el "li" $ do
-          divClass "forest-link" $ el "a" $ text zettelTitle
           el "ul" $ do
             renderForestNG (\z2 -> G.getConnection z z2 graph) True Nothing Nothing upTree
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
@@ -321,23 +320,13 @@ renderForestNG getConn _isRoot maxLevel mg trees =
 style :: Config -> Css
 style Config {..} = do
   let neuronTheme = Theme.mkTheme theme
-      linkColor = Theme.withRgb neuronTheme C.rgb
   ".ui.label span.fas" ? do
     C.marginRight $ em 0.3
-  "span.zettel-link-container span.zettel-link a" ? do
-    C.fontWeight C.bold
-    C.color linkColor
-    C.textDecoration C.none
-  "span.zettel-link-container span.zettel-link a:hover" ? do
-    C.backgroundColor linkColor
-    C.color C.white
-  "span.zettel-link-container span.extra" ? do
-    C.color C.auto
-    C.paddingRight $ em 0.3
   "div.z-index" ? do
     C.ul ? do
       C.listStyleType C.square
       C.paddingLeft $ em 1.5
+  ZettelView.zettelLinkCss neuronTheme
   "div.zettel-view" ? do
     -- This list styling applies both to zettel content, and the rest of the
     -- view (eg: connections pane)
@@ -352,11 +341,6 @@ style Config {..} = do
       C.fontWeight C.bold
       "a.inactive" ? do
         C.color "#555"
-  "div.connections" ? do
-    "a" ? do
-      C.important $ color white
-    "a:hover" ? do
-      C.opacity 0.5
   ".footer" ? do
     "a" ? do
       C.color white
@@ -366,8 +350,6 @@ style Config {..} = do
     C.fontWeight C.bold
   ".footer-version" ? do
     C.fontSize $ em 0.7
-  "[data-tooltip]:after" ? do
-    C.fontSize $ em 0.7
   pureCssTreeDiagram
   ".backlinks" ? do
     opacity 0.5
@@ -375,10 +357,6 @@ style Config {..} = do
 -- https://codepen.io/philippkuehn/pen/QbrOaN
 pureCssTreeDiagram :: Css
 pureCssTreeDiagram = do
-  -- TODO: should only apply for folgezettel
-  ".zettel-link-container.folgezettel::after" ? do
-    C.paddingLeft $ em 0.3
-    C.content $ stringContent "ᛦ"
   let cellBorderWidth = px 2
       flipTree = False
       rotateDeg = deg 180
@@ -391,9 +369,13 @@ pureCssTreeDiagram = do
       C.transform $ C.rotate rotateDeg
     -- Clay does not support this; doing it inline in div style.
     -- C.transformOrigin $ pct 50
+    "ul.root" ? do
+      -- Make the tree attach to zettel segment
+      C.paddingTop $ px 0
+      C.marginTop $ px 0
     "ul" ? do
       C.position relative
-      sym2 C.padding (em 1) 0
+      C.padding (em 1) 0 0 0
       C.whiteSpace nowrap
       sym2 C.margin (px 0) auto
       C.textAlign center
@@ -401,6 +383,8 @@ pureCssTreeDiagram = do
         C.content $ stringContent ""
         C.display C.displayTable
         C.clear both
+      C.lastChild & do
+        C.paddingBottom $ em 0.1
     "li" ? do
       C.display C.inlineBlock
       C.verticalAlign C.vAlignTop

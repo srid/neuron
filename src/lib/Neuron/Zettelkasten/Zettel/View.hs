@@ -10,6 +10,7 @@ module Neuron.Zettelkasten.Zettel.View
   ( renderZettelContent,
     renderZettelLink,
     zettelCss,
+    zettelLinkCss,
   )
 where
 
@@ -82,6 +83,25 @@ renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
             <> "data-inverted" =: ""
             <> "data-position" =: "right center"
         )
+
+zettelLinkCss :: Theme.Theme -> Css
+zettelLinkCss neuronTheme = do
+  let linkColor = Theme.withRgb neuronTheme C.rgb
+  "span.zettel-link-container span.zettel-link a" ? do
+    C.fontWeight C.bold
+    C.color linkColor
+    C.textDecoration C.none
+  "span.zettel-link-container span.zettel-link a:hover" ? do
+    C.backgroundColor linkColor
+    C.color C.white
+  "span.zettel-link-container span.extra" ? do
+    C.color C.auto
+    C.paddingRight $ em 0.3
+  "span.zettel-link-container.folgezettel::after" ? do
+    C.paddingLeft $ em 0.3
+    C.content $ C.stringContent "ᛦ"
+  "[data-tooltip]:after" ? do
+    C.fontSize $ em 0.7
 
 zettelCss :: Theme.Theme -> Css
 zettelCss neuronTheme = do
