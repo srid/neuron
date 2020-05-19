@@ -351,6 +351,8 @@ style Config {..} = do
   ".footer-version" ? do
     C.fontSize $ em 0.7
   pureCssTreeDiagram
+  ".backlinks:hover" ? do
+    opacity 1
   ".backlinks" ? do
     opacity 0.5
 
@@ -362,8 +364,11 @@ pureCssTreeDiagram = do
       rotateDeg = deg 180
   ".tree.flipped" ? do
     C.transform $ C.rotate rotateDeg
+  ".tree:hover" ? do
+    C.opacity 1
   ".tree" ? do
     C.overflow auto
+    C.opacity 0.5
     fontSize $ em 0.9
     when flipTree $ do
       C.transform $ C.rotate rotateDeg
@@ -432,7 +437,7 @@ pureCssTreeDiagram = do
     "li" ? do
       "div.forest-link" ? do
         border solid cellBorderWidth "#ccc"
-        sym2 C.padding (em 0.5) (em 0.75)
+        sym2 C.padding (em 0.2) (em 0.3)
         C.textDecoration none
         C.display inlineBlock
         sym C.borderRadius (px 5)
