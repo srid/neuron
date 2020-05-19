@@ -17,6 +17,7 @@ module Neuron.Zettelkasten.Graph
     -- * Graph functions
     getZettels,
     getZettel,
+    getConnection,
     topSort,
     frontlinkForest,
     backlinkForest,
@@ -28,6 +29,7 @@ where
 
 import Control.Monad.Except (MonadError, liftEither, runExceptT, withExceptT)
 import Control.Monad.Writer (runWriterT)
+import Data.Default
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
 import Data.Traversable (for)
@@ -123,3 +125,7 @@ getZettels = G.getVertices
 
 getZettel :: ZettelID -> ZettelGraph -> Maybe Zettel
 getZettel = G.findVertex
+
+-- | If no connection exists, this returns Nothing.
+getConnection :: Zettel -> Zettel -> ZettelGraph -> Maybe Connection
+getConnection z1 z2 g = fmap (fromMaybe def) $ G.edgeLabel g z1 z2

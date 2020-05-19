@@ -144,7 +144,7 @@ renderIndex config@Config {..} graph = divClass "ui text container" $ do
       Left (toList -> cyc) -> divClass "ui orange segment" $ do
         el "h2" $ text "Cycle detected"
         forM_ cyc $ \zettel ->
-          el "li" $ ZettelView.renderZettelLink def zettel
+          el "li" $ ZettelView.renderZettelLink Nothing def zettel
       _ -> blank
     let clusters = G.categoryClusters graph
     el "p" $ do
@@ -194,7 +194,7 @@ renderZettel config (graph, z@Zettel {..}) = do
         el "li" $ do
           divClass "forest-link" $ el "a" $ text zettelTitle
           el "ul" $ do
-            renderForestNG True Nothing Nothing upTree
+            renderForestNG (\z2 -> G.getConnection z z2 graph) True Nothing Nothing upTree
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     -- zettel-container-anchor is a trick used by the scrollIntoView JS below
     -- cf. https://stackoverflow.com/a/49968820/55246
@@ -268,7 +268,7 @@ renderForest isRoot maxLevel mg trees =
                 divClass
                   (maybe "" (const "ui black label") mg)
           bool id zettelDiv isRoot $
-            ZettelView.renderZettelLink def zettel
+            ZettelView.renderZettelLink Nothing def zettel
           whenJust mg $ \g -> do
             text " "
             case G.backlinks Folgezettel zettel g of
@@ -286,6 +286,7 @@ renderForest isRoot maxLevel mg trees =
 
 renderForestNG ::
   DomBuilder t m =>
+  (Zettel -> Maybe Connection) ->
   Bool ->
   Maybe Int ->
   -- When given the zettelkasten graph, also show non-parent backlinks.
@@ -293,7 +294,7 @@ renderForestNG ::
   Maybe ZettelGraph ->
   [Tree Zettel] ->
   m ()
-renderForestNG _isRoot maxLevel mg trees =
+renderForestNG getConn _isRoot maxLevel mg trees =
   case maxLevel of
     Just 0 -> blank
     _ -> do
@@ -301,7 +302,7 @@ renderForestNG _isRoot maxLevel mg trees =
         el "li" $ do
           let linkDivClass = maybe "forest-link" (const "ui black label forest-link") mg
           divClass linkDivClass $
-            ZettelView.renderZettelLink def zettel
+            ZettelView.renderZettelLink (getConn zettel) def zettel
           whenJust mg $ \g -> do
             text " "
             case G.backlinks Folgezettel zettel g of
@@ -312,7 +313,7 @@ renderForestNG _isRoot maxLevel mg trees =
                   elAttr "i" ("class" =: "fas fa-link" <> "title" =: connTitle) blank
               _ -> blank
           when (length subtrees > 0) $ do
-            el "ul" $ renderForestNG False ((\n -> n - 1) <$> maxLevel) mg subtrees
+            el "ul" $ renderForestNG getConn False ((\n -> n - 1) <$> maxLevel) mg subtrees
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
@@ -375,7 +376,7 @@ style Config {..} = do
 pureCssTreeDiagram :: Css
 pureCssTreeDiagram = do
   -- TODO: should only apply for folgezettel
-  ".zettel-link-container::after" ? do
+  ".zettel-link-container.folgezettel::after" ? do
     C.paddingLeft $ em 0.3
     C.content $ stringContent "ᛦ"
   let cellBorderWidth = px 2

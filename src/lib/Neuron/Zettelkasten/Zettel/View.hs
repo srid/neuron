@@ -19,6 +19,7 @@ import qualified Clay as C
 import Data.TagTree
 import qualified Data.Text as T
 import qualified Neuron.Web.Theme as Theme
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Query.Theme (LinkView (..))
 import Neuron.Zettelkasten.Query.View (tagUrl, zettelUrl)
 import Neuron.Zettelkasten.Zettel
@@ -52,9 +53,10 @@ renderTags tags = do
     el "p" blank
 
 -- | Render a link to an individual zettel.
-renderZettelLink :: DomBuilder t m => Maybe LinkView -> Zettel -> m ()
-renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
-  let mextra =
+renderZettelLink :: DomBuilder t m => Maybe Connection -> Maybe LinkView -> Zettel -> m ()
+renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
+  let connClass = maybe "" show conn
+      mextra =
         if linkViewShowDate
           then case zettelDay of
             Just day ->
@@ -62,7 +64,7 @@ renderZettelLink (fromMaybe def -> LinkView {..}) Zettel {..} = do
             Nothing ->
               Nothing
           else Nothing
-  elClass "span" "zettel-link-container" $ do
+  elClass "span" ("zettel-link-container " <> connClass) $ do
     forM_ mextra $ \extra ->
       elClass "span" "extra monoFont" $ text extra
     let linkTooltip =

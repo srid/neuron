@@ -1,11 +1,14 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Connection where
 
 import Data.Aeson (ToJSON)
-import Relude
+import Data.Default
+import Relude hiding (show)
+import Text.Show
 
 -- | Represent the connection between zettels
 data Connection
@@ -14,10 +17,18 @@ data Connection
     Folgezettel
   | -- | Any other ordinary connection (eg: "See also")
     OrdinaryConnection
-  deriving (Eq, Ord, Show, Enum, Bounded, Generic, ToJSON)
+  deriving (Eq, Ord, Enum, Bounded, Generic, ToJSON)
 
 instance Semigroup Connection where
   -- A folgezettel link trumps all other kinds in that zettel.
   Folgezettel <> _ = Folgezettel
   _ <> Folgezettel = Folgezettel
   OrdinaryConnection <> OrdinaryConnection = OrdinaryConnection
+
+instance Default Connection where
+  def = Folgezettel
+
+instance Show Connection where
+  show = \case
+    Folgezettel -> "folgezettel"
+    OrdinaryConnection -> "cf"
