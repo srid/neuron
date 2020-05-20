@@ -1,1 +1,1 @@
-(import ./project.nix {}).ghc.neuron
+(import ./project.nix {}).ghc.neuron.bin

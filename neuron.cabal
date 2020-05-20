@@ -132,8 +132,6 @@ common app-common
     with-utf8,
     shower
   if (!flag(ghcid))
-    autogen-modules:
-      Paths_neuron
     other-modules:
       Data.Graph.Labelled
       Data.Graph.Labelled.Algorithm
@@ -158,7 +156,6 @@ common app-common
       Neuron.Zettelkasten.Graph
       Neuron.Zettelkasten.Graph.Type
       Neuron.Zettelkasten.ID.Scheme
-      Paths_neuron
       Text.Megaparsec.Simple
 
 test-suite neuron-test
