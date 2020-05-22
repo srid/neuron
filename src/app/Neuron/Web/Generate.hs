@@ -3,6 +3,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -14,7 +15,6 @@ module Neuron.Web.Generate
 where
 
 import Control.Monad.Except (MonadError, liftEither, runExceptT, withExceptT)
-import Control.Monad.Writer (runWriterT)
 import qualified Data.Graph.Labelled as G
 import Data.Traversable
 import Development.Shake
@@ -27,7 +27,7 @@ import Neuron.Zettelkasten.Error (NeuronError (..))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (mkZettelID)
-import Neuron.Zettelkasten.Query.Eval (expandQueries)
+import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel (Zettel, ZettelT (..), mkZettelFromMarkdown)
 import Options.Applicative
 import Relude
@@ -92,8 +92,11 @@ mkZettelGraph ::
 mkZettelGraph zettels = do
   res :: [(Zettel, [(Maybe Connection, Zettel)])] <- liftEither =<< do
     flip runReaderT zettels $ runExceptT $ do
-      for zettels $ \z -> withExceptT (NeuronError_BadQuery (zettelID z)) $ do
-        runWriterT $ expandQueries z
+      -- TODO: re: Left; for Right, we must render the query, which only happens
+      -- in Web.View. How do we accumulate the errors?
+      for zettels $ \z -> fmap (z,) $ do
+        withExceptT (NeuronError_BadQuery (zettelID z) . Left) $ do
+          queryConnections (zettelContent z)
   let g :: ZettelGraph = G.mkGraphFrom (fst <$> res) $ flip concatMap res $ \(z1, conns) ->
         conns <&> \(c, z2) -> (connectionMonoid (fromMaybe Folgezettel c), z1, z2)
   pure g
