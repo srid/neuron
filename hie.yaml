@@ -1,0 +1,9 @@
+cradle:
+  direct:
+    arguments:
+      - -fwarn-unused-binds
+      - -fwarn-unused-imports
+      - -fwarn-orphans
+      - -isrc/lib
+      - -isrc/app
+      - -idist/build/autogen
