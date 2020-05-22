@@ -18,7 +18,7 @@ import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Rib
 import Neuron.CLI.Search (interactiveSearch)
 import qualified Neuron.Version as Version
-import qualified Neuron.Zettelkasten.Graph as G
+import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Query as Q
 import Options.Applicative
 import Relude
@@ -62,7 +62,7 @@ runWith act App {..} =
     Query someQ ->
       runRibOnceQuietly notesDir $ do
         withSome someQ $ \q -> do
-          result <- flip Q.runQuery q <$> G.loadZettels
+          result <- flip Q.runQuery q <$> Gen.loadZettels
           putLTextLn $ Aeson.encodeToLazyText $ Q.queryResultJson notesDir q result
     Search searchCmd ->
       interactiveSearch notesDir searchCmd
