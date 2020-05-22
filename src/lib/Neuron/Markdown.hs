@@ -74,7 +74,12 @@ data MarkdownLink = MarkdownLink
   { markdownLinkText :: Text,
     markdownLinkUri :: URI.URI
   }
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
+
+markdownLinkFrom :: Text -> Text -> Maybe MarkdownLink
+markdownLinkFrom linkText url = do
+  uri <- URI.mkURI url
+  pure $ MarkdownLink linkText uri
 
 extractAutoLinks :: Pandoc -> [MarkdownLink]
 extractAutoLinks = W.query go
@@ -83,16 +88,14 @@ extractAutoLinks = W.query go
     go = \case
       (B.Link _attr [B.Str linkText] (url, _title))
         | linkText == url -> maybeToList $ do
-          uri <- URI.mkURI url
-          pure $ MarkdownLink linkText uri
+          markdownLinkFrom linkText url
       _ -> []
 
 -- | Return the link in the given inline.
 pandocLinkInline :: B.Inline -> Maybe MarkdownLink
 pandocLinkInline = \case
   (B.Link _attr [B.Str linkText] (url, _title)) -> do
-    uri <- URI.mkURI url
-    pure $ MarkdownLink linkText uri
+    markdownLinkFrom linkText url
   _ -> Nothing
 
 -- | Like `pandocLinkInline` but expects the link to be on a paragraph of its
@@ -100,8 +103,7 @@ pandocLinkInline = \case
 pandocLinkBlock :: B.Block -> Maybe MarkdownLink
 pandocLinkBlock = \case
   B.Para [B.Link _attr [B.Str linkText] (url, _title)] -> do
-    uri <- URI.mkURI url
-    pure $ MarkdownLink linkText uri
+    markdownLinkFrom linkText url
   _ -> Nothing
 
 getFirstParagraphText :: Pandoc -> Maybe [B.Inline]

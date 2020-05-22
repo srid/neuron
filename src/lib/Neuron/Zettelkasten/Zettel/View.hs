@@ -1,6 +1,8 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -25,14 +27,19 @@ import Neuron.Zettelkasten.Query.Theme (LinkView (..))
 import Neuron.Zettelkasten.Query.View (tagUrl, zettelUrl)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core
-import Reflex.Dom.Pandoc.Document
+import Reflex.Dom.Pandoc
 import Relude
 
-renderZettelContent :: PandocBuilder t m => Zettel -> m ()
-renderZettelContent Zettel {..} = do
+renderZettelContent ::
+  forall t m.
+  (PandocBuilder t m) =>
+  (URILink -> m Bool) ->
+  Zettel ->
+  m ()
+renderZettelContent handleLink Zettel {..} = do
   divClass "ui raised top attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
-    elPandoc zettelContent
+    elPandoc (Config $ Just handleLink) zettelContent
     renderTags zettelTags
     whenJust zettelDay $ \day ->
       elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ text $ show day

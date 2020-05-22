@@ -42,10 +42,12 @@ import Neuron.Zettelkasten.Connection
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
+import qualified Neuron.Zettelkasten.Query.Eval as Q
+import qualified Neuron.Zettelkasten.Query.View as Q
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.View as ZettelView
 import Reflex.Dom.Core hiding ((&))
-import Reflex.Dom.Pandoc.Document (PandocBuilder)
+import Reflex.Dom.Pandoc (PandocBuilder, elPandocBlocks, elPandocInlines)
 import Relude hiding ((&))
 import qualified Rib
 import Rib.Extra.OpenGraph
@@ -199,7 +201,26 @@ renderZettel config (graph, z@Zettel {..}) = do
     -- cf. https://stackoverflow.com/a/49968820/55246
     elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -14px; left: 0") blank
     divClass "zettel-view" $ do
-      ZettelView.renderZettelContent z
+      flip ZettelView.renderZettelContent z $ \uriLink -> do
+        case flip runReaderT (G.getZettels graph) (Q.evalQueryLink uriLink) of
+          Left e -> do
+            -- TODO: show the error in terminal, or better report it correctly.
+            -- see github issue.
+            divClass "ui error message" $ text $ show e
+            pure False
+          Right Nothing -> do
+            pure False
+          Right (Just res) -> do
+            case Q.buildQueryView res of
+              Left e -> do
+                divClass "ui error message" $ text $ show e
+                pure False
+              Right (Left w) -> do
+                elPandocInlines [w]
+                pure True
+              Right (Right w) -> do
+                elPandocBlocks [w]
+                pure True
       let cfBacklinks = G.backlinks OrdinaryConnection z graph
       whenNotNull cfBacklinks $ \_ -> divClass "ui attached segment deemphasized" $ do
         elAttr "div" ("class" =: "ui header" <> title =: "Zettels that link here, but without branching") $

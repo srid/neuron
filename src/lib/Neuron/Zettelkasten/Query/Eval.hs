@@ -9,6 +9,7 @@
 
 module Neuron.Zettelkasten.Query.Eval
   ( expandQueries,
+    evalQueryLink,
   )
 where
 
@@ -20,12 +21,31 @@ import Neuron.Markdown
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error
-import Neuron.Zettelkasten.Query.Parser (queryFromMarkdownLink)
-import Neuron.Zettelkasten.Query.View (buildQueryView)
+import Neuron.Zettelkasten.Query.Parser (queryFromMarkdownLink, queryFromURILink)
 import Neuron.Zettelkasten.Zettel
+import Reflex.Dom.Pandoc (URILink)
 import Relude
-import qualified Text.Pandoc.Builder as B
 import qualified Text.Pandoc.Walk as W
+
+-- | Evaluate the given query link and return its results.
+--
+-- Return Nothing if the link is not a query.
+--
+-- We need the full list of zettels, for running the query against.
+evalQueryLink ::
+  ( MonadError QueryParseError m,
+    MonadReader [Zettel] m
+  ) =>
+  URILink ->
+  m (Maybe (DSum Query Identity))
+evalQueryLink link = do
+  mq <- queryFromURILink link
+  case mq of
+    Nothing -> pure Nothing
+    Just someQ -> fmap Just $ do
+      withSome someQ $ \q -> do
+        zs <- ask
+        pure $ q :=> Identity (runQuery zs q)
 
 -- | Expand query links in the Pandoc document.
 --
@@ -34,47 +54,39 @@ import qualified Text.Pandoc.Walk as W
 -- * Do a two-stage transform, to handle block links and inline links separately.
 expandQueries ::
   forall m.
-  (MonadError QueryError m, MonadReader [Zettel] m, MonadWriter [(Maybe Connection, Zettel)] m) =>
+  ( MonadError QueryError m,
+    -- Running queries requires the zettels list.
+    MonadReader [Zettel] m,
+    -- Report back connections formed by (running) the queries
+    MonadWriter [(Maybe Connection, Zettel)] m
+  ) =>
   Zettel ->
   m Zettel
 expandQueries z@Zettel {..} = do
-  -- Transform block links (paragraph with one link)
-  -- Only block links can contain multi-zettel queries as they produce Block (not Inline) view.
-  ast1 <- flip W.walkM zettelContent $ \blk ->
-    case pandocLinkBlock blk of
-      Just ml -> do
-        expandAST ml >>= \case
-          Just (Right newBlk) -> pure newBlk
-          _ -> pure blk
-      _ -> pure blk
-  -- Transform the rest (by scanning all inline links)
-  ast2 <- flip W.walkM ast1 $ \inline ->
+  void $ flip W.walkM zettelContent $ \inline -> do
     case pandocLinkInline inline of
       Just ml -> do
-        expandAST ml >>= \case
-          Just (Left newInline) -> pure newInline
-          _ -> pure inline
-      _ -> pure inline
-  pure $ z {zettelContent = ast2}
+        void $ expandAST ml
+      _ ->
+        pure ()
+    pure inline
+  pure z
   where
     -- Replace the link node with the query result AST node.
     --
     -- Depending on the link time, we replace with an inline or a block.
-    expandAST :: MarkdownLink -> m (Maybe (Either B.Inline B.Block))
+    expandAST :: MarkdownLink -> m ()
     expandAST ml = do
       mq <- liftEither $ runExcept $ withExceptT Left (queryFromMarkdownLink ml)
       case mq of
-        Nothing -> pure Nothing
-        Just someQ -> fmap Just $ do
+        Nothing -> pure ()
+        Just someQ -> do
           qres <- withSome someQ $ \q -> do
             zs <- ask
             -- run query using data from MonadReader
             pure $ q :=> Identity (runQuery zs q)
           -- tell connections using MonadWriter
           tell $ getConnections qres
-          -- create Inline for ml here.
-          liftEither $ runExcept $ do
-            withExcept Right (buildQueryView qres)
     getConnections :: DSum Query Identity -> [(Maybe Connection, Zettel)]
     getConnections = \case
       Query_ZettelByID _ mconn :=> Identity mres ->

@@ -2,8 +2,10 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -20,6 +22,7 @@ import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
+import Reflex.Dom.Pandoc (URILink (..))
 import Relude
 import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
@@ -34,6 +37,10 @@ queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Maybe (Some Query)
 queryFromURI uri = do
   -- We are setting markdownLinkText to the URI to support the new short links
   queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = URI.render uri}
+
+queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some Query))
+queryFromURILink URILink {..} =
+  queryFromMarkdownLink $ MarkdownLink _uriLink_linkText _uriLink_uri
 
 queryFromMarkdownLink :: MonadError QueryParseError m => MarkdownLink -> m (Maybe (Some Query))
 queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
