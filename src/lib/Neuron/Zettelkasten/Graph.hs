@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -8,6 +9,9 @@
 module Neuron.Zettelkasten.Graph
   ( -- * Graph type
     ZettelGraph,
+
+    -- * Graph building
+    mkZettelGraph,
 
     -- * Graph functions
     getZettels,
@@ -22,15 +26,43 @@ module Neuron.Zettelkasten.Graph
   )
 where
 
+import Control.Monad.Writer (runWriterT)
 import Data.Default
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
+import qualified Data.Map.Strict as Map
+import Data.Traversable (for)
 import Data.Tree
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Query.Error (QueryParseError)
+import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
 import Relude
+
+-- | Build the Zettelkasten graph from a list of zettels
+--
+-- If there are any errors during parsing of queries (to determine connections),
+-- return them as well.
+mkZettelGraph ::
+  [Zettel] ->
+  (ZettelGraph, Map ZettelID [QueryParseError])
+mkZettelGraph zettels =
+  let res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryParseError]))] =
+        flip runReader zettels $ do
+          for zettels $ \z -> fmap (z,) $ do
+            runWriterT $ queryConnections (zettelContent z)
+      g :: ZettelGraph = G.mkGraphFrom (fst <$> res) $ flip concatMap res $ \(z1, fst -> conns) ->
+        conns <&> \(c, z2) -> (connectionMonoid (fromMaybe Folgezettel c), z1, z2)
+   in ( g,
+        Map.fromList $ flip mapMaybe res $ \(z, (_conns, errs)) ->
+          if null errs
+            then Nothing
+            else Just (zettelID z, errs)
+      )
+  where
+    connectionMonoid = Just
 
 frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
 frontlinkForest conn z =

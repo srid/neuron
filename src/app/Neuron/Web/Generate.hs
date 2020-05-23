@@ -15,8 +15,6 @@ module Neuron.Web.Generate
   )
 where
 
-import Control.Monad.Writer (runWriterT)
-import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
 import Data.Traversable
 import Development.Shake
@@ -24,12 +22,10 @@ import Neuron.Config (Config (..))
 import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Web.Route as Z
-import Neuron.Zettelkasten.Connection (Connection (..))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID, mkZettelID)
 import Neuron.Zettelkasten.Query.Error (QueryParseError, showQueryError)
-import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel (Zettel, ZettelT (..), mkZettelFromMarkdown)
 import Options.Applicative
 import Reflex.Class (filterLeft, filterRight)
@@ -103,30 +99,5 @@ loadZettelkastenFrom files = do
     let zid = mkZettelID path
     pure $ first (zid,) $ mkZettelFromMarkdown zid s snd
   let skippedZettelErrors :: [(ZettelID, Text)] = filterLeft parseRes
-  (g, errors) <- mkZettelGraph $ filterRight parseRes
+  let (g, errors) = G.mkZettelGraph $ filterRight parseRes
   pure (g, fmap Left (Map.fromList skippedZettelErrors) `Map.union` fmap Right errors)
-
--- | Build the Zettelkasten graph from a list of zettels
---
--- Also return the markdown extension to use for each zettel.
-mkZettelGraph ::
-  forall m.
-  Monad m =>
-  [Zettel] ->
-  m (ZettelGraph, Map ZettelID [QueryParseError])
-mkZettelGraph zettels = do
-  res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryParseError]))] <- do
-    flip runReaderT zettels $ do
-      for zettels $ \z -> fmap (z,) $ do
-        runWriterT $ queryConnections (zettelContent z)
-  let g :: ZettelGraph = G.mkGraphFrom (fst <$> res) $ flip concatMap res $ \(z1, fst -> conns) ->
-        conns <&> \(c, z2) -> (connectionMonoid (fromMaybe Folgezettel c), z1, z2)
-  pure
-    ( g,
-      Map.fromList $ flip mapMaybe res $ \(z, (_conns, errs)) ->
-        if null errs
-          then Nothing
-          else Just (zettelID z, errs)
-    )
-  where
-    connectionMonoid = Just
