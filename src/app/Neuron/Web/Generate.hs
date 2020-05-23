@@ -10,6 +10,7 @@
 -- | Main module for using neuron as a library, instead of as a CLI tool.
 module Neuron.Web.Generate
   ( generateSite,
+    loadZettelkasten,
     loadZettelsIgnoringErrors,
   )
 where
@@ -100,8 +101,10 @@ mkZettelGraph zettels = do
         conns <&> \(c, z2) -> (connectionMonoid (fromMaybe Folgezettel c), z1, z2)
   pure
     ( g,
-      Map.fromListWith (++) $ flip fmap res $ \(z, (_conns, errs)) ->
-        (zettelID z, errs)
+      Map.fromList $ flip mapMaybe res $ \(z, (_conns, errs)) ->
+        if null errs
+          then Nothing
+          else Just (zettelID z, errs)
     )
   where
     connectionMonoid = Just

@@ -1,10 +1,14 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Query.Error where
 
+import Data.Aeson
 import Neuron.Zettelkasten.ID (InvalidID, ZettelID, zettelIDText)
+import Neuron.Zettelkasten.Query.Error.Internal ()
 import Relude
 import Text.URI (URI)
 import qualified Text.URI as URI
@@ -14,11 +18,11 @@ type QueryError = Either QueryParseError QueryResultError
 data QueryParseError
   = QueryParseError_InvalidID URI InvalidID
   | QueryParseError_UnsupportedHost URI
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, ToJSON)
 
 -- | This error is only thrown when *using* (eg: in HTML) the query results.
 data QueryResultError = QueryResultError_NoSuchZettel ZettelID
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, ToJSON)
 
 queryParseErrorUri :: QueryParseError -> URI
 queryParseErrorUri = \case
