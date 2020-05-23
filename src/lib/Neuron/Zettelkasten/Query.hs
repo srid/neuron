@@ -25,6 +25,7 @@ import Data.TagTree (Tag, TagPattern (..), tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -55,12 +56,21 @@ runQuery zs = \case
       Map.fromListWith (+) $
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
 
-queryResultJson :: forall r. (ToJSON (Query r)) => FilePath -> Query r -> r -> Value
-queryResultJson notesDir q r =
+queryResultJson ::
+  forall r.
+  (ToJSON (Query r)) =>
+  FilePath ->
+  Query r ->
+  r ->
+  -- All errors in the zettelkasten
+  Map ZettelID (Either Text [QueryParseError]) ->
+  Value
+queryResultJson notesDir q r errors =
   toJSON $
     object
       [ "query" .= toJSON q,
-        "result" .= resultJson
+        "result" .= resultJson,
+        "errors" .= errors
       ]
   where
     resultJson :: Value

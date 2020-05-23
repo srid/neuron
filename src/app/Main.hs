@@ -6,7 +6,7 @@
 
 module Main where
 
-import Clay ((?), Css, em, pct)
+import Clay ((?), Css, em)
 import qualified Clay as C
 import qualified Data.Text as T
 import Development.Shake
@@ -15,7 +15,7 @@ import Neuron.CLI (run)
 import Neuron.Config (Config)
 import qualified Neuron.Config as Config
 import Neuron.Web.Generate (generateSite)
-import Neuron.Web.Route (Route (..))
+import Neuron.Web.Route (Route (..), RouteError)
 import Neuron.Web.View (renderRouteBody, renderRouteHead, style)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc.Document (PandocBuilder)
@@ -29,14 +29,15 @@ generateMainSite :: Action ()
 generateMainSite = do
   Rib.buildStaticFiles ["static/**"]
   config <- Config.getConfig
-  let writeHtmlRoute :: Route g a -> (g, a) -> Action ()
+  let writeHtmlRoute :: Route g a -> (g, a) -> Action (RouteError a)
       writeHtmlRoute r x = do
-        html <- liftIO $ fmap snd $ renderStatic $ renderPage config r x
+        (errors, html) <- liftIO $ renderStatic $ renderPage config r x
         -- FIXME: Make rib take bytestrings
         Rib.writeRoute r $ decodeUtf8 @Text html
+        pure errors
   void $ generateSite config writeHtmlRoute
 
-renderPage :: PandocBuilder t m => Config -> Route g a -> (g, a) -> m ()
+renderPage :: PandocBuilder t m => Config -> Route g a -> (g, a) -> m (RouteError a)
 renderPage config r val = elAttr "html" ("lang" =: "en") $ do
   el "head" $ do
     renderRouteHead config r val
@@ -81,12 +82,8 @@ mainStyle cfg = do
     C.fontFamily [bodyFont] [C.serif]
     C.paddingTop $ em 1
     C.paddingBottom $ em 1
-    "p" ? do
-      C.lineHeight $ pct 150
     "h1, h2, h3, h4, h5, h6, .ui.header, .headerFont" ? do
       C.fontFamily [headerFont] [C.sansSerif]
-    "img" ? do
-      C.maxWidth $ pct 100 -- Prevents large images from overflowing beyond zettel borders
     "code, pre, tt, .monoFont" ? do
       C.fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [C.monospace]
     style cfg

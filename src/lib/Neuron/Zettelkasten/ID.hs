@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -19,7 +20,7 @@ module Neuron.Zettelkasten.ID
   )
 where
 
-import Data.Aeson (FromJSON (..), ToJSON (toJSON))
+import Data.Aeson (FromJSON (..), ToJSON (toJSON), ToJSONKey)
 import qualified Data.Text as T
 import Data.Time
 import Relude
@@ -35,7 +36,7 @@ data ZettelID
     ZettelDateID Day Int
   | -- | Arbitrary alphanumeric ID.
     ZettelCustomID Text
-  deriving (Eq, Show, Ord, Generic)
+  deriving (Eq, Show, Ord, Generic, ToJSONKey)
 
 instance Show InvalidID where
   show (InvalidIDParseError s) =
@@ -78,7 +79,7 @@ zettelIDSourceFileName zid = toString $ zettelIDText zid <> ".md"
 ---------
 
 data InvalidID = InvalidIDParseError Text
-  deriving (Eq)
+  deriving (Eq, Generic, ToJSON)
 
 parseZettelID :: HasCallStack => Text -> ZettelID
 parseZettelID =

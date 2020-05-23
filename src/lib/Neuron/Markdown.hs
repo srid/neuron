@@ -25,7 +25,6 @@ import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Pandoc.Walk as W
 import qualified Text.Parsec as P
-import qualified Text.URI as URI
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --
@@ -69,40 +68,6 @@ partitionMarkdown fn =
       a <- toText <$> manyTill M.anySingle (M.try $ M.eol *> separatorP)
       b <- M.takeRest
       pure (a, b)
-
-data MarkdownLink = MarkdownLink
-  { markdownLinkText :: Text,
-    markdownLinkUri :: URI.URI
-  }
-  deriving (Eq, Ord)
-
-extractAutoLinks :: Pandoc -> [MarkdownLink]
-extractAutoLinks = W.query go
-  where
-    go :: B.Inline -> [MarkdownLink]
-    go = \case
-      (B.Link _attr [B.Str linkText] (url, _title))
-        | linkText == url -> maybeToList $ do
-          uri <- URI.mkURI url
-          pure $ MarkdownLink linkText uri
-      _ -> []
-
--- | Return the link in the given inline.
-pandocLinkInline :: B.Inline -> Maybe MarkdownLink
-pandocLinkInline = \case
-  (B.Link _attr [B.Str linkText] (url, _title)) -> do
-    uri <- URI.mkURI url
-    pure $ MarkdownLink linkText uri
-  _ -> Nothing
-
--- | Like `pandocLinkInline` but expects the link to be on a paragraph of its
--- own.
-pandocLinkBlock :: B.Block -> Maybe MarkdownLink
-pandocLinkBlock = \case
-  B.Para [B.Link _attr [B.Str linkText] (url, _title)] -> do
-    uri <- URI.mkURI url
-    pure $ MarkdownLink linkText uri
-  _ -> Nothing
 
 getFirstParagraphText :: Pandoc -> Maybe [B.Inline]
 getFirstParagraphText = listToMaybe . W.query go

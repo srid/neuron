@@ -28,10 +28,12 @@ import qualified Data.Aeson.Text as Aeson
 import Data.Default (def)
 import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
+import Data.Tagged
 import Data.Time.ISO8601 (formatISO8601)
 import Data.Tree (Tree (..))
 import Neuron.Config
@@ -41,11 +43,13 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
+import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName, zettelIDText)
+import Neuron.Zettelkasten.Query.Error (QueryParseError, showQueryParseError)
+import Neuron.Zettelkasten.Query.View (zettelUrl)
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.View as ZettelView
 import Reflex.Dom.Core hiding ((&))
-import Reflex.Dom.Pandoc.Document (PandocBuilder)
+import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding ((&))
 import qualified Rib
 import Rib.Extra.OpenGraph
@@ -122,22 +126,63 @@ renderOpenGraph OpenGraph {..} = do
         then f $ URI.render uri'
         else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
 
-renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m ()
+renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m (RouteError a)
 renderRouteBody config r (g, x) = do
   case r of
-    Route_ZIndex ->
-      renderIndex config g
-    Route_Search {} ->
-      renderSearch config g
-    Route_Zettel _ ->
-      renderZettel config (g, x)
-    Route_Redirect _ ->
+    Route_ZIndex -> do
+      divClass "ui text container" $ do
+        renderIndex config g x
+        renderBrandFooter
+      pure mempty
+    Route_Search {} -> do
+      divClass "ui text container" $ do
+        renderSearch g
+        renderBrandFooter
+      pure mempty
+    Route_Zettel _ -> do
+      errs <- ZettelView.renderZettel (editUrl config) (Tagged True) (g, x)
+      renderBrandFooter
+      pure errs
+    Route_Redirect _ -> do
       elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
+      pure mempty
 
-renderIndex :: DomBuilder t m => Config -> ZettelGraph -> m ()
-renderIndex config@Config {..} graph = divClass "ui text container" $ do
+renderErrors :: DomBuilder t m => Map ZettelID (Either Text [QueryParseError]) -> m ()
+renderErrors errors = do
+  let skippedZettels = Map.mapMaybe leftToMaybe errors
+      zettelsWithErrors = Map.mapMaybe rightToMaybe errors
+  unless (null skippedZettels) $ do
+    divClass "ui small negative message" $ do
+      divClass "header" $ do
+        text "These files are excluded from the zettelkasten due to parse errors"
+      el "p" $ do
+        el "ol" $ do
+          forM_ (Map.toList skippedZettels) $ \(zid, err) ->
+            el "li" $ do
+              el "b" $ el "tt" $ text $ toText $ zettelIDSourceFileName zid
+              text ": "
+              el "pre" $ text err
+  forM_ (Map.toList zettelsWithErrors) $ \(zid, qerrors) ->
+    divClass "ui tiny warning message" $ do
+      divClass "header" $ do
+        text $ "Zettel "
+        elClass "span" "zettel-link-container" $ do
+          elClass "span" "zettel-link" $ do
+            elAttr "a" ("href" =: zettelUrl zid) $ text $ zettelIDText zid
+        text " has errors"
+      el "p" $ do
+        el "ol" $ do
+          forM_ qerrors $ \qe ->
+            -- NOTE: This doesn't show query result errors, such as linking to
+            -- non-existant IDs. Because results are evaluated only during
+            -- rendering stage.
+            el "li" $ el "pre" $ text $ showQueryParseError qe
+
+renderIndex :: DomBuilder t m => Config -> ZettelGraph -> Map ZettelID (Either Text [QueryParseError]) -> m ()
+renderIndex Config {..} graph errors = do
   let neuronTheme = Theme.mkTheme theme
   elClass "h1" "header" $ text "Zettel Index"
+  renderErrors errors
   divClass "z-index" $ do
     -- Cycle detection.
     case G.topSort graph of
@@ -154,15 +199,14 @@ renderIndex config@Config {..} graph = divClass "ui text container" $ do
       divClass ("ui " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
         el "ul" $ renderForest True Nothing (Just graph) forest
-    renderFooter config graph Nothing
-    renderBrandFooter
+  el "br" blank
   where
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderSearch :: DomBuilder t m => Config -> ZettelGraph -> m ()
-renderSearch config graph = divClass "ui text container" $ do
+renderSearch :: DomBuilder t m => ZettelGraph -> m ()
+renderSearch graph = do
   elClass "h1" "header" $ text "Search"
   divClass "ui fluid icon input search" $ do
     elAttr "input" ("type" =: "text" <> "id" =: "search-input") blank
@@ -182,57 +226,6 @@ renderSearch config graph = divClass "ui text container" $ do
   elAttr "ul" ("id" =: "search-results" <> "class" =: "zettel-list") blank
   el "script" $ text $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   el "script" $ text searchScript
-  renderFooter config graph Nothing
-  renderBrandFooter
-
-renderZettel :: PandocBuilder t m => Config -> (ZettelGraph, Zettel) -> m ()
-renderZettel config (graph, z@Zettel {..}) = do
-  let upTree = G.backlinkForest Folgezettel z graph
-  whenNotNull upTree $ \_ -> do
-    elAttr "div" ("class" =: "flipped tree deemphasized" <> "id" =: "zettel-uptree" <> "style" =: "transform-origin: 50%") $ do
-      elClass "ul" "root" $ do
-        el "li" $ do
-          el "ul" $ do
-            renderUplinkForest (\z2 -> G.getConnection z z2 graph) upTree
-  elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-    -- zettel-container-anchor is a trick used by the scrollIntoView JS below
-    -- cf. https://stackoverflow.com/a/49968820/55246
-    elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -14px; left: 0") blank
-    divClass "zettel-view" $ do
-      ZettelView.renderZettelContent z
-      let cfBacklinks = G.backlinks OrdinaryConnection z graph
-      whenNotNull cfBacklinks $ \_ -> divClass "ui attached segment deemphasized" $ do
-        elAttr "div" ("class" =: "ui header" <> title =: "Zettels that link here, but without branching") $
-          text "More backlinks"
-        el "ul" $ do
-          forM_ cfBacklinks $ \zl ->
-            el "li" $ ZettelView.renderZettelLink Nothing def zl
-      renderFooter config graph (Just z)
-  renderBrandFooter
-  -- Because the tree above can be pretty large, we scroll past it
-  -- automatically when the page loads.
-  -- TODO: Do this only if we have rendered the tree.
-  -- FIXME: This may not scroll sufficiently if the images in the zettel haven't
-  -- loaded (thus the browser doesn't known the final height yet.)
-  el "script" $ text $
-    "document.getElementById(\"zettel-container-anchor\").scrollIntoView({behavior: \"smooth\", block: \"start\"});"
-
-renderFooter :: DomBuilder t m => Config -> ZettelGraph -> Maybe Zettel -> m ()
-renderFooter Config {..} graph mzettel = do
-  let attachClass = maybe "" (const "bottom attached") mzettel
-  divClass ("ui inverted black " <> attachClass <> " footer segment") $ do
-    divClass "ui equal width grid" $ do
-      divClass "center aligned column" $ do
-        let homeUrl = maybe "." (const "index.html") $ G.getZettel (ZettelCustomID "index") graph
-        elAttr "a" ("href" =: homeUrl <> "title" =: "/") $ fa "fas fa-home"
-      whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) ->
-        divClass "center aligned column" $ do
-          elAttr "a" ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel") $ fa "fas fa-edit"
-      divClass "center aligned column" $ do
-        elAttr "a" ("href" =: (Rib.routeUrlRel Route_Search) <> "title" =: "Search Zettels") $ fa "fas fa-search"
-      divClass "center aligned column" $ do
-        elAttr "a" ("href" =: (Rib.routeUrlRel Route_ZIndex) <> "title" =: "All Zettels (z-index)") $
-          fa "fas fa-tree"
 
 renderBrandFooter :: DomBuilder t m => m ()
 renderBrandFooter =
@@ -284,22 +277,6 @@ renderForest isRoot maxLevel mg trees =
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
 
-renderUplinkForest ::
-  DomBuilder t m =>
-  (Zettel -> Maybe Connection) ->
-  [Tree Zettel] ->
-  m ()
-renderUplinkForest getConn trees = do
-  forM_ (sortForest trees) $ \(Node zettel subtrees) ->
-    el "li" $ do
-      divClass "forest-link" $
-        ZettelView.renderZettelLink (getConn zettel) def zettel
-      when (length subtrees > 0) $ do
-        el "ul" $ renderUplinkForest getConn subtrees
-  where
-    -- Sort trees so that trees containing the most recent zettel (by ID) come first.
-    sortForest = reverse . sortOn maximum
-
 style :: Config -> Css
 style Config {..} = do
   let neuronTheme = Theme.mkTheme theme
@@ -309,124 +286,15 @@ style Config {..} = do
     C.ul ? do
       C.listStyleType C.square
       C.paddingLeft $ em 1.5
-  ZettelView.zettelLinkCss neuronTheme
-  "div.zettel-view" ? do
-    -- This list styling applies both to zettel content, and the rest of the
-    -- view (eg: connections pane)
-    C.ul ? do
-      C.paddingLeft $ em 1.5
-      C.listStyleType C.square
-      C.li ? do
-        mempty -- C.paddingBottom $ em 1
-    ZettelView.zettelCss neuronTheme
+  ZettelView.zettelCss neuronTheme
   "div.tag-tree" ? do
     "div.node" ? do
       C.fontWeight C.bold
       "a.inactive" ? do
         C.color "#555"
-  ".footer" ? do
-    "a" ? do
-      C.color white
   ".footer-version, .footer-version a, .footer-version a:visited" ? do
     C.color gray
   ".footer-version a" ? do
     C.fontWeight C.bold
   ".footer-version" ? do
     C.fontSize $ em 0.7
-  pureCssTreeDiagram
-  ".deemphasized" ? do
-    fontSize $ em 0.85
-  ".deemphasized:hover" ? do
-    opacity 1
-  ".deemphasized:not(:hover)" ? do
-    opacity 0.5
-    "a" ? important (color gray)
-
--- https://codepen.io/philippkuehn/pen/QbrOaN
-pureCssTreeDiagram :: Css
-pureCssTreeDiagram = do
-  let cellBorderWidth = px 2
-      flipTree = False
-      rotateDeg = deg 180
-  ".tree.flipped" ? do
-    C.transform $ C.rotate rotateDeg
-  ".tree" ? do
-    C.overflow auto
-    when flipTree $ do
-      C.transform $ C.rotate rotateDeg
-    -- Clay does not support this; doing it inline in div style.
-    -- C.transformOrigin $ pct 50
-    "ul.root" ? do
-      -- Make the tree attach to zettel segment
-      C.paddingTop $ px 0
-      C.marginTop $ px 0
-    "ul" ? do
-      C.position relative
-      C.padding (em 1) 0 0 0
-      C.whiteSpace nowrap
-      sym2 C.margin (px 0) auto
-      C.textAlign center
-      C.after & do
-        C.content $ stringContent ""
-        C.display C.displayTable
-        C.clear both
-      C.lastChild & do
-        C.paddingBottom $ em 0.1
-    "li" ? do
-      C.display C.inlineBlock
-      C.verticalAlign C.vAlignTop
-      C.textAlign C.center
-      C.listStyleType none
-      C.position relative
-      C.padding (em 1) (em 0.5) (em 0) (em 0.5)
-      forM_ [C.before, C.after] $ \sel -> sel & do
-        C.content $ stringContent ""
-        C.position absolute
-        C.top $ px 0
-        C.right $ pct 50
-        C.borderTop solid cellBorderWidth "#ccc"
-        C.width $ pct 50
-        C.height $ em 1.2
-      C.after & do
-        C.right auto
-        C.left $ pct 50
-        C.borderLeft solid cellBorderWidth "#ccc"
-      C.onlyChild & do
-        C.paddingTop $ em 0
-        forM_ [C.after, C.before] $ \sel -> sel & do
-          C.display none
-      C.firstChild & do
-        C.before & do
-          C.borderStyle none
-          C.borderWidth $ px 0
-        C.after & do
-          C.borderRadius (px 5) 0 0 0
-      C.lastChild & do
-        C.after & do
-          C.borderStyle none
-          C.borderWidth $ px 0
-        C.before & do
-          C.borderRight solid cellBorderWidth "#ccc"
-          C.borderRadius 0 (px 5) 0 0
-    "ul ul::before" ? do
-      C.content $ stringContent ""
-      C.position absolute
-      C.top $ px 0
-      C.left $ pct 50
-      C.borderLeft solid cellBorderWidth "#ccc"
-      C.width $ px 0
-      C.height $ em 1.2
-    "li" ? do
-      "div.forest-link" ? do
-        border solid cellBorderWidth "#ccc"
-        sym2 C.padding (em 0.2) (em 0.3)
-        C.textDecoration none
-        C.display inlineBlock
-        sym C.borderRadius (px 5)
-        C.color "#333"
-        C.position relative
-        C.top cellBorderWidth
-        when flipTree $ do
-          C.transform $ C.rotate rotateDeg
-  ".tree.flipped li div.forest-link" ? do
-    C.transform $ C.rotate rotateDeg

@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 0.5.1.0
+version: 0.5.2.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -66,6 +66,7 @@ common library-common
     reflex-dom-core,
     reflex-dom-pandoc,
     clay,
+    tagged
 
 library
   import: library-common
@@ -79,6 +80,7 @@ library
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Error
+    Neuron.Zettelkasten.Query.Error.Internal
     Neuron.Zettelkasten.Query.Eval
     Neuron.Zettelkasten.Query.Parser
     Neuron.Zettelkasten.Query.Theme
@@ -156,7 +158,6 @@ common app-common
       Neuron.Web.Route
       Neuron.Web.View
       Neuron.Markdown
-      Neuron.Zettelkasten.Error
       Neuron.Zettelkasten.ID.Scheme
       Paths_neuron
       Text.Megaparsec.Simple

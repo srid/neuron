@@ -25,8 +25,9 @@ import Data.Time
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import Neuron.Zettelkasten.Query as Q
-import Neuron.Zettelkasten.Zettel.Meta (zettelDateFormat)
+import qualified Neuron.Zettelkasten.Query.Error as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
+import Neuron.Zettelkasten.Zettel.Meta (zettelDateFormat)
 import Options.Applicative
 import Relude
 import qualified Rib.Cli
@@ -153,7 +154,7 @@ commandParser defaultNotesDir today = do
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
-          either (Left . show) (maybe (Left "Unsupported query") Right) $ Q.queryFromURI uri
+          either (Left . toString . Q.showQueryParseError) (maybe (Left "Unsupported query") Right) $ Q.queryFromURI uri
         Left e ->
           Left $ displayException e
     nonEmptyTextReader :: ReadM Text
