@@ -15,12 +15,10 @@ module Neuron.Zettelkasten.Zettel.View
     renderZettel,
     renderFooter,
     zettelCss,
-    zettelLinkCss,
   )
 where
 
-import Clay ((?), auto, em, pct, pre, px, sym, sym2)
-import Clay (Css)
+import Clay hiding (id, ms, not, object, reverse, s, style, type_)
 import qualified Clay as C
 import Data.Foldable (maximum)
 import Data.TagTree
@@ -38,9 +36,9 @@ import Neuron.Zettelkasten.Query.Theme (LinkView (..))
 import qualified Neuron.Zettelkasten.Query.View as Q
 import Neuron.Zettelkasten.Query.View (tagUrl, zettelUrl)
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Core
+import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc
-import Relude
+import Relude hiding ((&))
 
 type AutoScroll = Tagged "autoScroll" Bool
 
@@ -212,6 +210,24 @@ renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
             <> "data-position" =: "right center"
         )
 
+zettelCss :: Theme.Theme -> Css
+zettelCss neuronTheme = do
+  zettelCommonCss
+  zettelLinkCss neuronTheme
+  "div.zettel-view" ? do
+    -- This list styling applies both to zettel content, and the rest of the
+    -- view (eg: connections pane)
+    C.ul ? do
+      C.paddingLeft $ em 1.5
+      C.listStyleType C.square
+      C.li ? do
+        mempty -- C.paddingBottom $ em 1
+    zettelContentCss neuronTheme
+  pureCssTreeDiagram
+  ".footer" ? do
+    "a" ? do
+      C.color white
+
 zettelLinkCss :: Theme.Theme -> Css
 zettelLinkCss neuronTheme = do
   let linkColor = Theme.withRgb neuronTheme C.rgb
@@ -231,8 +247,8 @@ zettelLinkCss neuronTheme = do
   "[data-tooltip]:after" ? do
     C.fontSize $ em 0.7
 
-zettelCss :: Theme.Theme -> Css
-zettelCss neuronTheme = do
+zettelContentCss :: Theme.Theme -> Css
+zettelContentCss neuronTheme = do
   let linkColor = Theme.withRgb neuronTheme C.rgb
   "div.zettel-content" ? do
     -- All of these apply to the zettel content card only.
@@ -295,3 +311,106 @@ zettelCss neuronTheme = do
         C.borderLeft C.solid (px 10) "#ccc"
         sym2 C.margin (em 1.5) (px 0)
         sym2 C.padding (em 0.5) (px 10)
+
+-- https://codepen.io/philippkuehn/pen/QbrOaN
+pureCssTreeDiagram :: Css
+pureCssTreeDiagram = do
+  let cellBorderWidth = px 2
+      flipTree = False
+      rotateDeg = deg 180
+  ".tree.flipped" ? do
+    C.transform $ C.rotate rotateDeg
+  ".tree" ? do
+    C.overflow auto
+    when flipTree $ do
+      C.transform $ C.rotate rotateDeg
+    -- Clay does not support this; doing it inline in div style.
+    -- C.transformOrigin $ pct 50
+    "ul.root" ? do
+      -- Make the tree attach to zettel segment
+      C.paddingTop $ px 0
+      C.marginTop $ px 0
+    "ul" ? do
+      C.position relative
+      C.padding (em 1) 0 0 0
+      C.whiteSpace nowrap
+      sym2 C.margin (px 0) auto
+      C.textAlign center
+      C.after & do
+        C.content $ stringContent ""
+        C.display C.displayTable
+        C.clear both
+      C.lastChild & do
+        C.paddingBottom $ em 0.1
+    "li" ? do
+      C.display C.inlineBlock
+      C.verticalAlign C.vAlignTop
+      C.textAlign C.center
+      C.listStyleType none
+      C.position relative
+      C.padding (em 1) (em 0.5) (em 0) (em 0.5)
+      forM_ [C.before, C.after] $ \sel -> sel & do
+        C.content $ stringContent ""
+        C.position absolute
+        C.top $ px 0
+        C.right $ pct 50
+        C.borderTop solid cellBorderWidth "#ccc"
+        C.width $ pct 50
+        C.height $ em 1.2
+      C.after & do
+        C.right auto
+        C.left $ pct 50
+        C.borderLeft solid cellBorderWidth "#ccc"
+      C.onlyChild & do
+        C.paddingTop $ em 0
+        forM_ [C.after, C.before] $ \sel -> sel & do
+          C.display none
+      C.firstChild & do
+        C.before & do
+          C.borderStyle none
+          C.borderWidth $ px 0
+        C.after & do
+          C.borderRadius (px 5) 0 0 0
+      C.lastChild & do
+        C.after & do
+          C.borderStyle none
+          C.borderWidth $ px 0
+        C.before & do
+          C.borderRight solid cellBorderWidth "#ccc"
+          C.borderRadius 0 (px 5) 0 0
+    "ul ul::before" ? do
+      C.content $ stringContent ""
+      C.position absolute
+      C.top $ px 0
+      C.left $ pct 50
+      C.borderLeft solid cellBorderWidth "#ccc"
+      C.width $ px 0
+      C.height $ em 1.2
+    "li" ? do
+      "div.forest-link" ? do
+        border solid cellBorderWidth "#ccc"
+        sym2 C.padding (em 0.2) (em 0.3)
+        C.textDecoration none
+        C.display inlineBlock
+        sym C.borderRadius (px 5)
+        C.color "#333"
+        C.position relative
+        C.top cellBorderWidth
+        when flipTree $ do
+          C.transform $ C.rotate rotateDeg
+  ".tree.flipped li div.forest-link" ? do
+    C.transform $ C.rotate rotateDeg
+
+zettelCommonCss :: Css
+zettelCommonCss = do
+  "p" ? do
+    C.lineHeight $ pct 150
+  "img" ? do
+    C.maxWidth $ pct 100 -- Prevents large images from overflowing beyond zettel borders
+  ".deemphasized" ? do
+    fontSize $ em 0.85
+  ".deemphasized:hover" ? do
+    opacity 1
+  ".deemphasized:not(:hover)" ? do
+    opacity 0.5
+    "a" ? important (color gray)

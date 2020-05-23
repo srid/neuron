@@ -6,7 +6,7 @@
 
 module Main where
 
-import Clay ((?), Css, em, pct)
+import Clay ((?), Css, em)
 import qualified Clay as C
 import qualified Data.Text as T
 import Development.Shake
@@ -87,12 +87,8 @@ mainStyle cfg = do
     C.fontFamily [bodyFont] [C.serif]
     C.paddingTop $ em 1
     C.paddingBottom $ em 1
-    "p" ? do
-      C.lineHeight $ pct 150
     "h1, h2, h3, h4, h5, h6, .ui.header, .headerFont" ? do
       C.fontFamily [headerFont] [C.sansSerif]
-    "img" ? do
-      C.maxWidth $ pct 100 -- Prevents large images from overflowing beyond zettel borders
     "code, pre, tt, .monoFont" ? do
       C.fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [C.monospace]
     style cfg
