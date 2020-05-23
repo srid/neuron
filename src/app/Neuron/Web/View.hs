@@ -40,10 +40,10 @@ import Neuron.Version (neuronVersion)
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Error (NeuronError (..))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (zettelIDText)
+import Neuron.Zettelkasten.Query.Error (QueryError)
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.View as ZettelView
 import Reflex.Dom.Core hiding ((&))
@@ -124,7 +124,7 @@ renderOpenGraph OpenGraph {..} = do
         then f $ URI.render uri'
         else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
 
-renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m [NeuronError]
+renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m [QueryError]
 renderRouteBody config r (g, x) = do
   case r of
     Route_ZIndex -> do

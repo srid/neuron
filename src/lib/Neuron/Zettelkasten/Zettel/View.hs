@@ -26,10 +26,10 @@ import qualified Data.Text as T
 import Data.Tree (Tree (..))
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Error (NeuronError (..), neuronErrorReason)
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)
+import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
+import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
 import qualified Neuron.Zettelkasten.Query.Eval as Q
 import Neuron.Zettelkasten.Query.Theme (LinkView (..))
 import qualified Neuron.Zettelkasten.Query.View as Q
@@ -41,7 +41,12 @@ import Relude hiding ((&))
 
 type AutoScroll = Tagged "autoScroll" Bool
 
-renderZettel :: PandocBuilder t m => Maybe Text -> AutoScroll -> (ZettelGraph, Zettel) -> m [NeuronError]
+renderZettel ::
+  PandocBuilder t m =>
+  Maybe Text ->
+  AutoScroll ->
+  (ZettelGraph, Zettel) ->
+  m [QueryError]
 renderZettel editUrl (Tagged autoScroll) (graph, z@Zettel {..}) = do
   let upTree = G.backlinkForest Folgezettel z graph
   whenNotNull upTree $ \_ -> do
@@ -67,7 +72,7 @@ renderZettel editUrl (Tagged autoScroll) (graph, z@Zettel {..}) = do
         divClass "one wide tablet only computer only column" $ do
           renderActionsMenu VerticalMenu editUrl (Just z)
         divClass "sixteen wide mobile fifteen wide tablet fifteen wide computer stretched column" $ do
-          errors <- renderZettelContent (handleZettelQuery graph zettelID) z
+          errors <- renderZettelContent (handleZettelQuery graph) z
           divClass "ui bottom attached segment deemphasized" $ do
             divClass "ui two column grid" $ do
               divClass "column" $ do
@@ -96,20 +101,19 @@ renderZettel editUrl (Tagged autoScroll) (graph, z@Zettel {..}) = do
 handleZettelQuery ::
   (PandocRawConstraints m, DomBuilder t m, PandocRaw m) =>
   ZettelGraph ->
-  ZettelID ->
-  m [NeuronError] ->
+  m [QueryError] ->
   URILink ->
-  m [NeuronError]
-handleZettelQuery graph zettelID oldRender uriLink = do
+  m [QueryError]
+handleZettelQuery graph oldRender uriLink = do
   case flip runReaderT (G.getZettels graph) (Q.evalQueryLink uriLink) of
-    Left (NeuronError_BadQuery zettelID . Left -> e) -> do
+    Left (Left -> e) -> do
       fmap (e :) oldRender <* elError e
     Right Nothing -> do
       oldRender
     Right (Just res) -> do
       -- TODO: This should render in reflex-dom (no via pandoc's builder)
       case Q.buildQueryView res of
-        Left (NeuronError_BadQuery zettelID . Right -> e) -> do
+        Left (Right -> e) -> do
           fmap (e :) oldRender <* elError e
         Right (Left w) -> do
           elPandocInlines [w]
@@ -120,7 +124,7 @@ handleZettelQuery graph zettelID oldRender uriLink = do
   where
     elError e =
       elClass "span" "ui left pointing red basic label" $ do
-        text $ neuronErrorReason e
+        text $ showQueryError e
 
 renderUplinkForest ::
   DomBuilder t m =>

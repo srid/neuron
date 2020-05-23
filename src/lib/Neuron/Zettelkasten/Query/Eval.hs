@@ -45,7 +45,8 @@ evalQueryLink link =
 
 queryConnections ::
   forall m.
-  ( MonadWriter [QueryParseError] m,
+  ( -- Errors are written aside, accumulating valid connections.
+    MonadWriter [QueryParseError] m,
     -- Running queries requires the zettels list.
     MonadReader [Zettel] m
   ) =>

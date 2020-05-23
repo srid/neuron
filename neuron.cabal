@@ -86,7 +86,6 @@ library
     Neuron.Zettelkasten.Query.View
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
-    Neuron.Zettelkasten.Error
     Neuron.Web.Theme
     Text.Megaparsec.Simple
     Text.URI.Util

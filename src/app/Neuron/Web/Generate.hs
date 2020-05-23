@@ -16,6 +16,7 @@ where
 
 import Control.Monad.Writer (runWriterT)
 import qualified Data.Graph.Labelled as G
+import qualified Data.Map.Strict as Map
 import Data.Traversable
 import Development.Shake
 import Neuron.Config (Config (..))
@@ -23,10 +24,9 @@ import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Web.Route as Z
 import Neuron.Zettelkasten.Connection (Connection (..))
-import Neuron.Zettelkasten.Error (NeuronError (..))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (mkZettelID)
+import Neuron.Zettelkasten.ID (ZettelID, mkZettelID)
 import Neuron.Zettelkasten.Query.Error (QueryParseError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel (Zettel, ZettelT (..), mkZettelFromMarkdown)
@@ -67,12 +67,12 @@ loadZettelsIgnoringErrors :: Action [Zettel]
 loadZettelsIgnoringErrors =
   fmap (G.getZettels . fst) loadZettelkasten
 
-loadZettelkasten :: Action (ZettelGraph, [NeuronError])
+loadZettelkasten :: Action (ZettelGraph, Map ZettelID [QueryParseError])
 loadZettelkasten =
   loadZettelkastenFrom =<< Rib.forEvery ["*.md"] pure
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
-loadZettelkastenFrom :: HasCallStack => [FilePath] -> Action (ZettelGraph, [NeuronError])
+loadZettelkastenFrom :: HasCallStack => [FilePath] -> Action (ZettelGraph, Map ZettelID [QueryParseError])
 loadZettelkastenFrom files = do
   notesDir <- Rib.ribInputDir
   zettels <- forM files $ \((notesDir </>) -> path) -> do
@@ -90,23 +90,18 @@ mkZettelGraph ::
   forall m.
   Monad m =>
   [Zettel] ->
-  m (ZettelGraph, [NeuronError])
+  m (ZettelGraph, Map ZettelID [QueryParseError])
 mkZettelGraph zettels = do
   res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryParseError]))] <- do
     flip runReaderT zettels $ do
-      -- TODO: re: Left; for Right, we must render the query, which only happens
-      -- in Web.View. How do we accumulate the errors?
       for zettels $ \z -> fmap (z,) $ do
-        (conns, errs) <- runWriterT $ do
-          queryConnections (zettelContent z)
-        pure (conns, errs)
-  -- pure (conns, NeuronError_BadQuery (zettelID z) . Left <$> errs)
+        runWriterT $ queryConnections (zettelContent z)
   let g :: ZettelGraph = G.mkGraphFrom (fst <$> res) $ flip concatMap res $ \(z1, fst -> conns) ->
         conns <&> \(c, z2) -> (connectionMonoid (fromMaybe Folgezettel c), z1, z2)
   pure
     ( g,
-      flip concatMap res $ \(z, (_conns, errs)) ->
-        NeuronError_BadQuery (zettelID z) . Left <$> errs
+      Map.fromListWith (++) $ flip fmap res $ \(z, (_conns, errs)) ->
+        (zettelID z, errs)
     )
   where
     connectionMonoid = Just

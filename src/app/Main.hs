@@ -17,7 +17,7 @@ import qualified Neuron.Config as Config
 import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Route (Route (..))
 import Neuron.Web.View (renderRouteBody, renderRouteHead, style)
-import Neuron.Zettelkasten.Error (NeuronError)
+import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc.Document (PandocBuilder)
 import Relude
@@ -39,10 +39,10 @@ generateMainSite = do
         unless (null errors) $ do
           putStrLn $ "E " <> fromMaybe "Unknown path" (routeFile r)
           forM_ errors $ \err ->
-            putStrLn $ "  " <> show err
+            putTextLn $ "  - " <> showQueryError err
   void $ generateSite config writeHtmlRoute
 
-renderPage :: PandocBuilder t m => Config -> Route g a -> (g, a) -> m [NeuronError]
+renderPage :: PandocBuilder t m => Config -> Route g a -> (g, a) -> m [QueryError]
 renderPage config r val = elAttr "html" ("lang" =: "en") $ do
   el "head" $ do
     renderRouteHead config r val
