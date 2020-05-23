@@ -25,7 +25,6 @@ import Data.TagTree (Tag, TagPattern (..), tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -62,8 +61,8 @@ queryResultJson ::
   FilePath ->
   Query r ->
   r ->
-  -- All errors in the zettelkasten
-  Map ZettelID (Either Text [QueryParseError]) ->
+  -- Zettels that cannot be parsed by neuron
+  Map ZettelID Text ->
   Value
 queryResultJson notesDir q r errors =
   toJSON $

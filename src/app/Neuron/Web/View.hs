@@ -44,7 +44,7 @@ import Neuron.Zettelkasten.Connection
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName, zettelIDText)
-import Neuron.Zettelkasten.Query.Error (QueryParseError, showQueryParseError)
+import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
 import Neuron.Zettelkasten.Query.View (zettelUrl)
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.View as ZettelView
@@ -147,7 +147,7 @@ renderRouteBody config r (g, x) = do
       elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
       pure mempty
 
-renderErrors :: DomBuilder t m => Map ZettelID (Either Text [QueryParseError]) -> m ()
+renderErrors :: DomBuilder t m => Map ZettelID (Either Text [QueryError]) -> m ()
 renderErrors errors = do
   let skippedZettels = Map.mapMaybe leftToMaybe errors
       zettelsWithErrors = Map.mapMaybe rightToMaybe errors
@@ -173,12 +173,9 @@ renderErrors errors = do
       el "p" $ do
         el "ol" $ do
           forM_ qerrors $ \qe ->
-            -- NOTE: This doesn't show query result errors, such as linking to
-            -- non-existant IDs. Because results are evaluated only during
-            -- rendering stage.
-            el "li" $ el "pre" $ text $ showQueryParseError qe
+            el "li" $ el "pre" $ text $ showQueryError qe
 
-renderIndex :: DomBuilder t m => Config -> ZettelGraph -> Map ZettelID (Either Text [QueryParseError]) -> m ()
+renderIndex :: DomBuilder t m => Config -> ZettelGraph -> Map ZettelID (Either Text [QueryError]) -> m ()
 renderIndex Config {..} graph errors = do
   let neuronTheme = Theme.mkTheme theme
   elClass "h1" "header" $ text "Zettel Index"

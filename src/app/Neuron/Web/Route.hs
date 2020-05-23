@@ -33,13 +33,13 @@ data Route graph a where
   Route_Redirect :: ZettelID -> Route ZettelGraph ZettelID
   -- ZIndex takes a report of all errors in the zettelkasten.
   -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
-  Route_ZIndex :: Route ZettelGraph (Map ZettelID (Either Text [QueryParseError]))
+  Route_ZIndex :: Route ZettelGraph (Map ZettelID (Either Text [QueryError]))
   Route_Search :: Route ZettelGraph ()
   Route_Zettel :: ZettelID -> Route ZettelGraph PandocZettel
 
 type family RouteError r
 
-type instance RouteError (Map ZettelID (Either Text [QueryParseError])) = ()
+type instance RouteError (Map ZettelID (Either Text [QueryError])) = ()
 
 type instance RouteError ZettelID = ()
 

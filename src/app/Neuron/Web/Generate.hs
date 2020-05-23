@@ -25,7 +25,7 @@ import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID, mkZettelID)
-import Neuron.Zettelkasten.Query.Error (QueryParseError, showQueryError)
+import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
 import Options.Applicative
 import Reflex.Class (filterLeft, filterRight)
@@ -44,18 +44,20 @@ generateSite config writeHtmlRoute' = do
     $ fail
     $ toString
     $ "Require neuron mininum version " <> minVersion config <> ", but your neuron version is " <> neuronVersion
-  (zettelGraph, zettelContents, errors) <- loadZettelkasten
-  -- NOTE: Right errors are handled further below in individual zettel generation.
-  let skippedErrors = Map.mapMaybe leftToMaybe errors
-      writeHtmlRoute :: forall a. a -> Z.Route ZettelGraph a -> Action (Z.RouteError a)
+  (zettelGraph, zettelContents, skippedErrors) <- loadZettelkasten
+  let writeHtmlRoute :: forall a. a -> Z.Route ZettelGraph a -> Action (Z.RouteError a)
       writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
-  forM_ zettelContents $ \val@(PandocZettel (z, _)) -> do
+  queryErrors <- fmap (Map.fromList . catMaybes) $ forM zettelContents $ \val@(PandocZettel (z, _)) -> do
     let r = Z.Route_Zettel $ zettelID z
     zerrors <- writeHtmlRoute val r
-    unless (null zerrors) $ do
-      reportError r Nothing $ showQueryError <$> zerrors
+    if null zerrors
+      then pure Nothing
+      else do
+        reportError r Nothing $ showQueryError <$> zerrors
+        pure $ Just (zettelID z, zerrors)
   -- Generate the z-index
+  let errors = fmap Left skippedErrors `Map.union` fmap Right queryErrors
   writeHtmlRoute errors Z.Route_ZIndex
   -- Generate search page
   writeHtmlRoute () Z.Route_Search
@@ -91,7 +93,7 @@ loadZettelkasten ::
   Action
     ( ZettelGraph,
       [PandocZettel],
-      Map ZettelID (Either Text [QueryParseError])
+      Map ZettelID Text
     )
 loadZettelkasten =
   loadZettelkastenFrom =<< Rib.forEvery ["*.md"] pure
@@ -102,7 +104,7 @@ loadZettelkastenFrom ::
   Action
     ( ZettelGraph,
       [PandocZettel],
-      Map ZettelID (Either Text [QueryParseError])
+      Map ZettelID Text
     )
 loadZettelkastenFrom files = do
   notesDir <- Rib.ribInputDir
@@ -112,5 +114,5 @@ loadZettelkastenFrom files = do
     pure $ first (zid,) $ parseZettel zid s
   let skippedZettelErrors :: [(ZettelID, Text)] = filterLeft parseRes
       zs = filterRight parseRes
-      (g, errors) = G.mkZettelGraph zs
-  pure (g, zs, fmap Left (Map.fromList skippedZettelErrors) `Map.union` fmap Right errors)
+      (g, _errors) = G.mkZettelGraph zs
+  pure (g, zs, Map.fromList skippedZettelErrors)
