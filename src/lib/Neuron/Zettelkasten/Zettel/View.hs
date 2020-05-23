@@ -59,7 +59,9 @@ renderZettel editUrl (Tagged autoScroll) (graph, z@Zettel {..}) = do
     when autoScroll $ do
       -- zettel-container-anchor is a trick used by the scrollIntoView JS below
       -- cf. https://stackoverflow.com/a/49968820/55246
-      elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -14px; left: 0") blank
+      -- We use -24px (instead of -14px) here so as to not scroll all the way to
+      -- title, and as to leave some of the tree visible as "hint" to the user.
+      elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -24px; left: 0") blank
     divClass "zettel-view" $ do
       errors <- divClass "ui two column grid" $ do
         divClass "one wide tablet only computer only column" $ do
