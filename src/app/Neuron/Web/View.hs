@@ -32,6 +32,7 @@ import qualified Data.Set as Set
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
+import Data.Tagged
 import Data.Time.ISO8601 (formatISO8601)
 import Data.Tree (Tree (..))
 import Neuron.Config
@@ -139,7 +140,7 @@ renderRouteBody config r (g, x) = do
         renderBrandFooter
       pure mempty
     Route_Zettel _ -> do
-      errs <- ZettelView.renderZettel (editUrl config) (g, x)
+      errs <- ZettelView.renderZettel (editUrl config) (Tagged True) (g, x)
       renderBrandFooter
       pure errs
     Route_Redirect _ -> do

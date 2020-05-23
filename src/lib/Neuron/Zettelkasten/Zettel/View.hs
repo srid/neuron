@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -23,6 +24,7 @@ import Clay (Css)
 import qualified Clay as C
 import Data.Foldable (maximum)
 import Data.TagTree
+import Data.Tagged
 import qualified Data.Text as T
 import Data.Tree (Tree (..))
 import qualified Neuron.Web.Theme as Theme
@@ -40,38 +42,46 @@ import Reflex.Dom.Core
 import Reflex.Dom.Pandoc
 import Relude
 
-renderZettel :: PandocBuilder t m => Maybe Text -> (ZettelGraph, Zettel) -> m [NeuronError]
-renderZettel editUrl (graph, z@Zettel {..}) = do
+type AutoScroll = Tagged "autoScroll" Bool
+
+renderZettel :: PandocBuilder t m => Maybe Text -> AutoScroll -> (ZettelGraph, Zettel) -> m [NeuronError]
+renderZettel editUrl (Tagged autoScroll) (graph, z@Zettel {..}) = do
   let upTree = G.backlinkForest Folgezettel z graph
   whenNotNull upTree $ \_ -> do
-    elAttr "div" ("class" =: "flipped tree deemphasized" <> "id" =: "zettel-uptree" <> "style" =: "transform-origin: 50%") $ do
+    let attrs =
+          "class" =: "flipped tree deemphasized"
+            <> "id" =: "zettel-uptree"
+            <> "style" =: "transform-origin: 50%"
+    elAttr "div" attrs $ do
       elClass "ul" "root" $ do
         el "li" $ do
           el "ul" $ do
             renderUplinkForest (\z2 -> G.getConnection z z2 graph) upTree
   -- Main content
   errors <- elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-    -- zettel-container-anchor is a trick used by the scrollIntoView JS below
-    -- cf. https://stackoverflow.com/a/49968820/55246
-    elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -14px; left: 0") blank
+    when autoScroll $ do
+      -- zettel-container-anchor is a trick used by the scrollIntoView JS below
+      -- cf. https://stackoverflow.com/a/49968820/55246
+      elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -14px; left: 0") blank
     divClass "zettel-view" $ do
       errors <- renderZettelContent (handleZettelQuery graph zettelID) z
-      let cfBacklinks = G.backlinks OrdinaryConnection z graph
-      whenNotNull cfBacklinks $ \_ -> divClass "ui attached segment deemphasized" $ do
-        elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here, but without branching") $
-          text "More backlinks"
-        el "ul" $ do
-          forM_ cfBacklinks $ \zl ->
-            el "li" $ renderZettelLink Nothing def zl
+      whenNotNull (G.backlinks OrdinaryConnection z graph) $ \cfBacklinks -> do
+        divClass "ui attached segment deemphasized" $ do
+          elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here, but without branching") $
+            text "More backlinks"
+          el "ul" $ do
+            forM_ cfBacklinks $ \zl ->
+              el "li" $ renderZettelLink Nothing def zl
       renderFooter editUrl graph (Just z)
       pure errors
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
-  -- TODO: Do this only if we have rendered the tree.
   -- FIXME: This may not scroll sufficiently if the images in the zettel haven't
   -- loaded (thus the browser doesn't known the final height yet.)
-  el "script" $ text $
-    "document.getElementById(\"zettel-container-anchor\").scrollIntoView({behavior: \"smooth\", block: \"start\"});"
+  when (autoScroll && not (null upTree)) $ do
+    whenNotNull upTree $ \_ -> do
+      el "script" $ text $
+        "document.getElementById(\"zettel-container-anchor\").scrollIntoView({behavior: \"smooth\", block: \"start\"});"
   pure errors
 
 handleZettelQuery ::

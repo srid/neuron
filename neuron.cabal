@@ -66,6 +66,7 @@ common library-common
     reflex-dom-core,
     reflex-dom-pandoc,
     clay,
+    tagged
 
 library
   import: library-common
