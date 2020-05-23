@@ -46,13 +46,15 @@ import Relude
 -- If there are any errors during parsing of queries (to determine connections),
 -- return them as well.
 mkZettelGraph ::
-  [Zettel] ->
-  (ZettelGraph, Map ZettelID [QueryParseError])
+  [PandocZettel] ->
+  ( ZettelGraph,
+    Map ZettelID [QueryParseError]
+  )
 mkZettelGraph zettels =
   let res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryParseError]))] =
-        flip runReader zettels $ do
-          for zettels $ \z -> fmap (z,) $ do
-            runWriterT $ queryConnections (zettelContent z)
+        flip runReader (fmap (fst . unPandocZettel) zettels) $ do
+          for zettels $ \(PandocZettel (z, body)) -> fmap (z,) $ do
+            runWriterT $ queryConnections body
       g :: ZettelGraph = G.mkGraphFrom (fst <$> res) $ flip concatMap res $ \(z1, fst -> conns) ->
         conns <&> \(c, z2) -> (connectionMonoid (fromMaybe Folgezettel c), z1, z2)
    in ( g,

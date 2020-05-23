@@ -38,6 +38,7 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc
 import Relude hiding ((&))
+import Text.Pandoc.Definition (Pandoc)
 
 type AutoScroll = Tagged "autoScroll" Bool
 
@@ -45,9 +46,9 @@ renderZettel ::
   PandocBuilder t m =>
   Maybe Text ->
   AutoScroll ->
-  (ZettelGraph, Zettel) ->
+  (ZettelGraph, PandocZettel) ->
   m [QueryError]
-renderZettel editUrl (Tagged autoScroll) (graph, z@Zettel {..}) = do
+renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, zc))) = do
   let upTree = G.backlinkForest Folgezettel z graph
   whenNotNull upTree $ \_ -> do
     let attrs =
@@ -72,7 +73,7 @@ renderZettel editUrl (Tagged autoScroll) (graph, z@Zettel {..}) = do
         divClass "one wide tablet only computer only column" $ do
           renderActionsMenu VerticalMenu editUrl (Just z)
         divClass "sixteen wide mobile fifteen wide tablet fifteen wide computer stretched column" $ do
-          errors <- renderZettelContent (handleZettelQuery graph) z
+          errors <- renderZettelContent (handleZettelQuery graph) z zc
           divClass "ui bottom attached segment deemphasized" $ do
             divClass "ui two column grid" $ do
               divClass "column" $ do
@@ -169,11 +170,12 @@ renderZettelContent ::
   (PandocBuilder t m, Monoid a) =>
   (m a -> URILink -> m a) ->
   Zettel ->
+  Pandoc ->
   m a
-renderZettelContent handleLink Zettel {..} = do
+renderZettelContent handleLink Zettel {..} doc = do
   divClass "ui raised attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
-    x <- elPandoc (Config handleLink) zettelContent
+    x <- elPandoc (Config handleLink) doc
     whenJust zettelDay $ \day ->
       elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ text $ show day
     pure x

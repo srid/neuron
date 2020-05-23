@@ -35,7 +35,7 @@ data Route graph a where
   -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
   Route_ZIndex :: Route ZettelGraph (Map ZettelID (Either Text [QueryParseError]))
   Route_Search :: Route ZettelGraph ()
-  Route_Zettel :: ZettelID -> Route ZettelGraph Zettel
+  Route_Zettel :: ZettelID -> Route ZettelGraph PandocZettel
 
 type family RouteError r
 
@@ -45,7 +45,7 @@ type instance RouteError ZettelID = ()
 
 type instance RouteError () = ()
 
-type instance RouteError Zettel = [QueryError]
+type instance RouteError PandocZettel = [QueryError]
 
 instance IsRoute (Route graph) where
   routeFile = \case
@@ -94,7 +94,8 @@ routeTitle' val = \case
   Route_ZIndex -> "Zettel Index"
   Route_Search -> "Search"
   Route_Zettel _ ->
-    zettelTitle val
+    let PandocZettel (z, _) = val
+     in zettelTitle z
 
 routeOpenGraph :: Config -> a -> Route graph a -> OpenGraph
 routeOpenGraph Config {..} val r =
@@ -106,7 +107,8 @@ routeOpenGraph Config {..} val r =
         Route_ZIndex -> Just "Zettelkasten Index"
         Route_Search -> Just "Search Zettelkasten"
         Route_Zettel _ -> do
-          para <- getFirstParagraphText $ zettelContent val
+          let PandocZettel (_, doc) = val
+          para <- getFirstParagraphText doc
           paraText <- renderPandocAsText para
           pure $ T.take 300 paraText,
       _openGraph_author = author,
@@ -115,7 +117,8 @@ routeOpenGraph Config {..} val r =
         _ -> Just OGType_Website,
       _openGraph_image = case r of
         Route_Zettel _ -> do
-          img <- URI.mkURI =<< Pandoc.getFirstImg (zettelContent val)
+          let PandocZettel (_, doc) = val
+          img <- URI.mkURI =<< Pandoc.getFirstImg doc
           baseUrl <- URI.mkURI =<< siteBaseUrl
           URI.relativeTo img baseUrl
         _ -> Nothing,

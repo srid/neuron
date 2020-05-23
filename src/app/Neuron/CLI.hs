@@ -63,7 +63,7 @@ runWith act App {..} =
     Query someQ ->
       runRibOnceQuietly notesDir $ do
         withSome someQ $ \q -> do
-          (graph, errors) <- Gen.loadZettelkasten
+          (graph, _, errors) <- Gen.loadZettelkasten
           let result = Q.runQuery (G.getZettels graph) q
           putLTextLn $ Aeson.encodeToLazyText $ Q.queryResultJson notesDir q result errors
     Search searchCmd ->

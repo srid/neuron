@@ -19,34 +19,38 @@ import Relude hiding (show)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
 
-data ZettelT content = Zettel
+-- | Zettel with no associated content
+--
+-- The metadata could have been inferred from the content.
+data Zettel = Zettel
   { zettelID :: ZettelID,
     zettelTitle :: Text,
     zettelTags :: [Tag],
-    zettelDay :: Maybe Day,
-    zettelContent :: content
+    zettelDay :: Maybe Day
   }
 
-type Zettel = ZettelT Pandoc
+-- | A zettel with the associated pandoc AST
+newtype PandocZettel = PandocZettel {unPandocZettel :: (Zettel, Pandoc)}
+  deriving (Eq)
 
-instance Eq (ZettelT c) where
+instance Eq Zettel where
   (==) = (==) `on` zettelID
 
-instance Ord (ZettelT c) where
+instance Ord Zettel where
   compare = compare `on` zettelID
 
-instance Show (ZettelT c) where
+instance Show Zettel where
   show Zettel {..} = "Zettel:" <> show zettelID
 
-instance Vertex (ZettelT c) where
-  type VertexID (ZettelT c) = ZettelID
+instance Vertex Zettel where
+  type VertexID Zettel = ZettelID
   vertexID = zettelID
 
 sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
   sortOn (Down . zettelDay)
 
-zettelJson :: forall a c. KeyValue a => ZettelT c -> [a]
+zettelJson :: forall a. KeyValue a => Zettel -> [a]
 zettelJson Zettel {..} =
   [ "id" .= toJSON zettelID,
     "title" .= zettelTitle,
@@ -54,12 +58,14 @@ zettelJson Zettel {..} =
     "day" .= zettelDay
   ]
 
-mkZettelFromMarkdown ::
+-- | Parse a markdown-formatted zettel
+--
+-- In future this will support other formats supported by Pandoc.
+parseZettel ::
   ZettelID ->
   Text ->
-  ((Text, Pandoc) -> content) ->
-  Either Text (ZettelT content)
-mkZettelFromMarkdown zid s selectContent = do
+  Either Text PandocZettel
+parseZettel zid s = do
   (meta, doc) <- parseMarkdown (zettelIDSourceFileName zid) s
   let title = maybe "Missing title" Meta.title meta
       tags = fromMaybe [] $ Meta.tags =<< meta
@@ -68,5 +74,4 @@ mkZettelFromMarkdown zid s selectContent = do
         -- creation date in the ID.
         ZettelDateID v _ -> Just v
         ZettelCustomID _ -> Meta.date =<< meta
-  pure $
-    Zettel zid title tags day (selectContent (s, doc))
+  pure $ PandocZettel (Zettel zid title tags day, doc)

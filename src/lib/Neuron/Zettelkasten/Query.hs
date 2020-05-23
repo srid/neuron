@@ -81,7 +81,7 @@ queryResultJson notesDir q r errors =
         toJSON $ zettelJsonFull <$> r
       Query_Tags _ ->
         toJSON $ treeToJson <$> tagTree r
-    zettelJsonFull :: ZettelT c -> Value
+    zettelJsonFull :: Zettel -> Value
     zettelJsonFull z@Zettel {..} =
       object $
         [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)

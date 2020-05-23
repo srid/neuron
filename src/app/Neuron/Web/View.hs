@@ -91,7 +91,7 @@ renderRouteHead config r val = do
             let mkCrumb :: Zettel -> Breadcrumb.Item
                 mkCrumb Zettel {..} =
                   Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
-             in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel v graph
+             in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (fst $ unPandocZettel v) graph
       _ ->
         []
 
