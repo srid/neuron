@@ -25,11 +25,11 @@ neuronErrorReason :: NeuronError -> Text
 neuronErrorReason (NeuronError_BadQuery _fromZid e) =
   case e of
     Left qe ->
-      "it contains a query URI (" <> URI.render (queryParseErrorUri qe) <> ") " <> case qe of
+      "The query URI (" <> URI.render (queryParseErrorUri qe) <> ") " <> case qe of
         QueryParseError_UnsupportedHost _uri ->
-          "with unsupported host"
+          "has an unsupported host"
         QueryParseError_InvalidID _uri e'' ->
-          "with invalidID: " <> show e''
+          "has an invalidID: " <> show e''
     Right (QueryResultError_NoSuchZettel zid) ->
       "Zettel with ID \""
         <> zettelIDText zid

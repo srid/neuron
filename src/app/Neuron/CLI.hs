@@ -62,7 +62,7 @@ runWith act App {..} =
     Query someQ ->
       runRibOnceQuietly notesDir $ do
         withSome someQ $ \q -> do
-          result <- flip Q.runQuery q <$> Gen.loadZettels
+          result <- flip Q.runQuery q <$> Gen.loadZettelsIgnoringErrors
           putLTextLn $ Aeson.encodeToLazyText $ Q.queryResultJson notesDir q result
     Search searchCmd ->
       interactiveSearch notesDir searchCmd

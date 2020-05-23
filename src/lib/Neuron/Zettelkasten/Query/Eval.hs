@@ -45,7 +45,7 @@ evalQueryLink link =
 
 queryConnections ::
   forall m.
-  ( MonadError QueryParseError m,
+  ( MonadWriter [QueryParseError] m,
     -- Running queries requires the zettels list.
     MonadReader [Zettel] m
   ) =>
@@ -53,8 +53,13 @@ queryConnections ::
   m [(Maybe Connection, Zettel)]
 queryConnections doc =
   fmap concat $ forM (queryURILinks doc) $ \ul -> do
-    mres <- evalQueryLink ul
-    pure $ maybe [] getConnections mres
+    emres <- runExceptT $ evalQueryLink ul
+    case emres of
+      Left e -> do
+        tell [e]
+        pure []
+      Right mres ->
+        pure $ maybe [] getConnections mres
   where
     getConnections :: DSum Query Identity -> [(Maybe Connection, Zettel)]
     getConnections = \case

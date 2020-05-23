@@ -10,11 +10,11 @@
 -- | Main module for using neuron as a library, instead of as a CLI tool.
 module Neuron.Web.Generate
   ( generateSite,
-    loadZettels,
+    loadZettelsIgnoringErrors,
   )
 where
 
-import Control.Monad.Except (MonadError, liftEither, runExceptT, withExceptT)
+import Control.Monad.Writer (runWriterT)
 import qualified Data.Graph.Labelled as G
 import Data.Traversable
 import Development.Shake
@@ -27,6 +27,7 @@ import Neuron.Zettelkasten.Error (NeuronError (..))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (mkZettelID)
+import Neuron.Zettelkasten.Query.Error (QueryParseError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel (Zettel, ZettelT (..), mkZettelFromMarkdown)
 import Options.Applicative
@@ -44,7 +45,8 @@ generateSite config writeHtmlRoute' = do
     $ fail
     $ toString
     $ "Require neuron mininum version " <> minVersion config <> ", but your neuron version is " <> neuronVersion
-  zettelGraph <- loadZettelkasten
+  -- NOTE: We ignore errors, because they will be displayed during rendering.
+  (zettelGraph, _errors) <- loadZettelkasten
   let writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
   forM_ (G.getZettels zettelGraph) $ \z ->
@@ -61,16 +63,16 @@ generateSite config writeHtmlRoute' = do
     writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
   pure zettelGraph
 
-loadZettels :: Action [Zettel]
-loadZettels =
-  fmap G.getZettels loadZettelkasten
+loadZettelsIgnoringErrors :: Action [Zettel]
+loadZettelsIgnoringErrors =
+  fmap (G.getZettels . fst) loadZettelkasten
 
-loadZettelkasten :: Action ZettelGraph
+loadZettelkasten :: Action (ZettelGraph, [NeuronError])
 loadZettelkasten =
   loadZettelkastenFrom =<< Rib.forEvery ["*.md"] pure
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
-loadZettelkastenFrom :: [FilePath] -> Action ZettelGraph
+loadZettelkastenFrom :: HasCallStack => [FilePath] -> Action (ZettelGraph, [NeuronError])
 loadZettelkastenFrom files = do
   notesDir <- Rib.ribInputDir
   zettels <- forM files $ \((notesDir </>) -> path) -> do
@@ -79,26 +81,32 @@ loadZettelkastenFrom files = do
     case mkZettelFromMarkdown zid s snd of
       Left e -> fail $ toString e
       Right zettel -> pure zettel
-  either (fail . show) pure $ mkZettelGraph zettels
+  mkZettelGraph zettels
 
 -- | Build the Zettelkasten graph from a list of zettels
 --
 -- Also return the markdown extension to use for each zettel.
 mkZettelGraph ::
   forall m.
-  MonadError NeuronError m =>
+  Monad m =>
   [Zettel] ->
-  m ZettelGraph
+  m (ZettelGraph, [NeuronError])
 mkZettelGraph zettels = do
-  res :: [(Zettel, [(Maybe Connection, Zettel)])] <- liftEither =<< do
-    flip runReaderT zettels $ runExceptT $ do
+  res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryParseError]))] <- do
+    flip runReaderT zettels $ do
       -- TODO: re: Left; for Right, we must render the query, which only happens
       -- in Web.View. How do we accumulate the errors?
       for zettels $ \z -> fmap (z,) $ do
-        withExceptT (NeuronError_BadQuery (zettelID z) . Left) $ do
+        (conns, errs) <- runWriterT $ do
           queryConnections (zettelContent z)
-  let g :: ZettelGraph = G.mkGraphFrom (fst <$> res) $ flip concatMap res $ \(z1, conns) ->
+        pure (conns, errs)
+  -- pure (conns, NeuronError_BadQuery (zettelID z) . Left <$> errs)
+  let g :: ZettelGraph = G.mkGraphFrom (fst <$> res) $ flip concatMap res $ \(z1, fst -> conns) ->
         conns <&> \(c, z2) -> (connectionMonoid (fromMaybe Folgezettel c), z1, z2)
-  pure g
+  pure
+    ( g,
+      flip concatMap res $ \(z, (_conns, errs)) ->
+        NeuronError_BadQuery (zettelID z) . Left <$> errs
+    )
   where
     connectionMonoid = Just
