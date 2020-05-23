@@ -1,4 +1,4 @@
-{ system ? builtins.currentSystem }:
+{ system ? builtins.currentSystem, withHoogle ? false }:
 (import ./dep/reflex-platform { inherit system; }).project ({ pkgs, hackGet, ... }: 
 let 
   gitignoreSrc = pkgs.fetchFromGitHub { 
@@ -22,6 +22,8 @@ let
     '';
 
 in {
+  inherit withHoogle;
+
   shellToolOverrides = ghc: super: {
     inherit neuronSearchScript;
   };
