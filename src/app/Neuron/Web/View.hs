@@ -28,6 +28,7 @@ import qualified Data.Aeson.Text as Aeson
 import Data.Default (def)
 import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
@@ -42,8 +43,9 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
-import Neuron.Zettelkasten.ID (zettelIDText)
-import Neuron.Zettelkasten.Query.Error (QueryError)
+import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName, zettelIDText)
+import Neuron.Zettelkasten.Query.Error (QueryParseError, showQueryParseError)
+import Neuron.Zettelkasten.Query.View (zettelUrl)
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.View as ZettelView
 import Reflex.Dom.Core hiding ((&))
@@ -124,12 +126,12 @@ renderOpenGraph OpenGraph {..} = do
         then f $ URI.render uri'
         else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
 
-renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m [QueryError]
+renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m (RouteError a)
 renderRouteBody config r (g, x) = do
   case r of
     Route_ZIndex -> do
       divClass "ui text container" $ do
-        renderIndex config g
+        renderIndex config g x
         renderBrandFooter
       pure mempty
     Route_Search {} -> do
@@ -145,10 +147,42 @@ renderRouteBody config r (g, x) = do
       elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
       pure mempty
 
-renderIndex :: DomBuilder t m => Config -> ZettelGraph -> m ()
-renderIndex Config {..} graph = do
+renderErrors :: DomBuilder t m => Map ZettelID (Either Text [QueryParseError]) -> m ()
+renderErrors errors = do
+  let skippedZettels = Map.mapMaybe leftToMaybe errors
+      zettelsWithErrors = Map.mapMaybe rightToMaybe errors
+  unless (null skippedZettels) $ do
+    divClass "ui small negative message" $ do
+      divClass "header" $ do
+        text "These files are excluded from the zettelkasten due to parse errors"
+      el "p" $ do
+        el "ol" $ do
+          forM_ (Map.toList skippedZettels) $ \(zid, err) ->
+            el "li" $ do
+              el "b" $ el "tt" $ text $ toText $ zettelIDSourceFileName zid
+              text ": "
+              el "pre" $ text err
+  forM_ (Map.toList zettelsWithErrors) $ \(zid, qerrors) ->
+    divClass "ui tiny warning message" $ do
+      divClass "header" $ do
+        text $ "Zettel "
+        elClass "span" "zettel-link-container" $ do
+          elClass "span" "zettel-link" $ do
+            elAttr "a" ("href" =: zettelUrl zid) $ text $ zettelIDText zid
+        text " has errors"
+      el "p" $ do
+        el "ol" $ do
+          forM_ qerrors $ \qe ->
+            -- NOTE: This doesn't show query result errors, such as linking to
+            -- non-existant IDs. Because results are evaluated only during
+            -- rendering stage.
+            el "li" $ el "pre" $ text $ showQueryParseError qe
+
+renderIndex :: DomBuilder t m => Config -> ZettelGraph -> Map ZettelID (Either Text [QueryParseError]) -> m ()
+renderIndex Config {..} graph errors = do
   let neuronTheme = Theme.mkTheme theme
   elClass "h1" "header" $ text "Zettel Index"
+  renderErrors errors
   divClass "z-index" $ do
     -- Cycle detection.
     case G.topSort graph of

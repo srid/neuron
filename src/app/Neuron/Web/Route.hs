@@ -5,6 +5,7 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -18,6 +19,7 @@ import Neuron.Config
 import Neuron.Markdown (getFirstParagraphText)
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Zettel
 import Relude
 import Rib (IsRoute (..), routeUrl, routeUrlRel)
@@ -29,9 +31,21 @@ import qualified Text.URI as URI
 
 data Route graph a where
   Route_Redirect :: ZettelID -> Route ZettelGraph ZettelID
-  Route_ZIndex :: Route ZettelGraph ()
+  -- ZIndex takes a report of all errors in the zettelkasten.
+  -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
+  Route_ZIndex :: Route ZettelGraph (Map ZettelID (Either Text [QueryParseError]))
   Route_Search :: Route ZettelGraph ()
   Route_Zettel :: ZettelID -> Route ZettelGraph Zettel
+
+type family RouteError r
+
+type instance RouteError (Map ZettelID (Either Text [QueryParseError])) = ()
+
+type instance RouteError ZettelID = ()
+
+type instance RouteError () = ()
+
+type instance RouteError Zettel = [QueryError]
 
 instance IsRoute (Route graph) where
   routeFile = \case

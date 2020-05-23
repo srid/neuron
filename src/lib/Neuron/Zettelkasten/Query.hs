@@ -62,7 +62,8 @@ queryResultJson ::
   FilePath ->
   Query r ->
   r ->
-  Map ZettelID [QueryParseError] ->
+  -- All errors in the zettelkasten
+  Map ZettelID (Either Text [QueryParseError]) ->
   Value
 queryResultJson notesDir q r errors =
   toJSON $

@@ -15,14 +15,12 @@ import Neuron.CLI (run)
 import Neuron.Config (Config)
 import qualified Neuron.Config as Config
 import Neuron.Web.Generate (generateSite)
-import Neuron.Web.Route (Route (..))
+import Neuron.Web.Route (Route (..), RouteError)
 import Neuron.Web.View (renderRouteBody, renderRouteHead, style)
-import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc.Document (PandocBuilder)
 import Relude
 import qualified Rib
-import Rib.Route
 
 main :: IO ()
 main = withUtf8 $ run generateMainSite
@@ -31,18 +29,15 @@ generateMainSite :: Action ()
 generateMainSite = do
   Rib.buildStaticFiles ["static/**"]
   config <- Config.getConfig
-  let writeHtmlRoute :: Route g a -> (g, a) -> Action ()
+  let writeHtmlRoute :: Route g a -> (g, a) -> Action (RouteError a)
       writeHtmlRoute r x = do
         (errors, html) <- liftIO $ renderStatic $ renderPage config r x
         -- FIXME: Make rib take bytestrings
         Rib.writeRoute r $ decodeUtf8 @Text html
-        unless (null errors) $ do
-          putStrLn $ "E " <> fromMaybe "Unknown path" (routeFile r)
-          forM_ errors $ \err ->
-            putTextLn $ "  - " <> showQueryError err
+        pure errors
   void $ generateSite config writeHtmlRoute
 
-renderPage :: PandocBuilder t m => Config -> Route g a -> (g, a) -> m [QueryError]
+renderPage :: PandocBuilder t m => Config -> Route g a -> (g, a) -> m (RouteError a)
 renderPage config r val = elAttr "html" ("lang" =: "en") $ do
   el "head" $ do
     renderRouteHead config r val
