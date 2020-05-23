@@ -25,7 +25,6 @@ import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Pandoc.Walk as W
 import qualified Text.Parsec as P
-import qualified Text.URI as URI
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --
@@ -69,12 +68,6 @@ partitionMarkdown fn =
       a <- toText <$> manyTill M.anySingle (M.try $ M.eol *> separatorP)
       b <- M.takeRest
       pure (a, b)
-
-data MarkdownLink = MarkdownLink
-  { markdownLinkText :: Text,
-    markdownLinkUri :: URI.URI
-  }
-  deriving (Eq, Ord, Show)
 
 getFirstParagraphText :: Pandoc -> Maybe [B.Inline]
 getFirstParagraphText = listToMaybe . W.query go

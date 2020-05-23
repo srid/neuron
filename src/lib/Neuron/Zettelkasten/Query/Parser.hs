@@ -16,7 +16,6 @@ module Neuron.Zettelkasten.Query.Parser where
 import Control.Monad.Except
 import Data.Some
 import Data.TagTree (mkTagPattern)
-import Neuron.Markdown
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query
@@ -36,14 +35,10 @@ import Text.URI.Util (getQueryParam, hasQueryFlag)
 queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Maybe (Some Query))
 queryFromURI uri = do
   -- We are setting markdownLinkText to the URI to support the new short links
-  queryFromMarkdownLink $ MarkdownLink {markdownLinkUri = uri, markdownLinkText = URI.render uri}
+  queryFromURILink $ URILink (URI.render uri) uri
 
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some Query))
-queryFromURILink URILink {..} =
-  queryFromMarkdownLink $ MarkdownLink _uriLink_linkText _uriLink_uri
-
-queryFromMarkdownLink :: MonadError QueryParseError m => MarkdownLink -> m (Maybe (Some Query))
-queryFromMarkdownLink MarkdownLink {markdownLinkUri = uri, markdownLinkText = linkText} =
+queryFromURILink (URILink linkText uri) =
   case fmap URI.unRText (URI.uriScheme uri) of
     Just proto | not angleBracketLink && proto `elem` ["z", "zcf"] -> do
       zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
