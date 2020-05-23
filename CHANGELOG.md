@@ -45,9 +45,10 @@
   - Produce compact CSS in HTML head
   - #24: zquery is displayed in HTML view.
   - #100: Tables are styled nicely using Semantic UI
-- Bug fixes
+- Bug fixes & misc changes
   - Fix regression in neuron library use
   - #130: Handle links inside blockquotes
+  - Allow neuron to utilize multiple CPUs (#171)
 
 ## 0.2.0.0
 

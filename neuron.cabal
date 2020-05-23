@@ -191,3 +191,4 @@ test-suite neuron-test
 executable neuron
   import: app-common
   main-is: Main.hs
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
