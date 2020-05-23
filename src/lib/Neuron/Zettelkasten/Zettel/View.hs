@@ -13,7 +13,6 @@ module Neuron.Zettelkasten.Zettel.View
   ( renderZettelContent,
     renderZettelLink,
     renderZettel,
-    renderFooter,
     zettelCss,
   )
 where
@@ -62,15 +61,23 @@ renderZettel editUrl (Tagged autoScroll) (graph, z@Zettel {..}) = do
       -- cf. https://stackoverflow.com/a/49968820/55246
       elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -14px; left: 0") blank
     divClass "zettel-view" $ do
-      errors <- renderZettelContent (handleZettelQuery graph zettelID) z
-      whenNotNull (G.backlinks OrdinaryConnection z graph) $ \cfBacklinks -> do
-        divClass "ui attached segment deemphasized" $ do
-          elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here, but without branching") $
-            text "More backlinks"
-          el "ul" $ do
-            forM_ cfBacklinks $ \zl ->
-              el "li" $ renderZettelLink Nothing def zl
-      renderFooter editUrl graph (Just z)
+      errors <- divClass "ui two column grid" $ do
+        divClass "one wide tablet only computer only column" $ do
+          renderActionsMenu VerticalMenu editUrl (Just z)
+        divClass "sixteen wide mobile fifteen wide tablet fifteen wide computer stretched column" $ do
+          errors <- renderZettelContent (handleZettelQuery graph zettelID) z
+          divClass "ui bottom attached segment deemphasized" $ do
+            divClass "ui two column grid" $ do
+              divClass "column" $ do
+                whenNotNull (G.backlinks OrdinaryConnection z graph) $ \cfBacklinks -> do
+                  elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here, but without branching") $
+                    text "More backlinks"
+                  el "ul" $ do
+                    forM_ cfBacklinks $ \zl ->
+                      el "li" $ renderZettelLink Nothing def zl
+          pure errors
+      divClass "ui one column grid" $ divClass "mobile only sixteen wide column" $ do
+        renderActionsMenu HorizontalMenu editUrl (Just z)
       pure errors
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
@@ -129,22 +136,25 @@ renderUplinkForest getConn trees = do
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
 
-renderFooter :: DomBuilder t m => Maybe Text -> ZettelGraph -> Maybe Zettel -> m ()
-renderFooter editUrl graph mzettel = do
-  let attachClass = maybe "" (const "bottom attached") mzettel
-  divClass ("ui inverted black " <> attachClass <> " footer segment") $ do
-    divClass "ui equal width grid" $ do
-      divClass "center aligned column" $ do
-        let homeUrl = maybe "." (const "index.html") $ G.getZettel (ZettelCustomID "index") graph
-        elAttr "a" ("href" =: homeUrl <> "title" =: "/") $ fa "fas fa-home"
-      whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) ->
-        divClass "center aligned column" $ do
-          elAttr "a" ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel") $ fa "fas fa-edit"
-      divClass "center aligned column" $ do
-        elAttr "a" ("href" =: "search.html" <> "title" =: "Search Zettels") $ fa "fas fa-search"
-      divClass "center aligned column" $ do
-        elAttr "a" ("href" =: "z-index.html" <> "title" =: "All Zettels (z-index)") $
-          fa "fas fa-tree"
+data MenuOrientation
+  = VerticalMenu
+  | HorizontalMenu
+  deriving (Eq, Show, Ord)
+
+renderActionsMenu :: DomBuilder t m => MenuOrientation -> Maybe Text -> Maybe Zettel -> m ()
+renderActionsMenu orient editUrl mzettel = do
+  let cls = case orient of
+        VerticalMenu -> "ui deemphasized vertical icon menu"
+        HorizontalMenu -> "ui deemphasized icon menu"
+  divClass cls $ do
+    divClass "item" $ do
+      elAttr "a" ("href" =: "z-index.html" <> "title" =: "All Zettels (z-index)") $
+        fa "fas fa-tree"
+    whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) ->
+      divClass "item" $ do
+        elAttr "a" ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel") $ fa "fas fa-edit"
+    divClass "right item" $ do
+      elAttr "a" ("href" =: "search.html" <> "title" =: "Search Zettels") $ fa "fas fa-search"
   where
     fa k = elClass "i" k blank
 
@@ -155,7 +165,7 @@ renderZettelContent ::
   Zettel ->
   m a
 renderZettelContent handleLink Zettel {..} = do
-  divClass "ui raised top attached segment zettel-content" $ do
+  divClass "ui raised attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
     x <- elPandoc (Config handleLink) zettelContent
     renderTags zettelTags

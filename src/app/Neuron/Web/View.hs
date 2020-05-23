@@ -130,13 +130,11 @@ renderRouteBody config r (g, x) = do
     Route_ZIndex -> do
       divClass "ui text container" $ do
         renderIndex config g
-        ZettelView.renderFooter (editUrl config) g Nothing
         renderBrandFooter
       pure mempty
     Route_Search {} -> do
       divClass "ui text container" $ do
         renderSearch g
-        ZettelView.renderFooter (editUrl config) g Nothing
         renderBrandFooter
       pure mempty
     Route_Zettel _ -> do
