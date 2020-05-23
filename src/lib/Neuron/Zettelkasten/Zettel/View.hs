@@ -26,7 +26,7 @@ import qualified Data.Text as T
 import Data.Tree (Tree (..))
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Error (NeuronError (..))
+import Neuron.Zettelkasten.Error (NeuronError (..), neuronErrorReason)
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)
@@ -103,26 +103,24 @@ handleZettelQuery ::
 handleZettelQuery graph zettelID oldRender uriLink = do
   case flip runReaderT (G.getZettels graph) (Q.evalQueryLink uriLink) of
     Left (NeuronError_BadQuery zettelID . Left -> e) -> do
-      -- TODO: show the error in terminal, or better report it correctly.
-      -- see github issue.
-      divClass "ui error message" $ do
-        text $ show e
-      fmap (e :) oldRender
+      fmap (e :) oldRender <* elError e
     Right Nothing -> do
       oldRender
     Right (Just res) -> do
       -- TODO: This should render in reflex-dom (no via pandoc's builder)
       case Q.buildQueryView res of
         Left (NeuronError_BadQuery zettelID . Right -> e) -> do
-          divClass "ui error message" $ do
-            text $ show e
-          fmap (e :) oldRender
+          fmap (e :) oldRender <* elError e
         Right (Left w) -> do
           elPandocInlines [w]
           pure mempty
         Right (Right w) -> do
           elPandocBlocks [w]
           pure mempty
+  where
+    elError e =
+      elClass "span" "ui left pointing red basic label" $ do
+        text $ neuronErrorReason e
 
 renderUplinkForest ::
   DomBuilder t m =>

@@ -5,6 +5,7 @@
 
 module Neuron.Zettelkasten.Error
   ( NeuronError (..),
+    neuronErrorReason,
   )
 where
 
@@ -19,19 +20,24 @@ data NeuronError
     NeuronError_BadQuery ZettelID QueryError
   deriving (Eq)
 
+-- | The reason this particular zettel failed to process fully.
+neuronErrorReason :: NeuronError -> Text
+neuronErrorReason (NeuronError_BadQuery _fromZid e) =
+  case e of
+    Left qe ->
+      "it contains a query URI (" <> URI.render (queryParseErrorUri qe) <> ") " <> case qe of
+        QueryParseError_UnsupportedHost _uri ->
+          "with unsupported host"
+        QueryParseError_InvalidID _uri e'' ->
+          "with invalidID: " <> show e''
+    Right (QueryResultError_NoSuchZettel zid) ->
+      "Zettel with ID \""
+        <> zettelIDText zid
+        <> "\" does not exist"
+
 instance Show NeuronError where
-  show (NeuronError_BadQuery fromZid e) =
-    let msg = case e of
-          Left qe ->
-            "it contains a query URI (" <> URI.render (queryParseErrorUri qe) <> ") " <> case qe of
-              QueryParseError_UnsupportedHost _uri ->
-                "with unsupported host"
-              QueryParseError_InvalidID _uri e'' ->
-                "with invalidID: " <> show e''
-          Right (QueryResultError_NoSuchZettel zid) ->
-            "Zettel "
-              <> zettelIDText zid
-              <> " does not exist"
+  show err@(NeuronError_BadQuery fromZid _e) =
+    let msg = neuronErrorReason err
      in toString $
           unlines
             [ "",
