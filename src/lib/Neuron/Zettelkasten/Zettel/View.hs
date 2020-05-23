@@ -11,6 +11,8 @@
 module Neuron.Zettelkasten.Zettel.View
   ( renderZettelContent,
     renderZettelLink,
+    renderZettel,
+    renderFooter,
     zettelCss,
     zettelLinkCss,
   )
@@ -19,16 +21,124 @@ where
 import Clay ((?), auto, em, pct, pre, px, sym, sym2)
 import Clay (Css)
 import qualified Clay as C
+import Data.Foldable (maximum)
 import Data.TagTree
 import qualified Data.Text as T
+import Data.Tree (Tree (..))
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
+import Neuron.Zettelkasten.Error (NeuronError (..))
+import Neuron.Zettelkasten.Graph (ZettelGraph)
+import qualified Neuron.Zettelkasten.Graph as G
+import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)
+import qualified Neuron.Zettelkasten.Query.Eval as Q
 import Neuron.Zettelkasten.Query.Theme (LinkView (..))
+import qualified Neuron.Zettelkasten.Query.View as Q
 import Neuron.Zettelkasten.Query.View (tagUrl, zettelUrl)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc
 import Relude
+
+renderZettel :: PandocBuilder t m => Maybe Text -> (ZettelGraph, Zettel) -> m [NeuronError]
+renderZettel editUrl (graph, z@Zettel {..}) = do
+  let upTree = G.backlinkForest Folgezettel z graph
+  whenNotNull upTree $ \_ -> do
+    elAttr "div" ("class" =: "flipped tree deemphasized" <> "id" =: "zettel-uptree" <> "style" =: "transform-origin: 50%") $ do
+      elClass "ul" "root" $ do
+        el "li" $ do
+          el "ul" $ do
+            renderUplinkForest (\z2 -> G.getConnection z z2 graph) upTree
+  -- Main content
+  errors <- elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
+    -- zettel-container-anchor is a trick used by the scrollIntoView JS below
+    -- cf. https://stackoverflow.com/a/49968820/55246
+    elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -14px; left: 0") blank
+    divClass "zettel-view" $ do
+      errors <- renderZettelContent (handleZettelQuery graph zettelID) z
+      let cfBacklinks = G.backlinks OrdinaryConnection z graph
+      whenNotNull cfBacklinks $ \_ -> divClass "ui attached segment deemphasized" $ do
+        elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here, but without branching") $
+          text "More backlinks"
+        el "ul" $ do
+          forM_ cfBacklinks $ \zl ->
+            el "li" $ renderZettelLink Nothing def zl
+      renderFooter editUrl graph (Just z)
+      pure errors
+  -- Because the tree above can be pretty large, we scroll past it
+  -- automatically when the page loads.
+  -- TODO: Do this only if we have rendered the tree.
+  -- FIXME: This may not scroll sufficiently if the images in the zettel haven't
+  -- loaded (thus the browser doesn't known the final height yet.)
+  el "script" $ text $
+    "document.getElementById(\"zettel-container-anchor\").scrollIntoView({behavior: \"smooth\", block: \"start\"});"
+  pure errors
+
+handleZettelQuery ::
+  (PandocRawConstraints m, DomBuilder t m, PandocRaw m) =>
+  ZettelGraph ->
+  ZettelID ->
+  m [NeuronError] ->
+  URILink ->
+  m [NeuronError]
+handleZettelQuery graph zettelID oldRender uriLink = do
+  case flip runReaderT (G.getZettels graph) (Q.evalQueryLink uriLink) of
+    Left (NeuronError_BadQuery zettelID . Left -> e) -> do
+      -- TODO: show the error in terminal, or better report it correctly.
+      -- see github issue.
+      divClass "ui error message" $ do
+        text $ show e
+      fmap (e :) oldRender
+    Right Nothing -> do
+      oldRender
+    Right (Just res) -> do
+      -- TODO: This should render in reflex-dom (no via pandoc's builder)
+      case Q.buildQueryView res of
+        Left (NeuronError_BadQuery zettelID . Right -> e) -> do
+          divClass "ui error message" $ do
+            text $ show e
+          fmap (e :) oldRender
+        Right (Left w) -> do
+          elPandocInlines [w]
+          pure mempty
+        Right (Right w) -> do
+          elPandocBlocks [w]
+          pure mempty
+
+renderUplinkForest ::
+  DomBuilder t m =>
+  (Zettel -> Maybe Connection) ->
+  [Tree Zettel] ->
+  m ()
+renderUplinkForest getConn trees = do
+  forM_ (sortForest trees) $ \(Node zettel subtrees) ->
+    el "li" $ do
+      divClass "forest-link" $
+        renderZettelLink (getConn zettel) def zettel
+      when (length subtrees > 0) $ do
+        el "ul" $ renderUplinkForest getConn subtrees
+  where
+    -- Sort trees so that trees containing the most recent zettel (by ID) come first.
+    sortForest = reverse . sortOn maximum
+
+renderFooter :: DomBuilder t m => Maybe Text -> ZettelGraph -> Maybe Zettel -> m ()
+renderFooter editUrl graph mzettel = do
+  let attachClass = maybe "" (const "bottom attached") mzettel
+  divClass ("ui inverted black " <> attachClass <> " footer segment") $ do
+    divClass "ui equal width grid" $ do
+      divClass "center aligned column" $ do
+        let homeUrl = maybe "." (const "index.html") $ G.getZettel (ZettelCustomID "index") graph
+        elAttr "a" ("href" =: homeUrl <> "title" =: "/") $ fa "fas fa-home"
+      whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) ->
+        divClass "center aligned column" $ do
+          elAttr "a" ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel") $ fa "fas fa-edit"
+      divClass "center aligned column" $ do
+        elAttr "a" ("href" =: "search.html" <> "title" =: "Search Zettels") $ fa "fas fa-search"
+      divClass "center aligned column" $ do
+        elAttr "a" ("href" =: "z-index.html" <> "title" =: "All Zettels (z-index)") $
+          fa "fas fa-tree"
+  where
+    fa k = elClass "i" k blank
 
 renderZettelContent ::
   forall t m a.

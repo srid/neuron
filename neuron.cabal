@@ -85,6 +85,7 @@ library
     Neuron.Zettelkasten.Query.View
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
+    Neuron.Zettelkasten.Error
     Neuron.Web.Theme
     Text.Megaparsec.Simple
     Text.URI.Util
@@ -156,7 +157,6 @@ common app-common
       Neuron.Web.Route
       Neuron.Web.View
       Neuron.Markdown
-      Neuron.Zettelkasten.Error
       Neuron.Zettelkasten.ID.Scheme
       Paths_neuron
       Text.Megaparsec.Simple
