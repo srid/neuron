@@ -17,10 +17,12 @@ import qualified Neuron.Config as Config
 import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Route (Route (..))
 import Neuron.Web.View (renderRouteBody, renderRouteHead, style)
+import Neuron.Zettelkasten.Error (NeuronError)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc.Document (PandocBuilder)
 import Relude
 import qualified Rib
+import Rib.Route
 
 main :: IO ()
 main = withUtf8 $ run generateMainSite
@@ -31,12 +33,16 @@ generateMainSite = do
   config <- Config.getConfig
   let writeHtmlRoute :: Route g a -> (g, a) -> Action ()
       writeHtmlRoute r x = do
-        html <- liftIO $ fmap snd $ renderStatic $ renderPage config r x
+        (errors, html) <- liftIO $ renderStatic $ renderPage config r x
         -- FIXME: Make rib take bytestrings
         Rib.writeRoute r $ decodeUtf8 @Text html
+        unless (null errors) $ do
+          putStrLn $ "E " <> fromMaybe "Unknown path" (routeFile r)
+          forM_ errors $ \err ->
+            putStrLn $ "  " <> show err
   void $ generateSite config writeHtmlRoute
 
-renderPage :: PandocBuilder t m => Config -> Route g a -> (g, a) -> m ()
+renderPage :: PandocBuilder t m => Config -> Route g a -> (g, a) -> m [NeuronError]
 renderPage config r val = elAttr "html" ("lang" =: "en") $ do
   el "head" $ do
     renderRouteHead config r val

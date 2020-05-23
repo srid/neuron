@@ -31,18 +31,19 @@ import Reflex.Dom.Pandoc
 import Relude
 
 renderZettelContent ::
-  forall t m.
-  (PandocBuilder t m) =>
-  (URILink -> m Bool) ->
+  forall t m a.
+  (PandocBuilder t m, Monoid a) =>
+  (m a -> URILink -> m a) ->
   Zettel ->
-  m ()
+  m a
 renderZettelContent handleLink Zettel {..} = do
   divClass "ui raised top attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
-    elPandoc (Config $ Just handleLink) zettelContent
+    x <- elPandoc (Config handleLink) zettelContent
     renderTags zettelTags
     whenJust zettelDay $ \day ->
       elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ text $ show day
+    pure x
 
 renderTags :: DomBuilder t m => [Tag] -> m ()
 renderTags tags = do

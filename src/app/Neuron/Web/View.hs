@@ -39,6 +39,7 @@ import Neuron.Version (neuronVersion)
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
+import Neuron.Zettelkasten.Error (NeuronError (..))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName, zettelIDText)
@@ -124,17 +125,18 @@ renderOpenGraph OpenGraph {..} = do
         then f $ URI.render uri'
         else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
 
-renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m ()
+renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m [NeuronError]
 renderRouteBody config r (g, x) = do
   case r of
     Route_ZIndex ->
-      renderIndex config g
+      renderIndex config g >> pure mempty
     Route_Search {} ->
-      renderSearch config g
+      renderSearch config g >> pure mempty
     Route_Zettel _ ->
       renderZettel config (g, x)
-    Route_Redirect _ ->
+    Route_Redirect _ -> do
       elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
+      pure mempty
 
 renderIndex :: DomBuilder t m => Config -> ZettelGraph -> m ()
 renderIndex config@Config {..} graph = divClass "ui text container" $ do
@@ -187,7 +189,7 @@ renderSearch config graph = divClass "ui text container" $ do
   renderFooter config graph Nothing
   renderBrandFooter
 
-renderZettel :: PandocBuilder t m => Config -> (ZettelGraph, Zettel) -> m ()
+renderZettel :: PandocBuilder t m => Config -> (ZettelGraph, Zettel) -> m [NeuronError]
 renderZettel config (graph, z@Zettel {..}) = do
   let upTree = G.backlinkForest Folgezettel z graph
   whenNotNull upTree $ \_ -> do
@@ -196,31 +198,34 @@ renderZettel config (graph, z@Zettel {..}) = do
         el "li" $ do
           el "ul" $ do
             renderUplinkForest (\z2 -> G.getConnection z z2 graph) upTree
-  elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
+  errors <- elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     -- zettel-container-anchor is a trick used by the scrollIntoView JS below
     -- cf. https://stackoverflow.com/a/49968820/55246
     elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -14px; left: 0") blank
     divClass "zettel-view" $ do
-      flip ZettelView.renderZettelContent z $ \uriLink -> do
+      pandocRes <- flip ZettelView.renderZettelContent z $ \oldRender uriLink -> do
         case flip runReaderT (G.getZettels graph) (Q.evalQueryLink uriLink) of
-          Left e -> do
+          Left (NeuronError_BadQuery zettelID . Left -> e) -> do
             -- TODO: show the error in terminal, or better report it correctly.
             -- see github issue.
-            divClass "ui error message" $ text $ show e
-            pure False
+            divClass "ui error message" $ do
+              text $ show e
+            fmap (e :) oldRender
           Right Nothing -> do
-            pure False
+            oldRender
           Right (Just res) -> do
+            -- TODO: This should render in reflex-dom (no via pandoc's builder)
             case Q.buildQueryView res of
-              Left e -> do
-                divClass "ui error message" $ text $ show e
-                pure False
+              Left (NeuronError_BadQuery zettelID . Right -> e) -> do
+                divClass "ui error message" $ do
+                  text $ show e
+                fmap (e :) oldRender
               Right (Left w) -> do
                 elPandocInlines [w]
-                pure True
+                pure mempty
               Right (Right w) -> do
                 elPandocBlocks [w]
-                pure True
+                pure mempty
       let cfBacklinks = G.backlinks OrdinaryConnection z graph
       whenNotNull cfBacklinks $ \_ -> divClass "ui attached segment deemphasized" $ do
         elAttr "div" ("class" =: "ui header" <> title =: "Zettels that link here, but without branching") $
@@ -229,6 +234,7 @@ renderZettel config (graph, z@Zettel {..}) = do
           forM_ cfBacklinks $ \zl ->
             el "li" $ ZettelView.renderZettelLink Nothing def zl
       renderFooter config graph (Just z)
+      pure pandocRes
   renderBrandFooter
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
@@ -237,6 +243,7 @@ renderZettel config (graph, z@Zettel {..}) = do
   -- loaded (thus the browser doesn't known the final height yet.)
   el "script" $ text $
     "document.getElementById(\"zettel-container-anchor\").scrollIntoView({behavior: \"smooth\", block: \"start\"});"
+  pure errors
 
 renderFooter :: DomBuilder t m => Config -> ZettelGraph -> Maybe Zettel -> m ()
 renderFooter Config {..} graph mzettel = do
