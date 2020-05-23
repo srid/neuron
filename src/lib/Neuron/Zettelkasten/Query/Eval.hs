@@ -34,14 +34,14 @@ evalQueryLink ::
   ) =>
   URILink ->
   m (Maybe (DSum Query Identity))
-evalQueryLink link = do
-  mq <- queryFromURILink link
-  case mq of
+evalQueryLink link =
+  queryFromURILink link >>= \case
     Nothing -> pure Nothing
     Just someQ -> fmap Just $ do
       withSome someQ $ \q -> do
         zs <- ask
-        pure $ q :=> Identity (runQuery zs q)
+        let res = runQuery zs q
+        pure $ q :=> Identity res
 
 queryConnections ::
   forall m.
@@ -51,15 +51,10 @@ queryConnections ::
   ) =>
   Pandoc ->
   m [(Maybe Connection, Zettel)]
-queryConnections doc = do
-  let uriLinks = queryURILinks doc
-  fmap concat $ forM uriLinks $ \ul ->
-    evalQueryLink ul >>= \case
-      Nothing -> pure []
-      Just res -> do
-        let cs = getConnections res
-        -- tell cs
-        pure cs
+queryConnections doc =
+  fmap concat $ forM (queryURILinks doc) $ \ul -> do
+    mres <- evalQueryLink ul
+    pure $ maybe [] getConnections mres
   where
     getConnections :: DSum Query Identity -> [(Maybe Connection, Zettel)]
     getConnections = \case
