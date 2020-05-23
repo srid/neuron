@@ -165,6 +165,7 @@ renderIndex Config {..} graph = do
       divClass ("ui " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
         el "ul" $ renderForest True Nothing (Just graph) forest
+  el "br" blank
   where
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun

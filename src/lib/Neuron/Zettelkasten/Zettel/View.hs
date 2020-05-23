@@ -75,6 +75,8 @@ renderZettel editUrl (Tagged autoScroll) (graph, z@Zettel {..}) = do
                   el "ul" $ do
                     forM_ cfBacklinks $ \zl ->
                       el "li" $ renderZettelLink Nothing def zl
+              divClass "column" $ do
+                renderTags zettelTags
           pure errors
       divClass "ui one column grid" $ divClass "mobile only sixteen wide column" $ do
         renderActionsMenu HorizontalMenu editUrl (Just z)
@@ -168,7 +170,6 @@ renderZettelContent handleLink Zettel {..} = do
   divClass "ui raised attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
     x <- elPandoc (Config handleLink) zettelContent
-    renderTags zettelTags
     whenJust zettelDay $ \day ->
       elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ text $ show day
     pure x
@@ -179,10 +180,11 @@ renderTags tags = do
     -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
     -- the top pushes the zettel content down, introducing unnecessary white
     -- space below the title. So we put it at the bottom for now.
-    elAttr "span" ("class" =: "ui black right ribbon label" <> "title" =: "Tag") $ do
+    elAttr "span" ("class" =: "ui right ribbon label zettel-tag" <> "title" =: "Tag") $ do
       elAttr
         "a"
         ( "href" =: (tagUrl t)
+            <> "class" =: "tag-inner"
             <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
         )
         $ text
@@ -222,7 +224,7 @@ renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
 
 zettelCss :: Theme.Theme -> Css
 zettelCss neuronTheme = do
-  zettelCommonCss
+  zettelCommonCss neuronTheme
   zettelLinkCss neuronTheme
   "div.zettel-view" ? do
     -- This list styling applies both to zettel content, and the rest of the
@@ -234,9 +236,12 @@ zettelCss neuronTheme = do
         mempty -- C.paddingBottom $ em 1
     zettelContentCss neuronTheme
   pureCssTreeDiagram
-  ".footer" ? do
+  ".ui.label.zettel-tag a.tag-inner" ? do
+    C.color black
     "a" ? do
-      C.color white
+      C.color black
+
+-- C.color white
 
 zettelLinkCss :: Theme.Theme -> Css
 zettelLinkCss neuronTheme = do
@@ -257,6 +262,14 @@ zettelLinkCss neuronTheme = do
   "[data-tooltip]:after" ? do
     C.fontSize $ em 0.7
 
+lightColor :: Theme.Theme -> Color
+lightColor neuronTheme =
+  Theme.withRgb neuronTheme C.rgba 0.1
+
+themeColor :: Theme.Theme -> Color
+themeColor neuronTheme =
+  Theme.withRgb neuronTheme C.rgba 1
+
 zettelContentCss :: Theme.Theme -> Css
 zettelContentCss neuronTheme = do
   let linkColor = Theme.withRgb neuronTheme C.rgb
@@ -269,7 +282,7 @@ zettelContentCss neuronTheme = do
       C.paddingTop $ em 0.2
       C.paddingBottom $ em 0.2
       C.textAlign C.center
-      C.backgroundColor $ Theme.withRgb neuronTheme C.rgba 0.1
+      C.backgroundColor $ lightColor neuronTheme
     C.h2 ? do
       C.borderBottom C.solid (px 1) C.steelblue
       C.marginBottom $ em 0.5
@@ -411,8 +424,8 @@ pureCssTreeDiagram = do
   ".tree.flipped li div.forest-link" ? do
     C.transform $ C.rotate rotateDeg
 
-zettelCommonCss :: Css
-zettelCommonCss = do
+zettelCommonCss :: Theme.Theme -> Css
+zettelCommonCss neuronTheme = do
   "p" ? do
     C.lineHeight $ pct 150
   "img" ? do
@@ -421,6 +434,7 @@ zettelCommonCss = do
     fontSize $ em 0.85
   ".deemphasized:hover" ? do
     opacity 1
+    "div.item a:hover" ? important (color $ themeColor neuronTheme)
   ".deemphasized:not(:hover)" ? do
-    opacity 0.5
-    "a" ? important (color gray)
+    opacity 0.7
+    "span.zettel-link a, div.item a" ? important (color gray)
