@@ -128,18 +128,28 @@ renderOpenGraph OpenGraph {..} = do
 renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m [NeuronError]
 renderRouteBody config r (g, x) = do
   case r of
-    Route_ZIndex ->
-      renderIndex config g >> pure mempty
-    Route_Search {} ->
-      renderSearch config g >> pure mempty
-    Route_Zettel _ ->
-      renderZettel config (g, x)
+    Route_ZIndex -> do
+      divClass "ui text container" $ do
+        renderIndex config g
+        renderFooter config g Nothing
+        renderBrandFooter
+      pure mempty
+    Route_Search {} -> do
+      divClass "ui text container" $ do
+        renderSearch g
+        renderFooter config g Nothing
+        renderBrandFooter
+      pure mempty
+    Route_Zettel _ -> do
+      errs <- renderZettel config (g, x)
+      renderBrandFooter
+      pure errs
     Route_Redirect _ -> do
       elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
       pure mempty
 
 renderIndex :: DomBuilder t m => Config -> ZettelGraph -> m ()
-renderIndex config@Config {..} graph = divClass "ui text container" $ do
+renderIndex Config {..} graph = do
   let neuronTheme = Theme.mkTheme theme
   elClass "h1" "header" $ text "Zettel Index"
   divClass "z-index" $ do
@@ -158,15 +168,13 @@ renderIndex config@Config {..} graph = divClass "ui text container" $ do
       divClass ("ui " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
         el "ul" $ renderForest True Nothing (Just graph) forest
-    renderFooter config graph Nothing
-    renderBrandFooter
   where
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderSearch :: DomBuilder t m => Config -> ZettelGraph -> m ()
-renderSearch config graph = divClass "ui text container" $ do
+renderSearch :: DomBuilder t m => ZettelGraph -> m ()
+renderSearch graph = do
   elClass "h1" "header" $ text "Search"
   divClass "ui fluid icon input search" $ do
     elAttr "input" ("type" =: "text" <> "id" =: "search-input") blank
@@ -186,8 +194,6 @@ renderSearch config graph = divClass "ui text container" $ do
   elAttr "ul" ("id" =: "search-results" <> "class" =: "zettel-list") blank
   el "script" $ text $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   el "script" $ text searchScript
-  renderFooter config graph Nothing
-  renderBrandFooter
 
 renderZettel :: PandocBuilder t m => Config -> (ZettelGraph, Zettel) -> m [NeuronError]
 renderZettel config (graph, z@Zettel {..}) = do
@@ -198,6 +204,7 @@ renderZettel config (graph, z@Zettel {..}) = do
         el "li" $ do
           el "ul" $ do
             renderUplinkForest (\z2 -> G.getConnection z z2 graph) upTree
+  -- Main content
   errors <- elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     -- zettel-container-anchor is a trick used by the scrollIntoView JS below
     -- cf. https://stackoverflow.com/a/49968820/55246
@@ -235,7 +242,6 @@ renderZettel config (graph, z@Zettel {..}) = do
             el "li" $ ZettelView.renderZettelLink Nothing def zl
       renderFooter config graph (Just z)
       pure pandocRes
-  renderBrandFooter
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
   -- TODO: Do this only if we have rendered the tree.
