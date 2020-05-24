@@ -40,6 +40,7 @@ import Neuron.Config
 import Neuron.Version (neuronVersion)
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
+import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
 import Neuron.Zettelkasten.Connection
 import qualified Neuron.Zettelkasten.Graph as G
@@ -283,7 +284,7 @@ style Config {..} = do
     C.ul ? do
       C.listStyleType C.square
       C.paddingLeft $ em 1.5
-  ZettelView.zettelCss neuronTheme
+  ZettelCSS.zettelCss neuronTheme
   "div.tag-tree" ? do
     "div.node" ? do
       C.fontWeight C.bold

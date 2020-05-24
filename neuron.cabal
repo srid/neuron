@@ -87,6 +87,7 @@ library
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
     Neuron.Web.Zettel.View
+    Neuron.Web.Zettel.CSS
     Neuron.Web.Theme
     Text.Megaparsec.Simple
     Text.URI.Util
