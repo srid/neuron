@@ -1,10 +1,14 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Web.Widget.AutoScroll where
 
+import Data.Tagged
 import Reflex.Dom.Core hiding ((&))
 import Relude
+
+type AutoScroll = Tagged "autoScroll" (Maybe Text)
 
 -- | Hidden element to scroll to.
 -- cf. https://stackoverflow.com/a/49968820/55246

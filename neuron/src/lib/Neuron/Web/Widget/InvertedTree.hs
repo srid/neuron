@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Web.Widget.InvertedTree
-  ( renderInvertedForest,
+  ( renderInvertedHeadlessTree,
     style,
   )
 where
@@ -16,6 +16,27 @@ import Relude hiding ((&))
 
 style :: Css
 style = pureCssTreeDiagram
+
+renderInvertedHeadlessTree ::
+  (DomBuilder t m, Ord a) =>
+  -- Element ID
+  Text ->
+  -- Element Class
+  Text ->
+  [Tree a] ->
+  (a -> m ()) ->
+  m ()
+renderInvertedHeadlessTree elemId elemCls tree w = do
+  let attrs =
+        "class" =: ("flipped tree " <> elemCls)
+          <> "id" =: elemId
+          <> "style" =: "transform-origin: 50%"
+  elAttr "nav" attrs $ do
+    elClass "ul" "root" $ do
+      -- Headless tree will still need a head element (li).
+      el "li" $ do
+        el "ul" $ do
+          renderInvertedForest w tree
 
 renderInvertedForest ::
   (DomBuilder t m, Ord a) =>

@@ -32,27 +32,17 @@ import Reflex.Dom.Pandoc
 import Relude hiding ((&))
 import Text.Pandoc.Definition (Pandoc)
 
-type AutoScroll = Tagged "autoScroll" (Maybe Text)
-
 renderZettel ::
   PandocBuilder t m =>
   Maybe Text ->
-  AutoScroll ->
+  AS.AutoScroll ->
   (ZettelGraph, PandocZettel) ->
   m [QueryError]
 renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, zc))) = do
   let upTree = G.backlinkForest Folgezettel z graph
-  whenNotNull upTree $ \_ -> do
-    let attrs =
-          "class" =: "flipped tree deemphasized"
-            <> "id" =: "zettel-uptree"
-            <> "style" =: "transform-origin: 50%"
-    elAttr "nav" attrs $ do
-      elClass "ul" "root" $ do
-        el "li" $ do
-          el "ul" $ do
-            flip IT.renderInvertedForest upTree $ \z2 ->
-              Q.renderZettelLink (G.getConnection z z2 graph) def z2
+  unless (null upTree) $ do
+    IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
+      Q.renderZettelLink (G.getConnection z z2 graph) def z2
   -- Main content
   errors <- elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     whenJust autoScroll $ \marker -> do
@@ -64,7 +54,7 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
         divClass "one wide tablet only computer only column" $ do
           renderActionsMenu VerticalMenu editUrl (Just z)
         divClass "sixteen wide mobile fifteen wide tablet fifteen wide computer stretched column" $ do
-          renderZettelContent (handleZettelQuery graph) z zc
+          renderZettelContent (evalAndRenderZettelQuery graph) z zc
             <* renderZettelBottomPane graph z
       divClass "ui one column grid" $ divClass "mobile only sixteen wide column" $ do
         renderActionsMenu HorizontalMenu editUrl (Just z)
@@ -93,26 +83,30 @@ renderZettelBottomPane graph z@Zettel {..} = do
         whenJust tags $
           divClass "column" . renderTags
 
-handleZettelQuery ::
-  (PandocRawConstraints m, DomBuilder t m, PandocRaw m) =>
+evalAndRenderZettelQuery ::
+  PandocBuilder t m =>
   ZettelGraph ->
   m [QueryError] ->
   URILink ->
   m [QueryError]
-handleZettelQuery graph oldRender uriLink = do
+evalAndRenderZettelQuery graph oldRender uriLink = do
   case flip runReaderT (G.getZettels graph) (Q.evalQueryLink uriLink) of
     Left (Left -> e) -> do
-      fmap (e :) oldRender <* elError e
+      -- Error parsing the query.
+      fmap (e :) oldRender <* elInlineError e
     Right Nothing -> do
+      -- This is not a query link; pass through.
       oldRender
     Right (Just res) -> do
       Q.renderQueryResultIfSuccessful res >>= \case
         Nothing ->
+          -- Successfully rendered.
           pure mempty
         Just (Right -> e) -> do
-          fmap (e :) oldRender <* elError e
+          -- Error in query results.
+          fmap (e :) oldRender <* elInlineError e
   where
-    elError e =
+    elInlineError e =
       elClass "span" "ui left pointing red basic label" $ do
         text $ showQueryError e
 
