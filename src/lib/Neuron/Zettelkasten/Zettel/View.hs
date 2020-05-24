@@ -23,6 +23,7 @@ import Data.Foldable (maximum)
 import Data.TagTree
 import Data.Tagged
 import qualified Data.Text as T
+import Data.Time
 import Data.Tree (Tree (..))
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
@@ -35,6 +36,7 @@ import Neuron.Zettelkasten.Query.Theme (LinkView (..))
 import qualified Neuron.Zettelkasten.Query.View as Q
 import Neuron.Zettelkasten.Query.View (tagUrl, zettelUrl)
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Zettel.Meta (zettelDateFormat)
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc
 import Relude hiding ((&))
@@ -55,7 +57,7 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
           "class" =: "flipped tree deemphasized"
             <> "id" =: "zettel-uptree"
             <> "style" =: "transform-origin: 50%"
-    elAttr "div" attrs $ do
+    elAttr "nav" attrs $ do
       elClass "ul" "root" $ do
         el "li" $ do
           el "ul" $ do
@@ -74,7 +76,7 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
           renderActionsMenu VerticalMenu editUrl (Just z)
         divClass "sixteen wide mobile fifteen wide tablet fifteen wide computer stretched column" $ do
           errors <- renderZettelContent (handleZettelQuery graph) z zc
-          divClass "ui bottom attached segment deemphasized" $ do
+          elClass "nav" "ui bottom attached segment deemphasized" $ do
             divClass "ui two column grid" $ do
               divClass "column" $ do
                 whenNotNull (G.backlinks OrdinaryConnection z graph) $ \cfBacklinks -> do
@@ -153,7 +155,7 @@ renderActionsMenu orient editUrl mzettel = do
   let cls = case orient of
         VerticalMenu -> "ui deemphasized vertical icon menu"
         HorizontalMenu -> "ui deemphasized icon menu"
-  divClass cls $ do
+  elClass "nav" cls $ do
     divClass "item" $ do
       elAttr "a" ("href" =: "z-index.html" <> "title" =: "All Zettels (z-index)") $
         fa "fas fa-tree"
@@ -177,8 +179,15 @@ renderZettelContent handleLink Zettel {..} doc = do
     elClass "h1" "header" $ text zettelTitle
     x <- elPandoc (Config handleLink) doc
     whenJust zettelDay $ \day ->
-      elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ text $ show day
+      elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ do
+        elTime day
     pure x
+
+elTime :: DomBuilder t m => Day -> m ()
+elTime t = do
+  -- cf. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time#Attributes
+  let formatted = toText $ formatTime defaultTimeLocale zettelDateFormat t
+  elAttr "time" ("datetime" =: formatted) $ text formatted
 
 renderTags :: DomBuilder t m => [Tag] -> m ()
 renderTags tags = do
@@ -205,13 +214,13 @@ renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
         if linkViewShowDate
           then case zettelDay of
             Just day ->
-              Just $ show @Text day
+              Just $ elTime day
             Nothing ->
               Nothing
           else Nothing
   elClass "span" ("zettel-link-container " <> connClass) $ do
     forM_ mextra $ \extra ->
-      elClass "span" "extra monoFont" $ text extra
+      elClass "span" "extra monoFont" $ extra
     let linkTooltip =
           if null zettelTags
             then Nothing
