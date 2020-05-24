@@ -14,12 +14,11 @@ module Neuron.Web.Zettel.View
   )
 where
 
-import Data.Foldable (maximum)
 import Data.TagTree
 import Data.Tagged
-import Data.Tree (Tree (..))
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Widget
+import qualified Neuron.Web.Widget.InvertedTree as IT
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
@@ -51,7 +50,8 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
       elClass "ul" "root" $ do
         el "li" $ do
           el "ul" $ do
-            renderUplinkForest (\z2 -> G.getConnection z z2 graph) upTree
+            flip IT.renderInvertedForest upTree $ \z2 ->
+              Q.renderZettelLink (G.getConnection z z2 graph) def z2
   -- Main content
   errors <- elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     when autoScroll $ do
@@ -121,22 +121,6 @@ handleZettelQuery graph oldRender uriLink = do
     elError e =
       elClass "span" "ui left pointing red basic label" $ do
         text $ showQueryError e
-
-renderUplinkForest ::
-  DomBuilder t m =>
-  (Zettel -> Maybe Connection) ->
-  [Tree Zettel] ->
-  m ()
-renderUplinkForest getConn trees = do
-  forM_ (sortForest trees) $ \(Node zettel subtrees) ->
-    el "li" $ do
-      divClass "forest-link" $
-        Q.renderZettelLink (getConn zettel) def zettel
-      when (length subtrees > 0) $ do
-        el "ul" $ renderUplinkForest getConn subtrees
-  where
-    -- Sort trees so that trees containing the most recent zettel (by ID) come first.
-    sortForest = reverse . sortOn maximum
 
 renderZettelContent ::
   forall t m a.
