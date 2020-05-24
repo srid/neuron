@@ -14,10 +14,12 @@ let
   commonmark = hackGet ./dep/commonmark-hs;
   test-framework = hackGet ./dep/test-framework;
 
+  neuronSrc = pkgs.lib.cleanSource (gitignoreSource ./neuron);
+
   neuronSearchScript = pkgs.runCommand "neuron-search" { buildInputs = [ pkgs.makeWrapper ]; } 
     ''
     mkdir -p $out/bin
-    makeWrapper ${./neuron}/src-bash/neuron-search $out/bin/neuron-search --prefix 'PATH' ':' \
+    makeWrapper ${neuronSrc}/src-bash/neuron-search $out/bin/neuron-search --prefix 'PATH' ':' \
         "${pkgs.fzf}/bin:${pkgs.ripgrep}/bin:${pkgs.gawk}/bin:${pkgs.bat}/bin:${pkgs.findutils}/bin:${pkgs.envsubst}/bin"
     '';
 
@@ -29,7 +31,7 @@ in {
   };
 
   packages = {
-    neuron = pkgs.lib.cleanSource (gitignoreSource ./neuron);
+    neuron = neuronSrc;
     # TODO: expose these overrides so it can be used in the other project
     #that uses neuron as a thunk.
 
