@@ -11,27 +11,22 @@
 
 module Neuron.Web.Zettel.View
   ( renderZettel,
-    renderZettelLink,
   )
 where
 
 import Data.Foldable (maximum)
 import Data.TagTree
 import Data.Tagged
-import qualified Data.Text as T
-import Data.Time
 import Data.Tree (Tree (..))
+import qualified Neuron.Web.Query.View as Q
+import Neuron.Web.Widget
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
 import qualified Neuron.Zettelkasten.Query.Eval as Q
-import Neuron.Zettelkasten.Query.Theme (LinkView (..))
-import qualified Neuron.Zettelkasten.Query.View as Q
-import Neuron.Zettelkasten.Query.View (tagUrl, zettelUrl)
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.Zettel.Meta (zettelDateFormat)
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc
 import Relude hiding ((&))
@@ -79,7 +74,7 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
                     text "More backlinks"
                   el "ul" $ do
                     forM_ cfBacklinks $ \zl ->
-                      el "li" $ renderZettelLink Nothing def zl
+                      el "li" $ Q.renderZettelLink Nothing def zl
               divClass "column" $ do
                 renderTags zettelTags
           pure errors
@@ -109,16 +104,11 @@ handleZettelQuery graph oldRender uriLink = do
     Right Nothing -> do
       oldRender
     Right (Just res) -> do
-      -- TODO: This should render in reflex-dom (no via pandoc's builder)
-      case Q.buildQueryView res of
-        Left (Right -> e) -> do
+      Q.renderQueryResultIfSuccessful res >>= \case
+        Nothing ->
+          pure mempty
+        Just (Right -> e) -> do
           fmap (e :) oldRender <* elError e
-        Right (Left w) -> do
-          elPandocInlines [w]
-          pure mempty
-        Right (Right w) -> do
-          elPandocBlocks [w]
-          pure mempty
   where
     elError e =
       elClass "span" "ui left pointing red basic label" $ do
@@ -133,7 +123,7 @@ renderUplinkForest getConn trees = do
   forM_ (sortForest trees) $ \(Node zettel subtrees) ->
     el "li" $ do
       divClass "forest-link" $
-        renderZettelLink (getConn zettel) def zettel
+        Q.renderZettelLink (getConn zettel) def zettel
       when (length subtrees > 0) $ do
         el "ul" $ renderUplinkForest getConn subtrees
   where
@@ -165,44 +155,13 @@ renderTags tags = do
     elAttr "span" ("class" =: "ui right ribbon label zettel-tag" <> "title" =: "Tag") $ do
       elAttr
         "a"
-        ( "href" =: (tagUrl t)
+        ( "href" =: (Q.tagUrl t)
             <> "class" =: "tag-inner"
             <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
         )
         $ text
         $ unTag t
     el "p" blank
-
--- | Render a link to an individual zettel.
-renderZettelLink :: DomBuilder t m => Maybe Connection -> Maybe LinkView -> Zettel -> m ()
-renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
-  let connClass = maybe "" show conn
-      mextra =
-        if linkViewShowDate
-          then case zettelDay of
-            Just day ->
-              Just $ elTime day
-            Nothing ->
-              Nothing
-          else Nothing
-  elClass "span" ("zettel-link-container " <> connClass) $ do
-    forM_ mextra $ \extra ->
-      elClass "span" "extra monoFont" $ extra
-    let linkTooltip =
-          if null zettelTags
-            then Nothing
-            else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
-    elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
-      elAttr "a" ("href" =: (zettelUrl zettelID)) $ text zettelTitle
-  where
-    withTooltip :: Maybe Text -> Map Text Text
-    withTooltip = \case
-      Nothing -> mempty
-      Just s ->
-        ( "data-tooltip" =: s
-            <> "data-inverted" =: ""
-            <> "data-position" =: "right center"
-        )
 
 ------------------
 -- Navigation menu
@@ -228,13 +187,3 @@ renderActionsMenu orient editUrl mzettel = do
       elAttr "a" ("href" =: "search.html" <> "title" =: "Search Zettels") $ fa "fas fa-search"
   where
     fa k = elClass "i" k blank
-
-----------------
--- HTML elements
-----------------
-
-elTime :: DomBuilder t m => Day -> m ()
-elTime t = do
-  -- cf. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time#Attributes
-  let formatted = toText $ formatTime defaultTimeLocale zettelDateFormat t
-  elAttr "time" ("datetime" =: formatted) $ text formatted

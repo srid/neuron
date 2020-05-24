@@ -83,9 +83,10 @@ library
     Neuron.Zettelkasten.Query.Eval
     Neuron.Zettelkasten.Query.Parser
     Neuron.Zettelkasten.Query.Theme
-    Neuron.Zettelkasten.Query.View
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
+    Neuron.Web.Widget
+    Neuron.Web.Query.View
     Neuron.Web.Zettel.View
     Neuron.Web.Zettel.CSS
     Neuron.Web.Theme

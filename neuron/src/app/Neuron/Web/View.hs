@@ -38,6 +38,7 @@ import Data.Time.ISO8601 (formatISO8601)
 import Data.Tree (Tree (..))
 import Neuron.Config
 import Neuron.Version (neuronVersion)
+import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import qualified Neuron.Web.Zettel.CSS as ZettelCSS
@@ -47,7 +48,6 @@ import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
-import Neuron.Zettelkasten.Query.View (zettelUrl)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
@@ -169,7 +169,7 @@ renderErrors errors = do
         text $ "Zettel "
         elClass "span" "zettel-link-container" $ do
           elClass "span" "zettel-link" $ do
-            elAttr "a" ("href" =: zettelUrl zid) $ text $ zettelIDText zid
+            elAttr "a" ("href" =: QueryView.zettelUrl zid) $ text $ zettelIDText zid
         text " has errors"
       el "p" $ do
         el "ol" $ do
@@ -187,7 +187,7 @@ renderIndex Config {..} graph errors = do
       Left (toList -> cyc) -> divClass "ui orange segment" $ do
         el "h2" $ text "Cycle detected"
         forM_ cyc $ \zettel ->
-          el "li" $ ZettelView.renderZettelLink Nothing def zettel
+          el "li" $ QueryView.renderZettelLink Nothing def zettel
       _ -> blank
     let clusters = G.categoryClusters graph
     el "p" $ do
@@ -259,7 +259,7 @@ renderForest isRoot maxLevel mg trees =
                 divClass
                   (maybe "" (const "ui ") mg)
           bool id zettelDiv isRoot $
-            ZettelView.renderZettelLink Nothing def zettel
+            QueryView.renderZettelLink Nothing def zettel
           whenJust mg $ \g -> do
             text " "
             case G.backlinks Folgezettel zettel g of
