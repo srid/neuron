@@ -15,7 +15,7 @@ import Control.Monad.Writer
 import Data.Dependent.Sum
 import Data.Some
 import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Query (runQuery)
+import Neuron.Zettelkasten.Query (runZettelQuery)
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
 import Neuron.Zettelkasten.Query.Type
@@ -34,14 +34,14 @@ evalQueryLink ::
     MonadReader [Zettel] m
   ) =>
   URILink ->
-  m (Maybe (DSum Query Identity))
+  m (Maybe (DSum ZettelQuery Identity))
 evalQueryLink link =
   queryFromURILink link >>= \case
     Nothing -> pure Nothing
     Just someQ -> fmap Just $ do
       withSome someQ $ \q -> do
         zs <- ask
-        let res = runQuery zs q
+        let res = runZettelQuery zs q
         pure $ q :=> Identity res
 
 queryConnections ::
@@ -63,11 +63,11 @@ queryConnections doc =
       Right mres ->
         pure $ maybe [] getConnections mres
   where
-    getConnections :: DSum Query Identity -> [(Maybe Connection, Zettel)]
+    getConnections :: DSum ZettelQuery Identity -> [(Maybe Connection, Zettel)]
     getConnections = \case
-      Query_ZettelByID _ mconn :=> Identity mres ->
+      ZettelQuery_ZettelByID _ mconn :=> Identity mres ->
         maybe [] pure $ (mconn,) <$> mres
-      Query_ZettelsByTag _ mconn _mview :=> Identity res ->
+      ZettelQuery_ZettelsByTag _ mconn _mview :=> Identity res ->
         (mconn,) <$> res
-      Query_Tags _ :=> _ ->
+      ZettelQuery_Tags _ :=> _ ->
         mempty

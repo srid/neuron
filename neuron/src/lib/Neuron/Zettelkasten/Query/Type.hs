@@ -21,43 +21,43 @@ import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel
 import Relude
 
--- | Query represents a way to query the zettels list.
+-- | ZettelQuery queries individual zettels.
 --
--- Note that you can only query the individual zettels, and not the graph itself
--- (which needs evaluating queries before building itself).
-data Query r where
-  Query_ZettelByID :: ZettelID -> Maybe Connection -> Query (Maybe Zettel)
-  Query_ZettelsByTag :: [TagPattern] -> Maybe Connection -> ZettelsView -> Query [Zettel]
-  Query_Tags :: [TagPattern] -> Query (Map Tag Natural)
+-- It does not care about the relationship *between* those zettels; for that use `GraphQuery`.
+data ZettelQuery r where
+  ZettelQuery_ZettelByID :: ZettelID -> Maybe Connection -> ZettelQuery (Maybe Zettel)
+  ZettelQuery_ZettelsByTag :: [TagPattern] -> Maybe Connection -> ZettelsView -> ZettelQuery [Zettel]
+  ZettelQuery_Tags :: [TagPattern] -> ZettelQuery (Map Tag Natural)
 
--- | Like `Query` but queries the zettelkasten graph instead
-data QueryGraph r where
-  QueryGraph_Id :: QueryGraph ZettelGraph
+-- | Like `GraphQuery` but focused on the relationship between zettels.
+data GraphQuery r where
+  -- | Query the entire graph.
+  GraphQuery_Id :: GraphQuery ZettelGraph
 
-deriveJSONGADT ''Query
+deriveJSONGADT ''ZettelQuery
 
-deriveGEq ''Query
+deriveGEq ''ZettelQuery
 
-deriveGShow ''Query
+deriveGShow ''ZettelQuery
 
-deriving instance Show (Query (Maybe Zettel))
+deriving instance Show (ZettelQuery (Maybe Zettel))
 
-deriving instance Show (Query [Zettel])
+deriving instance Show (ZettelQuery [Zettel])
 
-deriving instance Show (Query (Map Tag Natural))
+deriving instance Show (ZettelQuery (Map Tag Natural))
 
-deriving instance Eq (Query (Maybe Zettel))
+deriving instance Eq (ZettelQuery (Maybe Zettel))
 
-deriving instance Eq (Query [Zettel])
+deriving instance Eq (ZettelQuery [Zettel])
 
-deriving instance Eq (Query (Map Tag Natural))
+deriving instance Eq (ZettelQuery (Map Tag Natural))
 
-deriveJSONGADT ''QueryGraph
+deriveJSONGADT ''GraphQuery
 
-deriveGEq ''QueryGraph
+deriveGEq ''GraphQuery
 
-deriveGShow ''QueryGraph
+deriveGShow ''GraphQuery
 
-deriving instance Show (QueryGraph ZettelGraph)
+deriving instance Show (GraphQuery ZettelGraph)
 
-deriving instance Eq (QueryGraph ZettelGraph)
+deriving instance Eq (GraphQuery ZettelGraph)

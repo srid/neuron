@@ -20,7 +20,7 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
-import Neuron.Zettelkasten.Query.Type (Query (..))
+import Neuron.Zettelkasten.Query.Type (ZettelQuery (..))
 import Reflex.Dom.Pandoc (URILink (..))
 import Relude
 import qualified Text.URI as URI
@@ -32,26 +32,26 @@ import Text.URI.Util (getQueryParam, hasQueryFlag)
 -- This function is used only in the CLI. For handling links in a Markdown file,
 -- your want `queryFromMarkdownLink` which allows specifying the link text as
 -- well.
-queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Maybe (Some Query))
+queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Maybe (Some ZettelQuery))
 queryFromURI uri = do
   -- We are setting markdownLinkText to the URI to support the new short links
   queryFromURILink $ URILink (URI.render uri) uri
 
-queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some Query))
+queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
 queryFromURILink (URILink linkText uri) =
   case fmap URI.unRText (URI.uriScheme uri) of
     Just proto | not angleBracketLink && proto `elem` ["z", "zcf"] -> do
       zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
       let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
-      pure $ Just $ Some $ Query_ZettelByID zid mconn
+      pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
     Just proto | proto `elem` ["zquery", "zcfquery"] ->
       case uriHost uri of
         Right "search" -> do
           let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
           pure $ Just $ Some $
-            Query_ZettelsByTag (tagPatterns "tag") mconn queryView
+            ZettelQuery_ZettelsByTag (tagPatterns "tag") mconn queryView
         Right "tags" ->
-          pure $ Just $ Some $ Query_Tags (tagPatterns "filter")
+          pure $ Just $ Some $ ZettelQuery_Tags (tagPatterns "filter")
         _ ->
           throwError $ QueryParseError_UnsupportedHost uri
     _ -> pure $ do
@@ -71,9 +71,9 @@ queryFromURILink (URILink linkText uri) =
         Just "z" -> do
           fmap snd (URI.uriPath uri) >>= \case
             (URI.unRText -> "zettels") :| [] -> do
-              pure $ Some $ Query_ZettelsByTag (tagPatterns "tag") mconn queryView
+              pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns "tag") mconn queryView
             (URI.unRText -> "tags") :| [] -> do
-              pure $ Some $ Query_Tags (tagPatterns "filter")
+              pure $ Some $ ZettelQuery_Tags (tagPatterns "filter")
             _ ->
               Nothing
         Just _ -> do
@@ -83,7 +83,7 @@ queryFromURILink (URILink linkText uri) =
           fmap snd (URI.uriPath uri) >>= \case
             (URI.unRText -> path) :| [] -> do
               zid <- rightToMaybe $ parseZettelID' path
-              pure $ Some $ Query_ZettelByID zid mconn
+              pure $ Some $ ZettelQuery_ZettelByID zid mconn
             _ ->
               -- Multiple path elements, not supported
               Nothing

@@ -31,7 +31,7 @@ legacyLinks = do
     for_ [("zquery", Nothing), ("zcfquery", Just OrdinaryConnection)] $ \(scheme, mconn) -> do
       context scheme $ do
         let zettelsByTag pat mview =
-              Right $ Just $ Some $ Query_ZettelsByTag (fmap mkTagPattern pat) mconn mview
+              Right $ Just $ Some $ ZettelQuery_ZettelsByTag (fmap mkTagPattern pat) mconn mview
             withScheme s = toText scheme <> s
             legacyLink l = mkURILink "." l
         it "Parse all zettels URI" $ do
@@ -59,17 +59,17 @@ legacyLinks = do
     let zid = parseZettelID "1234567"
     it "parses z:/" $
       queryFromURILink (mkURILink "1234567" "z:/")
-        `shouldBe` Right (Just $ Some $ Query_ZettelByID zid Nothing)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID zid Nothing)
     it "parses z:/ ignoring annotation" $
       queryFromURILink (mkURILink "1234567" "z://foo-bar")
-        `shouldBe` Right (Just $ Some $ Query_ZettelByID zid Nothing)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID zid Nothing)
     it "parses zcf:/" $
       queryFromURILink (mkURILink "1234567" "zcf:/")
-        `shouldBe` Right (Just $ Some $ Query_ZettelByID zid (Just OrdinaryConnection))
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID zid (Just OrdinaryConnection))
   describe "Parse tags URI" $ do
     it "parses zquery://tags" $
       queryFromURILink (mkURILink "." "zquery://tags?filter=foo/**")
-        `shouldBe` Right (Just $ Some $ Query_Tags [mkTagPattern "foo/**"])
+        `shouldBe` Right (Just $ Some $ ZettelQuery_Tags [mkTagPattern "foo/**"])
 
 shortLinks :: Spec
 shortLinks = do
@@ -77,28 +77,28 @@ shortLinks = do
     let shortLink s = mkURILink s s
     it "parses date ID" $ do
       queryFromURILink (shortLink "1234567")
-        `shouldBe` Right (Just $ Some $ Query_ZettelByID (parseZettelID "1234567") Nothing)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (parseZettelID "1234567") Nothing)
     it "parses custom/hash ID" $ do
       queryFromURILink (shortLink "foo-bar")
-        `shouldBe` Right (Just $ Some $ Query_ZettelByID (parseZettelID "foo-bar") Nothing)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (parseZettelID "foo-bar") Nothing)
     it "even with ?cf" $ do
       queryFromURILink (shortLink "foo-bar?cf")
-        `shouldBe` Right (Just $ Some $ Query_ZettelByID (parseZettelID "foo-bar") (Just OrdinaryConnection))
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (parseZettelID "foo-bar") (Just OrdinaryConnection))
     it "z:zettels" $ do
       queryFromURILink (shortLink "z:zettels")
-        `shouldBe` Right (Just $ Some $ Query_ZettelsByTag [] Nothing def)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelsByTag [] Nothing def)
     it "z:zettels?tag=foo" $ do
       queryFromURILink (shortLink "z:zettels?tag=foo")
-        `shouldBe` Right (Just $ Some $ Query_ZettelsByTag [mkTagPattern "foo"] Nothing def)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelsByTag [mkTagPattern "foo"] Nothing def)
     it "z:zettels?cf" $ do
       queryFromURILink (shortLink "z:zettels?cf")
-        `shouldBe` Right (Just $ Some $ Query_ZettelsByTag [] (Just OrdinaryConnection) def)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelsByTag [] (Just OrdinaryConnection) def)
     it "z:tags" $ do
       queryFromURILink (shortLink "z:tags")
-        `shouldBe` Right (Just $ Some $ Query_Tags [])
+        `shouldBe` Right (Just $ Some $ ZettelQuery_Tags [])
     it "z:tags?filter=foo" $ do
       queryFromURILink (shortLink "z:tags?filter=foo")
-        `shouldBe` Right (Just $ Some $ Query_Tags [mkTagPattern "foo"])
+        `shouldBe` Right (Just $ Some $ ZettelQuery_Tags [mkTagPattern "foo"])
 
 mkURILink :: Text -> Text -> URILink
 mkURILink s l =
