@@ -9,7 +9,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Zettel.View
+module Neuron.Web.Zettel.View
   ( renderZettelContent,
     renderZettelLink,
     renderZettel,

@@ -180,7 +180,6 @@ in {
     network-uri = dontCheck super.network-uri;
     hashable = dontCheck super.hashable;
     http-types = dontCheck super.http-types;
-    lucid = dontCheck super.lucid;
     cereal = dontCheck super.cereal;
     pandoc = dontHaddock (dontCheck super.pandoc);
 

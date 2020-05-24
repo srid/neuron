@@ -40,6 +40,7 @@ import Neuron.Config
 import Neuron.Version (neuronVersion)
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
+import qualified Neuron.Web.Zettel.View as ZettelView
 import Neuron.Zettelkasten.Connection
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
@@ -47,7 +48,6 @@ import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName, zettelIDText)
 import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
 import Neuron.Zettelkasten.Query.View (zettelUrl)
 import Neuron.Zettelkasten.Zettel
-import qualified Neuron.Zettelkasten.Zettel.View as ZettelView
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding ((&))

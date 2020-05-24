@@ -76,7 +76,6 @@ library
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
-    Neuron.Zettelkasten.Zettel.View
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Error
@@ -87,6 +86,7 @@ library
     Neuron.Zettelkasten.Query.View
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
+    Neuron.Web.Zettel.View
     Neuron.Web.Theme
     Text.Megaparsec.Simple
     Text.URI.Util
