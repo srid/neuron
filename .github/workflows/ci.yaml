@@ -19,4 +19,4 @@ jobs:
         # Only needed for private caches
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     # This builds neuron, as well as run tests
-    - run: nix-build -j4
+    - run: nix-build -j4 ci.nix
