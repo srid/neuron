@@ -90,6 +90,7 @@ in {
   in {
     neuron = super.neuron.overrideDerivation (drv: {
         propagatedBuildInputs = drv.propagatedBuildInputs ++ [neuronSearchScript];
+        doHaddock = false;
     });
 
     shake = dontCheck super.shake;
