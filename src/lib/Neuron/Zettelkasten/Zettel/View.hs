@@ -313,8 +313,15 @@ zettelContentCss neuronTheme = do
       C.overflow auto
     -- End of div.zettel-content
     codeStyle
+    definitionListStyle
     blockquoteStyle
   where
+    definitionListStyle = do
+      C.dl ? do
+        C.dt ? do
+          C.fontWeight C.bold
+        C.dd ? do
+          mempty
     codeStyle = do
       C.code ? do
         sym C.margin auto

@@ -92,7 +92,8 @@ neuronSpec ::
     CE.HasTaskList il bl,
     CM.ToPlainText il,
     CE.HasFootnote il bl,
-    CE.HasMath il
+    CE.HasMath il,
+    CE.HasDefinitionList il bl
   ) =>
   CM.SyntaxSpec m il bl
 neuronSpec =
@@ -102,6 +103,7 @@ neuronSpec =
       CE.footnoteSpec,
       CE.mathSpec,
       CE.smartPunctuationSpec,
+      CE.definitionListSpec,
       CE.attributesSpec,
       CE.rawAttributeSpec,
       CM.defaultSyntaxSpec {CM.syntaxBlockSpecs = defaultBlockSpecsSansRawHtml}
