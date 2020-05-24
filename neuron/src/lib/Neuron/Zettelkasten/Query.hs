@@ -16,13 +16,14 @@ import Data.Aeson
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
+import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Type
 import Neuron.Zettelkasten.Zettel
 import Relude
 import System.FilePath
 
--- | Run the given query and return the results.
+-- | Run the given query on zettels list and return the results.
 runQuery :: [Zettel] -> Query r -> r
 runQuery zs = \case
   Query_ZettelByID zid _ ->
@@ -40,6 +41,10 @@ runQuery zs = \case
     allTags =
       Map.fromListWith (+) $
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
+
+runQueryGraph :: ZettelGraph -> QueryGraph r -> r
+runQueryGraph g = \case
+  QueryGraph_Id -> g
 
 queryResultJson ::
   forall r.
@@ -78,3 +83,24 @@ queryResultJson notesDir q r errors =
           "count" .= count,
           "children" .= fmap treeToJson children
         ]
+
+queryGraphResultJson ::
+  forall r.
+  (ToJSON (QueryGraph r)) =>
+  QueryGraph r ->
+  r ->
+  -- Zettels that cannot be parsed by neuron (and as such are excluded from the graph)
+  Map ZettelID Text ->
+  Value
+queryGraphResultJson q r errors =
+  toJSON $
+    object
+      [ "query" .= toJSON q,
+        "result" .= resultJson,
+        "errors" .= errors
+      ]
+  where
+    resultJson :: Value
+    resultJson = case q of
+      QueryGraph_Id ->
+        toJSON r

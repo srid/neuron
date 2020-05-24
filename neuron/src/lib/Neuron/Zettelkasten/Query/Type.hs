@@ -15,6 +15,7 @@ import Data.GADT.Compare.TH
 import Data.GADT.Show.TH
 import Data.TagTree (Tag, TagPattern (..))
 import Neuron.Zettelkasten.Connection
+import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel
@@ -28,6 +29,10 @@ data Query r where
   Query_ZettelByID :: ZettelID -> Maybe Connection -> Query (Maybe Zettel)
   Query_ZettelsByTag :: [TagPattern] -> Maybe Connection -> ZettelsView -> Query [Zettel]
   Query_Tags :: [TagPattern] -> Query (Map Tag Natural)
+
+-- | Like `Query` but queries the zettelkasten graph instead
+data QueryGraph r where
+  QueryGraph_Id :: QueryGraph ZettelGraph
 
 deriveJSONGADT ''Query
 
@@ -46,3 +51,13 @@ deriving instance Eq (Query (Maybe Zettel))
 deriving instance Eq (Query [Zettel])
 
 deriving instance Eq (Query (Map Tag Natural))
+
+deriveJSONGADT ''QueryGraph
+
+deriveGEq ''QueryGraph
+
+deriveGShow ''QueryGraph
+
+deriving instance Show (QueryGraph ZettelGraph)
+
+deriving instance Eq (QueryGraph ZettelGraph)
