@@ -1,1 +1,2 @@
-packages: neuron.cabal
+optional-packages:
+  *

@@ -17,7 +17,7 @@ let
   neuronSearchScript = pkgs.runCommand "neuron-search" { buildInputs = [ pkgs.makeWrapper ]; } 
     ''
     mkdir -p $out/bin
-    makeWrapper ${./.}/src-bash/neuron-search $out/bin/neuron-search --prefix 'PATH' ':' \
+    makeWrapper ${./neuron}/src-bash/neuron-search $out/bin/neuron-search --prefix 'PATH' ':' \
         "${pkgs.fzf}/bin:${pkgs.ripgrep}/bin:${pkgs.gawk}/bin:${pkgs.bat}/bin:${pkgs.findutils}/bin:${pkgs.envsubst}/bin"
     '';
 
@@ -29,7 +29,7 @@ in {
   };
 
   packages = {
-    neuron = pkgs.lib.cleanSource (gitignoreSource ./.);
+    neuron = pkgs.lib.cleanSource (gitignoreSource ./neuron);
     # TODO: expose these overrides so it can be used in the other project
     #that uses neuron as a thunk.
 
@@ -88,10 +88,9 @@ in {
       enableSeparateDataOutput = true;
     });
   in {
-    neuron = super.neuron.overrideDerivation (drv: {
+    neuron = dontHaddock(super.neuron.overrideDerivation (drv: {
         propagatedBuildInputs = drv.propagatedBuildInputs ++ [neuronSearchScript];
-        doHaddock = false;
-    });
+    }));
 
     shake = dontCheck super.shake;
     modern-uri = dontCheck (self.callHackageDirect {
