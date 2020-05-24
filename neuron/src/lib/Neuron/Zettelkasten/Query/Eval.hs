@@ -15,9 +15,10 @@ import Control.Monad.Writer
 import Data.Dependent.Sum
 import Data.Some
 import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Query
+import Neuron.Zettelkasten.Query (runQuery)
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
+import Neuron.Zettelkasten.Query.Type
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Pandoc.URILink (URILink, queryURILinks)
 import Relude

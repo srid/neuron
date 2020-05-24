@@ -24,9 +24,9 @@ import qualified Data.Text as T
 import Data.Time
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
-import Neuron.Zettelkasten.Query as Q
 import qualified Neuron.Zettelkasten.Query.Error as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
+import Neuron.Zettelkasten.Query.Type as Q
 import Neuron.Zettelkasten.Zettel.Meta (zettelDateFormat)
 import Options.Applicative
 import Relude

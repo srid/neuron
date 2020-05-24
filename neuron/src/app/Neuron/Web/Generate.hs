@@ -23,6 +23,7 @@ import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph as G
+import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID, mkZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryError)

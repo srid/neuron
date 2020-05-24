@@ -18,9 +18,9 @@ import Data.Some
 import Data.TagTree (mkTagPattern)
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
+import Neuron.Zettelkasten.Query.Type (Query (..))
 import Reflex.Dom.Pandoc (URILink (..))
 import Relude
 import qualified Text.URI as URI

@@ -78,6 +78,7 @@ library
     Neuron.Zettelkasten.Zettel.Meta
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
+    Neuron.Zettelkasten.Query.Type
     Neuron.Zettelkasten.Query.Error
     Neuron.Zettelkasten.Query.Error.Internal
     Neuron.Zettelkasten.Query.Eval
@@ -85,6 +86,7 @@ library
     Neuron.Zettelkasten.Query.Theme
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
+    Neuron.Zettelkasten.Graph.Build
     Neuron.Web.Widget
     Neuron.Web.Widget.AutoScroll
     Neuron.Web.Widget.InvertedTree

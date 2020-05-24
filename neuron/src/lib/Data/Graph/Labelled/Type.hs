@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -8,6 +10,8 @@
 module Data.Graph.Labelled.Type where
 
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
+import Data.Aeson
+import qualified Data.Map.Strict as Map
 import Relude
 
 -- | Instances of this class can be used as a vertex in a graph.
@@ -27,5 +31,23 @@ data LabelledGraph v e = LabelledGraph
   { graph :: LAM.AdjacencyMap e (VertexID v),
     vertices :: Map (VertexID v) v
   }
+  deriving (Generic)
 
-deriving instance (Ord e, Show e, Show v, Ord (VertexID v), Show (VertexID v)) => Show (LabelledGraph v e)
+deriving instance
+  ( Ord e,
+    Show e,
+    Show v,
+    Ord (VertexID v),
+    Show (VertexID v)
+  ) =>
+  Show (LabelledGraph v e)
+
+instance (ToJSONKey (VertexID v), ToJSON v, ToJSON e) => ToJSON (LabelledGraph v e) where
+  toJSON (LabelledGraph g vs) =
+    toJSON (LAM.adjacencyMap g, vs)
+
+instance (FromJSONKey (VertexID v), Ord (VertexID v), Eq e, Monoid e, FromJSON v, FromJSON e) => FromJSON (LabelledGraph v e) where
+  parseJSON v = do
+    (x, vs) <- parseJSON v
+    let g = LAM.fromAdjacencyMaps . Map.toList $ x
+    pure $ LabelledGraph g vs

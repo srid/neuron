@@ -1,14 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -17,24 +13,14 @@ module Neuron.Zettelkasten.Query where
 
 import Control.Monad.Except
 import Data.Aeson
-import Data.Aeson.GADT.TH
-import Data.GADT.Compare.TH
-import Data.GADT.Show.TH
 import qualified Data.Map.Strict as Map
-import Data.TagTree (Tag, TagPattern (..), tagMatch, tagMatchAny, tagTree)
+import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
-import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Theme
+import Neuron.Zettelkasten.Query.Type
 import Neuron.Zettelkasten.Zettel
 import Relude
 import System.FilePath
-
--- | Query represents a way to query the Zettelkasten.
-data Query r where
-  Query_ZettelByID :: ZettelID -> Maybe Connection -> Query (Maybe Zettel)
-  Query_ZettelsByTag :: [TagPattern] -> Maybe Connection -> ZettelsView -> Query [Zettel]
-  Query_Tags :: [TagPattern] -> Query (Map Tag Natural)
 
 -- | Run the given query and return the results.
 runQuery :: [Zettel] -> Query r -> r
@@ -92,21 +78,3 @@ queryResultJson notesDir q r errors =
           "count" .= count,
           "children" .= fmap treeToJson children
         ]
-
-deriveJSONGADT ''Query
-
-deriveGEq ''Query
-
-deriveGShow ''Query
-
-deriving instance Show (Query (Maybe Zettel))
-
-deriving instance Show (Query [Zettel])
-
-deriving instance Show (Query (Map Tag Natural))
-
-deriving instance Eq (Query (Maybe Zettel))
-
-deriving instance Eq (Query [Zettel])
-
-deriving instance Eq (Query (Map Tag Natural))

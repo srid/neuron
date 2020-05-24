@@ -29,9 +29,9 @@ import Data.Tree
 import Neuron.Web.Widget
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
+import Neuron.Zettelkasten.Query.Type
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (Query, count, tag)
 import Relude

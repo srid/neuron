@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -28,6 +30,7 @@ data Zettel = Zettel
     zettelTags :: [Tag],
     zettelDay :: Maybe Day
   }
+  deriving (Generic, ToJSON)
 
 -- | A zettel with the associated pandoc AST
 newtype PandocZettel = PandocZettel {unPandocZettel :: (Zettel, Pandoc)}
