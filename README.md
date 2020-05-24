@@ -21,19 +21,13 @@ See [neuron.zettel.page](https://neuron.zettel.page/) for the full guide to inst
 
 ## Developing
 
-When modifying `src`, use ghcid as instructed as follows to monitor compile errors:
+When modifying the source code, use `bin/run` (which uses ghcid) to test your changes in real-time:
 
 ```bash
-nix-shell --run ghcid
+bin/run -d $(pwd)/guide rib -wS
 ```
 
-You can test your changes by running it on the `./guide` (or any) zettelkasten as follows:
-
-```bash
-bin/run -d ./guide rib -wS
-```
-
-This command will also automatically recompile and restart when you change any of the Haskell source files.
+This command automatically recompiles and restarts when you change any of the Haskell source files, as well run site generation on the given Zettelkasten. You can pass the same neuron arguments to `bin/run`. This is essentially equivalent to running development version of neuron with instant reload.
 
 ### Running tests
 

@@ -45,7 +45,7 @@ runGraphQuery :: ZettelGraph -> GraphQuery r -> r
 runGraphQuery g = \case
   GraphQuery_Id -> g
 
-queryResultJson ::
+zettelQueryResultJson ::
   forall r.
   (ToJSON (ZettelQuery r)) =>
   FilePath ->
@@ -54,7 +54,7 @@ queryResultJson ::
   -- Zettels that cannot be parsed by neuron
   Map ZettelID Text ->
   Value
-queryResultJson notesDir q r errors =
+zettelQueryResultJson notesDir q r errors =
   toJSON $
     object
       [ "query" .= toJSON q,
