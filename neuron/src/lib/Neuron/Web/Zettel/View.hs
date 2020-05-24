@@ -18,6 +18,7 @@ import Data.TagTree
 import Data.Tagged
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Widget
+import qualified Neuron.Web.Widget.AutoScroll as AS
 import qualified Neuron.Web.Widget.InvertedTree as IT
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
@@ -31,7 +32,7 @@ import Reflex.Dom.Pandoc
 import Relude hiding ((&))
 import Text.Pandoc.Definition (Pandoc)
 
-type AutoScroll = Tagged "autoScroll" Bool
+type AutoScroll = Tagged "autoScroll" (Maybe Text)
 
 renderZettel ::
   PandocBuilder t m =>
@@ -54,31 +55,24 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
               Q.renderZettelLink (G.getConnection z z2 graph) def z2
   -- Main content
   errors <- elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-    when autoScroll $ do
-      -- zettel-container-anchor is a trick used by the scrollIntoView JS below
-      -- cf. https://stackoverflow.com/a/49968820/55246
+    whenJust autoScroll $ \marker -> do
       -- We use -24px (instead of -14px) here so as to not scroll all the way to
       -- title, and as to leave some of the tree visible as "hint" to the user.
-      elAttr "div" ("id" =: "zettel-container-anchor" <> "style" =: "position: absolute; top: -24px; left: 0") blank
+      AS.marker marker (-24)
     divClass "zettel-view" $ do
       errors <- divClass "ui two column grid" $ do
         divClass "one wide tablet only computer only column" $ do
           renderActionsMenu VerticalMenu editUrl (Just z)
         divClass "sixteen wide mobile fifteen wide tablet fifteen wide computer stretched column" $ do
-          errors <- renderZettelContent (handleZettelQuery graph) z zc
-          renderZettelBottomPane graph z
-          pure errors
+          renderZettelContent (handleZettelQuery graph) z zc
+            <* renderZettelBottomPane graph z
       divClass "ui one column grid" $ divClass "mobile only sixteen wide column" $ do
         renderActionsMenu HorizontalMenu editUrl (Just z)
       pure errors
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
-  -- FIXME: This may not scroll sufficiently if the images in the zettel haven't
-  -- loaded (thus the browser doesn't known the final height yet.)
-  when (autoScroll && not (null upTree)) $ do
-    whenNotNull upTree $ \_ -> do
-      el "script" $ text $
-        "document.getElementById(\"zettel-container-anchor\").scrollIntoView({behavior: \"smooth\", block: \"start\"});"
+  unless (null upTree) $ whenJust autoScroll $ \marker -> do
+    AS.script marker
   pure errors
 
 renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> m ()

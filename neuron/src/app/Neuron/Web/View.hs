@@ -141,7 +141,11 @@ renderRouteBody config r (g, x) = do
         renderBrandFooter
       pure mempty
     Route_Zettel _ -> do
-      errs <- ZettelView.renderZettel (editUrl config) (Tagged True) (g, x)
+      errs <-
+        ZettelView.renderZettel
+          (editUrl config)
+          (Tagged $ Just "zettel-container-anchor")
+          (g, x)
       renderBrandFooter
       pure errs
     Route_Redirect _ -> do

@@ -86,6 +86,7 @@ library
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
     Neuron.Web.Widget
+    Neuron.Web.Widget.AutoScroll
     Neuron.Web.Widget.InvertedTree
     Neuron.Web.Query.View
     Neuron.Web.Zettel.View
