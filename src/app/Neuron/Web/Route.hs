@@ -122,7 +122,9 @@ routeOpenGraph Config {..} val r =
           baseUrl <- URI.mkURI =<< siteBaseUrl
           URI.relativeTo img baseUrl
         _ -> Nothing,
-      _openGraph_url = Nothing
+      _openGraph_url = do
+        baseUrl <- siteBaseUrl
+        pure $ routeUri baseUrl r
     }
   where
     renderPandocAsText :: [Inline] -> Maybe Text

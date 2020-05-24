@@ -173,7 +173,7 @@ renderZettelContent ::
   Pandoc ->
   m a
 renderZettelContent handleLink Zettel {..} doc = do
-  divClass "ui raised attached segment zettel-content" $ do
+  elClass "article" "ui raised attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
     x <- elPandoc (Config handleLink) doc
     whenJust zettelDay $ \day ->
@@ -279,7 +279,7 @@ themeColor neuronTheme =
 zettelContentCss :: Theme.Theme -> Css
 zettelContentCss neuronTheme = do
   let linkColor = Theme.withRgb neuronTheme C.rgb
-  "div.zettel-content" ? do
+  ".zettel-content" ? do
     -- All of these apply to the zettel content card only.
     "div.date" ? do
       C.textAlign C.center
