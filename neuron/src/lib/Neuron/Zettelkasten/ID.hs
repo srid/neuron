@@ -20,7 +20,8 @@ module Neuron.Zettelkasten.ID
   )
 where
 
-import Data.Aeson (FromJSON (..), ToJSON (toJSON), ToJSONKey)
+import Data.Aeson
+import Data.Aeson.Types (toJSONKeyText)
 import qualified Data.Text as T
 import Data.Time
 import Relude
@@ -36,7 +37,7 @@ data ZettelID
     ZettelDateID Day Int
   | -- | Arbitrary alphanumeric ID.
     ZettelCustomID Text
-  deriving (Eq, Show, Ord, Generic, ToJSONKey)
+  deriving (Eq, Show, Ord, Generic)
 
 instance Show InvalidID where
   show (InvalidIDParseError s) =
@@ -48,6 +49,9 @@ instance FromJSON ZettelID where
     case parseZettelID' s of
       Left e -> fail $ show e
       Right zid -> pure zid
+
+instance ToJSONKey ZettelID where
+  toJSONKey = toJSONKeyText zettelIDText
 
 instance ToJSON ZettelID where
   toJSON = toJSON . zettelIDText

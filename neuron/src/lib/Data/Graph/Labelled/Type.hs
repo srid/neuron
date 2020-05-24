@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -44,10 +45,17 @@ deriving instance
 
 instance (ToJSONKey (VertexID v), ToJSON v, ToJSON e) => ToJSON (LabelledGraph v e) where
   toJSON (LabelledGraph g vs) =
-    toJSON (LAM.adjacencyMap g, vs)
+    toJSON $
+      object
+        [ "adjacencyMap" .= LAM.adjacencyMap g,
+          "vertices" .= vs
+        ]
 
 instance (FromJSONKey (VertexID v), Ord (VertexID v), Eq e, Monoid e, FromJSON v, FromJSON e) => FromJSON (LabelledGraph v e) where
-  parseJSON v = do
-    (x, vs) <- parseJSON v
-    let g = LAM.fromAdjacencyMaps . Map.toList $ x
-    pure $ LabelledGraph g vs
+  parseJSON =
+    withObject "LabelledGraph" $ \lg ->
+      LabelledGraph
+        <$> (fmap mkGraph $ lg .: "adjacencyMap")
+        <*> lg .: "vertices"
+    where
+      mkGraph = LAM.fromAdjacencyMaps . Map.toList
