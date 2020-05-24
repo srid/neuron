@@ -66,17 +66,7 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
           renderActionsMenu VerticalMenu editUrl (Just z)
         divClass "sixteen wide mobile fifteen wide tablet fifteen wide computer stretched column" $ do
           errors <- renderZettelContent (handleZettelQuery graph) z zc
-          elClass "nav" "ui bottom attached segment deemphasized" $ do
-            divClass "ui two column grid" $ do
-              divClass "column" $ do
-                whenNotNull (G.backlinks OrdinaryConnection z graph) $ \cfBacklinks -> do
-                  elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here, but without branching") $
-                    text "More backlinks"
-                  el "ul" $ do
-                    forM_ cfBacklinks $ \zl ->
-                      el "li" $ Q.renderZettelLink Nothing def zl
-              divClass "column" $ do
-                renderTags zettelTags
+          renderZettelBottomPane graph z
           pure errors
       divClass "ui one column grid" $ divClass "mobile only sixteen wide column" $ do
         renderActionsMenu HorizontalMenu editUrl (Just z)
@@ -90,6 +80,24 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
       el "script" $ text $
         "document.getElementById(\"zettel-container-anchor\").scrollIntoView({behavior: \"smooth\", block: \"start\"});"
   pure errors
+
+renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> m ()
+renderZettelBottomPane graph z@Zettel {..} = do
+  let cfBacklinks = nonEmpty $ G.backlinks OrdinaryConnection z graph
+      tags = nonEmpty zettelTags
+  when (isJust cfBacklinks || isJust tags)
+    $ elClass "nav" "ui bottom attached segment deemphasized"
+    $ do
+      divClass "ui two column grid" $ do
+        divClass "column" $ do
+          whenJust cfBacklinks $ \links -> do
+            elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here, but without branching") $
+              text "More backlinks"
+            el "ul" $ do
+              forM_ links $ \zl ->
+                el "li" $ Q.renderZettelLink Nothing def zl
+        whenJust tags $
+          divClass "column" . renderTags
 
 handleZettelQuery ::
   (PandocRawConstraints m, DomBuilder t m, PandocRaw m) =>
@@ -146,7 +154,7 @@ renderZettelContent handleLink Zettel {..} doc = do
         elTime day
     pure x
 
-renderTags :: DomBuilder t m => [Tag] -> m ()
+renderTags :: DomBuilder t m => NonEmpty Tag -> m ()
 renderTags tags = do
   forM_ tags $ \t -> do
     -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
