@@ -16,24 +16,24 @@ import Data.Aeson
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
+import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Type
 import Neuron.Zettelkasten.Zettel
 import Relude
 import System.FilePath
 
--- | Run the given query and return the results.
-runQuery :: [Zettel] -> Query r -> r
-runQuery zs = \case
-  Query_ZettelByID zid _ ->
+runZettelQuery :: [Zettel] -> ZettelQuery r -> r
+runZettelQuery zs = \case
+  ZettelQuery_ZettelByID zid _ ->
     find ((== zid) . zettelID) zs
-  Query_ZettelsByTag pats _mconn _mview ->
+  ZettelQuery_ZettelsByTag pats _mconn _mview ->
     sortZettelsReverseChronological $ flip filter zs $ \Zettel {..} ->
       and $ flip fmap pats $ \pat ->
         any (tagMatch pat) zettelTags
-  Query_Tags [] ->
+  ZettelQuery_Tags [] ->
     allTags
-  Query_Tags pats ->
+  ZettelQuery_Tags pats ->
     Map.filterWithKey (const . tagMatchAny pats) allTags
   where
     allTags :: Map.Map Tag Natural
@@ -41,11 +41,15 @@ runQuery zs = \case
       Map.fromListWith (+) $
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
 
+runGraphQuery :: ZettelGraph -> GraphQuery r -> r
+runGraphQuery g = \case
+  GraphQuery_Id -> g
+
 queryResultJson ::
   forall r.
-  (ToJSON (Query r)) =>
+  (ToJSON (ZettelQuery r)) =>
   FilePath ->
-  Query r ->
+  ZettelQuery r ->
   r ->
   -- Zettels that cannot be parsed by neuron
   Map ZettelID Text ->
@@ -60,11 +64,11 @@ queryResultJson notesDir q r errors =
   where
     resultJson :: Value
     resultJson = case q of
-      Query_ZettelByID _ _mconn ->
+      ZettelQuery_ZettelByID _ _mconn ->
         toJSON $ zettelJsonFull <$> r
-      Query_ZettelsByTag _ _mconn _mview ->
+      ZettelQuery_ZettelsByTag _ _mconn _mview ->
         toJSON $ zettelJsonFull <$> r
-      Query_Tags _ ->
+      ZettelQuery_Tags _ ->
         toJSON $ treeToJson <$> tagTree r
     zettelJsonFull :: Zettel -> Value
     zettelJsonFull z@Zettel {..} =
@@ -78,3 +82,24 @@ queryResultJson notesDir q r errors =
           "count" .= count,
           "children" .= fmap treeToJson children
         ]
+
+graphQueryResultJson ::
+  forall r.
+  (ToJSON (GraphQuery r)) =>
+  GraphQuery r ->
+  r ->
+  -- Zettels that cannot be parsed by neuron (and as such are excluded from the graph)
+  Map ZettelID Text ->
+  Value
+graphQueryResultJson q r errors =
+  toJSON $
+    object
+      [ "query" .= toJSON q,
+        "result" .= resultJson,
+        "errors" .= errors
+      ]
+  where
+    resultJson :: Value
+    resultJson = case q of
+      GraphQuery_Id ->
+        toJSON r

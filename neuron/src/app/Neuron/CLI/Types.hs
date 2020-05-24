@@ -65,7 +65,7 @@ data Command
   | -- | Search a zettel by title
     Search SearchCommand
   | -- | Run a query against the Zettelkasten
-    Query (Some Q.Query)
+    Query (Either (Some Q.ZettelQuery) (Some Q.GraphQuery))
   | -- | Delegate to Rib's command parser
     Rib RibConfig
 
@@ -125,9 +125,16 @@ commandParser defaultNotesDir today = do
       pure Open
     queryCommand =
       fmap Query $
-        fmap (Some . flip Q.Query_ZettelByID Nothing) (option zettelIDReader (long "id"))
-          <|> fmap (\x -> Some $ Q.Query_ZettelsByTag x Nothing def) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
-          <|> option queryReader (long "uri" <> short 'u')
+        ( fmap
+            Left
+            ( fmap (Some . flip Q.ZettelQuery_ZettelByID Nothing) (option zettelIDReader (long "id"))
+                <|> fmap (\x -> Some $ Q.ZettelQuery_ZettelsByTag x Nothing def) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
+                <|> option queryReader (long "uri" <> short 'u')
+            )
+            <|> fmap
+              Right
+              (fmap (const $ Some $ Q.GraphQuery_Id) $ switch (long "graph" <> help "Get the entire zettelkasten graph as JSON"))
+        )
     searchCommand = do
       searchBy <-
         bool SearchByTitle SearchByContent
@@ -150,7 +157,7 @@ commandParser defaultNotesDir today = do
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
       eitherReader $ first show . parseZettelID' . toText
-    queryReader :: ReadM (Some Q.Query)
+    queryReader :: ReadM (Some Q.ZettelQuery)
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->

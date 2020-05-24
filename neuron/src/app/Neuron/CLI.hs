@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -60,11 +61,17 @@ runWith act App {..} =
         putStrLn indexHtmlPath
         let opener = if os == "darwin" then "open" else "xdg-open"
         liftIO $ executeFile opener True [indexHtmlPath] Nothing
-    Query someQ ->
+    Query eSomeQ ->
       runRibOnceQuietly notesDir $ do
-        withSome someQ $ \q -> do
-          (graph, _, errors) <- Gen.loadZettelkasten
-          let result = Q.runQuery (G.getZettels graph) q
-          putLTextLn $ Aeson.encodeToLazyText $ Q.queryResultJson notesDir q result errors
+        (graph, _, errors) <- Gen.loadZettelkasten
+        case eSomeQ of
+          Left someQ ->
+            withSome someQ $ \q -> do
+              let result = Q.runZettelQuery (G.getZettels graph) q
+              putLTextLn $ Aeson.encodeToLazyText $ Q.queryResultJson notesDir q result errors
+          Right someQ ->
+            withSome someQ $ \q -> do
+              let result = Q.runGraphQuery graph q
+              putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result errors
     Search searchCmd ->
       interactiveSearch notesDir searchCmd

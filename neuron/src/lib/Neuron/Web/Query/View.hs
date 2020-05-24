@@ -33,7 +33,7 @@ import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Query.Type
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Core hiding (Query, count, tag)
+import Reflex.Dom.Core hiding (count, tag)
 import Relude
 
 -- | Render the query results.
@@ -41,16 +41,16 @@ import Relude
 -- If the query result is unexpected, don't render anything and return
 -- `QueryResultError` which the caller is expected to handle.
 renderQueryResultIfSuccessful ::
-  DomBuilder t m => DSum Query Identity -> m (Maybe QueryResultError)
+  DomBuilder t m => DSum ZettelQuery Identity -> m (Maybe QueryResultError)
 renderQueryResultIfSuccessful = \case
-  Query_ZettelByID zid (fromMaybe def -> conn) :=> Identity mres ->
+  ZettelQuery_ZettelByID zid (fromMaybe def -> conn) :=> Identity mres ->
     case mres of
       Nothing ->
         pure $ Just $ QueryResultError_NoSuchZettel zid
       Just target -> do
         renderZettelLink (Just conn) Nothing target
         pure Nothing
-  q@(Query_ZettelsByTag pats (fromMaybe def -> conn) view) :=> Identity res -> do
+  q@(ZettelQuery_ZettelsByTag pats (fromMaybe def -> conn) view) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
       case zettelsViewGroupByTag view of
@@ -68,7 +68,7 @@ renderQueryResultIfSuccessful = \case
                 el "li" $
                   renderZettelLink (Just conn) (Just $ zettelsViewLinkView view) z
     pure Nothing
-  q@(Query_Tags _) :=> Identity res -> do
+  q@(ZettelQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
       renderTagTree $ foldTagTree $ tagTree res
@@ -79,23 +79,23 @@ renderQueryResultIfSuccessful = \case
       fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap matches $ \z ->
         flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
 
-renderQuery :: DomBuilder t m => Some Query -> m ()
+renderQuery :: DomBuilder t m => Some ZettelQuery -> m ()
 renderQuery someQ =
-  elAttr "div" ("class" =: "ui horizontal divider" <> "title" =: "Neuron Query") $ do
+  elAttr "div" ("class" =: "ui horizontal divider" <> "title" =: "Neuron ZettelQuery") $ do
     case someQ of
-      Some (Query_ZettelByID _ _) ->
+      Some (ZettelQuery_ZettelByID _ _) ->
         blank
-      Some (Query_ZettelsByTag [] _mconn _mview) ->
+      Some (ZettelQuery_ZettelsByTag [] _mconn _mview) ->
         text "All zettels"
-      Some (Query_ZettelsByTag (fmap unTagPattern -> pats) _mconn _mview) -> do
+      Some (ZettelQuery_ZettelsByTag (fmap unTagPattern -> pats) _mconn _mview) -> do
         let qs = toText $ intercalate ", " pats
             desc = toText $ "Zettels tagged '" <> qs <> "'"
         elAttr "span" ("class" =: "ui basic pointing below black label" <> "title" =: desc) $ do
           elClass "span" "fas fa-tags" blank
           text qs
-      Some (Query_Tags []) ->
+      Some (ZettelQuery_Tags []) ->
         text "All tags"
-      Some (Query_Tags (fmap unTagPattern -> pats)) -> do
+      Some (ZettelQuery_Tags (fmap unTagPattern -> pats)) -> do
         let qs = toText $ intercalate ", " pats
         text $ "Tags matching '" <> qs <> "'"
 
