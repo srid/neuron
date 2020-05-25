@@ -5,7 +5,7 @@
 
 module Neuron.Zettelkasten.Connection where
 
-import Data.Aeson (ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Default
 import Relude hiding (show)
 import Text.Show
@@ -17,7 +17,7 @@ data Connection
     Folgezettel
   | -- | Any other ordinary connection (eg: "See also")
     OrdinaryConnection
-  deriving (Eq, Ord, Enum, Bounded, Generic, ToJSON)
+  deriving (Eq, Ord, Enum, Bounded, Generic, ToJSON, FromJSON)
 
 instance Semigroup Connection where
   -- A folgezettel link trumps all other kinds in that zettel.
