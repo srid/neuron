@@ -28,6 +28,7 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Zettel.Parser
 import Options.Applicative
 import Relude
 import qualified Rib

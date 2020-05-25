@@ -22,16 +22,13 @@ import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
 import Data.GADT.Show.TH
 import Data.Graph.Labelled (Vertex (..))
-import qualified Data.Map.Strict as Map
+import Data.Some
 import Data.TagTree (Tag)
 import Data.TagTree (TagPattern (..))
 import Data.Time.Calendar
-import Neuron.Markdown
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Theme
-import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
-import Reflex.Class (filterLeft, filterRight)
 import Relude hiding (show)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
@@ -51,9 +48,10 @@ data Zettel = Zettel
   { zettelID :: ZettelID,
     zettelTitle :: Text,
     zettelTags :: [Tag],
-    zettelDay :: Maybe Day
+    zettelDay :: Maybe Day,
+    zettelQueries :: [Some ZettelQuery]
   }
-  deriving (Generic, ToJSON)
+  deriving (Generic)
 
 -- | A zettel with the associated pandoc AST
 newtype PandocZettel = PandocZettel {unPandocZettel :: (Zettel, Pandoc)}
@@ -76,6 +74,7 @@ sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
   sortOn (Down . zettelDay)
 
+-- TODO: Huh, we already have ToJSON instances. What is this for?
 zettelJson :: forall a. KeyValue a => Zettel -> [a]
 zettelJson Zettel {..} =
   [ "id" .= toJSON zettelID,
@@ -83,41 +82,6 @@ zettelJson Zettel {..} =
     "tags" .= zettelTags,
     "day" .= zettelDay
   ]
-
--- | Parse a markdown-formatted zettel
---
--- In future this will support other formats supported by Pandoc.
-parseZettel ::
-  ZettelID ->
-  Text ->
-  Either Text PandocZettel
-parseZettel zid s = do
-  (meta, doc) <- parseMarkdown (zettelIDSourceFileName zid) s
-  let title = maybe "Missing title" Meta.title meta
-      tags = fromMaybe [] $ Meta.tags =<< meta
-      day = case zid of
-        -- We ignore the "data" meta field on legacy Date IDs, which encode the
-        -- creation date in the ID.
-        ZettelDateID v _ -> Just v
-        ZettelCustomID _ -> Meta.date =<< meta
-  pure $ PandocZettel (Zettel zid title tags day, doc)
-
--- | Like `parseZettel` but operates on multiple files.
-parseZettels ::
-  [(FilePath, Text)] ->
-  ( [PandocZettel],
-    -- List of zettel files that cannot be parsed.
-    Map ZettelID Text
-  )
-parseZettels fs =
-  let res = flip mapMaybe fs $ \(f, s) ->
-        case getZettelID f of
-          Nothing -> Nothing
-          Just zid ->
-            Just $ first (zid,) $ parseZettel zid s
-      errors = filterLeft res
-      zs = filterRight res
-   in (zs, Map.fromList errors)
 
 deriveJSONGADT ''ZettelQuery
 
@@ -136,3 +100,7 @@ deriving instance Eq (ZettelQuery (Maybe Zettel))
 deriving instance Eq (ZettelQuery [Zettel])
 
 deriving instance Eq (ZettelQuery (Map Tag Natural))
+
+deriving instance ToJSON Zettel
+
+deriving instance FromJSON Zettel
