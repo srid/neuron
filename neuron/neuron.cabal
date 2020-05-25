@@ -61,6 +61,7 @@ common library-common
     aeson-gadt-th,
     dependent-sum,
     dependent-sum-template,
+    dependent-sum-aeson-orphans,
     data-default,
     reflex,
     reflex-dom-core,
