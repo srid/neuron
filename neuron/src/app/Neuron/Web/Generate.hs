@@ -25,11 +25,10 @@ import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID, mkZettelID)
+import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
 import Options.Applicative
-import Reflex.Class (filterLeft, filterRight)
 import Relude
 import qualified Rib
 import Rib.Route
@@ -109,11 +108,9 @@ loadZettelkastenFrom ::
     )
 loadZettelkastenFrom files = do
   notesDir <- Rib.ribInputDir
-  parseRes <- forM files $ \((notesDir </>) -> path) -> do
+  filesWithContent <- forM files $ \((notesDir </>) -> path) -> do
     s <- toText <$> readFile' path
-    let zid = mkZettelID path
-    pure $ first (zid,) $ parseZettel zid s
-  let skippedZettelErrors :: [(ZettelID, Text)] = filterLeft parseRes
-      zs = filterRight parseRes
-      (g, _errors) = G.mkZettelGraph zs
-  pure (g, zs, Map.fromList skippedZettelErrors)
+    pure (path, s)
+  let (zs, errorsSkipped) = parseZettels filesWithContent
+      g = fst $ G.mkZettelGraph zs
+  pure (g, zs, errorsSkipped)

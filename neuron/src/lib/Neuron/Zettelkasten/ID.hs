@@ -14,7 +14,7 @@ module Neuron.Zettelkasten.ID
     parseZettelID,
     parseZettelID',
     idParser,
-    mkZettelID,
+    getZettelID,
     zettelIDSourceFileName,
     customIDParser,
   )
@@ -120,8 +120,8 @@ customIDParser :: Parser Text
 customIDParser = do
   fmap toText $ M.some $ M.alphaNumChar <|> M.char '_' <|> M.char '-'
 
--- | Extract ZettelID from the zettel's filename or path.
-mkZettelID :: HasCallStack => FilePath -> ZettelID
-mkZettelID fp =
+-- | Parse the ZettelID if the given filepath is a zettel.
+getZettelID :: FilePath -> Maybe ZettelID
+getZettelID fp =
   let (name, _) = splitExtension $ takeFileName fp
-   in parseZettelID $ toText name
+   in rightToMaybe $ parseZettelID' $ toText name

@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,11 +13,13 @@ module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson
 import Data.Graph.Labelled (Vertex (..))
+import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag)
 import Data.Time.Calendar
 import Neuron.Markdown
 import Neuron.Zettelkasten.ID
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
+import Reflex.Class (filterLeft, filterRight)
 import Relude hiding (show)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
@@ -78,3 +81,20 @@ parseZettel zid s = do
         ZettelDateID v _ -> Just v
         ZettelCustomID _ -> Meta.date =<< meta
   pure $ PandocZettel (Zettel zid title tags day, doc)
+
+-- | Like `parseZettel` but operates on multiple files.
+parseZettels ::
+  [(FilePath, Text)] ->
+  ( [PandocZettel],
+    -- | List of zettel files that cannot be parsed.
+    Map ZettelID Text
+  )
+parseZettels fs =
+  let res = flip mapMaybe fs $ \(f, s) ->
+        case getZettelID f of
+          Nothing -> Nothing
+          Just zid ->
+            Just $ first (zid,) $ parseZettel zid s
+      errors = filterLeft res
+      zs = filterRight res
+   in (zs, Map.fromList errors)
