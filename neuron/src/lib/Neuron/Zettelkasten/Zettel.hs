@@ -1,28 +1,48 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson
+import Data.Aeson.GADT.TH
+import Data.Dependent.Sum.Orphans ()
+import Data.GADT.Compare.TH
+import Data.GADT.Show.TH
 import Data.Graph.Labelled (Vertex (..))
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag)
+import Data.TagTree (TagPattern (..))
 import Data.Time.Calendar
 import Neuron.Markdown
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Query.Theme
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Reflex.Class (filterLeft, filterRight)
 import Relude hiding (show)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
+
+-- | ZettelQuery queries individual zettels.
+--
+-- It does not care about the relationship *between* those zettels; for that use `GraphQuery`.
+data ZettelQuery r where
+  ZettelQuery_ZettelByID :: ZettelID -> Maybe Connection -> ZettelQuery (Maybe Zettel)
+  ZettelQuery_ZettelsByTag :: [TagPattern] -> Maybe Connection -> ZettelsView -> ZettelQuery [Zettel]
+  ZettelQuery_Tags :: [TagPattern] -> ZettelQuery (Map Tag Natural)
 
 -- | Zettel with no associated content
 --
@@ -86,7 +106,7 @@ parseZettel zid s = do
 parseZettels ::
   [(FilePath, Text)] ->
   ( [PandocZettel],
-    -- | List of zettel files that cannot be parsed.
+    -- List of zettel files that cannot be parsed.
     Map ZettelID Text
   )
 parseZettels fs =
@@ -98,3 +118,21 @@ parseZettels fs =
       errors = filterLeft res
       zs = filterRight res
    in (zs, Map.fromList errors)
+
+deriveJSONGADT ''ZettelQuery
+
+deriveGEq ''ZettelQuery
+
+deriveGShow ''ZettelQuery
+
+deriving instance Show (ZettelQuery (Maybe Zettel))
+
+deriving instance Show (ZettelQuery [Zettel])
+
+deriving instance Show (ZettelQuery (Map Tag Natural))
+
+deriving instance Eq (ZettelQuery (Maybe Zettel))
+
+deriving instance Eq (ZettelQuery [Zettel])
+
+deriving instance Eq (ZettelQuery (Map Tag Natural))

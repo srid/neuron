@@ -20,7 +20,7 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
-import Neuron.Zettelkasten.Query.Type (ZettelQuery (..))
+import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
 import Reflex.Dom.Pandoc (URILink (..))
 import Relude
 import qualified Text.URI as URI

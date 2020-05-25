@@ -31,7 +31,6 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
-import Neuron.Zettelkasten.Query.Type
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (count, tag)
 import Relude

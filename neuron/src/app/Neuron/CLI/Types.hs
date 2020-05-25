@@ -27,6 +27,7 @@ import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import qualified Neuron.Zettelkasten.Query.Error as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Query.Type as Q
+import Neuron.Zettelkasten.Zettel as Q
 import Neuron.Zettelkasten.Zettel.Meta (zettelDateFormat)
 import Options.Applicative
 import Relude
