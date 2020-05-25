@@ -18,7 +18,7 @@ import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Type
+import Neuron.Zettelkasten.Query.Graph
 import Neuron.Zettelkasten.Zettel
 import Relude
 import System.FilePath

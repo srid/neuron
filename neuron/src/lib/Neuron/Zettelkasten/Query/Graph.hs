@@ -7,7 +7,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Query.Type where
+module Neuron.Zettelkasten.Query.Graph where
 
 import Data.Aeson
 import Data.Aeson.GADT.TH

@@ -8,7 +8,11 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Query.Eval where
+module Neuron.Zettelkasten.Query.Eval
+  ( runQueryURILink,
+    queryConnections,
+  )
+where
 
 import Control.Monad.Except
 import Control.Monad.Writer
@@ -27,23 +31,16 @@ import Relude
 -- Return Nothing if the link is not a query.
 --
 -- We need the full list of zettels, for running the query against.
-evalQueryLink ::
+runQueryURILink ::
   ( MonadError QueryParseError m,
     MonadReader [Zettel] m
   ) =>
   URILink ->
   m (Maybe (DSum ZettelQuery Identity))
-evalQueryLink link =
-  queryFromURILink link >>= \case
-    Nothing -> pure Nothing
-    Just someQ -> fmap Just $ do
-      withSome someQ $ \q -> do
-        zs <- ask
-        let res = runZettelQuery zs q
-        pure $ q :=> Identity res
+runQueryURILink =
+  traverse runSomeZettelQuery <=< queryFromURILink
 
 queryConnections ::
-  forall m.
   ( -- Errors are written aside, accumulating valid connections.
     MonadWriter [QueryParseError] m,
     -- Running queries requires the zettels list.
@@ -55,10 +52,7 @@ queryConnections Zettel {..} = do
   let (queries, errors) = zettelQueries
   tell errors
   fmap concat $ forM queries $ \someQ ->
-    withSome someQ $ \q -> do
-      zs <- ask
-      let res = runZettelQuery zs q
-      pure $ getConnections $ q :=> Identity res
+    getConnections <$> runSomeZettelQuery someQ
   where
     getConnections :: DSum ZettelQuery Identity -> [(Maybe Connection, Zettel)]
     getConnections = \case
@@ -68,3 +62,13 @@ queryConnections Zettel {..} = do
         (mconn,) <$> res
       ZettelQuery_Tags _ :=> _ ->
         mempty
+
+runSomeZettelQuery ::
+  MonadReader [Zettel] m =>
+  Some ZettelQuery ->
+  m (DSum ZettelQuery Identity)
+runSomeZettelQuery someQ =
+  withSome someQ $ \q -> do
+    zs <- ask
+    let res = runZettelQuery zs q
+    pure $ q :=> Identity res

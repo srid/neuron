@@ -80,7 +80,7 @@ library
     Neuron.Zettelkasten.Zettel.Parser
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
-    Neuron.Zettelkasten.Query.Type
+    Neuron.Zettelkasten.Query.Graph
     Neuron.Zettelkasten.Query.Error
     Neuron.Zettelkasten.Query.Error.Internal
     Neuron.Zettelkasten.Query.Eval

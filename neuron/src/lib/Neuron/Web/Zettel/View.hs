@@ -90,7 +90,7 @@ evalAndRenderZettelQuery ::
   URILink ->
   m [QueryError]
 evalAndRenderZettelQuery graph oldRender uriLink = do
-  case flip runReaderT (G.getZettels graph) (Q.evalQueryLink uriLink) of
+  case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uriLink) of
     Left (Left -> e) -> do
       -- Error parsing the query.
       fmap (e :) oldRender <* elInlineError e

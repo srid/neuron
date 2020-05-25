@@ -14,7 +14,6 @@
 module Neuron.Zettelkasten.Query.Parser where
 
 import Control.Monad.Except
-import Control.Monad.Writer
 import Data.Some
 import Data.TagTree (mkTagPattern)
 import Neuron.Zettelkasten.Connection
@@ -23,24 +22,10 @@ import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
 import Reflex.Dom.Pandoc (URILink (..))
-import Reflex.Dom.Pandoc.URILink (queryURILinks)
 import Relude
-import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam, hasQueryFlag)
-
--- | Extract all (valid) queries from the Pandoc document
--- TODO: Use this function in Eval.hs
-extractQueries :: MonadWriter [QueryParseError] m => Pandoc -> m [Some ZettelQuery]
-extractQueries doc =
-  fmap catMaybes $ forM (queryURILinks doc) $ \ul ->
-    case queryFromURILink ul of
-      Left e -> do
-        tell [e]
-        pure Nothing
-      Right v ->
-        pure v
 
 -- | Parse a query from the given URI.
 --

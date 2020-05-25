@@ -75,7 +75,8 @@ sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
   sortOn (Down . zettelDay)
 
--- TODO: Huh, we already have ToJSON instances. What is this for?
+-- TODO: Remove this in favour of the ToJSON instance (which now includes queries).
+-- That will affect the `neuron query` output, as well neuron-mode.
 zettelJson :: forall a. KeyValue a => Zettel -> [a]
 zettelJson Zettel {..} =
   [ "id" .= toJSON zettelID,
