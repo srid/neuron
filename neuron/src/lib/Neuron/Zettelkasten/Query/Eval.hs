@@ -19,9 +19,8 @@ import Neuron.Zettelkasten.Query (runZettelQuery)
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Pandoc.URILink (URILink, queryURILinks)
+import Reflex.Dom.Pandoc.URILink (URILink)
 import Relude
-import Text.Pandoc.Definition (Pandoc)
 
 -- | Evaluate the given query link and return its results.
 --
@@ -50,17 +49,16 @@ queryConnections ::
     -- Running queries requires the zettels list.
     MonadReader [Zettel] m
   ) =>
-  Pandoc ->
+  Zettel ->
   m [(Maybe Connection, Zettel)]
-queryConnections doc =
-  fmap concat $ forM (queryURILinks doc) $ \ul -> do
-    emres <- runExceptT $ evalQueryLink ul
-    case emres of
-      Left e -> do
-        tell [e]
-        pure []
-      Right mres ->
-        pure $ maybe [] getConnections mres
+queryConnections Zettel {..} = do
+  let (queries, errors) = zettelQueries
+  tell errors
+  fmap concat $ forM queries $ \someQ ->
+    withSome someQ $ \q -> do
+      zs <- ask
+      let res = runZettelQuery zs q
+      pure $ getConnections $ q :=> Identity res
   where
     getConnections :: DSum ZettelQuery Identity -> [(Maybe Connection, Zettel)]
     getConnections = \case

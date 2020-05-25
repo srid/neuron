@@ -113,5 +113,5 @@ loadZettelkastenFrom files = do
     s <- toText <$> readFile' path
     pure (path, s)
   let (zs, errorsSkipped) = parseZettels filesWithContent
-      g = fst $ G.mkZettelGraph zs
+      g = fst $ G.mkZettelGraph $ fmap (fst . unPandocZettel) zs
   pure (g, zs, errorsSkipped)

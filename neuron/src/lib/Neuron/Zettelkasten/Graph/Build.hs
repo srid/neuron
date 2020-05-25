@@ -15,22 +15,20 @@ import Neuron.Zettelkasten.Query.Error (QueryParseError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
 import Relude
-import Text.Pandoc.Definition (Pandoc)
 
 -- | Build the Zettelkasten graph from a list of zettels
 --
 -- If there are any errors during parsing of queries (to determine connections),
 -- return them as well.
 mkZettelGraph ::
-  [PandocZettel] ->
+  [Zettel] ->
   ( ZettelGraph,
     Map ZettelID [QueryParseError]
   )
-mkZettelGraph pZettels =
-  let zettels = fmap (fst . unPandocZettel) pZettels
-      res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryParseError]))] =
-        flip fmap pZettels $ \(PandocZettel (z, doc)) ->
-          (z, runQueryConnections zettels doc)
+mkZettelGraph zettels =
+  let res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryParseError]))] =
+        flip fmap zettels $ \z ->
+          (z, runQueryConnections zettels z)
       g :: ZettelGraph = G.mkGraphFrom zettels $ flip concatMap res $ \(z1, fst -> conns) ->
         edgeFromConnection z1 <$> conns
       errors = Map.fromList $ flip mapMaybe res $ \(z, (snd -> errs)) ->
@@ -39,10 +37,10 @@ mkZettelGraph pZettels =
           else Just (zettelID z, errs)
    in (g, errors)
 
-runQueryConnections :: [Zettel] -> Pandoc -> ([(Maybe Connection, Zettel)], [QueryParseError])
-runQueryConnections zettels doc =
+runQueryConnections :: [Zettel] -> Zettel -> ([(Maybe Connection, Zettel)], [QueryParseError])
+runQueryConnections zettels z =
   flip runReader zettels $ do
-    runWriterT $ queryConnections doc
+    runWriterT $ queryConnections z
 
 edgeFromConnection :: Zettel -> (Maybe Connection, Zettel) -> (Maybe Connection, Zettel, Zettel)
 edgeFromConnection z (c, z2) =

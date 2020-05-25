@@ -83,7 +83,7 @@ zettelIDSourceFileName zid = toString $ zettelIDText zid <> ".md"
 ---------
 
 data InvalidID = InvalidIDParseError Text
-  deriving (Eq, Generic, ToJSON)
+  deriving (Eq, Generic, ToJSON, FromJSON)
 
 parseZettelID :: HasCallStack => Text -> ZettelID
 parseZettelID =

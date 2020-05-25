@@ -14,7 +14,7 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Parser
 import Neuron.Zettelkasten.Query.Theme
-import Neuron.Zettelkasten.Query.Type
+import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Pandoc.URILink
 import Relude
 import Test.Hspec

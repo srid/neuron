@@ -28,6 +28,7 @@ import Data.TagTree (TagPattern (..))
 import Data.Time.Calendar
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
 import Relude hiding (show)
 import Text.Pandoc.Definition (Pandoc (..))
@@ -49,7 +50,7 @@ data Zettel = Zettel
     zettelTitle :: Text,
     zettelTags :: [Tag],
     zettelDay :: Maybe Day,
-    zettelQueries :: [Some ZettelQuery]
+    zettelQueries :: ([Some ZettelQuery], [QueryParseError])
   }
   deriving (Generic)
 

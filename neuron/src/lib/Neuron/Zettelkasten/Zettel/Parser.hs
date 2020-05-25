@@ -30,9 +30,8 @@ parseZettel zid s = do
         -- creation date in the ID.
         ZettelDateID v _ -> Just v
         ZettelCustomID _ -> Meta.date =<< meta
-      -- We ignore errors here, as they will be dealt with during rendering stage.
-      (queries, _errors) = runWriter (extractQueries doc)
-  pure $ PandocZettel (Zettel zid title tags day queries, doc)
+      (queries, errors) = runWriter (extractQueries doc)
+  pure $ PandocZettel (Zettel zid title tags day (queries, errors), doc)
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
