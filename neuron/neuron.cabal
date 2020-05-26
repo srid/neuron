@@ -61,6 +61,7 @@ common library-common
     aeson-gadt-th,
     dependent-sum,
     dependent-sum-template,
+    dependent-sum-aeson-orphans,
     data-default,
     reflex,
     reflex-dom-core,
@@ -76,9 +77,10 @@ library
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
+    Neuron.Zettelkasten.Zettel.Parser
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
-    Neuron.Zettelkasten.Query.Type
+    Neuron.Zettelkasten.Query.Graph
     Neuron.Zettelkasten.Query.Error
     Neuron.Zettelkasten.Query.Error.Internal
     Neuron.Zettelkasten.Query.Eval

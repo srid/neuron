@@ -7,7 +7,7 @@
 
 module Neuron.Zettelkasten.Query.Theme where
 
-import Data.Aeson (ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Default
 import Relude
 
@@ -15,14 +15,14 @@ data ZettelsView = ZettelsView
   { zettelsViewLinkView :: LinkView,
     zettelsViewGroupByTag :: Bool
   }
-  deriving (Eq, Show, Ord, Generic, ToJSON)
+  deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
 
 type ZettelView = LinkView
 
 data LinkView = LinkView
   { linkViewShowDate :: Bool
   }
-  deriving (Eq, Show, Ord, Generic, ToJSON)
+  deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
 
 instance Default LinkView where
   def = LinkView False

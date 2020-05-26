@@ -53,6 +53,12 @@ instance FromJSON ZettelID where
 instance ToJSONKey ZettelID where
   toJSONKey = toJSONKeyText zettelIDText
 
+instance FromJSONKey ZettelID where
+  fromJSONKey = FromJSONKeyTextParser $ \s ->
+    case parseZettelID' s of
+      Right v -> pure v
+      Left e -> fail $ show e
+
 instance ToJSON ZettelID where
   toJSON = toJSON . zettelIDText
 
@@ -83,7 +89,7 @@ zettelIDSourceFileName zid = toString $ zettelIDText zid <> ".md"
 ---------
 
 data InvalidID = InvalidIDParseError Text
-  deriving (Eq, Generic, ToJSON)
+  deriving (Eq, Generic, ToJSON, FromJSON)
 
 parseZettelID :: HasCallStack => Text -> ZettelID
 parseZettelID =

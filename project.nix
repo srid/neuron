@@ -37,6 +37,7 @@ in {
 
     reflex-dom-pandoc = hackGet ./dep/reflex-dom-pandoc;
     shake = hackGet ./dep/shake;
+    dependent-sum-aeson-orphans = hackGet ./dep/dependent-sum-aeson-orphans;
     
     # commonmark
     commonmark = commonmark + "/commonmark";

@@ -28,6 +28,7 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Zettel.Parser
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -112,5 +113,5 @@ loadZettelkastenFrom files = do
     s <- toText <$> readFile' path
     pure (path, s)
   let (zs, errorsSkipped) = parseZettels filesWithContent
-      g = fst $ G.mkZettelGraph zs
+      g = fst $ G.mkZettelGraph $ fmap (fst . unPandocZettel) zs
   pure (g, zs, errorsSkipped)

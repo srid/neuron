@@ -7,7 +7,10 @@ module Neuron.Zettelkasten.Query.Error.Internal where
 
 import Data.Aeson
 import Relude
-import Text.URI (URI, render)
+import Text.URI (URI, mkURI, render)
 
 instance ToJSON URI where
   toJSON = toJSON @Text . render
+
+instance FromJSON URI where
+  parseJSON = (either (fail . displayException) pure) . mkURI <=< parseJSON @Text
