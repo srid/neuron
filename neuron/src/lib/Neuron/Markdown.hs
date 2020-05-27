@@ -93,7 +93,8 @@ neuronSpec ::
     CM.ToPlainText il,
     CE.HasFootnote il bl,
     CE.HasMath il,
-    CE.HasDefinitionList il bl
+    CE.HasDefinitionList il bl,
+    CE.HasDiv bl
   ) =>
   CM.SyntaxSpec m il bl
 neuronSpec =
@@ -106,6 +107,7 @@ neuronSpec =
       CE.definitionListSpec,
       CE.attributesSpec,
       CE.rawAttributeSpec,
+      CE.fencedDivSpec,
       CM.defaultSyntaxSpec {CM.syntaxBlockSpecs = defaultBlockSpecsSansRawHtml}
     ]
   where
