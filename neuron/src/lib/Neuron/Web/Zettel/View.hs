@@ -15,8 +15,8 @@ module Neuron.Web.Zettel.View
 where
 
 import Data.TagTree
-import Data.Tagged
 import qualified Neuron.Web.Query.View as Q
+import Neuron.Web.Route
 import Neuron.Web.Widget
 import qualified Neuron.Web.Widget.AutoScroll as AS
 import qualified Neuron.Web.Widget.InvertedTree as IT
@@ -35,20 +35,19 @@ import Text.Pandoc.Definition (Pandoc)
 renderZettel ::
   PandocBuilder t m =>
   Maybe Text ->
-  AS.AutoScroll ->
   (ZettelGraph, PandocZettel) ->
-  m [QueryError]
-renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, zc))) = do
+  NeuronWebT t m [QueryError]
+renderZettel editUrl (graph, (PandocZettel (z@Zettel {..}, zc))) = do
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
       Q.renderZettelLink (G.getConnection z z2 graph) def z2
   -- Main content
   errors <- elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-    whenJust autoScroll $ \marker -> do
+    whenStaticallyGenerated $ do
       -- We use -24px (instead of -14px) here so as to not scroll all the way to
       -- title, and as to leave some of the tree visible as "hint" to the user.
-      AS.marker marker (-24)
+      lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
       errors <- divClass "ui two column grid" $ do
         divClass "one wide tablet only computer only column" $ do
@@ -61,11 +60,12 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
       pure errors
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
-  unless (null upTree) $ whenJust autoScroll $ \marker -> do
-    AS.script marker
+  whenStaticallyGenerated $ do
+    unless (null upTree) $ do
+      AS.script "zettel-container-anchor"
   pure errors
 
-renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> m ()
+renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> NeuronWebT t m ()
 renderZettelBottomPane graph z@Zettel {..} = do
   let cfBacklinks = nonEmpty $ G.backlinks OrdinaryConnection z graph
       tags = nonEmpty zettelTags
@@ -86,9 +86,9 @@ renderZettelBottomPane graph z@Zettel {..} = do
 evalAndRenderZettelQuery ::
   PandocBuilder t m =>
   ZettelGraph ->
-  m [QueryError] ->
+  NeuronWebT t m [QueryError] ->
   URILink ->
-  m [QueryError]
+  NeuronWebT t m [QueryError]
 evalAndRenderZettelQuery graph oldRender uriLink = do
   case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uriLink) of
     Left (Left -> e) -> do
@@ -113,10 +113,10 @@ evalAndRenderZettelQuery graph oldRender uriLink = do
 renderZettelContent ::
   forall t m a.
   (PandocBuilder t m, Monoid a) =>
-  (m a -> URILink -> m a) ->
+  (NeuronWebT t m a -> URILink -> NeuronWebT t m a) ->
   Zettel ->
   Pandoc ->
-  m a
+  NeuronWebT t m a
 renderZettelContent handleLink Zettel {..} doc = do
   elClass "article" "ui raised attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle

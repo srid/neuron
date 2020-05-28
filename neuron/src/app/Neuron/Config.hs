@@ -16,7 +16,6 @@ module Neuron.Config
   ( Config (..),
     configFile,
     getConfig,
-    BaseUrlError (..),
   )
 where
 
@@ -41,12 +40,6 @@ makeHaskellTypes
 deriving instance Generic Config
 
 deriving instance FromDhall Config
-
-data BaseUrlError
-  = BaseUrlNotAbsolute
-  deriving (Eq, Show)
-
-instance Exception BaseUrlError
 
 defaultConfig :: ByteString
 defaultConfig = $(embedFile "./src-dhall/Config/Default.dhall")

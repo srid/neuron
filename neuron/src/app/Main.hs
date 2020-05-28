@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -8,6 +9,7 @@ module Main where
 
 import Clay ((?), Css, em)
 import qualified Clay as C
+import Control.Monad.Reader
 import qualified Data.Text as T
 import Development.Shake
 import Main.Utf8
@@ -15,8 +17,10 @@ import Neuron.CLI (run)
 import Neuron.Config (Config)
 import qualified Neuron.Config as Config
 import Neuron.Web.Generate (generateSite)
-import Neuron.Web.Route (Route (..), RouteError)
+import Neuron.Web.Generate.Route (staticRouteConfig)
+import Neuron.Web.Route (NeuronWebT, Route (..), RouteError, runNeuronWeb)
 import Neuron.Web.View (renderRouteBody, renderRouteHead, style)
+import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc.Document (PandocBuilder)
 import Relude
@@ -29,15 +33,17 @@ generateMainSite :: Action ()
 generateMainSite = do
   Rib.buildStaticFiles ["static/**"]
   config <- Config.getConfig
-  let writeHtmlRoute :: Route g a -> (g, a) -> Action (RouteError a)
+  let writeHtmlRoute :: Route a -> (ZettelGraph, a) -> Action (RouteError a)
       writeHtmlRoute r x = do
-        (errors, html) <- liftIO $ renderStatic $ renderPage config r x
+        (errors, html) <- liftIO $ renderStatic $ do
+          runNeuronWeb staticRouteConfig $
+            renderPage config r x
         -- FIXME: Make rib take bytestrings
         Rib.writeRoute r $ decodeUtf8 @Text html
         pure errors
   void $ generateSite config writeHtmlRoute
 
-renderPage :: PandocBuilder t m => Config -> Route g a -> (g, a) -> m (RouteError a)
+renderPage :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m (RouteError a)
 renderPage config r val = elAttr "html" ("lang" =: "en") $ do
   el "head" $ do
     renderRouteHead config r val

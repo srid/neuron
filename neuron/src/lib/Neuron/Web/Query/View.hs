@@ -26,6 +26,7 @@ import Data.Some
 import Data.TagTree (Tag (..), TagNode (..), TagPattern (..), constructTag, foldTagTree, tagMatchAny, tagTree)
 import qualified Data.Text as T
 import Data.Tree
+import Neuron.Web.Route
 import Neuron.Web.Widget
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
@@ -40,7 +41,7 @@ import Relude
 -- If the query result is unexpected, don't render anything and return
 -- `QueryResultError` which the caller is expected to handle.
 renderQueryResultIfSuccessful ::
-  DomBuilder t m => DSum ZettelQuery Identity -> m (Maybe QueryResultError)
+  DomBuilder t m => DSum ZettelQuery Identity -> NeuronWebT t m (Maybe QueryResultError)
 renderQueryResultIfSuccessful = \case
   ZettelQuery_ZettelByID zid (fromMaybe def -> conn) :=> Identity mres ->
     case mres of
@@ -99,7 +100,7 @@ renderQuery someQ =
         text $ "Tags matching '" <> qs <> "'"
 
 -- | Render a link to an individual zettel.
-renderZettelLink :: DomBuilder t m => Maybe Connection -> Maybe LinkView -> Zettel -> m ()
+renderZettelLink :: DomBuilder t m => Maybe Connection -> Maybe LinkView -> Zettel -> NeuronWebT t m ()
 renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
   let connClass = maybe "" show conn
       mextra =
@@ -118,7 +119,7 @@ renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
             then Nothing
             else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
     elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
-      elAttr "a" ("href" =: (zettelUrl zettelID)) $ text zettelTitle
+      neuronRouteLink (Some $ Route_Zettel zettelID) $ text zettelTitle
   where
     withTooltip :: Maybe Text -> Map Text Text
     withTooltip = \case

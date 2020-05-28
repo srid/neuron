@@ -21,8 +21,9 @@ module Neuron.Web.View
   )
 where
 
-import Clay hiding (id, ms, object, reverse, s, style, type_)
+import Clay hiding (Plain, id, ms, object, reverse, s, style, type_)
 import qualified Clay as C
+import Control.Monad.Except
 import Data.Aeson ((.=), object)
 import qualified Data.Aeson.Text as Aeson
 import Data.Default (def)
@@ -33,11 +34,13 @@ import qualified Data.Set as Set
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
-import Data.Tagged
+import qualified Data.Text as T
 import Data.Time.ISO8601 (formatISO8601)
 import Data.Tree (Tree (..))
 import Neuron.Config
+import Neuron.Markdown (getFirstParagraphText)
 import Neuron.Version (neuronVersion)
+import Neuron.Web.Generate.Route (routeUri)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
@@ -52,22 +55,25 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding ((&))
-import qualified Rib
+import Rib (routeUrlRel)
 import Rib.Extra.OpenGraph
+import qualified Rib.Parser.Pandoc as Pandoc
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
+import Text.Pandoc (runPure, writePlain)
+import Text.Pandoc.Definition (Block (Plain), Inline, Pandoc (..))
 import qualified Text.URI as URI
 
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
 
-renderRouteHead :: DomBuilder t m => Config -> Route graph a -> (graph, a) -> m ()
-renderRouteHead config r val = do
+renderRouteHead :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
+renderRouteHead config route val = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
-  el "title" $ text $ routeTitle config (snd val) r
+  el "title" $ text $ routeTitle config (snd val) route
   elAttr "link" ("rel" =: "shortcut icon" <> "href" =: "https://raw.githubusercontent.com/srid/neuron/master/assets/logo.ico") blank
-  case r of
+  case route of
     Route_Redirect _ ->
       blank
     Route_Search {} -> do
@@ -79,11 +85,11 @@ renderRouteHead config r val = do
         $ \scrpt -> do
           elAttr "script" ("src" =: scrpt) blank
     _ -> do
-      renderOpenGraph $ routeOpenGraph config (snd val) r
-      Breadcrumb.renderBreadcrumbs $ routeStructuredData config val r
+      renderOpenGraph $ routeOpenGraph config (snd val) route
+      Breadcrumb.renderBreadcrumbs $ routeStructuredData config val route
       elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
   where
-    routeStructuredData :: Config -> (g, a) -> Route g a -> [Breadcrumb]
+    routeStructuredData :: Config -> (ZettelGraph, a) -> Route a -> [Breadcrumb]
     routeStructuredData Config {..} (graph, v) = \case
       Route_Zettel _ ->
         case siteBaseUrl of
@@ -95,6 +101,54 @@ renderRouteHead config r val = do
              in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (fst $ unPandocZettel v) graph
       _ ->
         []
+    routeOpenGraph :: Config -> a -> Route a -> OpenGraph
+    routeOpenGraph Config {..} v r =
+      OpenGraph
+        { _openGraph_title = routeTitle' v r,
+          _openGraph_siteName = siteTitle,
+          _openGraph_description = case r of
+            Route_Redirect _ -> Nothing
+            Route_ZIndex -> Just "Zettelkasten Index"
+            Route_Search -> Just "Search Zettelkasten"
+            Route_Zettel _ -> do
+              let PandocZettel (_, doc) = v
+              para <- getFirstParagraphText doc
+              paraText <- renderPandocAsText para
+              pure $ T.take 300 paraText,
+          _openGraph_author = author,
+          _openGraph_type = case r of
+            Route_Zettel _ -> Just $ OGType_Article (Article Nothing Nothing Nothing Nothing mempty)
+            _ -> Just OGType_Website,
+          _openGraph_image = case r of
+            Route_Zettel _ -> do
+              let PandocZettel (_, doc) = v
+              image <- URI.mkURI =<< Pandoc.getFirstImg doc
+              baseUrl <- URI.mkURI =<< siteBaseUrl
+              URI.relativeTo image baseUrl
+            _ -> Nothing,
+          _openGraph_url = do
+            baseUrl <- siteBaseUrl
+            pure $ routeUri baseUrl r
+        }
+    routeTitle :: Config -> a -> Route a -> Text
+    routeTitle Config {..} v =
+      withSuffix siteTitle . routeTitle' v
+      where
+        withSuffix suffix x =
+          if x == suffix
+            then x
+            else x <> " - " <> suffix
+    routeTitle' :: a -> Route a -> Text
+    routeTitle' v = \case
+      Route_Redirect _ -> "Redirecting..."
+      Route_ZIndex -> "Zettel Index"
+      Route_Search -> "Search"
+      Route_Zettel _ ->
+        let PandocZettel (z, _) = v
+         in zettelTitle z
+    renderPandocAsText :: [Inline] -> Maybe Text
+    renderPandocAsText =
+      either (const Nothing) Just . runPure . writePlain def . Pandoc mempty . pure . Plain
 
 renderOpenGraph :: forall t m. DomBuilder t m => OpenGraph -> m ()
 renderOpenGraph OpenGraph {..} = do
@@ -127,7 +181,7 @@ renderOpenGraph OpenGraph {..} = do
         then f $ URI.render uri'
         else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
 
-renderRouteBody :: PandocBuilder t m => Config -> Route graph a -> (graph, a) -> m (RouteError a)
+renderRouteBody :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m (RouteError a)
 renderRouteBody config r (g, x) = do
   case r of
     Route_ZIndex -> do
@@ -144,7 +198,6 @@ renderRouteBody config r (g, x) = do
       errs <-
         ZettelView.renderZettel
           (editUrl config)
-          (Tagged $ Just "zettel-container-anchor")
           (g, x)
       renderBrandFooter
       pure errs
@@ -180,7 +233,7 @@ renderErrors errors = do
           forM_ qerrors $ \qe ->
             el "li" $ el "pre" $ text $ showQueryError qe
 
-renderIndex :: DomBuilder t m => Config -> ZettelGraph -> Map ZettelID (Either Text [QueryError]) -> m ()
+renderIndex :: DomBuilder t m => Config -> ZettelGraph -> Map ZettelID (Either Text [QueryError]) -> NeuronWebT t m ()
 renderIndex Config {..} graph errors = do
   let neuronTheme = Theme.mkTheme theme
   elClass "h1" "header" $ text "Zettel Index"
@@ -252,7 +305,7 @@ renderForest ::
   -- The dfsForest tree is "incomplete" in that it lacks these references.
   Maybe ZettelGraph ->
   [Tree Zettel] ->
-  m ()
+  NeuronWebT t m ()
 renderForest isRoot maxLevel mg trees =
   case maxLevel of
     Just 0 -> blank
