@@ -89,6 +89,7 @@ library
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
     Neuron.Zettelkasten.Graph.Build
+    Neuron.Web.Route
     Neuron.Web.Widget
     Neuron.Web.Widget.AutoScroll
     Neuron.Web.Widget.InvertedTree
@@ -163,7 +164,7 @@ common app-common
       Neuron.Config.Alias
       Neuron.Version
       Neuron.Web.Generate
-      Neuron.Web.Route
+      Neuron.Web.Generate.Route
       Neuron.Web.View
       Neuron.Markdown
       Neuron.Zettelkasten.ID.Scheme

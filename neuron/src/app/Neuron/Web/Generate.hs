@@ -21,6 +21,7 @@ import Development.Shake
 import Neuron.Config (Config (..))
 import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Version (neuronVersion, olderThan)
+import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Graph.Build as G
@@ -38,7 +39,7 @@ import System.FilePath
 -- | Generate the Zettelkasten site
 generateSite ::
   Config ->
-  (forall a. Z.Route ZettelGraph a -> (ZettelGraph, a) -> Action (Z.RouteError a)) ->
+  (forall a. Z.Route a -> (ZettelGraph, a) -> Action (Z.RouteError a)) ->
   Action ZettelGraph
 generateSite config writeHtmlRoute' = do
   when (olderThan $ minVersion config)
@@ -46,7 +47,7 @@ generateSite config writeHtmlRoute' = do
     $ toString
     $ "Require neuron mininum version " <> minVersion config <> ", but your neuron version is " <> neuronVersion
   (zettelGraph, zettelContents, skippedErrors) <- loadZettelkasten
-  let writeHtmlRoute :: forall a. a -> Z.Route ZettelGraph a -> Action (Z.RouteError a)
+  let writeHtmlRoute :: forall a. a -> Z.Route a -> Action (Z.RouteError a)
       writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
   queryErrors <- fmap (Map.fromList . catMaybes) $ forM zettelContents $ \val@(PandocZettel (z, _)) -> do

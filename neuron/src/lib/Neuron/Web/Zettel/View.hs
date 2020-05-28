@@ -17,6 +17,7 @@ where
 import Data.TagTree
 import Data.Tagged
 import qualified Neuron.Web.Query.View as Q
+import Neuron.Web.Route
 import Neuron.Web.Widget
 import qualified Neuron.Web.Widget.AutoScroll as AS
 import qualified Neuron.Web.Widget.InvertedTree as IT
@@ -37,7 +38,7 @@ renderZettel ::
   Maybe Text ->
   AS.AutoScroll ->
   (ZettelGraph, PandocZettel) ->
-  m [QueryError]
+  NeuronWebT t m [QueryError]
 renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, zc))) = do
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
@@ -65,7 +66,7 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
     AS.script marker
   pure errors
 
-renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> m ()
+renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> NeuronWebT t m ()
 renderZettelBottomPane graph z@Zettel {..} = do
   let cfBacklinks = nonEmpty $ G.backlinks OrdinaryConnection z graph
       tags = nonEmpty zettelTags
@@ -86,9 +87,9 @@ renderZettelBottomPane graph z@Zettel {..} = do
 evalAndRenderZettelQuery ::
   PandocBuilder t m =>
   ZettelGraph ->
-  m [QueryError] ->
+  NeuronWebT t m [QueryError] ->
   URILink ->
-  m [QueryError]
+  NeuronWebT t m [QueryError]
 evalAndRenderZettelQuery graph oldRender uriLink = do
   case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uriLink) of
     Left (Left -> e) -> do
@@ -113,10 +114,10 @@ evalAndRenderZettelQuery graph oldRender uriLink = do
 renderZettelContent ::
   forall t m a.
   (PandocBuilder t m, Monoid a) =>
-  (m a -> URILink -> m a) ->
+  (NeuronWebT t m a -> URILink -> NeuronWebT t m a) ->
   Zettel ->
   Pandoc ->
-  m a
+  NeuronWebT t m a
 renderZettelContent handleLink Zettel {..} doc = do
   elClass "article" "ui raised attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
