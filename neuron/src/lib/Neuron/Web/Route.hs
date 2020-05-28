@@ -45,6 +45,11 @@ type NeuronWebT t m = ReaderT (RouteConfig t m) m
 runNeuronWeb :: RouteConfig t m -> NeuronWebT t m a -> m a
 runNeuronWeb cfg = flip runReaderT cfg
 
+whenStaticallyGenerated :: Monad m => NeuronWebT t m () -> NeuronWebT t m ()
+whenStaticallyGenerated f = do
+  staticGen <- asks routeConfigStaticallyGenerated
+  when staticGen f
+
 neuronRouteLink :: DomBuilder t m => Some Route -> m () -> NeuronWebT t m ()
 neuronRouteLink someR w = do
   f <- asks routeConfigRouteLink

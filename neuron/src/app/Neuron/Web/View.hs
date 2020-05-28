@@ -34,7 +34,6 @@ import qualified Data.Set as Set
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
-import Data.Tagged
 import qualified Data.Text as T
 import Data.Time.ISO8601 (formatISO8601)
 import Data.Tree (Tree (..))
@@ -199,7 +198,6 @@ renderRouteBody config r (g, x) = do
       errs <-
         ZettelView.renderZettel
           (editUrl config)
-          (Tagged $ Just "zettel-container-anchor")
           (g, x)
       renderBrandFooter
       pure errs

@@ -15,7 +15,6 @@ module Neuron.Web.Zettel.View
 where
 
 import Data.TagTree
-import Data.Tagged
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route
 import Neuron.Web.Widget
@@ -36,20 +35,19 @@ import Text.Pandoc.Definition (Pandoc)
 renderZettel ::
   PandocBuilder t m =>
   Maybe Text ->
-  AS.AutoScroll ->
   (ZettelGraph, PandocZettel) ->
   NeuronWebT t m [QueryError]
-renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, zc))) = do
+renderZettel editUrl (graph, (PandocZettel (z@Zettel {..}, zc))) = do
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
       Q.renderZettelLink (G.getConnection z z2 graph) def z2
   -- Main content
   errors <- elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-    whenJust autoScroll $ \marker -> do
+    whenStaticallyGenerated $ do
       -- We use -24px (instead of -14px) here so as to not scroll all the way to
       -- title, and as to leave some of the tree visible as "hint" to the user.
-      AS.marker marker (-24)
+      lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
       errors <- divClass "ui two column grid" $ do
         divClass "one wide tablet only computer only column" $ do
@@ -62,8 +60,9 @@ renderZettel editUrl (Tagged autoScroll) (graph, (PandocZettel (z@Zettel {..}, z
       pure errors
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
-  unless (null upTree) $ whenJust autoScroll $ \marker -> do
-    AS.script marker
+  whenStaticallyGenerated $ do
+    unless (null upTree) $ do
+      AS.script "zettel-container-anchor"
   pure errors
 
 renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> NeuronWebT t m ()
