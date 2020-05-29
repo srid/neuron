@@ -31,6 +31,7 @@ import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import Data.Some
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
@@ -43,6 +44,7 @@ import Neuron.Version (neuronVersion)
 import Neuron.Web.Generate.Route (routeUri)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
+import Neuron.Web.Theme (Theme)
 import qualified Neuron.Web.Theme as Theme
 import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
@@ -182,23 +184,24 @@ renderOpenGraph OpenGraph {..} = do
         else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
 
 renderRouteBody :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m (RouteError a)
-renderRouteBody config r (g, x) = do
+renderRouteBody config@Config {..} r (g, x) = do
+  let neuronTheme = Theme.mkTheme theme
   case r of
     Route_ZIndex -> do
+      actionsNav neuronTheme editUrl Nothing
       divClass "ui text container" $ do
         renderIndex config g x
         renderBrandFooter
       pure mempty
     Route_Search {} -> do
+      actionsNav neuronTheme editUrl Nothing
       divClass "ui text container" $ do
         renderSearch g
         renderBrandFooter
       pure mempty
     Route_Zettel _ -> do
-      errs <-
-        ZettelView.renderZettel
-          (editUrl config)
-          (g, x)
+      actionsNav neuronTheme editUrl (Just $ fst $ unPandocZettel x)
+      errs <- ZettelView.renderZettel (g, x)
       renderBrandFooter
       pure errs
     Route_Redirect _ -> do
@@ -332,6 +335,18 @@ renderForest isRoot maxLevel mg trees =
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
 
+actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> NeuronWebT t m ()
+actionsNav theme editUrl mzettel = elClass "nav" "ui one column center aligned grid" $ do
+  divClass ("ui inverted compact neuron menu " <> Theme.semanticColor theme) $ do
+    neuronRouteLink (Some Route_ZIndex) ("class" =: "left item" <> "title" =: "All Zettels (z-index)") $
+      fa "fas fa-tree"
+    whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) -> do
+      let attrs = ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel")
+      elAttr "a" ("class" =: "center item" <> attrs) $ do
+        fa "fas fa-edit"
+    neuronRouteLink (Some Route_Search) ("class" =: "right item" <> "title" =: "Search Zettels") $ do
+      fa "fas fa-search"
+
 style :: Config -> Css
 style Config {..} = do
   let neuronTheme = Theme.mkTheme theme
@@ -352,4 +367,11 @@ style Config {..} = do
   ".footer-version a" ? do
     C.fontWeight C.bold
   ".footer-version" ? do
+    C.marginTop $ em 1
     C.fontSize $ em 0.7
+  "nav.grid" ? do
+    C.marginTop $ em 1
+    C.marginBottom $ em 1
+    "> *" ? do
+      C.paddingLeft $ px 0
+      C.paddingRight $ px 0

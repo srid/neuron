@@ -37,7 +37,7 @@ data RouteConfig t m = RouteConfig
   { -- | Whether the view is being rendered for static HTML generation
     routeConfigStaticallyGenerated :: Bool,
     -- | How to render a web route.
-    routeConfigRouteLink :: DomBuilder t m => Some Route -> m () -> m ()
+    routeConfigRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> m ()
   }
 
 type NeuronWebT t m = ReaderT (RouteConfig t m) m
@@ -50,7 +50,7 @@ whenStaticallyGenerated f = do
   staticGen <- asks routeConfigStaticallyGenerated
   when staticGen f
 
-neuronRouteLink :: DomBuilder t m => Some Route -> m () -> NeuronWebT t m ()
-neuronRouteLink someR w = do
+neuronRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> NeuronWebT t m ()
+neuronRouteLink someR attrs w = do
   f <- asks routeConfigRouteLink
-  lift $ f someR w
+  lift $ f someR attrs w
