@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -54,3 +55,12 @@ neuronRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> Neur
 neuronRouteLink someR attrs w = do
   f <- asks routeConfigRouteLink
   lift $ f someR attrs w
+
+routeTitle' :: a -> Route a -> Text
+routeTitle' v = \case
+  Route_Redirect _ -> "Redirecting..."
+  Route_ZIndex -> "Zettel Index"
+  Route_Search -> "Search"
+  Route_Zettel _ ->
+    let PandocZettel (z, _) = v
+     in zettelTitle z

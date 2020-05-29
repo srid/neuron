@@ -96,6 +96,7 @@ library
     Neuron.Web.Query.View
     Neuron.Web.Zettel.View
     Neuron.Web.Zettel.CSS
+    Neuron.Web.ZIndex
     Neuron.Web.Theme
     Text.Megaparsec.Simple
     Text.URI.Util
@@ -166,6 +167,7 @@ common app-common
       Neuron.Web.Generate
       Neuron.Web.Generate.Route
       Neuron.Web.View
+      Neuron.Web.StructuredData
       Neuron.Markdown
       Neuron.Zettelkasten.ID.Scheme
       Paths_neuron
