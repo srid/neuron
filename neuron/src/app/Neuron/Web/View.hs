@@ -336,7 +336,7 @@ renderForest isRoot maxLevel mg trees =
     sortForest = reverse . sortOn maximum
 
 actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> NeuronWebT t m ()
-actionsNav theme editUrl mzettel = elClass "nav" "ui one column center aligned grid" $ do
+actionsNav theme editUrl mzettel = elClass "nav" "top-menu" $ do
   divClass ("ui inverted compact neuron menu " <> Theme.semanticColor theme) $ do
     neuronRouteLink (Some Route_ZIndex) ("class" =: "left item" <> "title" =: "All Zettels (z-index)") $
       fa "fas fa-tree"
@@ -369,9 +369,11 @@ style Config {..} = do
   ".footer-version" ? do
     C.marginTop $ em 1
     C.fontSize $ em 0.7
-  "nav.grid" ? do
-    C.marginTop $ em 1
-    C.marginBottom $ em 1
+  "nav.top-menu" ? do
+    C.paddingTop $ em 1
+    C.paddingBottom $ em 1
+    C.justifyContent C.center
+    C.textAlign C.center
     "> *" ? do
       C.paddingLeft $ px 0
       C.paddingRight $ px 0
