@@ -31,6 +31,7 @@ import Data.FileEmbed (embedStringFile)
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
+import Data.Some
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.TagTree (Tag (..))
@@ -334,16 +335,16 @@ renderForest isRoot maxLevel mg trees =
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
 
-actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> m ()
+actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> NeuronWebT t m ()
 actionsNav theme editUrl mzettel = elClass "nav" "ui one column center aligned grid" $ do
   divClass ("ui inverted compact neuron menu " <> Theme.semanticColor theme) $ do
-    elAttr "a" ("class" =: "left item" <> "href" =: "z-index.html" <> "title" =: "All Zettels (z-index)") $
+    neuronRouteLink (Some Route_ZIndex) ("class" =: "left item" <> "title" =: "All Zettels (z-index)") $
       fa "fas fa-tree"
     whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) -> do
       let attrs = ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel")
       elAttr "a" ("class" =: "center item" <> attrs) $ do
         fa "fas fa-edit"
-    elAttr "a" ("class" =: "right item" <> "href" =: "search.html" <> "title" =: "Search Zettels") $ do
+    neuronRouteLink (Some Route_Search) ("class" =: "right item" <> "title" =: "Search Zettels") $ do
       fa "fas fa-search"
 
 style :: Config -> Css
