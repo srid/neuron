@@ -119,7 +119,7 @@ renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
             then Nothing
             else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
     elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
-      neuronRouteLink (Some $ Route_Zettel zettelID) $ text zettelTitle
+      neuronRouteLink (Some $ Route_Zettel zettelID) mempty $ text zettelTitle
   where
     withTooltip :: Maybe Text -> Map Text Text
     withTooltip = \case

@@ -36,10 +36,11 @@ instance IsRoute Route where
 staticRouteConfig :: RouteConfig t m
 staticRouteConfig = RouteConfig True renderStaticRoute
 
-renderStaticRoute :: DomBuilder t m => Some Route -> m a -> m a
-renderStaticRoute someR w =
-  withSome someR $ \r ->
-    elAttr "a" ("href" =: routeUrl r) w
+renderStaticRoute :: DomBuilder t m => Some Route -> Map Text Text -> m a -> m a
+renderStaticRoute someR attrs w =
+  withSome someR $ \r -> do
+    let hrefAttr :: Map Text Text = "href" =: routeUrl r
+    elAttr "a" (attrs <> hrefAttr) w
 
 -- | Like `routeUrlRel` but takes a query parameter
 routeUrlRelWithQuery :: HasCallStack => IsRoute r => r a -> URI.RText 'URI.QueryKey -> Text -> Text
