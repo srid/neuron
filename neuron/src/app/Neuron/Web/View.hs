@@ -43,6 +43,7 @@ import Neuron.Version (neuronVersion)
 import Neuron.Web.Generate.Route (routeUri)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
+import Neuron.Web.Theme (Theme)
 import qualified Neuron.Web.Theme as Theme
 import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
@@ -186,23 +187,20 @@ renderRouteBody config@Config {..} r (g, x) = do
   let neuronTheme = Theme.mkTheme theme
   case r of
     Route_ZIndex -> do
-      ZettelView.actionsNav neuronTheme editUrl Nothing
+      actionsNav neuronTheme editUrl Nothing
       divClass "ui text container" $ do
         renderIndex config g x
         renderBrandFooter
       pure mempty
     Route_Search {} -> do
-      ZettelView.actionsNav neuronTheme editUrl Nothing
+      actionsNav neuronTheme editUrl Nothing
       divClass "ui text container" $ do
         renderSearch g
         renderBrandFooter
       pure mempty
     Route_Zettel _ -> do
-      errs <-
-        ZettelView.renderZettel
-          neuronTheme
-          editUrl
-          (g, x)
+      actionsNav neuronTheme editUrl (Just $ fst $ unPandocZettel x)
+      errs <- ZettelView.renderZettel (g, x)
       renderBrandFooter
       pure errs
     Route_Redirect _ -> do
@@ -335,6 +333,18 @@ renderForest isRoot maxLevel mg trees =
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
+
+actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> m ()
+actionsNav theme editUrl mzettel = elClass "nav" "ui one column center aligned grid" $ do
+  divClass ("ui inverted compact neuron menu " <> Theme.semanticColor theme) $ do
+    elAttr "a" ("class" =: "left item" <> "href" =: "z-index.html" <> "title" =: "All Zettels (z-index)") $
+      fa "fas fa-tree"
+    whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) -> do
+      let attrs = ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel")
+      elAttr "a" ("class" =: "center item" <> attrs) $ do
+        fa "fas fa-edit"
+    elAttr "a" ("class" =: "right item" <> "href" =: "search.html" <> "title" =: "Search Zettels") $ do
+      fa "fas fa-search"
 
 style :: Config -> Css
 style Config {..} = do

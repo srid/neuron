@@ -11,22 +11,18 @@
 
 module Neuron.Web.Zettel.View
   ( renderZettel,
-    actionsNav,
   )
 where
 
 import Data.TagTree
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route
-import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Theme (Theme)
 import Neuron.Web.Widget
 import qualified Neuron.Web.Widget.AutoScroll as AS
 import qualified Neuron.Web.Widget.InvertedTree as IT
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
 import qualified Neuron.Zettelkasten.Query.Eval as Q
 import Neuron.Zettelkasten.Zettel
@@ -37,12 +33,9 @@ import Text.Pandoc.Definition (Pandoc)
 
 renderZettel ::
   PandocBuilder t m =>
-  Theme ->
-  Maybe Text ->
   (ZettelGraph, PandocZettel) ->
   NeuronWebT t m [QueryError]
-renderZettel theme editUrl (graph, (PandocZettel (z@Zettel {..}, zc))) = do
-  actionsNav theme editUrl (Just z)
+renderZettel (graph, (PandocZettel (z@Zettel {..}, zc))) = do
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
@@ -142,21 +135,3 @@ renderTags tags = do
         $ text
         $ unTag t
     el "p" blank
-
-------------------
--- Navigation menu
-------------------
-
-actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> m ()
-actionsNav theme editUrl mzettel = elClass "nav" "ui one column center aligned grid" $ do
-  divClass ("ui inverted compact neuron menu " <> Theme.semanticColor theme) $ do
-    elAttr "a" ("class" =: "left item" <> "href" =: "z-index.html" <> "title" =: "All Zettels (z-index)") $
-      fa "fas fa-tree"
-    whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) -> do
-      let attrs = ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel")
-      elAttr "a" ("class" =: "center item" <> attrs) $ do
-        fa "fas fa-edit"
-    elAttr "a" ("class" =: "right item" <> "href" =: "search.html" <> "title" =: "Search Zettels") $ do
-      fa "fas fa-search"
-  where
-    fa k = elClass "i" k blank
