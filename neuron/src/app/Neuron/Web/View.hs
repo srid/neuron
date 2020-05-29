@@ -357,11 +357,7 @@ style Config {..} = do
       C.listStyleType C.square
       C.paddingLeft $ em 1.5
   ZettelCSS.zettelCss neuronTheme
-  "div.tag-tree" ? do
-    "div.node" ? do
-      C.fontWeight C.bold
-      "a.inactive" ? do
-        C.color "#555"
+  QueryView.style neuronTheme
   ".footer-version, .footer-version a, .footer-version a:visited" ? do
     C.color gray
   ".footer-version a" ? do

@@ -23,7 +23,6 @@ themeColor neuronTheme =
 zettelCss :: Theme.Theme -> Css
 zettelCss neuronTheme = do
   zettelCommonCss neuronTheme
-  zettelLinkCss neuronTheme
   "div.zettel-view" ? do
     -- This list styling applies both to zettel content, and the rest of the
     -- view (eg: connections pane)
@@ -38,25 +37,6 @@ zettelCss neuronTheme = do
     C.color black
     "a" ? do
       C.color black
-
-zettelLinkCss :: Theme.Theme -> Css
-zettelLinkCss neuronTheme = do
-  let linkColor = Theme.withRgb neuronTheme C.rgb
-  "span.zettel-link-container span.zettel-link a" ? do
-    C.fontWeight C.bold
-    C.color linkColor
-    C.textDecoration C.none
-  "span.zettel-link-container span.zettel-link a:hover" ? do
-    C.backgroundColor linkColor
-    C.color C.white
-  "span.zettel-link-container span.extra" ? do
-    C.color C.auto
-    C.paddingRight $ em 0.3
-  "span.zettel-link-container.folgezettel::after" ? do
-    C.paddingLeft $ em 0.3
-    C.content $ C.stringContent "ᛦ"
-  "[data-tooltip]:after" ? do
-    C.fontSize $ em 0.7
 
 zettelContentCss :: Theme.Theme -> Css
 zettelContentCss neuronTheme = do
