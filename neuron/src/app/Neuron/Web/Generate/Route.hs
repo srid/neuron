@@ -39,7 +39,7 @@ staticRouteConfig = RouteConfig True renderStaticRoute
 renderStaticRoute :: DomBuilder t m => Some Route -> Map Text Text -> m a -> m a
 renderStaticRoute someR attrs w =
   withSome someR $ \r -> do
-    let hrefAttr :: Map Text Text = "href" =: routeUrl r
+    let hrefAttr :: Map Text Text = "href" =: routeUrlRel r
     elAttr "a" (attrs <> hrefAttr) w
 
 -- | Like `routeUrlRel` but takes a query parameter
