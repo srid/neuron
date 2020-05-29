@@ -182,14 +182,17 @@ renderOpenGraph OpenGraph {..} = do
         else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
 
 renderRouteBody :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m (RouteError a)
-renderRouteBody config r (g, x) = do
+renderRouteBody config@Config {..} r (g, x) = do
+  let neuronTheme = Theme.mkTheme theme
   case r of
     Route_ZIndex -> do
+      ZettelView.actionsNav neuronTheme editUrl Nothing
       divClass "ui text container" $ do
         renderIndex config g x
         renderBrandFooter
       pure mempty
     Route_Search {} -> do
+      ZettelView.actionsNav neuronTheme editUrl Nothing
       divClass "ui text container" $ do
         renderSearch g
         renderBrandFooter
@@ -197,7 +200,8 @@ renderRouteBody config r (g, x) = do
     Route_Zettel _ -> do
       errs <-
         ZettelView.renderZettel
-          (editUrl config)
+          neuronTheme
+          editUrl
           (g, x)
       renderBrandFooter
       pure errs
@@ -352,4 +356,11 @@ style Config {..} = do
   ".footer-version a" ? do
     C.fontWeight C.bold
   ".footer-version" ? do
+    C.marginTop $ em 1
     C.fontSize $ em 0.7
+  "nav.grid" ? do
+    C.marginTop $ em 1
+    C.marginBottom $ em 1
+    "> *" ? do
+      C.paddingLeft $ px 0
+      C.paddingRight $ px 0

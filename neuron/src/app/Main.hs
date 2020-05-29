@@ -86,7 +86,6 @@ mainStyle cfg = do
     C.important $ C.backgroundColor "#eee"
   "div#thesite" ? do
     C.fontFamily [bodyFont] [C.serif]
-    C.paddingTop $ em 1
     C.paddingBottom $ em 1
     "h1, h2, h3, h4, h5, h6, .ui.header, .headerFont" ? do
       C.fontFamily [headerFont] [C.sansSerif]

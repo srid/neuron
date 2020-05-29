@@ -11,12 +11,15 @@
 
 module Neuron.Web.Zettel.View
   ( renderZettel,
+    actionsNav,
   )
 where
 
 import Data.TagTree
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route
+import qualified Neuron.Web.Theme as Theme
+import Neuron.Web.Theme (Theme)
 import Neuron.Web.Widget
 import qualified Neuron.Web.Widget.AutoScroll as AS
 import qualified Neuron.Web.Widget.InvertedTree as IT
@@ -34,10 +37,12 @@ import Text.Pandoc.Definition (Pandoc)
 
 renderZettel ::
   PandocBuilder t m =>
+  Theme ->
   Maybe Text ->
   (ZettelGraph, PandocZettel) ->
   NeuronWebT t m [QueryError]
-renderZettel editUrl (graph, (PandocZettel (z@Zettel {..}, zc))) = do
+renderZettel theme editUrl (graph, (PandocZettel (z@Zettel {..}, zc))) = do
+  actionsNav theme editUrl (Just z)
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
@@ -49,14 +54,9 @@ renderZettel editUrl (graph, (PandocZettel (z@Zettel {..}, zc))) = do
       -- title, and as to leave some of the tree visible as "hint" to the user.
       lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
-      errors <- divClass "ui two column grid" $ do
-        divClass "one wide tablet only computer only column" $ do
-          renderActionsMenu VerticalMenu editUrl (Just z)
-        divClass "sixteen wide mobile fifteen wide tablet fifteen wide computer stretched column" $ do
-          renderZettelContent (evalAndRenderZettelQuery graph) z zc
-            <* renderZettelBottomPane graph z
-      divClass "ui one column grid" $ divClass "mobile only sixteen wide column" $ do
-        renderActionsMenu HorizontalMenu editUrl (Just z)
+      errors <-
+        renderZettelContent (evalAndRenderZettelQuery graph) z zc
+          <* renderZettelBottomPane graph z
       pure errors
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
@@ -146,24 +146,17 @@ renderTags tags = do
 ------------------
 -- Navigation menu
 ------------------
-data MenuOrientation
-  = VerticalMenu
-  | HorizontalMenu
-  deriving (Eq, Show, Ord)
 
-renderActionsMenu :: DomBuilder t m => MenuOrientation -> Maybe Text -> Maybe Zettel -> m ()
-renderActionsMenu orient editUrl mzettel = do
-  let cls = case orient of
-        VerticalMenu -> "ui deemphasized vertical icon menu"
-        HorizontalMenu -> "ui deemphasized icon menu"
-  elClass "nav" cls $ do
-    divClass "item" $ do
-      elAttr "a" ("href" =: "z-index.html" <> "title" =: "All Zettels (z-index)") $
-        fa "fas fa-tree"
-    whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) ->
-      divClass "item" $ do
-        elAttr "a" ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel") $ fa "fas fa-edit"
-    divClass "right item" $ do
-      elAttr "a" ("href" =: "search.html" <> "title" =: "Search Zettels") $ fa "fas fa-search"
+actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> m ()
+actionsNav theme editUrl mzettel = elClass "nav" "ui one column center aligned grid" $ do
+  divClass ("ui inverted compact neuron menu " <> Theme.semanticColor theme) $ do
+    elAttr "a" ("class" =: "left item" <> "href" =: "z-index.html" <> "title" =: "All Zettels (z-index)") $
+      fa "fas fa-tree"
+    whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) -> do
+      let attrs = ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel")
+      elAttr "a" ("class" =: "center item" <> attrs) $ do
+        fa "fas fa-edit"
+    elAttr "a" ("class" =: "right item" <> "href" =: "search.html" <> "title" =: "Search Zettels") $ do
+      fa "fas fa-search"
   where
     fa k = elClass "i" k blank
