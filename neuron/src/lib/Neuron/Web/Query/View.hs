@@ -66,7 +66,7 @@ renderQueryResultIfSuccessful = \case
           forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
             el "section" $ do
               elClass "span" "ui basic pointing below grey label" $ do
-                elClass "span" "fas fa-tag" blank
+                semanticIcon "tag"
                 text $ unTag tag
               el "ul" $ forM_ zettelGrp $ \z ->
                 el "li" $
@@ -95,7 +95,7 @@ renderQuery someQ =
         let qs = toText $ intercalate ", " pats
             desc = toText $ "Zettels tagged '" <> qs <> "'"
         elAttr "span" ("class" =: "ui basic pointing below black label" <> "title" =: desc) $ do
-          elClass "span" "fas fa-tags" blank
+          semanticIcon "tags"
           text qs
       Some (ZettelQuery_Tags []) ->
         text "All tags"

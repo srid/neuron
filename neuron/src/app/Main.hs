@@ -51,12 +51,8 @@ renderPage config r val = elAttr "html" ("lang" =: "en") $ do
       Route_Redirect _ ->
         blank
       _ -> do
-        forM_
-          [ "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.4/dist/semantic.min.css",
-            "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css"
-          ]
-          $ \url ->
-            elAttr "link" ("rel" =: "stylesheet" <> "href" =: url) blank
+        let semanticCss = "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.4/dist/semantic.min.css"
+        elAttr "link" ("rel" =: "stylesheet" <> "href" =: semanticCss) blank
         elAttr "style" ("type" =: "text/css") $ text $ toText $ C.renderWith C.compact [] $ mainStyle config
         googleFonts [headerFont, bodyFont, monoFont]
         when (Config.mathJaxSupport config) $

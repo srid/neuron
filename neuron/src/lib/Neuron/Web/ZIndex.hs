@@ -112,7 +112,7 @@ renderForest isRoot maxLevel mg trees =
                 -- Has two or more category backlinks
                 forM_ conns $ \zettel2 -> do
                   let connTitle = (zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2)
-                  elAttr "i" ("class" =: "fas fa-link" <> "title" =: connTitle) blank
+                  el "small" $ elAttr "i" ("class" =: "linkify icon" <> "title" =: connTitle) blank
               _ -> blank
           when (length subtrees > 0) $ do
             el "ul" $ renderForest False ((\n -> n - 1) <$> maxLevel) mg subtrees

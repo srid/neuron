@@ -21,7 +21,7 @@ module Neuron.Web.View
   )
 where
 
-import Clay hiding (Plain, id, ms, object, reverse, s, style, type_)
+import Clay hiding (Plain, id, ms, name, object, reverse, s, style, type_)
 import qualified Clay as C
 import Control.Monad.Except
 import Data.Aeson ((.=), object)
@@ -37,6 +37,7 @@ import Neuron.Web.Route
 import Neuron.Web.StructuredData
 import Neuron.Web.Theme (Theme)
 import qualified Neuron.Web.Theme as Theme
+import Neuron.Web.Widget
 import qualified Neuron.Web.ZIndex as ZIndex
 import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
@@ -146,21 +147,19 @@ fa k = elClass "i" k blank
 
 actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> NeuronWebT t m ()
 actionsNav theme editUrl mzettel = elClass "nav" "top-menu" $ do
-  divClass ("ui inverted compact neuron menu " <> Theme.semanticColor theme) $ do
+  divClass ("ui inverted compact neuron icon menu " <> Theme.semanticColor theme) $ do
     neuronRouteLink (Some Route_ZIndex) ("class" =: "left item" <> "title" =: "All Zettels (z-index)") $
-      fa "fas fa-tree"
+      semanticIcon "tree"
     whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) -> do
       let attrs = ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel")
       elAttr "a" ("class" =: "center item" <> attrs) $ do
-        fa "fas fa-edit"
+        semanticIcon "edit"
     neuronRouteLink (Some Route_Search) ("class" =: "right item" <> "title" =: "Search Zettels") $ do
-      fa "fas fa-search"
+      semanticIcon "search"
 
 style :: Config -> Css
 style Config {..} = do
   let neuronTheme = Theme.mkTheme theme
-  ".ui.label span.fas" ? do
-    C.marginRight $ em 0.3
   "div.z-index" ? do
     C.ul ? do
       C.listStyleType C.square

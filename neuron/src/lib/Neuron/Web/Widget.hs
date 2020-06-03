@@ -15,3 +15,6 @@ elTime t = do
   -- cf. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time#Attributes
   let formatted = toText $ formatTime defaultTimeLocale zettelDateFormat t
   elAttr "time" ("datetime" =: formatted) $ text formatted
+
+semanticIcon :: DomBuilder t m => Text -> m ()
+semanticIcon name = elClass "i" (name <> " icon") blank
