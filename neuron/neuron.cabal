@@ -82,7 +82,6 @@ library
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Graph
     Neuron.Zettelkasten.Query.Error
-    Neuron.Zettelkasten.Query.Error.Internal
     Neuron.Zettelkasten.Query.Eval
     Neuron.Zettelkasten.Query.Parser
     Neuron.Zettelkasten.Query.Theme
@@ -98,6 +97,7 @@ library
     Neuron.Web.Zettel.CSS
     Neuron.Web.ZIndex
     Neuron.Web.Theme
+    Neuron.Orphans
     Text.Megaparsec.Simple
     Text.URI.Util
     Data.TagTree

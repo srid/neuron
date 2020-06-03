@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -16,8 +18,10 @@ import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
 import Control.Monad.Except
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.YAML as YAML
-import Relude
+import Neuron.Orphans ()
+import Relude hiding (show)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple
@@ -25,17 +29,44 @@ import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Pandoc.Walk as W
 import qualified Text.Parsec as P
+import Text.Show
+
+data ZettelParseError
+  = ZettelParseError_InvalidMarkdown Text
+  | ZettelParseError_InvalidYAML Text
+  | ZettelParseError_PartitionError Text
+  deriving (Eq, Generic, ToJSON, FromJSON)
+
+instance Show ZettelParseError where
+  show = \case
+    ZettelParseError_InvalidMarkdown e ->
+      show e
+    ZettelParseError_InvalidYAML e ->
+      toString e
+    ZettelParseError_PartitionError e ->
+      "Unable to determine YAML region: " <> toString e
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --
 -- We are not using the Pandoc AST "metadata" field (as it is not clear whether
 -- we actually need it), and instead directly decoding the metadata as Haskell
 -- object.
-parseMarkdown :: forall meta. YAML.FromYAML meta => FilePath -> Text -> Either Text (meta, Pandoc)
+parseMarkdown ::
+  forall meta.
+  YAML.FromYAML meta =>
+  FilePath ->
+  Text ->
+  Either ZettelParseError (meta, Pandoc)
 parseMarkdown fn s = do
-  (metaVal, markdown) <- partitionMarkdown fn s
-  v <- commonmarkPandocWith neuronSpec fn markdown
-  meta <- parseMeta fn metaVal
+  (metaVal, markdown) <-
+    first ZettelParseError_PartitionError $
+      partitionMarkdown fn s
+  v <-
+    first (ZettelParseError_InvalidMarkdown . toText . show) $
+      commonmarkPandocWith neuronSpec fn markdown
+  meta <-
+    first ZettelParseError_InvalidYAML $
+      parseMeta fn metaVal
   pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
   where
     -- NOTE: HsYAML parsing is rather slow due to its use of DList.
@@ -50,9 +81,9 @@ parseMarkdown fn s = do
       CM.SyntaxSpec (Either P.ParseError) (CP.Cm () B.Inlines) (CP.Cm () B.Blocks) ->
       String ->
       Text ->
-      Either Text (CP.Cm () B.Blocks)
+      Either P.ParseError (CP.Cm () B.Blocks)
     commonmarkPandocWith spec n =
-      first show . join . CM.commonmarkWith spec n
+      join . CM.commonmarkWith spec n
 
 -- | Identify metadata block at the top, and split it from markdown body.
 partitionMarkdown :: FilePath -> Text -> Either Text (Text, Text)

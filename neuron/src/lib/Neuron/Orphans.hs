@@ -3,7 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Neuron.Zettelkasten.Query.Error.Internal where
+module Neuron.Orphans where
 
 import Data.Aeson
 import Relude

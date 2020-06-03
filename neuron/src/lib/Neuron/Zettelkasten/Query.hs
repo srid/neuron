@@ -16,6 +16,7 @@ import Data.Aeson
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
+import Neuron.Markdown (ZettelParseError)
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Graph
@@ -52,7 +53,7 @@ zettelQueryResultJson ::
   ZettelQuery r ->
   r ->
   -- Zettels that cannot be parsed by neuron
-  Map ZettelID Text ->
+  Map ZettelID ZettelParseError ->
   Value
 zettelQueryResultJson notesDir q r errors =
   toJSON $
@@ -89,7 +90,7 @@ graphQueryResultJson ::
   GraphQuery r ->
   r ->
   -- Zettels that cannot be parsed by neuron (and as such are excluded from the graph)
-  Map ZettelID Text ->
+  Map ZettelID ZettelParseError ->
   Value
 graphQueryResultJson q r errors =
   toJSON $

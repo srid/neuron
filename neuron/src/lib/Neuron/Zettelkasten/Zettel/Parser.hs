@@ -25,7 +25,7 @@ import Text.Pandoc.Definition (Pandoc)
 parseZettel ::
   ZettelID ->
   Text ->
-  Either Text PandocZettel
+  Either ZettelParseError PandocZettel
 parseZettel zid s = do
   (meta, doc) <- parseMarkdown (zettelIDSourceFileName zid) s
   let title = maybe "Missing title" Meta.title meta
@@ -54,7 +54,7 @@ parseZettels ::
   [(FilePath, Text)] ->
   ( [PandocZettel],
     -- List of zettel files that cannot be parsed.
-    Map ZettelID Text
+    Map ZettelID ZettelParseError
   )
 parseZettels fs =
   let res = flip mapMaybe fs $ \(f, s) ->
