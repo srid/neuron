@@ -81,10 +81,10 @@ mainStyle cfg = do
   "body" ? do
     C.important $ C.backgroundColor "#eee"
   "div#thesite" ? do
-    C.fontFamily [bodyFont] [C.serif]
+    C.important $ C.fontFamily [bodyFont] [C.serif]
     C.paddingBottom $ em 1
     "h1, h2, h3, h4, h5, h6, .ui.header, .headerFont" ? do
-      C.fontFamily [headerFont] [C.sansSerif]
+      C.important $ C.fontFamily [headerFont] [C.sansSerif]
     "code, pre, tt, .monoFont" ? do
-      C.fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [C.monospace]
+      C.important $ C.fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [C.monospace]
     style cfg
