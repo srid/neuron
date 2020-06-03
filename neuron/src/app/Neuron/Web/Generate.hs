@@ -20,6 +20,7 @@ import Data.Traversable
 import Development.Shake
 import Neuron.Config (Config (..))
 import Neuron.Config.Alias (Alias (..), getAliases)
+import Neuron.Markdown (ZettelParseError)
 import Neuron.Version (neuronVersion, olderThan)
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
@@ -68,7 +69,7 @@ generateSite config writeHtmlRoute' = do
   forM_ aliases $ \Alias {..} ->
     writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
   forM_ (Map.toList skippedErrors) $ \(zid, err) -> do
-    reportError (Z.Route_Zettel zid) (Just "SKIPPED") [err]
+    reportError (Z.Route_Zettel zid) (Just "SKIPPED") [show err]
   pure zettelGraph
 
 -- | Report an error in the terminal
@@ -95,7 +96,7 @@ loadZettelkasten ::
   Action
     ( ZettelGraph,
       [PandocZettel],
-      Map ZettelID Text
+      Map ZettelID ZettelParseError
     )
 loadZettelkasten =
   loadZettelkastenFrom =<< Rib.forEvery ["*.md"] pure
@@ -106,7 +107,7 @@ loadZettelkastenFrom ::
   Action
     ( ZettelGraph,
       [PandocZettel],
-      Map ZettelID Text
+      Map ZettelID ZettelParseError
     )
 loadZettelkastenFrom files = do
   notesDir <- Rib.ribInputDir

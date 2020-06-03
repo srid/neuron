@@ -13,6 +13,7 @@ where
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
 import Data.Tree
+import Neuron.Markdown (ZettelParseError)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
@@ -25,7 +26,12 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Relude hiding ((&))
 
-renderZIndex :: DomBuilder t m => Theme.Theme -> ZettelGraph -> Map ZettelID (Either Text [QueryError]) -> NeuronWebT t m ()
+renderZIndex ::
+  DomBuilder t m =>
+  Theme.Theme ->
+  ZettelGraph ->
+  Map ZettelID (Either ZettelParseError [QueryError]) ->
+  NeuronWebT t m ()
 renderZIndex neuronTheme graph errors = do
   elClass "h1" "header" $ text "Zettel Index"
   renderErrors errors
@@ -51,7 +57,7 @@ renderZIndex neuronTheme graph errors = do
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderErrors :: DomBuilder t m => Map ZettelID (Either Text [QueryError]) -> m ()
+renderErrors :: DomBuilder t m => Map ZettelID (Either ZettelParseError [QueryError]) -> m ()
 renderErrors errors = do
   let skippedZettels = Map.mapMaybe leftToMaybe errors
       zettelsWithErrors = Map.mapMaybe rightToMaybe errors
@@ -65,7 +71,7 @@ renderErrors errors = do
             el "li" $ do
               el "b" $ el "tt" $ text $ toText $ zettelIDSourceFileName zid
               text ": "
-              el "pre" $ text err
+              el "pre" $ text $ show err
   forM_ (Map.toList zettelsWithErrors) $ \(zid, qerrors) ->
     divClass "ui tiny warning message" $ do
       divClass "header" $ do
