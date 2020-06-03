@@ -51,7 +51,7 @@ renderPage config r val = elAttr "html" ("lang" =: "en") $ do
       Route_Redirect _ ->
         blank
       _ -> do
-        let semanticCss = "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.4/dist/semantic.min.css"
+        let semanticCss = "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.5/dist/semantic.min.css"
         elAttr "link" ("rel" =: "stylesheet" <> "href" =: semanticCss) blank
         elAttr "style" ("type" =: "text/css") $ text $ toText $ C.renderWith C.compact [] $ mainStyle config
         googleFonts [headerFont, bodyFont, monoFont]
