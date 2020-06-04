@@ -48,9 +48,14 @@ backlinkForest conn z =
     . G.bfsForestBackwards z
     . G.induceOnEdge (== Just conn)
 
-backlinks :: Connection -> Zettel -> ZettelGraph -> [Zettel]
-backlinks conn z g =
-  G.preSetWithEdgeLabel (Just conn) z g
+backlinks ::
+  (Maybe Connection -> Bool) ->
+  Zettel ->
+  ZettelGraph ->
+  [(Connection, Zettel)]
+backlinks f z g =
+  mapMaybe (\(e, v) -> (,v) <$> e) $
+    G.preSetWithEdgeLabel f z g
 
 -- | Like backlinks but for multiple zettels. More performant than calling
 -- `backlinks` in a loop.

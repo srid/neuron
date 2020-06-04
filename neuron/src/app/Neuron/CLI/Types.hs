@@ -21,6 +21,7 @@ import Data.Default (def)
 import Data.Some
 import Data.TagTree (mkTagPattern)
 import Data.Time
+import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import qualified Neuron.Zettelkasten.Query.Error as Q
@@ -134,6 +135,26 @@ commandParser defaultNotesDir today = do
             <|> fmap
               Right
               (fmap (const $ Some $ Q.GraphQuery_Id) $ switch (long "graph" <> help "Get the entire zettelkasten graph as JSON"))
+            <|> fmap
+              Right
+              ( fmap (Some . Q.GraphQuery_BacklinksOf Nothing) $
+                  option
+                    zettelIDReader
+                    ( long "backlinks-of"
+                        <> help "Get backlinks to the given zettel ID"
+                        <> metavar "ID"
+                    )
+              )
+            <|> fmap
+              Right
+              ( fmap (Some . Q.GraphQuery_BacklinksOf (Just C.Folgezettel)) $
+                  option
+                    zettelIDReader
+                    ( long "uplinks-of"
+                        <> help "Get uplinks to the given zettel ID"
+                        <> metavar "ID"
+                    )
+              )
         )
     searchCommand = do
       searchBy <-

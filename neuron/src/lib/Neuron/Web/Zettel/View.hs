@@ -69,7 +69,7 @@ renderZettelContentCard (graph, zc) =
 
 renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> NeuronWebT t m ()
 renderZettelBottomPane graph z@Zettel {..} = do
-  let cfBacklinks = nonEmpty $ G.backlinks OrdinaryConnection z graph
+  let cfBacklinks = nonEmpty $ fmap snd $ G.backlinks (== Just OrdinaryConnection) z graph
       tags = nonEmpty zettelTags
   when (isJust cfBacklinks || isJust tags)
     $ elClass "nav" "ui bottom attached segment deemphasized"

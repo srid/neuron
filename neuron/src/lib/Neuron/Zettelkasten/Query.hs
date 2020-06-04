@@ -16,6 +16,7 @@ import Data.Aeson
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
+import Neuron.Zettelkasten.Graph (backlinks, getZettel)
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
@@ -46,9 +47,15 @@ runZettelQuery zs = \case
       Map.fromListWith (+) $
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
 
-runGraphQuery :: ZettelGraph -> GraphQuery r -> r
+runGraphQuery :: ZettelGraph -> GraphQuery r -> Either QueryResultError r
 runGraphQuery g = \case
-  GraphQuery_Id -> g
+  GraphQuery_Id -> Right g
+  GraphQuery_BacklinksOf conn zid ->
+    case getZettel zid g of
+      Nothing ->
+        Left $ QueryResultError_NoSuchZettel zid
+      Just z ->
+        Right $ backlinks (maybe isJust (const (== conn)) conn) z g
 
 zettelQueryResultJson ::
   forall r.
@@ -95,19 +102,24 @@ graphQueryResultJson ::
   forall r.
   (ToJSON (GraphQuery r)) =>
   GraphQuery r ->
-  r ->
+  Either QueryResultError r ->
   -- Zettels that cannot be parsed by neuron (and as such are excluded from the graph)
   Map ZettelID ZettelError ->
   Value
-graphQueryResultJson q r skippedZettels =
+graphQueryResultJson q er skippedZettels =
   toJSON $
     object
       [ "query" .= toJSON q,
-        "result" .= resultJson,
+        either
+          (\e -> "error" .= toJSON e)
+          (\r -> "result" .= toJSON (resultJson r))
+          er,
         "skipped" .= skippedZettels
       ]
   where
-    resultJson :: Value
-    resultJson = case q of
+    resultJson :: r -> Value
+    resultJson r = case q of
       GraphQuery_Id ->
+        toJSON r
+      GraphQuery_BacklinksOf _ _ ->
         toJSON r
