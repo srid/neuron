@@ -28,7 +28,7 @@ import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Query.Graph as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
-import Neuron.Zettelkasten.Zettel.Meta (zettelDateFormat)
+import Neuron.Zettelkasten.Zettel.Meta (parseZettelDate)
 import Options.Applicative
 import Relude
 import qualified Rib.Cli
@@ -173,5 +173,4 @@ commandParser defaultNotesDir today = do
           else Right s
     dayReader :: ReadM Day
     dayReader =
-      maybeReader $
-        parseTimeM False defaultTimeLocale zettelDateFormat
+      maybeReader (parseZettelDate . toText)

@@ -7,7 +7,8 @@
 
 module Neuron.Zettelkasten.Zettel.Meta
   ( Meta (..),
-    zettelDateFormat
+    formatZettelDate,
+    parseZettelDate,
   )
 where
 
@@ -45,13 +46,20 @@ instance FromYAML Meta where
 
 instance FromYAML Day where
   parseYAML =
-    parseTimeM False defaultTimeLocale zettelDateFormat . toString
-      <=< parseYAML @Text
+    parseZettelDate <=< parseYAML @Text
 
 instance ToYAML Day where
   toYAML =
-    toYAML . toText . formatTime defaultTimeLocale zettelDateFormat
+    toYAML . formatZettelDate
 
 -- | The format in which we decode and encode zettel dates.
 zettelDateFormat :: String
 zettelDateFormat = "%Y-%m-%d"
+
+formatZettelDate :: Day -> Text
+formatZettelDate =
+  toText . formatTime defaultTimeLocale zettelDateFormat
+
+parseZettelDate :: Monad m => Text -> m Day
+parseZettelDate =
+  parseTimeM False defaultTimeLocale zettelDateFormat . toString
