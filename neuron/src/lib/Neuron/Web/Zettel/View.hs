@@ -11,6 +11,7 @@
 
 module Neuron.Web.Zettel.View
   ( renderZettel,
+    renderZettelContentCard,
   )
 where
 
@@ -35,7 +36,7 @@ renderZettel ::
   PandocBuilder t m =>
   (ZettelGraph, PandocZettel) ->
   NeuronWebT t m [QueryError]
-renderZettel (graph, (PandocZettel (z@Zettel {..}, zc))) = do
+renderZettel (graph, pz@(PandocZettel (z@Zettel {..}, _))) = do
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
@@ -48,7 +49,7 @@ renderZettel (graph, (PandocZettel (z@Zettel {..}, zc))) = do
       lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
       errors <-
-        renderZettelContent (evalAndRenderZettelQuery graph) z zc
+        renderZettelContentCard (graph, pz)
           <* renderZettelBottomPane graph z
       pure errors
   -- Because the tree above can be pretty large, we scroll past it
@@ -57,6 +58,13 @@ renderZettel (graph, (PandocZettel (z@Zettel {..}, zc))) = do
     unless (null upTree) $ do
       AS.script "zettel-container-anchor"
   pure errors
+
+renderZettelContentCard ::
+  PandocBuilder t m =>
+  (ZettelGraph, PandocZettel) ->
+  NeuronWebT t m [QueryError]
+renderZettelContentCard (graph, (PandocZettel (z@Zettel {..}, zc))) =
+  renderZettelContent (evalAndRenderZettelQuery graph) z zc
 
 renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> NeuronWebT t m ()
 renderZettelBottomPane graph z@Zettel {..} = do
