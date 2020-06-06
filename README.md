@@ -6,14 +6,14 @@
 [![built with nix](https://img.shields.io/badge/Built_With-Nix-5277C3.svg?logo=nixos&labelColor=73C3D5)](https://builtwithnix.org)
 [![Zulip chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://funprog.zulipchat.com/#narrow/stream/231929-Neuron)
 
-neuron is a system for managing your plain-text [Zettelkasten](https://neuron.zettel.page/2011401.html) notes. 
+neuron is a command-line app for managing your plain-text [Zettelkasten](https://neuron.zettel.page/2011401.html) notes.
 
 **Features**
 
 - Extended Markdown for easy linking between zettels
 - Web interface (auto generated static site)
-- Graph view of zettels (organic category tree)
-- CLI for creating new zettels with automatic ID
+- Graph view of zettels (folgezettel-based category tree)
+- Hash-based note IDs
 
 ## Getting started
 
