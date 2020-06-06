@@ -112,7 +112,8 @@ loadZettelkastenFrom ::
 loadZettelkastenFrom files = do
   notesDir <- Rib.ribInputDir
   filesWithContent <- forM files $ \((notesDir </>) -> path) -> do
-    s <- toText <$> readFile' path
+    need [path]
+    s <- decodeUtf8With lenientDecode <$> readFileBS path
     pure (path, s)
   let (zs, errorsSkipped) = parseZettels filesWithContent
       g = fst $ G.mkZettelGraph $ fmap (fst . unPandocZettel) zs
