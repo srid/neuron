@@ -12,7 +12,7 @@ neuron is a command-line app for managing your plain-text [Zettelkasten](https:/
 
 - Extended Markdown for easy linking between zettels
 - Web interface (auto generated static site)
-- Graph view of zettels (folgezettel-based category tree)
+- Graph view of zettels (folgezettel heterarchy)
 - Hash-based note IDs
 
 ## Getting started

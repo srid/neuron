@@ -36,7 +36,7 @@
   - #107: Add full path to the zettel in `neuron query` JSON
 - Web interface:
   - Custom themes for web interface
-  - Display all backlinks to a zettel (even those not in category tree) (#34)
+  - Display all backlinks to a zettel (even those not in folgezettel heterarchy) (#34)
   - Simplified link style (#151)
   - Client-side web search (#90)
   - Add JSON-LD breadcrumbs (#147)

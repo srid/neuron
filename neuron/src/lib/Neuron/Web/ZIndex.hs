@@ -46,7 +46,9 @@ renderZIndex neuronTheme graph errors = do
     let clusters = G.categoryClusters graph
     el "p" $ do
       text $ "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten folgezettel graph. "
-      text "Each cluster is rendered as a forest."
+      text "Each cluster's "
+      elAttr "a" ("href" =: "https://neuron.zettel.page/2017401.html") $ text "folgezettel heterarchy"
+      text " is rendered as a forest."
     forM_ clusters $ \forest ->
       divClass ("ui " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
