@@ -59,7 +59,7 @@ renderZIndex neuronTheme graph errors = do
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderErrors :: DomBuilder t m => Map ZettelID (Either ZettelParseError [QueryError]) -> m ()
+renderErrors :: DomBuilder t m => Map ZettelID (Either ZettelParseError [QueryError]) -> NeuronWebT t m ()
 renderErrors errors = do
   let skippedZettels = Map.mapMaybe leftToMaybe errors
       zettelsWithErrors = Map.mapMaybe rightToMaybe errors
@@ -78,9 +78,7 @@ renderErrors errors = do
     divClass "ui tiny warning message" $ do
       divClass "header" $ do
         text $ "Zettel "
-        elClass "span" "zettel-link-container" $ do
-          elClass "span" "zettel-link" $ do
-            elAttr "a" ("href" =: QueryView.zettelUrl zid) $ text $ zettelIDText zid
+        QueryView.renderZettelLinkIDOnly zid
         text " has errors"
       el "p" $ do
         el "ol" $ do

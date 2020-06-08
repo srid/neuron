@@ -13,6 +13,7 @@
 module Neuron.Web.Query.View
   ( renderQueryResult,
     renderZettelLink,
+    renderZettelLinkIDOnly,
     zettelUrl,
     tagUrl,
     style,
@@ -122,6 +123,13 @@ renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
             <> "data-inverted" =: ""
             <> "data-position" =: "right center"
         )
+
+-- | Like `renderZettelLink` but when we only have ID in hand.
+renderZettelLinkIDOnly :: DomBuilder t m => ZettelID -> NeuronWebT t m ()
+renderZettelLinkIDOnly zid =
+  elClass "span" "zettel-link-container" $ do
+    elClass "span" "zettel-link" $ do
+      neuronRouteLink (Some $ Route_Zettel zid) mempty $ text $ zettelIDText zid
 
 renderTagTree :: forall t m. DomBuilder t m => Forest (NonEmpty TagNode, Natural) -> m ()
 renderTagTree t =
