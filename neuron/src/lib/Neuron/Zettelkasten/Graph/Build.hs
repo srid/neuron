@@ -11,7 +11,7 @@ import qualified Data.Map.Strict as Map
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error (QueryParseError)
+import Neuron.Zettelkasten.Query.Error (QueryError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -23,10 +23,10 @@ import Relude
 mkZettelGraph ::
   [Zettel] ->
   ( ZettelGraph,
-    Map ZettelID [QueryParseError]
+    Map ZettelID [QueryError]
   )
 mkZettelGraph zettels =
-  let res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryParseError]))] =
+  let res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryError]))] =
         flip fmap zettels $ \z ->
           (z, runQueryConnections zettels z)
       g :: ZettelGraph = G.mkGraphFrom zettels $ flip concatMap res $ \(z1, fst -> conns) ->
@@ -37,7 +37,7 @@ mkZettelGraph zettels =
           else Just (zettelID z, errs)
    in (g, errors)
 
-runQueryConnections :: [Zettel] -> Zettel -> ([(Maybe Connection, Zettel)], [QueryParseError])
+runQueryConnections :: [Zettel] -> Zettel -> ([(Maybe Connection, Zettel)], [QueryError])
 runQueryConnections zettels z =
   flip runReader zettels $ do
     runWriterT $ queryConnections z
