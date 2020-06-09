@@ -44,7 +44,7 @@ routeStructuredData Config {..} (graph, v) = \case
         let mkCrumb :: Zettel -> Breadcrumb.Item
             mkCrumb Zettel {..} =
               Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
-         in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (fst $ unPandocZettel v) graph
+         in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (sansContent v) graph
   _ ->
     []
 
@@ -58,7 +58,7 @@ routeOpenGraph Config {..} v r =
         Route_ZIndex -> Just "Zettelkasten Index"
         Route_Search -> Just "Search Zettelkasten"
         Route_Zettel _ -> do
-          let PandocZettel (_, doc) = v
+          doc <- getPandocDoc v
           para <- getFirstParagraphText doc
           paraText <- renderPandocAsText para
           pure $ T.take 300 paraText,
@@ -68,7 +68,7 @@ routeOpenGraph Config {..} v r =
         _ -> Just OGType_Website,
       _openGraph_image = case r of
         Route_Zettel _ -> do
-          let PandocZettel (_, doc) = v
+          doc <- getPandocDoc v
           image <- URI.mkURI =<< Pandoc.getFirstImg doc
           baseUrl <- URI.mkURI =<< siteBaseUrl
           URI.relativeTo image baseUrl

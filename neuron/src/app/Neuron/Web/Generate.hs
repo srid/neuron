@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -20,7 +21,6 @@ import Data.Traversable
 import Development.Shake
 import Neuron.Config (Config (..))
 import Neuron.Config.Alias (Alias (..), getAliases)
-import Neuron.Markdown (ZettelParseError)
 import Neuron.Version (neuronVersion, olderThan)
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
@@ -40,27 +40,21 @@ import System.FilePath
 -- | Generate the Zettelkasten site
 generateSite ::
   Config ->
-  (forall a. Z.Route a -> (ZettelGraph, a) -> Action (Z.RouteError a)) ->
+  (forall a. Z.Route a -> (ZettelGraph, a) -> Action ()) ->
   Action ZettelGraph
 generateSite config writeHtmlRoute' = do
   when (olderThan $ minVersion config)
     $ fail
     $ toString
     $ "Require neuron mininum version " <> minVersion config <> ", but your neuron version is " <> neuronVersion
-  (zettelGraph, zettelContents, skippedErrors) <- loadZettelkasten
-  let writeHtmlRoute :: forall a. a -> Z.Route a -> Action (Z.RouteError a)
+  (zettelGraph, zettelContents, errors) <- loadZettelkasten
+  let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
       writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
-  queryErrors <- fmap (Map.fromList . catMaybes) $ forM zettelContents $ \val@(PandocZettel (z, _)) -> do
+  forM_ zettelContents $ \val@(sansContent -> z) -> do
     let r = Z.Route_Zettel $ zettelID z
-    zerrors <- writeHtmlRoute val r
-    if null zerrors
-      then pure Nothing
-      else do
-        reportError r Nothing $ showQueryError <$> zerrors
-        pure $ Just (zettelID z, zerrors)
+    writeHtmlRoute val r
   -- Generate the z-index
-  let errors = fmap Left skippedErrors `Map.union` fmap Right queryErrors
   writeHtmlRoute errors Z.Route_ZIndex
   -- Generate search page
   writeHtmlRoute () Z.Route_Search
@@ -68,8 +62,12 @@ generateSite config writeHtmlRoute' = do
   aliases <- getAliases config zettelGraph
   forM_ aliases $ \Alias {..} ->
     writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
-  forM_ (Map.toList skippedErrors) $ \(zid, err) -> do
-    reportError (Z.Route_Zettel zid) (Just "SKIPPED") [show err]
+  forM_ (Map.toList errors) $ \(zid, eerr) -> do
+    case eerr of
+      Left serr ->
+        reportError (Z.Route_Zettel zid) (Just "SKIPPED") [show serr]
+      Right qerrs ->
+        reportError (Z.Route_Zettel zid) Nothing $ showQueryError <$> toList qerrs
   pure zettelGraph
 
 -- | Report an error in the terminal
@@ -95,8 +93,8 @@ loadZettelsIgnoringErrors = do
 loadZettelkasten ::
   Action
     ( ZettelGraph,
-      [PandocZettel],
-      Map ZettelID ZettelParseError
+      [ZettelC],
+      Map ZettelID ZettelError
     )
 loadZettelkasten =
   loadZettelkastenFrom =<< Rib.forEvery ["*.md"] pure
@@ -106,8 +104,8 @@ loadZettelkastenFrom ::
   [FilePath] ->
   Action
     ( ZettelGraph,
-      [PandocZettel],
-      Map ZettelID ZettelParseError
+      [ZettelC],
+      Map ZettelID ZettelError
     )
 loadZettelkastenFrom files = do
   notesDir <- Rib.ribInputDir
@@ -115,6 +113,9 @@ loadZettelkastenFrom files = do
     need [path]
     s <- decodeUtf8With lenientDecode <$> readFileBS path
     pure (path, s)
-  let (zs, errorsSkipped) = parseZettels filesWithContent
-      g = fst $ G.mkZettelGraph $ fmap (fst . unPandocZettel) zs
-  pure (g, zs, errorsSkipped)
+  let zs = parseZettels filesWithContent
+      skippedErrors = Map.fromList $ flip mapMaybe zs $ \case
+        Left (Zettel {..}) -> Just (zettelID, zettelError)
+        Right _ -> Nothing
+      (g, Map.mapMaybe nonEmpty -> queryErrors) = G.mkZettelGraph $ fmap sansContent zs
+  pure (g, zs, fmap Left skippedErrors `Map.union` fmap Right queryErrors)

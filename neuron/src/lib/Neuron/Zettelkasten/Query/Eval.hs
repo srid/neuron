@@ -55,10 +55,13 @@ queryConnections ::
   Zettel ->
   m [(Maybe Connection, Zettel)]
 queryConnections Zettel {..} = do
-  let (queries, errors) = zettelQueries
   -- Report any query parse errors
-  tell $ Left <$> errors
-  fmap concat $ forM queries $ \someQ ->
+  case zettelError of
+    Right queryParseErrors ->
+      tell $ Left <$> queryParseErrors
+    Left _ ->
+      pure ()
+  fmap concat $ forM zettelQueries $ \someQ ->
     runExceptT (runSomeZettelQuery someQ) >>= \case
       Left e -> do
         tell [Right e]

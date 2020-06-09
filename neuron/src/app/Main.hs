@@ -33,14 +33,14 @@ generateMainSite :: Action ()
 generateMainSite = do
   Rib.buildStaticFiles ["static/**"]
   config <- Config.getConfig
-  let writeHtmlRoute :: Route a -> (ZettelGraph, a) -> Action (RouteError a)
+  let writeHtmlRoute :: Route a -> (ZettelGraph, a) -> Action ()
       writeHtmlRoute r x = do
-        (errors, html) <- liftIO $ renderStatic $ do
+        (_res, html) <- liftIO $ renderStatic $ do
           runNeuronWeb staticRouteConfig $
             renderPage config r x
         -- FIXME: Make rib take bytestrings
         Rib.writeRoute r $ decodeUtf8 @Text html
-        pure errors
+        pure ()
   void $ generateSite config writeHtmlRoute
 
 renderPage :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m (RouteError a)

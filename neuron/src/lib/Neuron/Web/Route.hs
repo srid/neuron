@@ -10,7 +10,6 @@ module Neuron.Web.Route where
 
 import Control.Monad.Reader
 import Data.Some
-import Neuron.Markdown (ZettelParseError)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Zettel
@@ -21,19 +20,19 @@ data Route a where
   Route_Redirect :: ZettelID -> Route ZettelID
   -- ZIndex takes a report of all errors in the zettelkasten.
   -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
-  Route_ZIndex :: Route (Map ZettelID (Either ZettelParseError [QueryError]))
+  Route_ZIndex :: Route (Map ZettelID ZettelError)
   Route_Search :: Route ()
-  Route_Zettel :: ZettelID -> Route PandocZettel
+  Route_Zettel :: ZettelID -> Route ZettelC
 
 type family RouteError r
 
-type instance RouteError (Map ZettelID (Either ZettelParseError [QueryError])) = ()
+type instance RouteError (Map ZettelID ZettelError) = ()
 
 type instance RouteError ZettelID = ()
 
 type instance RouteError () = ()
 
-type instance RouteError PandocZettel = [QueryError]
+type instance RouteError ZettelC = [QueryError]
 
 data RouteConfig t m = RouteConfig
   { -- | Whether the view is being rendered for static HTML generation
@@ -63,5 +62,4 @@ routeTitle' v = \case
   Route_ZIndex -> "Zettel Index"
   Route_Search -> "Search"
   Route_Zettel _ ->
-    let PandocZettel (z, _) = v
-     in zettelTitle z
+    either zettelTitle zettelTitle v

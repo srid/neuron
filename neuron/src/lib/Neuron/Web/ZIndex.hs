@@ -13,7 +13,6 @@ where
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
 import Data.Tree
-import Neuron.Markdown (ZettelParseError)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
@@ -21,7 +20,7 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
+import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Relude hiding ((&))
@@ -30,7 +29,7 @@ renderZIndex ::
   DomBuilder t m =>
   Theme.Theme ->
   ZettelGraph ->
-  Map ZettelID (Either ZettelParseError [QueryError]) ->
+  Map ZettelID ZettelError ->
   NeuronWebT t m ()
 renderZIndex neuronTheme graph errors = do
   elClass "h1" "header" $ text "Zettel Index"
@@ -59,7 +58,7 @@ renderZIndex neuronTheme graph errors = do
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderErrors :: DomBuilder t m => Map ZettelID (Either ZettelParseError [QueryError]) -> NeuronWebT t m ()
+renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
 renderErrors errors = do
   let skippedZettels = Map.mapMaybe leftToMaybe errors
       zettelsWithErrors = Map.mapMaybe rightToMaybe errors

@@ -34,9 +34,9 @@ import Text.Pandoc.Definition (Pandoc)
 
 renderZettel ::
   PandocBuilder t m =>
-  (ZettelGraph, PandocZettel) ->
+  (ZettelGraph, ZettelC) ->
   NeuronWebT t m [QueryError]
-renderZettel (graph, pz@(PandocZettel (z@Zettel {..}, _))) = do
+renderZettel (graph, zc@(sansContent -> z@Zettel {..})) = do
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
@@ -49,7 +49,7 @@ renderZettel (graph, pz@(PandocZettel (z@Zettel {..}, _))) = do
       lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
       errors <-
-        renderZettelContentCard (graph, pz)
+        renderZettelContentCard (graph, zc)
           <* renderZettelBottomPane graph z
       pure errors
   -- Because the tree above can be pretty large, we scroll past it
@@ -61,10 +61,18 @@ renderZettel (graph, pz@(PandocZettel (z@Zettel {..}, _))) = do
 
 renderZettelContentCard ::
   PandocBuilder t m =>
-  (ZettelGraph, PandocZettel) ->
+  (ZettelGraph, ZettelC) ->
   NeuronWebT t m [QueryError]
-renderZettelContentCard (graph, (PandocZettel (z@Zettel {..}, zc))) =
-  renderZettelContent (evalAndRenderZettelQuery graph) z zc
+renderZettelContentCard (graph, zc) =
+  case zc of
+    Right z ->
+      renderZettelContent (evalAndRenderZettelQuery graph) z
+    Left Zettel {..} -> do
+      divClass "ui error message" $ do
+        elClass "h2" "header" $ text "Zettel failed to parse"
+        el "p" $ el "pre" $ text $ show zettelError
+      el "pre" $ text $ zettelContent
+      pure mempty -- XXX
 
 renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> NeuronWebT t m ()
 renderZettelBottomPane graph z@Zettel {..} = do
@@ -110,13 +118,12 @@ renderZettelContent ::
   forall t m a.
   (PandocBuilder t m, Monoid a) =>
   (NeuronWebT t m a -> URILink -> NeuronWebT t m a) ->
-  Zettel ->
-  Pandoc ->
+  ZettelT Pandoc ->
   NeuronWebT t m a
-renderZettelContent handleLink Zettel {..} doc = do
+renderZettelContent handleLink Zettel {..} = do
   elClass "article" "ui raised attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
-    x <- elPandoc (Config handleLink) doc
+    x <- elPandoc (Config handleLink) zettelContent
     whenJust zettelDay $ \day ->
       elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ do
         elTime day
