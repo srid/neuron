@@ -89,11 +89,6 @@ sansContent = \case
       (Right $ zettelError z)
       (MetadataOnly ())
 
-getPandocDoc :: ZettelC -> Maybe Pandoc
-getPandocDoc = \case
-  Left _ -> Nothing
-  Right (Zettel {..}) -> Just zettelContent
-
 type family ContentError c
 
 type instance ContentError Pandoc = [QueryParseError]
@@ -103,17 +98,6 @@ type instance ContentError Text = ZettelParseError
 type instance ContentError MetadataOnly = Either (ContentError Text) (ContentError Pandoc)
 
 type ZettelError = Either ZettelParseError (NonEmpty QueryError)
-
--- | A zettel with the associated pandoc AST
-newtype PandocZettel = PandocZettel {unPandocZettel :: (Zettel, Pandoc)}
-  deriving (Eq)
-
--- old approach:
--- Zettel with content
---
--- The content is either parsed Pandoc doc, or the raw content (when parsing has
--- failed)
-data ZwC = ZwC (Zettel, Either Text Pandoc)
 
 instance Eq (ZettelT c) where
   (==) = (==) `on` zettelID

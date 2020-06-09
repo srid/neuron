@@ -11,7 +11,6 @@ module Neuron.Web.Route where
 import Control.Monad.Reader
 import Data.Some
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core
 import Relude
@@ -23,16 +22,6 @@ data Route a where
   Route_ZIndex :: Route (Map ZettelID ZettelError)
   Route_Search :: Route ()
   Route_Zettel :: ZettelID -> Route ZettelC
-
-type family RouteError r
-
-type instance RouteError (Map ZettelID ZettelError) = ()
-
-type instance RouteError ZettelID = ()
-
-type instance RouteError () = ()
-
-type instance RouteError ZettelC = [QueryError]
 
 data RouteConfig t m = RouteConfig
   { -- | Whether the view is being rendered for static HTML generation

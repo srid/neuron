@@ -85,7 +85,7 @@ renderRouteHead config route val = do
             then x
             else x <> " - " <> suffix
 
-renderRouteBody :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m (RouteError a)
+renderRouteBody :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
 renderRouteBody Config {..} r (g, x) = do
   let neuronTheme = Theme.mkTheme theme
   case r of

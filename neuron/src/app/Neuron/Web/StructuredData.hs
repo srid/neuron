@@ -77,6 +77,8 @@ routeOpenGraph Config {..} v r =
         baseUrl <- siteBaseUrl
         pure $ routeUri baseUrl r
     }
+  where
+    getPandocDoc = either (const Nothing) (Just . zettelContent)
 
 renderOpenGraph :: forall t m. DomBuilder t m => OpenGraph -> m ()
 renderOpenGraph OpenGraph {..} = do

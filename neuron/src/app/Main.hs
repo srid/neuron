@@ -18,7 +18,7 @@ import Neuron.Config (Config)
 import qualified Neuron.Config as Config
 import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Generate.Route (staticRouteConfig)
-import Neuron.Web.Route (NeuronWebT, Route (..), RouteError, runNeuronWeb)
+import Neuron.Web.Route (NeuronWebT, Route (..), runNeuronWeb)
 import Neuron.Web.View (renderRouteBody, renderRouteHead, style)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Reflex.Dom.Core
@@ -35,15 +35,14 @@ generateMainSite = do
   config <- Config.getConfig
   let writeHtmlRoute :: Route a -> (ZettelGraph, a) -> Action ()
       writeHtmlRoute r x = do
-        (_res, html) <- liftIO $ renderStatic $ do
+        ((), html) <- liftIO $ renderStatic $ do
           runNeuronWeb staticRouteConfig $
             renderPage config r x
         -- FIXME: Make rib take bytestrings
         Rib.writeRoute r $ decodeUtf8 @Text html
-        pure ()
   void $ generateSite config writeHtmlRoute
 
-renderPage :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m (RouteError a)
+renderPage :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
 renderPage config r val = elAttr "html" ("lang" =: "en") $ do
   el "head" $ do
     renderRouteHead config r val
