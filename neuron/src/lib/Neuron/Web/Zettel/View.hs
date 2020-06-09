@@ -34,37 +34,38 @@ import Text.Pandoc.Definition (Pandoc)
 
 renderZettel ::
   PandocBuilder t m =>
-  (ZettelGraph, PandocZettel) ->
-  NeuronWebT t m [QueryError]
-renderZettel (graph, pz@(PandocZettel (z@Zettel {..}, _))) = do
+  (ZettelGraph, ZettelC) ->
+  NeuronWebT t m ()
+renderZettel (graph, zc@(sansContent -> z)) = do
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
       Q.renderZettelLink (G.getConnection z z2 graph) def z2
   -- Main content
-  errors <- elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
+  elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     whenStaticallyGenerated $ do
       -- We use -24px (instead of -14px) here so as to not scroll all the way to
       -- title, and as to leave some of the tree visible as "hint" to the user.
       lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
-      errors <-
-        renderZettelContentCard (graph, pz)
-          <* renderZettelBottomPane graph z
-      pure errors
+      renderZettelContentCard (graph, zc)
+      renderZettelBottomPane graph z
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
   whenStaticallyGenerated $ do
     unless (null upTree) $ do
       AS.script "zettel-container-anchor"
-  pure errors
 
 renderZettelContentCard ::
   PandocBuilder t m =>
-  (ZettelGraph, PandocZettel) ->
-  NeuronWebT t m [QueryError]
-renderZettelContentCard (graph, (PandocZettel (z@Zettel {..}, zc))) =
-  renderZettelContent (evalAndRenderZettelQuery graph) z zc
+  (ZettelGraph, ZettelC) ->
+  NeuronWebT t m ()
+renderZettelContentCard (graph, zc) =
+  case zc of
+    Right z ->
+      renderZettelContent (evalAndRenderZettelQuery graph) z
+    Left z -> do
+      renderZettelRawContent z
 
 renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> NeuronWebT t m ()
 renderZettelBottomPane graph z@Zettel {..} = do
@@ -110,17 +111,23 @@ renderZettelContent ::
   forall t m a.
   (PandocBuilder t m, Monoid a) =>
   (NeuronWebT t m a -> URILink -> NeuronWebT t m a) ->
-  Zettel ->
-  Pandoc ->
-  NeuronWebT t m a
-renderZettelContent handleLink Zettel {..} doc = do
+  ZettelT Pandoc ->
+  NeuronWebT t m ()
+renderZettelContent handleLink Zettel {..} = do
   elClass "article" "ui raised attached segment zettel-content" $ do
     elClass "h1" "header" $ text zettelTitle
-    x <- elPandoc (Config handleLink) doc
+    void $ elPandoc (Config handleLink) zettelContent
     whenJust zettelDay $ \day ->
       elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ do
         elTime day
-    pure x
+
+renderZettelRawContent :: (DomBuilder t m) => ZettelT Text -> m ()
+renderZettelRawContent Zettel {..} = do
+  divClass "ui error message" $ do
+    elClass "h2" "header" $ text "Zettel failed to parse"
+    el "p" $ el "pre" $ text $ show zettelError
+  elClass "article" "ui raised attached segment zettel-content raw" $ do
+    el "pre" $ text $ zettelContent
 
 renderTags :: DomBuilder t m => NonEmpty Tag -> m ()
 renderTags tags = do

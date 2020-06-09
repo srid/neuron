@@ -13,7 +13,6 @@ where
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
 import Data.Tree
-import Neuron.Markdown (ZettelParseError)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
@@ -21,7 +20,7 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
+import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Relude hiding ((&))
@@ -30,7 +29,7 @@ renderZIndex ::
   DomBuilder t m =>
   Theme.Theme ->
   ZettelGraph ->
-  Map ZettelID (Either ZettelParseError [QueryError]) ->
+  Map ZettelID ZettelError ->
   NeuronWebT t m ()
 renderZIndex neuronTheme graph errors = do
   elClass "h1" "header" $ text "Zettel Index"
@@ -59,31 +58,23 @@ renderZIndex neuronTheme graph errors = do
       1 -> "is 1 " <> noun
       n -> "are " <> show n <> " " <> nounPlural
 
-renderErrors :: DomBuilder t m => Map ZettelID (Either ZettelParseError [QueryError]) -> NeuronWebT t m ()
+renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
 renderErrors errors = do
-  let skippedZettels = Map.mapMaybe leftToMaybe errors
-      zettelsWithErrors = Map.mapMaybe rightToMaybe errors
-  unless (null skippedZettels) $ do
-    divClass "ui small negative message" $ do
-      divClass "header" $ do
-        text "These files are excluded from the zettelkasten due to parse errors"
-      el "p" $ do
-        el "ol" $ do
-          forM_ (Map.toList skippedZettels) $ \(zid, err) ->
-            el "li" $ do
-              el "b" $ el "tt" $ text $ toText $ zettelIDSourceFileName zid
-              text ": "
-              el "pre" $ text $ show err
-  forM_ (Map.toList zettelsWithErrors) $ \(zid, qerrors) ->
-    divClass "ui tiny warning message" $ do
+  let eitherError f1 f2 = either (const f1) (const f2)
+  forM_ (Map.toList errors) $ \(zid, eError) ->
+    divClass ("ui tiny message " <> eitherError "negative" "warning" eError) $ do
       divClass "header" $ do
         text $ "Zettel "
         QueryView.renderZettelLinkIDOnly zid
-        text " has errors"
+        text $ eitherError " failed to parse" " has malformed queries" eError
       el "p" $ do
-        el "ol" $ do
-          forM_ qerrors $ \qe ->
-            el "li" $ el "pre" $ text $ showQueryError qe
+        case eError of
+          Left parseError ->
+            el "pre" $ text $ show parseError
+          Right queryErrors ->
+            el "ol" $ do
+              forM_ queryErrors $ \qe ->
+                el "li" $ el "pre" $ text $ showQueryError qe
 
 renderForest ::
   DomBuilder t m =>

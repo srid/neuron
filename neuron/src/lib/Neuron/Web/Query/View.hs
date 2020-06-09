@@ -96,7 +96,8 @@ renderQuery someQ =
 -- | Render a link to an individual zettel.
 renderZettelLink :: DomBuilder t m => Maybe Connection -> Maybe LinkView -> Zettel -> NeuronWebT t m ()
 renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
-  let connClass = maybe "" show conn
+  let connClass = show <$> conn
+      rawClass = either (const $ Just "raw") (const Nothing) zettelError
       mextra =
         if linkViewShowDate
           then case zettelDay of
@@ -105,7 +106,8 @@ renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
             Nothing ->
               Nothing
           else Nothing
-  elClass "span" ("zettel-link-container " <> connClass) $ do
+      classes :: [Text] = catMaybes $ [Just "zettel-link-container"] <> [connClass, rawClass]
+  elClass "span" (T.intercalate " " classes) $ do
     forM_ mextra $ \extra ->
       elClass "span" "extra monoFont" $ extra
     let linkTooltip =
@@ -196,5 +198,7 @@ zettelLinkCss neuronTheme = do
   "span.zettel-link-container.folgezettel::after" ? do
     C.paddingLeft $ em 0.3
     C.content $ C.stringContent "ᛦ"
+  "span.zettel-link-container.raw" ? do
+    C.border C.solid (C.px 1) C.red
   "[data-tooltip]:after" ? do
     C.fontSize $ em 0.7

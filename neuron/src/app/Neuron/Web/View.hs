@@ -43,7 +43,7 @@ import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
-import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
+import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
@@ -85,7 +85,7 @@ renderRouteHead config route val = do
             then x
             else x <> " - " <> suffix
 
-renderRouteBody :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m (RouteError a)
+renderRouteBody :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
 renderRouteBody Config {..} r (g, x) = do
   let neuronTheme = Theme.mkTheme theme
   case r of
@@ -102,7 +102,7 @@ renderRouteBody Config {..} r (g, x) = do
         renderBrandFooter
       pure mempty
     Route_Zettel _ -> do
-      actionsNav neuronTheme editUrl (Just $ fst $ unPandocZettel x)
+      actionsNav neuronTheme editUrl (Just $ either zettelID zettelID x)
       ZettelView.renderZettel (g, x)
         <* renderBrandFooter
     Route_Redirect _ -> do
@@ -145,13 +145,13 @@ renderBrandFooter =
 fa :: DomBuilder t m => Text -> m ()
 fa k = elClass "i" k blank
 
-actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> NeuronWebT t m ()
-actionsNav theme editUrl mzettel = elClass "nav" "top-menu" $ do
+actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe ZettelID -> NeuronWebT t m ()
+actionsNav theme editUrl mzid = elClass "nav" "top-menu" $ do
   divClass ("ui inverted compact neuron icon menu " <> Theme.semanticColor theme) $ do
     neuronRouteLink (Some Route_ZIndex) ("class" =: "left item" <> "title" =: "All Zettels (z-index)") $
       semanticIcon "tree"
-    whenJust ((,) <$> mzettel <*> editUrl) $ \(Zettel {..}, urlPrefix) -> do
-      let attrs = ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID)) <> "title" =: "Edit this Zettel")
+    whenJust ((,) <$> mzid <*> editUrl) $ \(zid, urlPrefix) -> do
+      let attrs = ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zid)) <> "title" =: "Edit this Zettel")
       elAttr "a" ("class" =: "center item" <> attrs) $ do
         semanticIcon "edit"
     neuronRouteLink (Some Route_Search) ("class" =: "right item" <> "title" =: "Search Zettels") $ do

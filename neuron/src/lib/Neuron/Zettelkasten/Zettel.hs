@@ -1,8 +1,10 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -26,6 +28,7 @@ import Data.Some
 import Data.TagTree (Tag)
 import Data.TagTree (TagPattern (..))
 import Data.Time.Calendar
+import Neuron.Markdown
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
@@ -42,33 +45,67 @@ data ZettelQuery r where
   ZettelQuery_ZettelsByTag :: [TagPattern] -> Maybe Connection -> ZettelsView -> ZettelQuery [Zettel]
   ZettelQuery_Tags :: [TagPattern] -> ZettelQuery (Map Tag Natural)
 
--- | Zettel with no associated content
+-- | A zettel note
 --
 -- The metadata could have been inferred from the content.
-data Zettel = Zettel
+data ZettelT content = Zettel
   { zettelID :: ZettelID,
     zettelTitle :: Text,
     zettelTags :: [Tag],
     zettelDay :: Maybe Day,
-    zettelQueries :: ([Some ZettelQuery], [QueryParseError])
+    zettelQueries :: [Some ZettelQuery],
+    zettelError :: ContentError content,
+    zettelContent :: content
   }
   deriving (Generic)
 
--- | A zettel with the associated pandoc AST
-newtype PandocZettel = PandocZettel {unPandocZettel :: (Zettel, Pandoc)}
-  deriving (Eq)
+newtype MetadataOnly = MetadataOnly ()
+  deriving (Generic, ToJSON, FromJSON)
 
-instance Eq Zettel where
+type family ContentError c where
+  -- | The list of queries that failed to parse.
+  ContentError Pandoc = [QueryParseError]
+  -- | When a zettel fails to parse, we use its raw text along with its parse error.
+  ContentError Text = ZettelParseError
+  -- | When working with zettel sans content, we gather both kinds of errors (above)
+  ContentError MetadataOnly = Either (ContentError Text) (ContentError Pandoc)
+
+-- | All possible errors in a zettel
+--
+-- NOTE: Unlike `ContentError MetadataOnly` this also includes QueryResultError
+-- (which can be determined only after *evaluating* the queries).
+type ZettelError = Either ZettelParseError (NonEmpty QueryError)
+
+-- | Zettel without its content
+type Zettel = ZettelT MetadataOnly
+
+-- | Zettel with its content (Pandoc or raw text)
+type ZettelC = Either (ZettelT Text) (ZettelT Pandoc)
+
+sansContent :: ZettelC -> Zettel
+sansContent = \case
+  Left z ->
+    z
+      { zettelError = Left $ zettelError z,
+        zettelContent = MetadataOnly ()
+      }
+  Right z ->
+    z
+      { zettelError = Right $ zettelError z,
+        zettelContent = MetadataOnly ()
+      }
+
+instance Eq (ZettelT c) where
   (==) = (==) `on` zettelID
 
-instance Ord Zettel where
+instance Ord (ZettelT c) where
   compare = compare `on` zettelID
 
-instance Show Zettel where
+instance Show (ZettelT c) where
   show Zettel {..} = "Zettel:" <> show zettelID
 
-instance Vertex Zettel where
-  type VertexID Zettel = ZettelID
+instance Vertex (ZettelT c) where
+  type VertexID (ZettelT c) = ZettelID
   vertexID = zettelID
 
 sortZettelsReverseChronological :: [Zettel] -> [Zettel]
