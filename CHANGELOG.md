@@ -9,7 +9,7 @@
 - Switch to GHC 8.6 (for reflex-dom)
 - Raw HTML support (#191)
 - Introduce new "uplink tree" view (#195)
-- Resilient error handling (#202)
+- Resilient error handling (#202, #215)
 - Added `neuron query --graph` to get the entire graph as JSON export
 - Bug fixes
   - Fix 'neuron new' generating invalid Markdown when title contains special characters (#163)
