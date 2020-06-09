@@ -126,7 +126,8 @@ renderZettelRawContent Zettel {..} = do
   divClass "ui error message" $ do
     elClass "h2" "header" $ text "Zettel failed to parse"
     el "p" $ el "pre" $ text $ show zettelError
-  el "pre" $ text $ zettelContent
+  elClass "article" "ui raised attached segment zettel-content raw" $ do
+    el "pre" $ text $ zettelContent
 
 renderTags :: DomBuilder t m => NonEmpty Tag -> m ()
 renderTags tags = do

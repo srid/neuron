@@ -71,23 +71,15 @@ type ZettelC = Either (ZettelT Text) (ZettelT Pandoc)
 sansContent :: ZettelC -> Zettel
 sansContent = \case
   Left z ->
-    Zettel
-      (zettelID z)
-      (zettelTitle z)
-      (zettelTags z)
-      (zettelDay z)
-      (zettelQueries z)
-      (Left $ zettelError z)
-      (MetadataOnly ())
+    z
+      { zettelError = Left $ zettelError z,
+        zettelContent = MetadataOnly ()
+      }
   Right z ->
-    Zettel
-      (zettelID z)
-      (zettelTitle z)
-      (zettelTags z)
-      (zettelDay z)
-      (zettelQueries z)
-      (Right $ zettelError z)
-      (MetadataOnly ())
+    z
+      { zettelError = Right $ zettelError z,
+        zettelContent = MetadataOnly ()
+      }
 
 type family ContentError c
 

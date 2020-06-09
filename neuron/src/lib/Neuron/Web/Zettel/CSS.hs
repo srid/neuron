@@ -84,6 +84,8 @@ zettelContentCss neuronTheme = do
     codeStyle
     definitionListStyle
     blockquoteStyle
+  ".zettel-content.raw" ? do
+    C.backgroundColor "#ddd"
   where
     definitionListStyle = do
       C.dl ? do

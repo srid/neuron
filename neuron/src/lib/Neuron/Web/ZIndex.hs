@@ -60,29 +60,21 @@ renderZIndex neuronTheme graph errors = do
 
 renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
 renderErrors errors = do
-  let skippedZettels = Map.mapMaybe leftToMaybe errors
-      zettelsWithErrors = Map.mapMaybe rightToMaybe errors
-  unless (null skippedZettels) $ do
-    divClass "ui small negative message" $ do
-      divClass "header" $ do
-        text "These files are excluded from the zettelkasten due to parse errors"
-      el "p" $ do
-        el "ol" $ do
-          forM_ (Map.toList skippedZettels) $ \(zid, err) ->
-            el "li" $ do
-              el "b" $ el "tt" $ text $ toText $ zettelIDSourceFileName zid
-              text ": "
-              el "pre" $ text $ show err
-  forM_ (Map.toList zettelsWithErrors) $ \(zid, qerrors) ->
-    divClass "ui tiny warning message" $ do
+  let eitherError f1 f2 = either (const f1) (const f2)
+  forM_ (Map.toList errors) $ \(zid, eError) ->
+    divClass ("ui tiny message " <> eitherError "negative" "warning" eError) $ do
       divClass "header" $ do
         text $ "Zettel "
         QueryView.renderZettelLinkIDOnly zid
-        text " has errors"
+        text $ eitherError " failed to parse" " has malformed queries" eError
       el "p" $ do
-        el "ol" $ do
-          forM_ qerrors $ \qe ->
-            el "li" $ el "pre" $ text $ showQueryError qe
+        case eError of
+          Left parseError ->
+            el "pre" $ text $ show parseError
+          Right queryErrors ->
+            el "ol" $ do
+              forM_ queryErrors $ \qe ->
+                el "li" $ el "pre" $ text $ showQueryError qe
 
 renderForest ::
   DomBuilder t m =>
