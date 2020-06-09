@@ -28,7 +28,6 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.Zettel.Parser
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -108,9 +107,4 @@ loadZettelkastenFrom files = do
     need [path]
     s <- decodeUtf8With lenientDecode <$> readFileBS path
     pure (path, s)
-  let zs = parseZettels filesWithContent
-      skippedErrors = Map.fromList $ flip mapMaybe zs $ \case
-        Left (Zettel {..}) -> Just (zettelID, zettelError)
-        Right _ -> Nothing
-      (g, queryErrors) = G.mkZettelGraph $ fmap sansContent zs
-  pure (g, zs, fmap Left skippedErrors `Map.union` fmap Right queryErrors)
+  pure $ G.buildZettelkasten filesWithContent

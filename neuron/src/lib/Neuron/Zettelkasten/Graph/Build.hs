@@ -3,7 +3,10 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Graph.Build where
+module Neuron.Zettelkasten.Graph.Build
+  ( buildZettelkasten,
+  )
+where
 
 import Control.Monad.Writer (runWriterT)
 import qualified Data.Graph.Labelled as G
@@ -14,7 +17,21 @@ import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error (QueryError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Zettel.Parser
 import Relude
+
+buildZettelkasten ::
+  [(FilePath, Text)] ->
+  ( ZettelGraph,
+    [ZettelC],
+    Map ZettelID ZettelError
+  )
+buildZettelkasten filesWithContent =
+  let zs = parseZettels filesWithContent
+      parseErrors = Map.fromList $ lefts zs <&> (zettelID &&& zettelError)
+      (g, queryErrors) = mkZettelGraph $ fmap sansContent zs
+      errors = fmap Left parseErrors `Map.union` fmap Right queryErrors
+   in (g, zs, errors)
 
 -- | Build the Zettelkasten graph from a list of zettels
 --
