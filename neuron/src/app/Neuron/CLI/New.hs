@@ -34,10 +34,14 @@ import System.Posix.Process
 -- As well as print the path to the created file.
 newZettelFile :: NewCommand -> Action ()
 newZettelFile NewCommand {..} = do
-  zettels <- Gen.loadZettelsIgnoringErrors
+  (_, zettels, _) <- Gen.loadZettelkasten
   mzid <- withSome idScheme $ \scheme -> do
     val <- liftIO $ IDScheme.genVal scheme
-    pure $ IDScheme.nextAvailableZettelID (Set.fromList $ fmap zettelID zettels) val scheme
+    pure $
+      IDScheme.nextAvailableZettelID
+        (Set.fromList $ fmap (either zettelID zettelID) zettels)
+        val
+        scheme
   case mzid of
     Left e -> die $ show e
     Right zid -> do

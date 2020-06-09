@@ -62,10 +62,24 @@ data ZettelT content = Zettel
 newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
 
--- | without the content
+type family ContentError c where
+  -- | The list of queries that failed to parse.
+  ContentError Pandoc = [QueryParseError]
+  -- | When a zettel fails to parse, we use its raw text along with its parse error.
+  ContentError Text = ZettelParseError
+  -- | When working with zettel sans content, we gather both kinds of errors (above)
+  ContentError MetadataOnly = Either (ContentError Text) (ContentError Pandoc)
+
+-- | All possible errors in a zettel
+--
+-- NOTE: Unlike `ContentError MetadataOnly` this also includes QueryResultError
+-- (which can be determined only after *evaluating* the queries).
+type ZettelError = Either ZettelParseError (NonEmpty QueryError)
+
+-- | Zettel without its content
 type Zettel = ZettelT MetadataOnly
 
--- | With the content
+-- | Zettel with its content (Pandoc or raw text)
 type ZettelC = Either (ZettelT Text) (ZettelT Pandoc)
 
 sansContent :: ZettelC -> Zettel
@@ -80,16 +94,6 @@ sansContent = \case
       { zettelError = Right $ zettelError z,
         zettelContent = MetadataOnly ()
       }
-
-type family ContentError c
-
-type instance ContentError Pandoc = [QueryParseError]
-
-type instance ContentError Text = ZettelParseError
-
-type instance ContentError MetadataOnly = Either (ContentError Text) (ContentError Pandoc)
-
-type ZettelError = Either ZettelParseError (NonEmpty QueryError)
 
 instance Eq (ZettelT c) where
   (==) = (==) `on` zettelID

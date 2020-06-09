@@ -23,7 +23,7 @@ import Relude
 mkZettelGraph ::
   [Zettel] ->
   ( ZettelGraph,
-    Map ZettelID [QueryError]
+    Map ZettelID (NonEmpty QueryError)
   )
 mkZettelGraph zettels =
   let res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryError]))] =
@@ -31,10 +31,8 @@ mkZettelGraph zettels =
           (z, runQueryConnections zettels z)
       g :: ZettelGraph = G.mkGraphFrom zettels $ flip concatMap res $ \(z1, fst -> conns) ->
         edgeFromConnection z1 <$> conns
-      errors = Map.fromList $ flip mapMaybe res $ \(z, (snd -> errs)) ->
-        if null errs
-          then Nothing
-          else Just (zettelID z, errs)
+      errors = Map.fromList $ flip mapMaybe res $ \(z, (nonEmpty . snd -> merrs)) ->
+        (zettelID z,) <$> merrs
    in (g, errors)
 
 runQueryConnections :: [Zettel] -> Zettel -> ([(Maybe Connection, Zettel)], [QueryError])
