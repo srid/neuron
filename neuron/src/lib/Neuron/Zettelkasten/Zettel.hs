@@ -63,11 +63,11 @@ newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
 
 type family ContentError c where
-  -- | The list of queries that failed to parse.
+-- The list of queries that failed to parse.
   ContentError Pandoc = [QueryParseError]
-  -- | When a zettel fails to parse, we use its raw text along with its parse error.
+-- When a zettel fails to parse, we use its raw text along with its parse error.
   ContentError Text = ZettelParseError
-  -- | When working with zettel sans content, we gather both kinds of errors (above)
+-- When working with zettel sans content, we gather both kinds of errors (above)
   ContentError MetadataOnly = Either (ContentError Text) (ContentError Pandoc)
 
 -- | All possible errors in a zettel
