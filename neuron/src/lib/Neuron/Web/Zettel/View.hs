@@ -92,20 +92,15 @@ evalAndRenderZettelQuery ::
   NeuronWebT t m [QueryError]
 evalAndRenderZettelQuery graph oldRender uriLink = do
   case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uriLink) of
-    Left (Left -> e) -> do
-      -- Error parsing the query.
+    Left e -> do
+      -- Error parsing or running the query.
       fmap (e :) oldRender <* elInlineError e
     Right Nothing -> do
       -- This is not a query link; pass through.
       oldRender
     Right (Just res) -> do
-      Q.renderQueryResultIfSuccessful res >>= \case
-        Nothing ->
-          -- Successfully rendered.
-          pure mempty
-        Just (Right -> e) -> do
-          -- Error in query results.
-          fmap (e :) oldRender <* elInlineError e
+      Q.renderQueryResult res
+      pure mempty
   where
     elInlineError e =
       elClass "span" "ui left pointing red basic label" $ do

@@ -11,8 +11,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Web.Query.View
-  ( renderQueryResultIfSuccessful,
+  ( renderQueryResult,
     renderZettelLink,
+    renderZettelLinkIDOnly,
     zettelUrl,
     tagUrl,
     style,
@@ -34,26 +35,17 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (count, tag)
 import Relude
 
 -- | Render the query results.
---
--- If the query result is unexpected, don't render anything and return
--- `QueryResultError` which the caller is expected to handle.
-renderQueryResultIfSuccessful ::
-  DomBuilder t m => DSum ZettelQuery Identity -> NeuronWebT t m (Maybe QueryResultError)
-renderQueryResultIfSuccessful = \case
-  ZettelQuery_ZettelByID zid (fromMaybe def -> conn) :=> Identity mres ->
-    case mres of
-      Nothing ->
-        pure $ Just $ QueryResultError_NoSuchZettel zid
-      Just target -> do
-        renderZettelLink (Just conn) Nothing target
-        pure Nothing
+renderQueryResult ::
+  DomBuilder t m => DSum ZettelQuery Identity -> NeuronWebT t m ()
+renderQueryResult = \case
+  ZettelQuery_ZettelByID _zid (fromMaybe def -> conn) :=> Identity target -> do
+    renderZettelLink (Just conn) Nothing target
   q@(ZettelQuery_ZettelsByTag pats (fromMaybe def -> conn) view) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
@@ -71,12 +63,10 @@ renderQueryResultIfSuccessful = \case
               el "ul" $ forM_ zettelGrp $ \z ->
                 el "li" $
                   renderZettelLink (Just conn) (Just $ zettelsViewLinkView view) z
-    pure Nothing
   q@(ZettelQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
       renderTagTree $ foldTagTree $ tagTree res
-    pure Nothing
   where
     -- TODO: Instead of doing this here, group the results in runQuery itself.
     groupZettelsByTagsMatching pats matches =
@@ -133,6 +123,13 @@ renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
             <> "data-inverted" =: ""
             <> "data-position" =: "right center"
         )
+
+-- | Like `renderZettelLink` but when we only have ID in hand.
+renderZettelLinkIDOnly :: DomBuilder t m => ZettelID -> NeuronWebT t m ()
+renderZettelLinkIDOnly zid =
+  elClass "span" "zettel-link-container" $ do
+    elClass "span" "zettel-link" $ do
+      neuronRouteLink (Some $ Route_Zettel zid) mempty $ text $ zettelIDText zid
 
 renderTagTree :: forall t m. DomBuilder t m => Forest (NonEmpty TagNode, Natural) -> m ()
 renderTagTree t =
