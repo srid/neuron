@@ -2,7 +2,10 @@
 title: Neuron Zettelkasten
 ---
 
+
 [Neuron](https://github.com/srid/neuron) is a command-line app for managing your plain-text notes in <2011401> style, as well as publishing them on the web. Read its <6f0f0bcc>.
+
+![](https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg){.ui .small .centered .image}
 
 This site itself is a Zettelkasten and is managed by *neuron*; you may view its full index at [z-index](z-index.html).
 
