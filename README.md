@@ -1,4 +1,4 @@
-<img width="10%" src="./assets/logo.svg">
+<img width="10%" src="./assets/neuron.svg">
 
 # neuron
 
