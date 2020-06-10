@@ -51,10 +51,10 @@ legacyLinks = do
             `shouldBe` zettelsByTag ["foo", "bar"] def
         it "Handles ?grouped" $ do
           queryFromURILink (legacyLink $ withScheme "://search?grouped")
-            `shouldBe` zettelsByTag [] (ZettelsView def True)
+            `shouldBe` zettelsByTag [] (ZettlesView_List $ ZettelsViewAttr (coerce False) (coerce True))
         it "Handles ?linkTheme=withDate" $ do
           queryFromURILink (legacyLink $ withScheme "://search?linkTheme=withDate")
-            `shouldBe` zettelsByTag [] (ZettelsView (LinkView True) False)
+            `shouldBe` zettelsByTag [] (ZettlesView_List $ ZettelsViewAttr (coerce True) (coerce False))
   describe "Parse zettels by ID URI" $ do
     let zid = parseZettelID "1234567"
     it "parses z:/" $

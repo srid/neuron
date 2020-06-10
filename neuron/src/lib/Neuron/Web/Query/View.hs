@@ -35,7 +35,7 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
+import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..), GroupByTag(..), ZettelsViewAttr(..), Semantic(..))
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (count, tag)
 import Relude
@@ -49,20 +49,37 @@ renderQueryResult = \case
   q@(ZettelQuery_ZettelsByTag pats (fromMaybe def -> conn) view) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
-      case zettelsViewGroupByTag view of
-        False ->
-          el "ul" $ forM_ res $ \z -> do
-            el "li" $
-              renderZettelLink (Just conn) (Just $ zettelsViewLinkView view) z
-        True ->
-          forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
-            el "section" $ do
-              elClass "span" "ui basic pointing below grey label" $ do
-                semanticIcon "tag"
-                text $ unTag tag
-              el "ul" $ forM_ zettelGrp $ \z ->
-                el "li" $
-                  renderZettelLink (Just conn) (Just $ zettelsViewLinkView view) z
+      view & \case
+        ZettlesView_List (zettelsView_List_Attr . ZettlesView_List -> attrs) ->
+          case coerce (zettelsViewAttr_GroupByTag attrs) of
+            False ->  el "ul" $ forM_ res $ \z -> do
+              el "li" $ renderZettelLink (Just conn) (Just $ zettelsViewAttr_LinkView attrs) z
+            True -> forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $  \(tag, zettelGrp) -> do
+              el "section" $ do
+                elClass "span" "ui basic pointing below grey label" $ do
+                  semanticIcon "tag"
+                  text $ unTag tag
+                el "ul" $ forM_ zettelGrp $ \z ->
+                  el "li" $ renderZettelLink (Just conn) (Just $ zettelsViewAttr_LinkView attrs) z
+        ZettlesView_Tabular attrs cols -> divClass ("ui stackable " <> showSemantic cols <> " column grid") $ do
+          case coerce (zettelsViewAttr_GroupByTag attrs) of
+            False -> for_ res $ \z -> do
+              divClass "column" $ do
+                divClass "ui middle aligned animated linked list" $ do
+                  divClass "item" $ do
+                    elClass "i" "hand point right outline icon" (pure ())
+                    divClass "content" $ renderZettelLink (Just conn) (Just $ zettelsViewAttr_LinkView attrs) z
+            True -> forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $  \(tag, zettelGrp) -> do
+              divClass "column" $ do
+                elClass "span" "ui basic pointing below grey label" $ do
+                  semanticIcon "tag"
+                  text $ unTag tag
+                divClass "ui stackable one column grid" $ do
+                  divClass "column" $ do
+                   divClass "ui middle aligned animated linked list" $ forM_ zettelGrp $ \z -> do
+                     divClass "item" $ do
+                       elClass "i" "hand point right outline icon" (pure ())
+                       divClass "content" $ renderZettelLink (Just conn) (Just $ zettelsViewAttr_LinkView attrs) z
   q@(ZettelQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
@@ -72,7 +89,6 @@ renderQueryResult = \case
     groupZettelsByTagsMatching pats matches =
       fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap matches $ \z ->
         flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
-
 renderQuery :: DomBuilder t m => Some ZettelQuery -> m ()
 renderQuery someQ =
   elAttr "div" ("class" =: "ui horizontal divider" <> "title" =: "Neuron ZettelQuery") $ do
