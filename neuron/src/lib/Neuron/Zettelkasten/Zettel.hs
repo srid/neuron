@@ -51,6 +51,7 @@ data ZettelQuery r where
 data ZettelT content = Zettel
   { zettelID :: ZettelID,
     zettelTitle :: Text,
+    zettelTitleInBody :: Bool,
     zettelTags :: [Tag],
     zettelDay :: Maybe Day,
     zettelQueries :: [Some ZettelQuery],
