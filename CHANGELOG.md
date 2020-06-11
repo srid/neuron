@@ -11,7 +11,7 @@
 - Introduce new "uplink tree" view (#195)
 - Resilient error handling (#202, #215)
 - Added `neuron query --graph` to get the entire graph as JSON export
-- YAML block is now optional, and native Markdown H1 titles are supported (#230)
+- YAML block is now optional; title is also optional, while native Markdown H1 titles are now supported (#230)
 - Bug fixes
   - Fix 'neuron new' generating invalid Markdown when title contains special characters (#163)
 

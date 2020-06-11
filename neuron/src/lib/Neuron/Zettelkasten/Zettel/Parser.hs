@@ -7,7 +7,8 @@ module Neuron.Zettelkasten.Zettel.Parser where
 
 import Control.Monad.Writer
 import Data.Some
-import Neuron.Markdown (getH1, parseMarkdown, plainify)
+import qualified Data.Text as T
+import qualified Neuron.Markdown as MD
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
@@ -25,14 +26,15 @@ parseZettel ::
   Text ->
   ZettelC
 parseZettel zid s = do
-  case parseMarkdown (zettelIDSourceFileName zid) s of
+  case MD.parseMarkdown (zettelIDSourceFileName zid) s of
     Left parseErr ->
       Left $ Zettel zid "Unknown" False [] Nothing [] parseErr s
     Right (meta, doc) ->
       let (title, titleInBody) = case Meta.title =<< meta of
             Just tit -> (tit, False)
             Nothing -> fromMaybe ("Untitled", False) $ do
-              (,True) . plainify <$> getH1 doc
+              ((,True) . MD.plainify <$> MD.getH1 doc)
+                <|> ((,False) . takeInitial . MD.plainify <$> MD.getFirstParagraphText doc)
           tags = fromMaybe [] $ Meta.tags =<< meta
           day = case zid of
             -- We ignore the "data" meta field on legacy Date IDs, which encode the
@@ -52,6 +54,8 @@ parseZettel zid s = do
             pure Nothing
           Right v ->
             pure v
+    takeInitial =
+      (<> " ...") . T.take 18
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
