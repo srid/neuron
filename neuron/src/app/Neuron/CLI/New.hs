@@ -70,7 +70,10 @@ newZettelFile NewCommand {..} = do
     editAction editor path = do
       -- Show it first in case the editor launch fails
       showAction path
-      executeFile "bash" True ["-c", editor ++ ' ' : path ] Nothing
+      let escapeSpaces (' ':xs) = '\\' : ' ' : escapeSpaces xs
+          escapeSpaces (x:xs) = x : escapeSpaces xs
+          escapeSpaces [] = []
+      executeFile "bash" True ["-c", editor ++ ' ' : escapeSpaces path ] Nothing
     showAction =
       putStrLn
     getEnvNonEmpty name =
