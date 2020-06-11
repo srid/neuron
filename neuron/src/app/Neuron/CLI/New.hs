@@ -65,12 +65,12 @@ newZettelFile NewCommand {..} = do
       getEnvNonEmpty "EDITOR" >>= \case
         Nothing ->
           die "\n-e option can only be used with EDITOR environment variable set"
-        Just editorExe ->
-          pure $ editAction editorExe
-    editAction editorExe path = do
+        Just editor ->
+          pure $ editAction editor
+    editAction editor path = do
       -- Show it first in case the editor launch fails
       showAction path
-      executeFile editorExe True [path] Nothing
+      executeFile "bash" True ["-c", editor ++ ' ' : path ] Nothing
     showAction =
       putStrLn
     getEnvNonEmpty name =
