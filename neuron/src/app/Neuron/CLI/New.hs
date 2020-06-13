@@ -19,12 +19,13 @@ import qualified Data.YAML as YAML
 import Development.Shake (Action)
 import Neuron.CLI.Types
 import Neuron.Web.Generate as Gen
-import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName)
+import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
 import Options.Applicative
 import Relude
 import qualified Rib
+import System.Directory (setCurrentDirectory)
 import System.FilePath
 import qualified System.Posix.Env as Env
 import System.Posix.Process
@@ -45,11 +46,12 @@ newZettelFile NewCommand {..} = do
   case mzid of
     Left e -> die $ show e
     Right zid -> do
-      path <- zettelPath zid
+      notesDir <- Rib.ribInputDir
+      let zettelFile = zettelIDSourceFileName zid
       liftIO $ do
-        fileAction :: FilePath -> IO () <-
+        fileAction :: FilePath -> FilePath -> IO () <-
           bool (pure showAction) mkEditActionFromEnv edit
-        writeFileText path $
+        writeFileText (notesDir </> zettelFile) $
           T.intercalate
             "\n"
             [ "---",
@@ -59,37 +61,27 @@ newZettelFile NewCommand {..} = do
               "# " <> T.strip title,
               "\n"
             ]
-        fileAction path
+        fileAction notesDir zettelFile
   where
-    mkEditActionFromEnv :: IO (FilePath -> IO ())
+    mkEditActionFromEnv :: IO (FilePath -> FilePath -> IO ())
     mkEditActionFromEnv =
       getEnvNonEmpty "EDITOR" >>= \case
         Nothing ->
           die "\n-e option can only be used with EDITOR environment variable set"
-        Just editor ->
-          pure $ editAction editor
-    editAction editor path = do
-      -- Show it first in case the editor launch fails
-      showAction path
-
-      let escapePath = escapeCharacters "`~!#$&*()\t{[|\\;'\"\n<>? "
-      executeFile "bash" True ["-c", editor ++ ' ' : escapePath path] Nothing
-    showAction =
-      putStrLn
+        Just editorCli ->
+          pure $ editAction editorCli
+    editAction editorCli notesDir zettelFile = do
+      -- Show the path first, in case the editor launch fails
+      showAction notesDir zettelFile
+      setCurrentDirectory notesDir
+      executeShellCommand $ editorCli <> " " <> zettelFile
+    showAction notesDir zettelFile =
+      putStrLn $ notesDir </> zettelFile
+    -- Like `executeFile` but takes a shell command.
+    executeShellCommand cmd =
+      executeFile "bash" True ["-c", cmd] Nothing
     getEnvNonEmpty name =
       Env.getEnv name >>= \case
         Nothing -> pure Nothing
         Just (toString . strip . toText -> v) ->
           if null v then pure Nothing else pure (Just v)
-
-zettelPath :: ZettelID -> Action FilePath
-zettelPath zid = do
-  notesDir <- Rib.ribInputDir
-  pure $ notesDir </> zettelIDSourceFileName zid
-
-escapeCharacters :: [Char] -> String -> String
-escapeCharacters _ [] = []
-escapeCharacters chs (x:xs) =
-  if elem x chs
-  then x : '\\' : escapeCharacters chs xs
-  else x : escapeCharacters chs xs
