@@ -1,7 +1,4 @@
----
-title: Neuron Zettelkasten
----
-
+# Neuron Zettelkasten
 
 [Neuron](https://github.com/srid/neuron) is an open-source CLI app for managing your plain-text notes in <2011401> style, as well as for publishing them on the web. Read its <6f0f0bcc>.
 

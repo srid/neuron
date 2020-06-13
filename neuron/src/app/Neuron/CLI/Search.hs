@@ -23,7 +23,7 @@ searchScriptArgs :: SearchCommand -> [String]
 searchScriptArgs SearchCommand {..} =
   let searchByArgs =
         case searchBy of
-          SearchByTitle -> ["title: ", "3"]
+          SearchByTitle -> ["(^# )|(^title: )", "2"]
           SearchByContent -> ["", "2"]
       editArg =
         bool "echo" "$EDITOR" searchEdit

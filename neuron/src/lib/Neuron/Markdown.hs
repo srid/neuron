@@ -56,7 +56,7 @@ parseMarkdown ::
   YAML.FromYAML meta =>
   FilePath ->
   Text ->
-  Either ZettelParseError (meta, Pandoc)
+  Either ZettelParseError (Maybe meta, Pandoc)
 parseMarkdown fn s = do
   (metaVal, markdown) <-
     first ZettelParseError_PartitionError $
@@ -66,7 +66,7 @@ parseMarkdown fn s = do
       commonmarkPandocWith neuronSpec fn markdown
   meta <-
     first ZettelParseError_InvalidYAML $
-      parseMeta fn metaVal
+      traverse (parseMeta fn) metaVal
   pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
   where
     -- NOTE: HsYAML parsing is rather slow due to its use of DList.
@@ -86,19 +86,21 @@ parseMarkdown fn s = do
       join . CM.commonmarkWith spec n
 
 -- | Identify metadata block at the top, and split it from markdown body.
-partitionMarkdown :: FilePath -> Text -> Either Text (Text, Text)
+partitionMarkdown :: FilePath -> Text -> Either Text (Maybe Text, Text)
 partitionMarkdown fn =
-  parse splitP fn
+  parse (M.try splitP <|> fmap (Nothing,) M.takeRest) fn
   where
     separatorP :: Parser ()
     separatorP =
       void $ M.string "---" <* M.eol
-    splitP :: Parser (Text, Text)
+    splitP :: Parser (Maybe Text, Text)
     splitP = do
       separatorP
       a <- toText <$> manyTill M.anySingle (M.try $ M.eol *> separatorP)
       b <- M.takeRest
-      pure (a, b)
+      pure (Just a, b)
+
+-- TODO: These two functions should be moved to Text.Pandoc.Util.
 
 getFirstParagraphText :: Pandoc -> Maybe [B.Inline]
 getFirstParagraphText = listToMaybe . W.query go
@@ -109,6 +111,22 @@ getFirstParagraphText = listToMaybe . W.query go
         [inlines]
       _ ->
         []
+
+getH1 :: Pandoc -> Maybe [B.Inline]
+getH1 = listToMaybe . W.query go
+  where
+    go :: B.Block -> [[B.Inline]]
+    go = \case
+      B.Header 1 _ inlines ->
+        [inlines]
+      _ ->
+        []
+
+-- | Convert Pandoc AST inlines to raw text.
+plainify :: [B.Inline] -> Text
+plainify = W.query $ \case
+  B.Str x -> x
+  _ -> " "
 
 neuronSpec ::
   ( Monad m,

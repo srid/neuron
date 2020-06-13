@@ -19,7 +19,7 @@ import Relude
 
 -- | YAML metadata in a zettel markdown file
 data Meta = Meta
-  { title :: Text,
+  { title :: Maybe Text,
     tags :: Maybe [Tag],
     -- | Creation day
     date :: Maybe Day
@@ -30,7 +30,7 @@ instance FromYAML Meta where
   parseYAML =
     withMap "Meta" $ \m ->
       Meta
-        <$> m .: "title"
+        <$> m .:? "title"
         <*> m .:? "tags"
         <*> m .:? "date"
 

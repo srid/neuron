@@ -53,9 +53,10 @@ newZettelFile NewCommand {..} = do
           T.intercalate
             "\n"
             [ "---",
-              "title: " <> T.strip (decodeUtf8 (YAML.encode1 title)),
               "date: " <> T.strip (decodeUtf8 (YAML.encode1 day)),
               "---",
+              "",
+              "# " <> T.strip title,
               "\n"
             ]
         fileAction path

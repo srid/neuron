@@ -115,7 +115,8 @@ renderZettelContent ::
   NeuronWebT t m ()
 renderZettelContent handleLink Zettel {..} = do
   elClass "article" "ui raised attached segment zettel-content" $ do
-    elClass "h1" "header" $ text zettelTitle
+    unless zettelTitleInBody $ do
+      el "h1" $ text zettelTitle
     void $ elPandoc (Config handleLink) zettelContent
     whenJust zettelDay $ \day ->
       elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ do

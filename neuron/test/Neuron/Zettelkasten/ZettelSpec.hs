@@ -24,11 +24,12 @@ spec = do
       noContent = MetadataOnly ()
   describe "sortZettelsReverseChronological" $ do
     let mkDay = fromGregorian 2020 3
-        (_ :: Meta, _dummyContent) = either (error . show) id $ parseMarkdown "<spec>" "Dummy"
+        (_ :: Maybe Meta, _dummyContent) = either (error . show) id $ parseMarkdown "<spec>" "Dummy"
         mkZettel day idx =
           Zettel
             (ZettelDateID (mkDay day) idx)
             "Some title"
+            False
             [Tag "science", Tag "journal/class"]
             (Just $ mkDay day)
             noQueries
@@ -41,11 +42,12 @@ spec = do
   describe "Zettel JSON" $ do
     let day = fromGregorian 2020 3 19
         zid = ZettelCustomID "Foo-Bar"
-        (_ :: Meta, _dummyContent) = either (error . show) id $ parseMarkdown "<spec>" "Dummy"
+        (_ :: Maybe Meta, _dummyContent) = either (error . show) id $ parseMarkdown "<spec>" "Dummy"
         zettel =
           Zettel
             zid
             "Some title"
+            False
             [Tag "science", Tag "journal/class"]
             (Just day)
             noQueries
