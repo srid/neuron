@@ -70,10 +70,9 @@ newZettelFile NewCommand {..} = do
     editAction editor path = do
       -- Show it first in case the editor launch fails
       showAction path
-      let escapeSpaces (' ':xs) = '\\' : ' ' : escapeSpaces xs
-          escapeSpaces (x:xs) = x : escapeSpaces xs
-          escapeSpaces [] = []
-      executeFile "bash" True ["-c", editor ++ ' ' : escapeSpaces path ] Nothing
+
+      let escapePath = escapeCharacters "`~!#$&*()\t{[|\\;'\"\n<>? "
+      executeFile "bash" True ["-c", editor ++ ' ' : escapePath path] Nothing
     showAction =
       putStrLn
     getEnvNonEmpty name =
@@ -86,3 +85,10 @@ zettelPath :: ZettelID -> Action FilePath
 zettelPath zid = do
   notesDir <- Rib.ribInputDir
   pure $ notesDir </> zettelIDSourceFileName zid
+
+escapeCharacters :: [Char] -> String -> String
+escapeCharacters _ [] = []
+escapeCharacters chs (x:xs) =
+  if elem x chs
+  then x : '\\' : escapeCharacters chs xs
+  else x : escapeCharacters chs xs
