@@ -2,7 +2,7 @@
 
 Neuron was designed with these criteria in mind:
 
-* **Future-proof**: store notes as *plain-text* (Markdown), and *locally*[^plain]
+* **Future-proof**: store notes locally[^plain] as *plain-text* (Markdown) files
 * Not tied[^editor] to a single text editor[^cerveau] 
 * Statically generated web site, for browsing and publishing on the web
 * Remain as simple to use as possible
