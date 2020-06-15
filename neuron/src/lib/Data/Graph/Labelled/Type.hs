@@ -34,6 +34,8 @@ data LabelledGraph v e = LabelledGraph
   }
   deriving (Generic)
 
+deriving instance (Eq e, Eq v, Eq (VertexID v)) => Eq (LabelledGraph v e)
+
 deriving instance
   ( Ord e,
     Show e,
