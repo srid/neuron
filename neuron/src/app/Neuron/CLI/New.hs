@@ -51,14 +51,16 @@ newZettelFile NewCommand {..} = do
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-
           bool (pure showAction) mkEditActionFromEnv edit
+        let date = T.strip (decodeUtf8 (YAML.encode1 day))
+            defaultTitleName = "Zettel created on " <> date
         writeFileText (notesDir </> zettelFile) $
           T.intercalate
             "\n"
             [ "---",
-              "date: " <> T.strip (decodeUtf8 (YAML.encode1 day)),
+              "date: " <> date,
               "---",
               "",
-              "# " <> T.strip title,
+              "# " <> maybe defaultTitleName T.strip title,
               "\n"
             ]
         fileAction notesDir zettelFile

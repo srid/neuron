@@ -20,7 +20,6 @@ where
 import Data.Default (def)
 import Data.Some
 import Data.TagTree (mkTagPattern)
-import qualified Data.Text as T
 import Data.Time
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
@@ -40,7 +39,7 @@ data App = App
   }
 
 data NewCommand = NewCommand
-  { title :: Text,
+  { title :: Maybe Text,
     day :: Day,
     idScheme :: Some IDScheme,
     edit :: Bool
@@ -101,7 +100,7 @@ commandParser defaultNotesDir today = do
             command "rib" $ info ribCommand $ progDesc "Generate static site via rib"
           ]
     newCommand = do
-      title <- argument nonEmptyTextReader (metavar "TITLE" <> help "Title of the new Zettel")
+      title <- optional $ strArgument (metavar "TITLE" <> help "Title of the new Zettel")
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
       day <-
         option dayReader $
@@ -165,12 +164,6 @@ commandParser defaultNotesDir today = do
           either (Left . toString . Q.showQueryParseError) (maybe (Left "Unsupported query") Right) $ Q.queryFromURI uri
         Left e ->
           Left $ displayException e
-    nonEmptyTextReader :: ReadM Text
-    nonEmptyTextReader =
-      eitherReader $ \(T.strip . toText -> s) ->
-        if T.null s
-          then Left "Empty text is not allowed"
-          else Right s
     dayReader :: ReadM Day
     dayReader =
       maybeReader (parseZettelDate . toText)
