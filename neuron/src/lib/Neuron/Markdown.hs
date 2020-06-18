@@ -1,7 +1,9 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -14,6 +16,7 @@ import qualified Commonmark.Blocks as CM
 import qualified Commonmark.Extensions as CE
 import qualified Commonmark.Inlines as CM
 import qualified Commonmark.Pandoc as CP
+import qualified Commonmark.Tag
 import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
@@ -148,7 +151,8 @@ neuronSpec ::
   CM.SyntaxSpec m il bl
 neuronSpec =
   mconcat
-    [ angleBracketLinkSpec,
+    [ wrappedLinkSpec angleBracketLinkP,
+      wrappedLinkSpec wikiLinkP,
       gfmExtensionsSansEmoji,
       CE.footnoteSpec,
       CE.mathSpec,
@@ -167,18 +171,22 @@ neuronSpec =
         <> CE.autoIdentifiersSpec
         <> CE.taskListSpec
 
--- | Unconditionally treat <...> as a `B.Link`.
-angleBracketLinkSpec ::
+-- | Convert the given wrapped link to a `B.Link`.
+wrappedLinkSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
+  (P.ParsecT [CM.Tok] (CM.IPState m) (StateT Commonmark.Tag.Enders m) [CM.Tok]) ->
   CM.SyntaxSpec m il bl
-angleBracketLinkSpec =
+wrappedLinkSpec linkP =
   mempty
-    { CM.syntaxInlineParsers = [pLink]
+    { CM.syntaxInlineParsers = [pLink linkP]
     }
   where
-    pLink :: (Monad m, CM.IsInline il) => CM.InlineParser m il
-    pLink = P.try $ do
-      x <- angleBracketLinkP
+    pLink ::
+      (Monad m, CM.IsInline il) =>
+      (P.ParsecT [CM.Tok] (CM.IPState m) (StateT Commonmark.Tag.Enders m) [CM.Tok]) ->
+      CM.InlineParser m il
+    pLink p = P.try $ do
+      x <- p
       let url = CM.untokenize x
           title = ""
       pure $! CM.link url title $ CM.str url
@@ -188,6 +196,13 @@ angleBracketLinkP = do
   void $ symbol '<'
   x <- some (noneOfToks [Symbol '>', Spaces, UnicodeSpace, LineEnd])
   void $ symbol '>'
+  pure x
+
+wikiLinkP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
+wikiLinkP = do
+  void $ symbol '[' >> symbol '['
+  x <- some (noneOfToks [Symbol ']', Spaces, UnicodeSpace, LineEnd])
+  void $ symbol ']' >> symbol ']'
   pure x
 
 -- rawHtmlSpec eats angle bracket links as html tags
