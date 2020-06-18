@@ -7,22 +7,17 @@
 
 module Main where
 
-import Clay ((?), Css, em)
-import qualified Clay as C
 import Control.Monad.Reader
-import qualified Data.Text as T
 import Development.Shake
 import Main.Utf8
 import Neuron.CLI (run)
-import Neuron.Config (Config)
 import qualified Neuron.Config as Config
 import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Generate.Route (staticRouteConfig)
-import Neuron.Web.Route (NeuronWebT, Route (..), runNeuronWeb)
-import Neuron.Web.View (renderRouteBody, renderRouteHead, style)
+import Neuron.Web.Route (Route (..), runNeuronWeb)
+import Neuron.Web.View (renderRoutePage)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Reflex.Dom.Core
-import Reflex.Dom.Pandoc.Document (PandocBuilder)
 import Relude
 import qualified Rib
 
@@ -35,55 +30,9 @@ generateMainSite = do
   config <- Config.getConfig
   let writeHtmlRoute :: Route a -> (ZettelGraph, a) -> Action ()
       writeHtmlRoute r x = do
-        ((), html) <- liftIO $ renderStatic $ do
+        html <- liftIO $ fmap snd $ renderStatic $ do
           runNeuronWeb staticRouteConfig $
-            renderPage config r x
+            renderRoutePage config r x
         -- FIXME: Make rib take bytestrings
         Rib.writeRoute r $ decodeUtf8 @Text html
   void $ generateSite config writeHtmlRoute
-
-renderPage :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
-renderPage config r val = elAttr "html" ("lang" =: "en") $ do
-  el "head" $ do
-    renderRouteHead config r val
-    case r of
-      Route_Redirect _ ->
-        blank
-      _ -> do
-        let semanticCss = "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.5/dist/semantic.min.css"
-        elAttr "link" ("rel" =: "stylesheet" <> "href" =: semanticCss) blank
-        elAttr "style" ("type" =: "text/css") $ text $ toText $ C.renderWith C.compact [] $ mainStyle config
-        googleFonts [headerFont, bodyFont, monoFont]
-        when (Config.mathJaxSupport config) $
-          elAttr "script" ("id" =: "MathJax-script" <> "src" =: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" <> "async" =: "") blank
-  el "body" $ do
-    elAttr "div" ("id" =: "thesite" <> "class" =: "ui fluid container") $ do
-      renderRouteBody config r val
-  where
-    googleFonts :: DomBuilder t m => [Text] -> m ()
-    googleFonts fs =
-      let fsEncoded = T.intercalate "|" $ T.replace " " "+" <$> fs
-          fsUrl = "https://fonts.googleapis.com/css?family=" <> fsEncoded <> "&display=swap"
-       in elAttr "link" ("rel" =: "stylesheet" <> "href" =: fsUrl) blank
-
-headerFont :: Text
-headerFont = "DM Serif Text"
-
-bodyFont :: Text
-bodyFont = "DM Sans"
-
-monoFont :: Text
-monoFont = "DM Mono"
-
-mainStyle :: Config -> Css
-mainStyle cfg = do
-  "body" ? do
-    C.important $ C.backgroundColor "#eee"
-  "div#thesite" ? do
-    C.important $ C.fontFamily [bodyFont] [C.serif]
-    C.paddingBottom $ em 1
-    "h1, h2, h3, h4, h5, h6, .ui.header, .headerFont" ? do
-      C.important $ C.fontFamily [headerFont] [C.sansSerif]
-    "code, pre, tt, .monoFont" ? do
-      C.important $ C.fontFamily [monoFont, "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New"] [C.monospace]
-    style cfg

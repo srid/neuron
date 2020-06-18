@@ -15,9 +15,7 @@
 
 -- | HTML & CSS
 module Neuron.Web.View
-  ( renderRouteHead,
-    renderRouteBody,
-    style,
+  ( renderRoutePage,
   )
 where
 
@@ -32,6 +30,7 @@ import Data.Some
 import Data.TagTree (Tag (..))
 import Neuron.Config
 import Neuron.Version (neuronVersion)
+import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
 import Neuron.Web.StructuredData
@@ -55,6 +54,14 @@ import qualified Skylighting.Styles as Skylighting
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
 
+renderRoutePage :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
+renderRoutePage config r val =
+  elAttr "html" ("lang" =: "en") $ do
+    el "head" $ do
+      renderRouteHead config r val
+    el "body" $ do
+      renderRouteBody config r val
+
 renderRouteHead :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
 renderRouteHead config route val = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
@@ -65,6 +72,7 @@ renderRouteHead config route val = do
     Route_Redirect _ ->
       blank
     Route_Search {} -> do
+      renderCommon
       forM_
         [ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js",
           "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js",
@@ -73,9 +81,17 @@ renderRouteHead config route val = do
         $ \scrpt -> do
           elAttr "script" ("src" =: scrpt) blank
     _ -> do
+      renderCommon
       renderStructuredData config route val
       elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
   where
+    renderCommon = do
+      let neuronCss = toText $ C.renderWith C.compact [] $ style config
+      elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.5/dist/semantic.min.css") blank
+      elAttr "style" ("type" =: "text/css") $ text neuronCss
+      elLinkGoogleFonts neuronFonts
+      when (mathJaxSupport config) $
+        elAttr "script" ("id" =: "MathJax-script" <> "src" =: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" <> "async" =: "") blank
     routeTitle :: Config -> a -> Route a -> Text
     routeTitle Config {..} v =
       withSuffix siteTitle . routeTitle' v
@@ -87,29 +103,30 @@ renderRouteHead config route val = do
 
 renderRouteBody :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
 renderRouteBody Config {..} r (g, x) = do
-  let neuronTheme = Theme.mkTheme theme
-  case r of
-    Route_ZIndex -> do
-      actionsNav neuronTheme editUrl Nothing
-      divClass "ui text container" $ do
-        ZIndex.renderZIndex neuronTheme g x
-        renderBrandFooter $ Just neuronVersion
-      pure mempty
-    Route_Search {} -> do
-      actionsNav neuronTheme editUrl Nothing
-      divClass "ui text container" $ do
-        renderSearch g
-        renderBrandFooter $ Just neuronVersion
-      pure mempty
-    Route_Zettel _ -> do
-      -- Don't inject neuron verison in zettel pages, to prevent unnecessary rebuilds when upgrading neuron
-      let noVersion = Nothing
-      actionsNav neuronTheme editUrl (Just $ either zettelID zettelID x)
-      ZettelView.renderZettel (g, x)
-        <* renderBrandFooter noVersion
-    Route_Redirect _ -> do
-      elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
-      pure mempty
+  divClass "ui fluid container" $ do
+    let neuronTheme = Theme.mkTheme theme
+    case r of
+      Route_ZIndex -> do
+        actionsNav neuronTheme editUrl Nothing
+        divClass "ui text container" $ do
+          ZIndex.renderZIndex neuronTheme g x
+          renderBrandFooter $ Just neuronVersion
+        pure mempty
+      Route_Search {} -> do
+        actionsNav neuronTheme editUrl Nothing
+        divClass "ui text container" $ do
+          renderSearch g
+          renderBrandFooter $ Just neuronVersion
+        pure mempty
+      Route_Zettel _ -> do
+        -- Don't inject neuron verison in zettel pages, to prevent unnecessary rebuilds when upgrading neuron
+        let noVersion = Nothing
+        actionsNav neuronTheme editUrl (Just $ either zettelID zettelID x)
+        ZettelView.renderZettel (g, x)
+          <* renderBrandFooter noVersion
+      Route_Redirect _ -> do
+        elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
+        pure mempty
 
 renderSearch :: DomBuilder t m => ZettelGraph -> m ()
 renderSearch graph = do
@@ -166,28 +183,32 @@ actionsNav theme editUrl mzid = elClass "nav" "top-menu" $ do
 style :: Config -> Css
 style Config {..} = do
   let neuronTheme = Theme.mkTheme theme
-  "div.z-index" ? do
-    C.ul ? do
-      C.listStyleType C.square
-      C.paddingLeft $ em 1.5
-  ZettelCSS.zettelCss neuronTheme
-  QueryView.style neuronTheme
-  ".footer-version img" ? do
-    C.filter $ C.grayscale $ pct 100
-  ".footer-version img:hover" ? do
-    C.filter $ C.grayscale $ pct 0
-  ".footer-version, .footer-version a, .footer-version a:visited" ? do
-    C.color gray
-  ".footer-version a" ? do
-    C.fontWeight C.bold
-  ".footer-version" ? do
-    C.marginTop $ em 1
-    C.fontSize $ em 0.7
-  "nav.top-menu" ? do
-    C.paddingTop $ em 1
-    C.paddingBottom $ em 1
-    C.justifyContent C.center
-    C.textAlign C.center
-    "> *" ? do
-      C.paddingLeft $ px 0
-      C.paddingRight $ px 0
+  "body" ? do
+    neuronCommonStyle
+    ZIndex.style
+    ZettelCSS.zettelCss neuronTheme
+    QueryView.style neuronTheme
+    footerStyle
+    navBarStyle
+  where
+    footerStyle = do
+      ".footer-version img" ? do
+        C.filter $ C.grayscale $ pct 100
+      ".footer-version img:hover" ? do
+        C.filter $ C.grayscale $ pct 0
+      ".footer-version, .footer-version a, .footer-version a:visited" ? do
+        C.color gray
+      ".footer-version a" ? do
+        C.fontWeight C.bold
+      ".footer-version" ? do
+        important $ C.marginTop $ em 1
+        C.fontSize $ em 0.7
+    navBarStyle = do
+      "nav.top-menu" ? do
+        C.paddingTop $ em 1
+        C.paddingBottom $ em 1
+        C.justifyContent C.center
+        C.textAlign C.center
+        "> *" ? do
+          C.paddingLeft $ px 0
+          C.paddingRight $ px 0

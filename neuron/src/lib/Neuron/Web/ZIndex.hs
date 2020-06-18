@@ -7,9 +7,12 @@
 
 module Neuron.Web.ZIndex
   ( renderZIndex,
+    style,
   )
 where
 
+import Clay ((?), Css, em)
+import qualified Clay as C
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
 import Data.Tree
@@ -52,7 +55,6 @@ renderZIndex neuronTheme graph errors = do
       divClass ("ui " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
         el "ul" $ renderForest True Nothing (Just graph) forest
-  el "br" blank
   where
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
@@ -110,3 +112,10 @@ renderForest isRoot maxLevel mg trees =
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum
+
+style :: Css
+style = do
+  "div.z-index" ? do
+    C.ul ? do
+      C.listStyleType C.square
+      C.paddingLeft $ em 1.5
