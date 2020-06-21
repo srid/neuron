@@ -1,12 +1,15 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Web.ZIndex
   ( renderZIndex,
+    buildZIndex,
+    ZIndex (..),
     style,
   )
 where
@@ -28,33 +31,51 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Relude hiding ((&))
 
+-- | The value needed to render the z-index
+--
+-- All heavy graph computations are decoupled from rendering, producing this
+-- value, that is in turn used for instant rendering.
+data ZIndex = ZIndex
+  { zIndexTopSort :: Either (NonEmpty Zettel) [Zettel],
+    zIndexClusters :: [Forest (Zettel, [Zettel])]
+  }
+
+buildZIndex :: ZettelGraph -> ZIndex
+buildZIndex graph =
+  -- TODO: Also buld backlinks of each res
+  let clusters = G.categoryClusters graph
+      clusters' :: [Forest (Zettel, [Zettel])] =
+        flip fmap clusters $ \(zs :: [Tree Zettel]) ->
+          G.backlinksMulti Folgezettel zs graph
+      topSort = G.topSort graph
+   in ZIndex topSort clusters'
+
 renderZIndex ::
   DomBuilder t m =>
   Theme.Theme ->
-  ZettelGraph ->
+  ZIndex ->
   Map ZettelID ZettelError ->
   NeuronWebT t m ()
-renderZIndex neuronTheme graph errors = do
+renderZIndex neuronTheme ZIndex {..} errors = do
   elClass "h1" "header" $ text "Zettel Index"
   renderErrors errors
   divClass "z-index" $ do
     -- Cycle detection.
-    case G.topSort graph of
+    case zIndexTopSort of
       Left (toList -> cyc) -> divClass "ui orange segment" $ do
         el "h2" $ text "Cycle detected"
         forM_ cyc $ \zettel ->
           el "li" $ QueryView.renderZettelLink Nothing def zettel
       _ -> blank
-    let clusters = G.categoryClusters graph
     el "p" $ do
-      text $ "There " <> countNounBe "cluster" "clusters" (length clusters) <> " in the Zettelkasten folgezettel graph. "
+      text $ "There " <> countNounBe "cluster" "clusters" (length zIndexClusters) <> " in the Zettelkasten folgezettel graph. "
       text "Each cluster's "
       elAttr "a" ("href" =: "https://neuron.zettel.page/2017401.html") $ text "folgezettel heterarchy"
       text " is rendered as a forest."
-    forM_ clusters $ \forest ->
+    forM_ zIndexClusters $ \forest ->
       divClass ("ui " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
-        el "ul" $ renderForest True Nothing (Just graph) forest
+        el "ul" $ renderForest True Nothing forest
   where
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
@@ -82,33 +103,27 @@ renderForest ::
   DomBuilder t m =>
   Bool ->
   Maybe Int ->
-  -- When given the zettelkasten graph, also show non-parent backlinks.
-  -- The dfsForest tree is "incomplete" in that it lacks these references.
-  Maybe ZettelGraph ->
-  [Tree Zettel] ->
+  [Tree (Zettel, [Zettel])] ->
   NeuronWebT t m ()
-renderForest isRoot maxLevel mg trees =
+renderForest isRoot maxLevel trees =
   case maxLevel of
     Just 0 -> blank
     _ -> do
-      forM_ (sortForest trees) $ \(Node zettel subtrees) ->
+      forM_ (sortForest trees) $ \(Node (zettel, backlinks) subtrees) ->
         el "li" $ do
-          let zettelDiv =
-                divClass
-                  (maybe "" (const "ui ") mg)
+          let zettelDiv = divClass "ui"
           bool id zettelDiv isRoot $
             QueryView.renderZettelLink Nothing def zettel
-          whenJust mg $ \g -> do
-            text " "
-            case G.backlinks Folgezettel zettel g of
-              conns@(_ : _ : _) ->
-                -- Has two or more category backlinks
-                forM_ conns $ \zettel2 -> do
-                  let connTitle = (zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2)
-                  el "small" $ elAttr "i" ("class" =: "linkify icon" <> "title" =: connTitle) blank
-              _ -> blank
+          text " "
+          case backlinks of
+            conns@(_ : _ : _) ->
+              -- Has two or more category backlinks
+              forM_ conns $ \zettel2 -> do
+                let connTitle = (zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2)
+                el "small" $ elAttr "i" ("class" =: "linkify icon" <> "title" =: connTitle) blank
+            _ -> blank
           when (length subtrees > 0) $ do
-            el "ul" $ renderForest False ((\n -> n - 1) <$> maxLevel) mg subtrees
+            el "ul" $ renderForest False ((\n -> n - 1) <$> maxLevel) subtrees
   where
     -- Sort trees so that trees containing the most recent zettel (by ID) come first.
     sortForest = reverse . sortOn maximum

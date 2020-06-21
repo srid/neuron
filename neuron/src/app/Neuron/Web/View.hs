@@ -109,7 +109,7 @@ renderRouteBody Config {..} r (g, x) = do
       Route_ZIndex -> do
         actionsNav neuronTheme editUrl Nothing
         divClass "ui text container" $ do
-          ZIndex.renderZIndex neuronTheme g x
+          ZIndex.renderZIndex neuronTheme (ZIndex.buildZIndex g) x
           renderBrandFooter $ Just neuronVersion
         pure mempty
       Route_Search {} -> do
