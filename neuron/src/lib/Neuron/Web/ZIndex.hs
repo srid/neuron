@@ -48,7 +48,14 @@ buildZIndex graph =
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       topSort = G.topSort graph
-   in ZIndex topSort clusters'
+   in ZIndex topSort (fmap sortForest clusters')
+  where
+    -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
+    sortForest fs =
+      sortZettelForest $ flip fmap fs $ \Node {..} ->
+        Node rootLabel $ sortZettelForest subForest
+    -- Sort zettel trees so that trees containing the most recent zettel (by ID) come first.
+    sortZettelForest = reverse . sortOn maximum
 
 renderZIndex ::
   DomBuilder t m =>
@@ -75,7 +82,7 @@ renderZIndex neuronTheme ZIndex {..} errors = do
     forM_ zIndexClusters $ \forest ->
       divClass ("ui " <> Theme.semanticColor neuronTheme <> " segment") $ do
         -- Forest of zettels, beginning with mother vertices.
-        el "ul" $ renderForest True Nothing forest
+        el "ul" $ renderForest forest
   where
     countNounBe noun nounPlural = \case
       1 -> "is 1 " <> noun
@@ -101,32 +108,19 @@ renderErrors errors = do
 
 renderForest ::
   DomBuilder t m =>
-  Bool ->
-  Maybe Int ->
   [Tree (Zettel, [Zettel])] ->
   NeuronWebT t m ()
-renderForest isRoot maxLevel trees =
-  case maxLevel of
-    Just 0 -> blank
-    _ -> do
-      forM_ (sortForest trees) $ \(Node (zettel, backlinks) subtrees) ->
-        el "li" $ do
-          let zettelDiv = divClass "ui"
-          bool id zettelDiv isRoot $
-            QueryView.renderZettelLink Nothing def zettel
-          text " "
-          case backlinks of
-            conns@(_ : _ : _) ->
-              -- Has two or more category backlinks
-              forM_ conns $ \zettel2 -> do
-                let connTitle = (zettelIDText (zettelID zettel2) <> " " <> zettelTitle zettel2)
-                el "small" $ elAttr "i" ("class" =: "linkify icon" <> "title" =: connTitle) blank
-            _ -> blank
-          when (length subtrees > 0) $ do
-            el "ul" $ renderForest False ((\n -> n - 1) <$> maxLevel) subtrees
-  where
-    -- Sort trees so that trees containing the most recent zettel (by ID) come first.
-    sortForest = reverse . sortOn maximum
+renderForest trees = do
+  forM_ trees $ \(Node (zettel, uplinks) subtrees) ->
+    el "li" $ do
+      QueryView.renderZettelLink Nothing def zettel
+      when (length uplinks >= 2) $ do
+        elClass "span" "uplinks" $ do
+          forM_ uplinks $ \z2 -> do
+            el "small" $
+              elAttr "i" ("class" =: "linkify icon" <> "title" =: zettelTitle z2) blank
+      unless (null subtrees) $ do
+        el "ul" $ renderForest subtrees
 
 style :: Css
 style = do
@@ -134,3 +128,5 @@ style = do
     C.ul ? do
       C.listStyleType C.square
       C.paddingLeft $ em 1.5
+    ".uplinks" ? do
+      C.marginLeft $ em 0.3
