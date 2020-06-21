@@ -88,17 +88,15 @@ mothers g =
     go acc = \case
       [] -> acc
       v : (Set.fromList -> vs) ->
-        let reach = reachableUndirected v g
+        let reach = reachableUndirected v
             covered = vs `Set.intersection` reach
             rest = vs `Set.difference` reach
          in go ((v :| Set.toList covered) : acc) (Set.toList rest)
-
--- | Get the vertexes reachable (regardless of direction) from the given vertex.
-reachableUndirected :: Ord a => a -> AM.AdjacencyMap a -> Set a
-reachableUndirected v =
-  Set.fromList . Algo.reachable v . toUndirected
-  where
-    toUndirected g = AM.overlay g $ AM.transpose g
+    -- Vertices reachable from `v` regardless of direction.
+    reachableUndirected v =
+      Set.fromList $ Algo.reachable v gUndirected
+    -- The undirected version of g
+    gUndirected = AM.overlay g $ AM.transpose g
 
 motherVertices :: Ord a => AM.AdjacencyMap a -> [a]
 motherVertices =
