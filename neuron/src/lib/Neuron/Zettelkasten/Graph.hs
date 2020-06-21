@@ -50,9 +50,7 @@ backlinks :: Connection -> Zettel -> ZettelGraph -> [Zettel]
 backlinks conn z g =
   -- FIXME: Calling this funtion in loop is inefficnet,
   -- due to induceOnEdge creating a whole new subgraph.
-  filter (not . branches) $ G.preSet z $ G.induceOnEdge (== Just conn) g
-  where
-    branches bz = G.hasEdge g z bz
+  G.preSet z $ G.induceOnEdge (== Just conn) g
 
 -- | Like backlinks but for multiple zettels. More performant.
 -- TODO: Write performant version
