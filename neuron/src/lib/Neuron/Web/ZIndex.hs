@@ -36,19 +36,24 @@ import Relude hiding ((&))
 -- All heavy graph computations are decoupled from rendering, producing this
 -- value, that is in turn used for instant rendering.
 data ZIndex = ZIndex
-  { zIndexTopSort :: Either (NonEmpty Zettel) [Zettel],
-    zIndexClusters :: [Forest (Zettel, [Zettel])]
+  { -- | Topological ordering of the folgezettel graph. Left value indicates
+    --  that it is cyclic.
+    zIndexTopSort :: Either (NonEmpty Zettel) [Zettel],
+    -- | Clusters on the folgezettel graph.
+    zIndexClusters :: [Forest (Zettel, [Zettel])],
+    -- | All zettel errors
+    zIndexErrors :: Map ZettelID ZettelError
   }
 
-buildZIndex :: ZettelGraph -> ZIndex
-buildZIndex graph =
+buildZIndex :: ZettelGraph -> Map ZettelID ZettelError -> ZIndex
+buildZIndex graph errors =
   -- TODO: Also buld backlinks of each res
   let clusters = G.categoryClusters graph
       clusters' :: [Forest (Zettel, [Zettel])] =
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       topSort = G.topSort graph
-   in ZIndex topSort (fmap sortForest clusters')
+   in ZIndex topSort (fmap sortForest clusters') errors
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortForest fs =
@@ -61,11 +66,10 @@ renderZIndex ::
   DomBuilder t m =>
   Theme.Theme ->
   ZIndex ->
-  Map ZettelID ZettelError ->
   NeuronWebT t m ()
-renderZIndex neuronTheme ZIndex {..} errors = do
+renderZIndex neuronTheme ZIndex {..} = do
   elClass "h1" "header" $ text "Zettel Index"
-  renderErrors errors
+  renderErrors zIndexErrors
   divClass "z-index" $ do
     -- Cycle detection.
     case zIndexTopSort of
