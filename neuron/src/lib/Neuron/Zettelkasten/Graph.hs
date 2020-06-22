@@ -74,7 +74,12 @@ categoryClusters (categoryGraph -> g) =
     sortMothers = sortOn (Down . maximum) . fmap (sortOn Down . toList)
 
 clusters :: ZettelGraph -> [NonEmpty Zettel]
-clusters = G.clusters . categoryGraph
+clusters g =
+  case (G.clusters $ categoryGraph g) of
+    [] ->
+      maybe [] pure $ nonEmpty $ G.getVertices g
+    cs ->
+      cs
 
 topSort :: ZettelGraph -> Either (NonEmpty Zettel) [Zettel]
 topSort = G.topSort . categoryGraph
