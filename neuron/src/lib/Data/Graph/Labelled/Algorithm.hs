@@ -16,9 +16,6 @@ import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))
 import Relude
 
-adjacencyMapGraph :: LabelledGraph v e -> LAM.AdjacencyMap e (VertexID v)
-adjacencyMapGraph = graph
-
 findVertex :: Ord (VertexID v) => VertexID v -> LabelledGraph v e -> Maybe v
 findVertex v lg@(LabelledGraph g _) = do
   guard $ LAM.hasVertex v g
@@ -46,6 +43,8 @@ preSet :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
 preSet (vertexID -> zid) g =
   fmap (getVertex g) $ toList . LAM.preSet zid $ graph g
 
+-- | Return the preset of a vertex, considering only edges with the given label
+--
 -- WARNING: Dont' call this in a loop. For that, use preSetWithEdgeLabelMany
 preSetWithEdgeLabel :: (Eq e, Vertex v, Ord (VertexID v)) => e -> v -> LabelledGraph v e -> [v]
 preSetWithEdgeLabel e v g =
@@ -58,6 +57,8 @@ preSetWithEdgeLabelMany ::
   LabelledGraph v e ->
   (v -> [v])
 preSetWithEdgeLabelMany e g =
+  -- Compute the graph to search once, and then use it multiple times via the
+  -- returned function.
   let g' = LAM.transpose $ graph $ induceOnEdge (== e) g
    in \(vertexID -> v) -> fmap (getVertex g) $ toList $ LAM.postSet v g'
 

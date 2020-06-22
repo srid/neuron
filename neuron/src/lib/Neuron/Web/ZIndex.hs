@@ -52,10 +52,10 @@ buildZIndex graph errors =
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       topSort = G.topSort graph
-   in ZIndex topSort (fmap sortForest clusters') errors
+   in ZIndex topSort (fmap sortCluster clusters') errors
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
-    sortForest fs =
+    sortCluster fs =
       sortZettelForest $ flip fmap fs $ \Node {..} ->
         Node rootLabel $ sortZettelForest subForest
     -- Sort zettel trees so that trees containing the most recent zettel (by ID) come first.
@@ -66,11 +66,10 @@ renderZIndex ::
   Theme.Theme ->
   ZIndex ->
   NeuronWebT t m ()
-renderZIndex neuronTheme ZIndex {..} = do
+renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
   elClass "h1" "header" $ text "Zettel Index"
   renderErrors zIndexErrors
   divClass "z-index" $ do
-    -- Cycle detection.
     case zIndexTopSort of
       Left (toList -> cyc) -> divClass "ui orange segment" $ do
         el "h2" $ text "Cycle detected"
@@ -83,8 +82,7 @@ renderZIndex neuronTheme ZIndex {..} = do
       elAttr "a" ("href" =: "https://neuron.zettel.page/2017401.html") $ text "folgezettel heterarchy"
       text " is rendered as a forest."
     forM_ zIndexClusters $ \forest ->
-      divClass ("ui " <> Theme.semanticColor neuronTheme <> " segment") $ do
-        -- Forest of zettels, beginning with mother vertices.
+      divClass ("ui " <> themeColor <> " segment") $ do
         el "ul" $ renderForest forest
   where
     countNounBe noun nounPlural = \case

@@ -50,8 +50,8 @@ backlinks :: Connection -> Zettel -> ZettelGraph -> [Zettel]
 backlinks conn z g =
   G.preSetWithEdgeLabel (Just conn) z g
 
--- | Like backlinks but for multiple zettels. More performant.
--- TODO: Write performant version
+-- | Like backlinks but for multiple zettels. More performant than calling
+-- `backlinks` in a loop.
 backlinksMulti ::
   (Functor f, Functor g) =>
   Connection ->
