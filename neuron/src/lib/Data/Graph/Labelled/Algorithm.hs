@@ -43,6 +43,25 @@ preSet :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
 preSet (vertexID -> zid) g =
   fmap (getVertex g) $ toList . LAM.preSet zid $ graph g
 
+-- | Return the preset of a vertex, considering only edges with the given label
+--
+-- WARNING: Dont' call this in a loop. For that, use preSetWithEdgeLabelMany
+preSetWithEdgeLabel :: (Eq e, Vertex v, Ord (VertexID v)) => e -> v -> LabelledGraph v e -> [v]
+preSetWithEdgeLabel e v g =
+  preSet v $ induceOnEdge (== e) g
+
+-- | Optimized version of preSetWithEdgeLabel for multiple-input vertices.
+preSetWithEdgeLabelMany ::
+  (Eq e, Monoid e, Vertex v, Ord (VertexID v)) =>
+  e ->
+  LabelledGraph v e ->
+  (v -> [v])
+preSetWithEdgeLabelMany e g =
+  -- Compute the graph to search once, and then use it multiple times via the
+  -- returned function.
+  let g' = LAM.transpose $ graph $ induceOnEdge (== e) g
+   in \(vertexID -> v) -> fmap (getVertex g) $ toList $ LAM.postSet v g'
+
 topSort :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
 topSort g =
   bimap (fmap (getVertex g)) (fmap (getVertex g))
@@ -88,17 +107,15 @@ mothers g =
     go acc = \case
       [] -> acc
       v : (Set.fromList -> vs) ->
-        let reach = reachableUndirected v g
+        let reach = reachableUndirected v
             covered = vs `Set.intersection` reach
             rest = vs `Set.difference` reach
          in go ((v :| Set.toList covered) : acc) (Set.toList rest)
-
--- | Get the vertexes reachable (regardless of direction) from the given vertex.
-reachableUndirected :: Ord a => a -> AM.AdjacencyMap a -> Set a
-reachableUndirected v =
-  Set.fromList . Algo.reachable v . toUndirected
-  where
-    toUndirected g = AM.overlay g $ AM.transpose g
+    -- Vertices reachable from `v` regardless of direction.
+    reachableUndirected v =
+      Set.fromList $ Algo.reachable v gUndirected
+    -- The undirected version of g
+    gUndirected = AM.overlay g $ AM.transpose g
 
 motherVertices :: Ord a => AM.AdjacencyMap a -> [a]
 motherVertices =

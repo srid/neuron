@@ -16,6 +16,8 @@ module Data.Graph.Labelled
 
     -- * Algorithms
     preSet,
+    preSetWithEdgeLabel,
+    preSetWithEdgeLabelMany,
     topSort,
     clusters,
     dfsForestFrom,

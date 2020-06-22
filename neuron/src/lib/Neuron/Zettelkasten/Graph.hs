@@ -18,6 +18,7 @@ module Neuron.Zettelkasten.Graph
     frontlinkForest,
     backlinkForest,
     backlinks,
+    backlinksMulti,
     clusters,
     categoryClusters,
   )
@@ -47,9 +48,21 @@ backlinkForest conn z =
 
 backlinks :: Connection -> Zettel -> ZettelGraph -> [Zettel]
 backlinks conn z g =
-  filter (not . branches) $ G.preSet z $ G.induceOnEdge (== Just conn) g
-  where
-    branches bz = G.hasEdge g z bz
+  G.preSetWithEdgeLabel (Just conn) z g
+
+-- | Like backlinks but for multiple zettels. More performant than calling
+-- `backlinks` in a loop.
+backlinksMulti ::
+  (Functor f, Functor g) =>
+  Connection ->
+  f (g Zettel) ->
+  ZettelGraph ->
+  f (g (Zettel, [Zettel]))
+backlinksMulti conn zs g =
+  let f = G.preSetWithEdgeLabelMany (Just conn) g
+   in flip fmap zs $ \x ->
+        flip fmap x $ \y ->
+          (y, f y)
 
 categoryClusters :: ZettelGraph -> [Forest Zettel]
 categoryClusters (categoryGraph -> g) =
