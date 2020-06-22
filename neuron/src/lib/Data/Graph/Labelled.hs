@@ -4,6 +4,7 @@ module Data.Graph.Labelled
   ( -- * Graph type
     LabelledGraph,
     Vertex (..),
+    adjacencyMapGraph,
 
     -- * Graph construction
     mkGraphFrom,
@@ -16,6 +17,8 @@ module Data.Graph.Labelled
 
     -- * Algorithms
     preSet,
+    preSetWithEdgeLabel,
+    preSetWithEdgeLabelMany,
     topSort,
     clusters,
     dfsForestFrom,

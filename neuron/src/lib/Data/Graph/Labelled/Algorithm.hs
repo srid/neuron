@@ -16,6 +16,9 @@ import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))
 import Relude
 
+adjacencyMapGraph :: LabelledGraph v e -> LAM.AdjacencyMap e (VertexID v)
+adjacencyMapGraph = graph
+
 findVertex :: Ord (VertexID v) => VertexID v -> LabelledGraph v e -> Maybe v
 findVertex v lg@(LabelledGraph g _) = do
   guard $ LAM.hasVertex v g
@@ -42,6 +45,23 @@ edgeLabel lg@(LabelledGraph g _) x y = do
 preSet :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
 preSet (vertexID -> zid) g =
   fmap (getVertex g) $ toList . LAM.preSet zid $ graph g
+
+preSetWithEdgeLabel :: (Eq e, Vertex v, Ord (VertexID v)) => e -> v -> LabelledGraph v e -> [v]
+preSetWithEdgeLabel e v g =
+  -- FIXME: Calling this funtion in loop is inefficnet,
+  -- due to induceOnEdge creating a whole new subgraph.
+  preSet v $ induceOnEdge (== e) g
+
+-- | Optimized version of preSetWithEdgeLabel for multiple-input vertices.
+-- TODO: Write performant version
+preSetWithEdgeLabelMany ::
+  (Eq e, Vertex v, Ord (VertexID v)) =>
+  e ->
+  LabelledGraph v e ->
+  (v -> [v])
+preSetWithEdgeLabelMany e g =
+  let g' = graph $ induceOnEdge (== e) g
+   in \v -> fmap (getVertex g) $ toList $ LAM.preSet (vertexID v) g'
 
 topSort :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
 topSort g =

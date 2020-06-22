@@ -48,9 +48,7 @@ backlinkForest conn z =
 
 backlinks :: Connection -> Zettel -> ZettelGraph -> [Zettel]
 backlinks conn z g =
-  -- FIXME: Calling this funtion in loop is inefficnet,
-  -- due to induceOnEdge creating a whole new subgraph.
-  G.preSet z $ G.induceOnEdge (== Just conn) g
+  G.preSetWithEdgeLabel (Just conn) z g
 
 -- | Like backlinks but for multiple zettels. More performant.
 -- TODO: Write performant version
@@ -61,9 +59,10 @@ backlinksMulti ::
   ZettelGraph ->
   f (g (Zettel, [Zettel]))
 backlinksMulti conn zs g =
-  flip fmap zs $ \x ->
-    flip fmap x $ \y ->
-      (y, backlinks conn y g)
+  let f = G.preSetWithEdgeLabelMany (Just conn) g
+   in flip fmap zs $ \x ->
+        flip fmap x $ \y ->
+          (y, f y)
 
 categoryClusters :: ZettelGraph -> [Forest Zettel]
 categoryClusters (categoryGraph -> g) =
