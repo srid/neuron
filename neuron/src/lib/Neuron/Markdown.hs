@@ -24,7 +24,7 @@ import Control.Monad.Except
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.YAML as YAML
 import Neuron.Orphans ()
-import Relude hiding (show)
+import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple
@@ -129,7 +129,15 @@ getH1 = listToMaybe . W.query go
 plainify :: [B.Inline] -> Text
 plainify = W.query $ \case
   B.Str x -> x
-  _ -> " "
+  B.Code _attr x -> x
+  B.Space -> " "
+  B.SoftBreak -> " "
+  B.LineBreak -> " "
+  B.RawInline _fmt s -> s
+  B.Math _mathTyp s -> s
+  -- Ignore the rest of AST nodes, as they are recursively defined in terms of
+  -- `Inline` which `W.query` will traverse again.
+  _ -> ""
 
 neuronSpec ::
   ( Monad m,
