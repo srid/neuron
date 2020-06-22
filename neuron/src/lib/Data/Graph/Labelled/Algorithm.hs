@@ -69,6 +69,9 @@ topSort g =
     $ LAM.skeleton
     $ graph g
 
+-- | Returns the clusters in an ayclic graph.
+--
+-- If the graph is one cluster and that is acyclic, this will return an empty list.
 clusters :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> [NonEmpty v]
 clusters g =
   fmap (fmap $ getVertex g) $ mothers $ LAM.skeleton $ graph g
