@@ -47,7 +47,6 @@ data ZIndex = ZIndex
 
 buildZIndex :: ZettelGraph -> Map ZettelID ZettelError -> ZIndex
 buildZIndex graph errors =
-  -- TODO: Also build backlinks of each res
   let clusters = G.categoryClusters graph
       clusters' :: [Forest (Zettel, [Zettel])] =
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->

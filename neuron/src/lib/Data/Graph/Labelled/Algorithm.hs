@@ -46,22 +46,20 @@ preSet :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
 preSet (vertexID -> zid) g =
   fmap (getVertex g) $ toList . LAM.preSet zid $ graph g
 
+-- WARNING: Dont' call this in a loop. For that, use preSetWithEdgeLabelMany
 preSetWithEdgeLabel :: (Eq e, Vertex v, Ord (VertexID v)) => e -> v -> LabelledGraph v e -> [v]
 preSetWithEdgeLabel e v g =
-  -- FIXME: Calling this funtion in loop is inefficnet,
-  -- due to induceOnEdge creating a whole new subgraph.
   preSet v $ induceOnEdge (== e) g
 
 -- | Optimized version of preSetWithEdgeLabel for multiple-input vertices.
--- TODO: Write performant version
 preSetWithEdgeLabelMany ::
-  (Eq e, Vertex v, Ord (VertexID v)) =>
+  (Eq e, Monoid e, Vertex v, Ord (VertexID v)) =>
   e ->
   LabelledGraph v e ->
   (v -> [v])
 preSetWithEdgeLabelMany e g =
-  let g' = graph $ induceOnEdge (== e) g
-   in \v -> fmap (getVertex g) $ toList $ LAM.preSet (vertexID v) g'
+  let g' = LAM.transpose $ graph $ induceOnEdge (== e) g
+   in \(vertexID -> v) -> fmap (getVertex g) $ toList $ LAM.postSet v g'
 
 topSort :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
 topSort g =
