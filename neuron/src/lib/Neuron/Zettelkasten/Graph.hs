@@ -21,9 +21,11 @@ module Neuron.Zettelkasten.Graph
     backlinksMulti,
     clusters,
     categoryClusters,
+    connectionCount,
   )
 where
 
+import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Data.Default
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
@@ -37,13 +39,13 @@ import Relude
 frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
 frontlinkForest conn z =
   G.obviateRootUnlessForest z
-    . G.dfsForestFrom [z]
+    . G.bfsForestFrom [z]
     . G.induceOnEdge (== Just conn)
 
 backlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
 backlinkForest conn z =
   G.obviateRootUnlessForest z
-    . G.dfsForestBackwards z
+    . G.bfsForestBackwards z
     . G.induceOnEdge (== Just conn)
 
 backlinks :: Connection -> Zettel -> ZettelGraph -> [Zettel]
@@ -67,7 +69,7 @@ backlinksMulti conn zs g =
 categoryClusters :: ZettelGraph -> [Forest Zettel]
 categoryClusters (categoryGraph -> g) =
   let cs :: [[Zettel]] = sortMothers $ clusters g
-   in flip fmap cs $ \zs -> G.dfsForestFrom zs g
+   in flip fmap cs $ \zs -> G.bfsForestFrom zs g
   where
     -- Sort clusters with newer mother zettels appearing first.
     sortMothers :: [NonEmpty Zettel] -> [[Zettel]]
@@ -96,3 +98,6 @@ getZettel = G.findVertex
 -- | If no connection exists, this returns Nothing.
 getConnection :: Zettel -> Zettel -> ZettelGraph -> Maybe Connection
 getConnection z1 z2 g = fmap (fromMaybe def) $ G.edgeLabel g z1 z2
+
+connectionCount :: ZettelGraph -> Int
+connectionCount = LAM.edgeCount . G.getGraph
