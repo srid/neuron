@@ -36,10 +36,7 @@ import Relude hiding ((&))
 -- All heavy graph computations are decoupled from rendering, producing this
 -- value, that is in turn used for instant rendering.
 data ZIndex = ZIndex
-  { -- | Topological ordering of the folgezettel graph. Left value indicates
-    --  that it is cyclic.
-    zIndexTopSort :: Either (NonEmpty Zettel) [Zettel],
-    -- | Clusters on the folgezettel graph.
+  { -- | Clusters on the folgezettel graph.
     zIndexClusters :: [Forest (Zettel, [Zettel])],
     -- | All zettel errors
     zIndexErrors :: Map ZettelID ZettelError
@@ -52,7 +49,7 @@ buildZIndex graph errors =
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       topSort = G.topSort graph
-   in ZIndex topSort (fmap sortCluster clusters') errors
+   in ZIndex (fmap sortCluster clusters') errors
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortCluster fs =
@@ -70,12 +67,6 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
   elClass "h1" "header" $ text "Zettel Index"
   renderErrors zIndexErrors
   divClass "z-index" $ do
-    case zIndexTopSort of
-      Left (toList -> cyc) -> divClass "ui orange segment" $ do
-        el "h2" $ text "Cycle detected"
-        forM_ cyc $ \zettel ->
-          el "li" $ QueryView.renderZettelLink Nothing def zettel
-      _ -> blank
     el "p" $ do
       text $ "There " <> countNounBe "cluster" "clusters" (length zIndexClusters) <> " in the Zettelkasten folgezettel graph. "
       text "Each cluster's "
