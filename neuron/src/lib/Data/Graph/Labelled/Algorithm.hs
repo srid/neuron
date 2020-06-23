@@ -16,6 +16,10 @@ import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))
 import Relude
 
+{-# INLINE getGraph #-}
+getGraph :: LabelledGraph v e -> LAM.AdjacencyMap e (VertexID v)
+getGraph (LabelledGraph g _) = g
+
 findVertex :: Ord (VertexID v) => VertexID v -> LabelledGraph v e -> Maybe v
 findVertex v lg@(LabelledGraph g _) = do
   guard $ LAM.hasVertex v g

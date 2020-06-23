@@ -21,9 +21,11 @@ module Neuron.Zettelkasten.Graph
     backlinksMulti,
     clusters,
     categoryClusters,
+    connectionCount,
   )
 where
 
+import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Data.Default
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
@@ -96,3 +98,6 @@ getZettel = G.findVertex
 -- | If no connection exists, this returns Nothing.
 getConnection :: Zettel -> Zettel -> ZettelGraph -> Maybe Connection
 getConnection z1 z2 g = fmap (fromMaybe def) $ G.edgeLabel g z1 z2
+
+connectionCount :: ZettelGraph -> Int
+connectionCount = LAM.edgeCount . G.getGraph

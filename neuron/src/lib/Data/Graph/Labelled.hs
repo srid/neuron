@@ -9,6 +9,7 @@ module Data.Graph.Labelled
     mkGraphFrom,
 
     -- * Querying
+    getGraph,
     findVertex,
     getVertices,
     hasEdge,

@@ -39,8 +39,15 @@ data ZIndex = ZIndex
   { -- | Clusters on the folgezettel graph.
     zIndexClusters :: [Forest (Zettel, [Zettel])],
     -- | All zettel errors
-    zIndexErrors :: Map ZettelID ZettelError
+    zIndexErrors :: Map ZettelID ZettelError,
+    zIndexStats :: Stats
   }
+
+data Stats = Stats
+  { statsZettelCount :: Int,
+    statsZettelConnectionCount :: Int
+  }
+  deriving (Eq, Show)
 
 buildZIndex :: ZettelGraph -> Map ZettelID ZettelError -> ZIndex
 buildZIndex graph errors =
@@ -48,8 +55,8 @@ buildZIndex graph errors =
       clusters' :: [Forest (Zettel, [Zettel])] =
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
-      topSort = G.topSort graph
-   in ZIndex (fmap sortCluster clusters') errors
+      stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
+   in ZIndex (fmap sortCluster clusters') errors stats
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortCluster fs =
@@ -68,7 +75,12 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
   renderErrors zIndexErrors
   divClass "z-index" $ do
     el "p" $ do
-      text $ "There " <> countNounBe "cluster" "clusters" (length zIndexClusters) <> " in the Zettelkasten folgezettel graph. "
+      text $
+        "The zettelkasten has "
+          <> countNounBe "zettel" "zettels" (statsZettelCount zIndexStats)
+          <> " and "
+          <> countNounBe "link" "links" (statsZettelConnectionCount zIndexStats)
+      text $ ". It has " <> countNounBe "cluster" "clusters" (length zIndexClusters) <> " in its folgezettel graph. "
       text "Each cluster's "
       elAttr "a" ("href" =: "https://neuron.zettel.page/2017401.html") $ text "folgezettel heterarchy"
       text " is rendered as a forest."
@@ -77,8 +89,8 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
         el "ul" $ renderForest forest
   where
     countNounBe noun nounPlural = \case
-      1 -> "is 1 " <> noun
-      n -> "are " <> show n <> " " <> nounPlural
+      1 -> show 1 <> noun
+      n -> show n <> " " <> nounPlural
 
 renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
 renderErrors errors = do
