@@ -23,6 +23,8 @@ module Data.Graph.Labelled
     clusters,
     dfsForestFrom,
     dfsForestBackwards,
+    bfsForestFrom,
+    bfsForestBackwards,
     obviateRootUnlessForest,
     induceOnEdge,
   )

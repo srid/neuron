@@ -92,6 +92,14 @@ dfsForestBackwards :: (Monoid e, Vertex v, Ord (VertexID v)) => v -> LabelledGra
 dfsForestBackwards fromV (LabelledGraph g' v') =
   dfsForestFrom [fromV] $ LabelledGraph (LAM.transpose g') v'
 
+bfsForestBackwards :: (Monoid e, Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> Forest v
+bfsForestBackwards fromV (LabelledGraph g' v') =
+  bfsForestFrom [fromV] $ LabelledGraph (LAM.transpose g') v'
+
+bfsForestFrom :: (Vertex v, Ord (VertexID v)) => [v] -> LabelledGraph v e -> Forest v
+bfsForestFrom (fmap vertexID -> vs) g =
+  fmap (fmap $ getVertex g) $ Algo.bfsForest vs $ LAM.skeleton $ graph g
+
 --------------------------
 --- More general utilities
 --------------------------

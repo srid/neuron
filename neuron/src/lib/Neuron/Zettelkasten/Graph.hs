@@ -39,13 +39,13 @@ import Relude
 frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
 frontlinkForest conn z =
   G.obviateRootUnlessForest z
-    . G.dfsForestFrom [z]
+    . G.bfsForestFrom [z]
     . G.induceOnEdge (== Just conn)
 
 backlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
 backlinkForest conn z =
   G.obviateRootUnlessForest z
-    . G.dfsForestBackwards z
+    . G.bfsForestBackwards z
     . G.induceOnEdge (== Just conn)
 
 backlinks :: Connection -> Zettel -> ZettelGraph -> [Zettel]
@@ -69,7 +69,7 @@ backlinksMulti conn zs g =
 categoryClusters :: ZettelGraph -> [Forest Zettel]
 categoryClusters (categoryGraph -> g) =
   let cs :: [[Zettel]] = sortMothers $ clusters g
-   in flip fmap cs $ \zs -> G.dfsForestFrom zs g
+   in flip fmap cs $ \zs -> G.bfsForestFrom zs g
   where
     -- Sort clusters with newer mother zettels appearing first.
     sortMothers :: [NonEmpty Zettel] -> [[Zettel]]
