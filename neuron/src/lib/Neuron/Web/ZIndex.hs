@@ -89,7 +89,7 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
         el "ul" $ renderForest forest
   where
     countNounBe noun nounPlural = \case
-      1 -> show 1 <> noun
+      1 -> "1 " <> noun
       n -> show n <> " " <> nounPlural
 
 renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
