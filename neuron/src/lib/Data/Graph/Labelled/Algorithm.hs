@@ -50,9 +50,16 @@ preSet (vertexID -> zid) g =
 -- | Return the preset of a vertex, considering only edges with the given label
 --
 -- WARNING: Dont' call this in a loop. For that, use preSetWithEdgeLabelMany
-preSetWithEdgeLabel :: (Eq e, Vertex v, Ord (VertexID v)) => e -> v -> LabelledGraph v e -> [v]
-preSetWithEdgeLabel e v g =
-  preSet v $ induceOnEdge (== e) g
+preSetWithEdgeLabel ::
+  (Eq e, Monoid e, Vertex v, Ord (VertexID v)) =>
+  (e -> Bool) ->
+  v ->
+  LabelledGraph v e ->
+  [(e, v)]
+preSetWithEdgeLabel f v g =
+  let g' = LAM.transpose $ getGraph $ induceOnEdge f g
+      ns = Map.toList $ Map.findWithDefault mempty (vertexID v) $ LAM.adjacencyMap g'
+   in fmap (second (getVertex g) . swap) ns
 
 -- | Optimized version of preSetWithEdgeLabel for multiple-input vertices.
 preSetWithEdgeLabelMany ::
