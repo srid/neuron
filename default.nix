@@ -9,7 +9,15 @@ in
     #
     # In order to keep this list up to date, use nix-store and why-depends as
     # explained here: https://www.srid.ca/04b88e01.html
-    disallowedReferences = [ ghc.pandoc ghc.pandoc-types ghc.shake ghc.warp ghc.HTTP ghc.js-jquery ghc.js-dgtable ghc.js-flot ];
+    disallowedReferences = [ 
+      ghc.pandoc 
+      ghc.pandoc-types 
+      ghc.shake ghc.warp 
+      ghc.HTTP 
+      ghc.js-jquery 
+      ghc.js-dgtable 
+      ghc.js-flot 
+    ];
     postInstall = ''
       remove-references-to -t ${ghc.pandoc} $out/bin/neuron
       remove-references-to -t ${ghc.pandoc-types} $out/bin/neuron
