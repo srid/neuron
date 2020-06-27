@@ -2,8 +2,8 @@ name: "Publish Neuron site"
 on:
   # Run only when pushing to master branch
   push:
-  #  branches:
-  #    - master
+    branches:
+      - master
 jobs:
   build:
     runs-on: ubuntu-latest
