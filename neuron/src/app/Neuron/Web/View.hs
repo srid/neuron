@@ -67,7 +67,8 @@ renderRouteHead config route val = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
   el "title" $ text $ routeTitle config (snd val) route
-  elAttr "link" ("rel" =: "shortcut icon" <> "href" =: "https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg") blank
+  whenJust (faviconUrl config) $ \href_ ->
+    elAttr "link" ("rel" =: "shortcut icon" <> "href" =: href_) blank
   case route of
     Route_Redirect _ ->
       blank

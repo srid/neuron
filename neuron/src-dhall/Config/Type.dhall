@@ -14,4 +14,6 @@
     Bool
 , minVersion :
     Text
+, faviconUrl :
+    Optional Text
 }

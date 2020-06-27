@@ -14,4 +14,6 @@
     True
 , minVersion =
     "0.5"
+, faviconUrl =
+    Some "https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg"
 }
