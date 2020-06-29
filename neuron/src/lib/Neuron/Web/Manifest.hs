@@ -13,6 +13,7 @@ module Neuron.Web.Manifest
 where
 
 import qualified Data.Set as Set
+import Development.Shake (FilePattern)
 import Reflex.Dom.Core
 import Relude
 
@@ -29,15 +30,14 @@ data Favicons = Favicons
   }
   deriving (Eq)
 
-manifestPatterns :: [FilePath]
-manifestPatterns =
-  ["static/favicon.*", "static/manifest.webmanifest"]
-
 mkManifest :: [FilePath] -> Manifest
 mkManifest (Set.fromList -> files) =
   Manifest
     { manifestFavicons = mkFavicons,
-      manifestWebAppManifest = Nothing
+      manifestWebAppManifest =
+        if Set.member webmanifestFile files
+          then Just webmanifestFile
+          else Nothing
     }
   where
     mkFavicons =
@@ -51,11 +51,6 @@ mkManifest (Set.fromList -> files) =
               }
         [] ->
           Nothing
-    -- Supported favicons, in order of preference
-    favicons :: [FilePath]
-    favicons = fmap ("static/favicon." <>) ["svg", "png", "ico", "jpg", "jpeg"]
-    appleTouchIcon :: FilePath
-    appleTouchIcon = "static/apple-touch-icon.png"
 
 renderManifest :: DomBuilder t m => Manifest -> m ()
 renderManifest Manifest {..} = do
@@ -73,3 +68,21 @@ renderManifest Manifest {..} = do
       "https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg"
     linkRel rel path =
       elAttr "link" ("rel" =: rel <> "href" =: toText path) blank
+
+manifestPatterns :: [FilePattern]
+manifestPatterns =
+  [faviconsPattern, appleTouchIcon, webmanifestFile]
+
+-- | NOTE: This pattern should cover all of `favicons`
+faviconsPattern :: FilePattern
+faviconsPattern = "static/favicon.*"
+
+-- | Supported favicons, in order of preference
+favicons :: [FilePath]
+favicons = fmap ("static/favicon." <>) ["svg", "png", "ico", "jpg", "jpeg"]
+
+appleTouchIcon :: FilePath
+appleTouchIcon = "static/apple-touch-icon.png"
+
+webmanifestFile :: FilePath
+webmanifestFile = "static/manifest.webmanifest"
