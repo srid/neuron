@@ -17,15 +17,13 @@ module Neuron.Zettelkasten.Query
   )
 where
 
-import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Control.Monad.Except
 import Data.Aeson
-import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
 import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Graph (backlinks, getZettel)
+import Neuron.Zettelkasten.Graph (backlinks, getConnections, getZettel)
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
@@ -130,11 +128,9 @@ graphQueryResultJson notesDir q er skippedZettels =
     edgeJson :: Connection -> Zettel -> Value
     edgeJson connection zettel =
       object $ ["connection" .= toJSON connection] <> zettelJsonFull notesDir zettel
-    graphConnections :: ZettelGraph -> Map.Map ZettelID (Map.Map ZettelID (Maybe Connection))
-    graphConnections = LAM.adjacencyMap . G.getGraph
     resultJson :: r -> Value
     resultJson r = case q of
       GraphQuery_Id ->
-        toJSON (graphConnections r)
+        toJSON (getConnections r)
       GraphQuery_BacklinksOf _ _ ->
         toJSON $ fmap (uncurry edgeJson) r
