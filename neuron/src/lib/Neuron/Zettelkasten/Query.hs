@@ -9,7 +9,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Queries to the Zettel store
-module Neuron.Zettelkasten.Query where
+module Neuron.Zettelkasten.Query
+  ( runZettelQuery,
+    runGraphQuery,
+    zettelQueryResultJson,
+    graphQueryResultJson,
+  )
+where
 
 import Control.Monad.Except
 import Data.Aeson
@@ -24,6 +30,7 @@ import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Graph
 import Neuron.Zettelkasten.Zettel
 import Relude
+import System.FilePath
 
 runZettelQuery :: [Zettel] -> ZettelQuery r -> Either QueryResultError r
 runZettelQuery zs = \case
@@ -56,6 +63,12 @@ runGraphQuery g = \case
         Left $ QueryResultError_NoSuchZettel zid
       Just z ->
         Right $ backlinks (maybe isJust (const (== conn)) conn) z g
+
+zettelJsonFull :: forall a. KeyValue a => FilePath -> Zettel -> [a]
+zettelJsonFull notesDir z@Zettel {..} =
+  [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)
+  ]
+    <> zettelJson z
 
 zettelQueryResultJson ::
   forall r.

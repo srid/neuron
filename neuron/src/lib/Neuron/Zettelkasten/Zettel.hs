@@ -34,7 +34,6 @@ import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
 import Relude hiding (show)
-import System.FilePath
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
 
@@ -123,12 +122,6 @@ zettelJson Zettel {..} =
     "tags" .= zettelTags,
     "day" .= zettelDay
   ]
-
-zettelJsonFull :: forall a. KeyValue a => FilePath -> Zettel -> [a]
-zettelJsonFull notesDir z@Zettel {..} =
-  [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)
-  ]
-    <> zettelJson z
 
 deriveJSONGADT ''ZettelQuery
 
