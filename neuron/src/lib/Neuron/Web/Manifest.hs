@@ -53,7 +53,7 @@ mkManifest (Set.fromList -> files) =
           Nothing
     -- Supported favicons, in order of preference
     favicons :: [FilePath]
-    favicons = fmap ("static/favicon." <>) ["svg", "png", "ico"]
+    favicons = fmap ("static/favicon." <>) ["svg", "png", "ico", "jpg", "jpeg"]
     appleTouchIcon :: FilePath
     appleTouchIcon = "static/apple-touch-icon.png"
 
