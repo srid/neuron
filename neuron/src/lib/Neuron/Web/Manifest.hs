@@ -13,7 +13,6 @@ module Neuron.Web.Manifest
 where
 
 import qualified Data.Set as Set
-import Development.Shake (FilePattern)
 import Reflex.Dom.Core
 import Relude
 
@@ -70,12 +69,12 @@ renderManifest Manifest {..} = do
     linkRel rel path =
       elAttr "link" ("rel" =: rel <> "href" =: toText path) blank
 
-manifestPatterns :: [FilePattern]
+manifestPatterns :: [FilePath]
 manifestPatterns =
   [faviconsPattern, appleTouchIcon, webmanifestFile]
 
 -- | NOTE: This pattern should cover all of `favicons`
-faviconsPattern :: FilePattern
+faviconsPattern :: FilePath
 faviconsPattern = "static/favicon.*"
 
 -- | Supported favicons, in order of preference
