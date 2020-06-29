@@ -17,7 +17,7 @@ where
 
 import qualified Data.Map.Strict as Map
 import Data.Traversable
-import Development.Shake
+import Development.Shake (Action, need)
 import Neuron.Config (Config (..))
 import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Version (neuronVersion, olderThan)
@@ -40,10 +40,12 @@ generateSite ::
   (forall a. Z.Route a -> (ZettelGraph, a) -> Action ()) ->
   Action ZettelGraph
 generateSite config writeHtmlRoute' = do
-  when (olderThan $ minVersion config)
-    $ fail
-    $ toString
-    $ "Require neuron mininum version " <> minVersion config <> ", but your neuron version is " <> neuronVersion
+  when (olderThan $ minVersion config) $ do
+    fail $ toString $
+      "Require neuron mininum version "
+        <> minVersion config
+        <> ", but your neuron version is "
+        <> neuronVersion
   (zettelGraph, zettelContents, errors) <- loadZettelkasten
   let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
       writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
