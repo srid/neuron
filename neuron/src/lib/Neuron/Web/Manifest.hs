@@ -71,11 +71,7 @@ renderManifest Manifest {..} = do
 
 manifestPatterns :: [FilePath]
 manifestPatterns =
-  [faviconsPattern, appleTouchIcon, webmanifestFile]
-
--- | NOTE: This pattern should cover all of `favicons`
-faviconsPattern :: FilePath
-faviconsPattern = "static/favicon.*"
+  favicons <> [appleTouchIcon, webmanifestFile]
 
 -- | Supported favicons, in order of preference
 favicons :: [FilePath]
