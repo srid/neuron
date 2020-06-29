@@ -26,7 +26,7 @@ main = withUtf8 $ run generateMainSite
 
 generateMainSite :: Action ()
 generateMainSite = do
-  Rib.buildStaticFiles ["static/**"]
+  Rib.buildStaticFiles ["static/**", ".nojekyll"]
   config <- Config.getConfig
   let writeHtmlRoute :: Route a -> (ZettelGraph, a) -> Action ()
       writeHtmlRoute r x = do
