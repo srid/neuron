@@ -119,7 +119,5 @@ graphQueryResultJson notesDir q er skippedZettels =
     resultJson r = case q of
       GraphQuery_Id ->
         toJSON (getConnections r)
-      GraphQuery_BacklinksOf Nothing _ ->
+      GraphQuery_BacklinksOf _ _ ->
         toJSON $ fmap (uncurry edgeJson) r
-      GraphQuery_BacklinksOf Just {} _ ->
-        toJSON $ fmap (\(_, zettel) -> object $ zettelJsonFull notesDir zettel) r
