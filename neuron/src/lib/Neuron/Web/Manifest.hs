@@ -34,23 +34,24 @@ mkManifest :: [FilePath] -> Manifest
 mkManifest (Set.fromList -> files) =
   Manifest
     { manifestFavicons = mkFavicons,
-      manifestWebAppManifest =
-        if Set.member webmanifestFile files
-          then Just webmanifestFile
-          else Nothing
+      manifestWebAppManifest = lookupSet webmanifestFile files
     }
   where
     mkFavicons =
       case filter (`Set.member` files) favicons of
-        (defIcon : alts) ->
+        (ico : alts) ->
           Just $
             Favicons
-              { faviconsDefault = defIcon,
+              { faviconsDefault = ico,
                 faviconsAlts = alts,
-                faviconsAppleTouch = bool Nothing (Just appleTouchIcon) $ Set.member appleTouchIcon files
+                faviconsAppleTouch = lookupSet appleTouchIcon files
               }
         [] ->
           Nothing
+    lookupSet x s =
+      if Set.member x s
+        then Just x
+        else Nothing
 
 renderManifest :: DomBuilder t m => Manifest -> m ()
 renderManifest Manifest {..} = do
