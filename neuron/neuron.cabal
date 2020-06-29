@@ -89,6 +89,7 @@ library
     Neuron.Zettelkasten.Graph.Type
     Neuron.Zettelkasten.Graph.Build
     Neuron.Web.Route
+    Neuron.Web.Manifest
     Neuron.Web.Common
     Neuron.Web.Widget
     Neuron.Web.Widget.AutoScroll

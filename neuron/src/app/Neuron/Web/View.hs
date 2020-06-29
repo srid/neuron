@@ -19,7 +19,7 @@ module Neuron.Web.View
   )
 where
 
-import Clay hiding (Plain, id, ms, name, object, reverse, s, style, type_)
+import Clay ((?), Css, em, gray, important, pct, px)
 import qualified Clay as C
 import Control.Monad.Except
 import Data.Aeson ((.=), object)
@@ -31,6 +31,7 @@ import Data.TagTree (Tag (..))
 import Neuron.Config
 import Neuron.Version (neuronVersion)
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
+import Neuron.Web.Manifest (Manifest, renderManifest)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
 import Neuron.Web.StructuredData
@@ -54,20 +55,20 @@ import qualified Skylighting.Styles as Skylighting
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
 
-renderRoutePage :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
-renderRoutePage config r val =
+renderRoutePage :: PandocBuilder t m => Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
+renderRoutePage config manifest r val =
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
-      renderRouteHead config r val
+      renderRouteHead config manifest r val
     el "body" $ do
       renderRouteBody config r val
 
-renderRouteHead :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
-renderRouteHead config route val = do
+renderRouteHead :: DomBuilder t m => Config -> Manifest -> Route a -> (ZettelGraph, a) -> m ()
+renderRouteHead config manifest route val = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
   el "title" $ text $ routeTitle config (snd val) route
-  elAttr "link" ("rel" =: "shortcut icon" <> "href" =: "https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg") blank
+  renderManifest manifest
   case route of
     Route_Redirect _ ->
       blank
