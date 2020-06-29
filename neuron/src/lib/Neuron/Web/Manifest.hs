@@ -59,16 +59,14 @@ mkManifest (Set.fromList -> files) =
 
 renderManifest :: DomBuilder t m => Manifest -> m ()
 renderManifest Manifest {..} = do
-  -- TODO default
+  linkRel "manifest" `mapM_` manifestWebAppManifest
   case manifestFavicons of
     Nothing ->
       linkRel "icon" defaultFaviconUrl
     Just Favicons {..} -> do
       linkRel "icon" faviconsDefault
-      forM_ faviconsAlts $ linkRel "alternate icon"
-      forM_ faviconsAppleTouch $ linkRel "apple-touch-icon"
-  forM_ manifestWebAppManifest $ \webmanifest ->
-    linkRel "manifest" webmanifest
+      linkRel "alternate icon" `mapM_` faviconsAlts
+      linkRel "apple-touch-icon" `mapM_` faviconsAppleTouch
   where
     defaultFaviconUrl :: String
     defaultFaviconUrl =
