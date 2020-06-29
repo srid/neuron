@@ -16,14 +16,14 @@ import Data.Aeson
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
-import Neuron.Zettelkasten.Graph (backlinks, getZettel)
+import Neuron.Zettelkasten.Connection
+import Neuron.Zettelkasten.Graph (backlinks, getConnections, getZettel)
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Graph
 import Neuron.Zettelkasten.Zettel
 import Relude
-import System.FilePath
 
 runZettelQuery :: [Zettel] -> ZettelQuery r -> Either QueryResultError r
 runZettelQuery zs = \case
@@ -80,17 +80,11 @@ zettelQueryResultJson notesDir q er skippedZettels =
     resultJson :: r -> Value
     resultJson r = case q of
       ZettelQuery_ZettelByID _ _mconn ->
-        zettelJsonFull r
+        object $ zettelJsonFull notesDir r
       ZettelQuery_ZettelsByTag _ _mconn _mview ->
-        toJSON $ fmap zettelJsonFull r
+        toJSON $ fmap (object . zettelJsonFull notesDir) r
       ZettelQuery_Tags _ ->
         toJSON $ fmap treeToJson . tagTree $ r
-    zettelJsonFull :: Zettel -> Value
-    zettelJsonFull z@Zettel {..} =
-      object $
-        [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)
-        ]
-          <> zettelJson z
     treeToJson (Node (tag, count) children) =
       object
         [ "name" .= tag,
@@ -101,12 +95,13 @@ zettelQueryResultJson notesDir q er skippedZettels =
 graphQueryResultJson ::
   forall r.
   (ToJSON (GraphQuery r)) =>
+  FilePath ->
   GraphQuery r ->
   Either QueryResultError r ->
   -- Zettels that cannot be parsed by neuron (and as such are excluded from the graph)
   Map ZettelID ZettelError ->
   Value
-graphQueryResultJson q er skippedZettels =
+graphQueryResultJson notesDir q er skippedZettels =
   toJSON $
     object
       [ "query" .= toJSON q,
@@ -117,9 +112,14 @@ graphQueryResultJson q er skippedZettels =
         "skipped" .= skippedZettels
       ]
   where
+    edgeJson :: Connection -> Zettel -> Value
+    edgeJson connection zettel =
+      object $ ["connection" .= toJSON connection] <> zettelJsonFull notesDir zettel
     resultJson :: r -> Value
     resultJson r = case q of
       GraphQuery_Id ->
-        toJSON r
-      GraphQuery_BacklinksOf _ _ ->
-        toJSON r
+        toJSON (getConnections r)
+      GraphQuery_BacklinksOf Nothing _ ->
+        toJSON $ fmap (uncurry edgeJson) r
+      GraphQuery_BacklinksOf Just {} _ ->
+        toJSON $ fmap (\(_, zettel) -> object $ zettelJsonFull notesDir zettel) r

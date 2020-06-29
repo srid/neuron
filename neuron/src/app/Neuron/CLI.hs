@@ -72,6 +72,6 @@ runWith act App {..} =
           Right someQ ->
             withSome someQ $ \q -> do
               let result = Q.runGraphQuery graph q
-              putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result errors
+              putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson notesDir q result errors
     Search searchCmd ->
       interactiveSearch notesDir searchCmd
