@@ -45,15 +45,12 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding ((&))
-import Rib (routeUrlRel)
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
 
 -- | Render the given route
 --
 -- TODO: In preparation for making this module a library:
--- * Remove Config/Alias feature (gets rid of routeUrlRel as well)
---   * Or, better, change NeuronWebT to allow returning URL as text
 -- * Move Config to lib
 -- * Take skylighting data as well. Or better, pass them all as a new record called `RenderData`.
 renderRoutePage :: PandocBuilder t m => Text -> Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
@@ -128,8 +125,8 @@ renderRouteBody neuronVersion Config {..} r (g, x) = do
         ZettelView.renderZettel (g, x)
           <* renderBrandFooter noVersion
       Route_Redirect _ -> do
-        elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
-        pure mempty
+        targetUrl <- neuronRouteURL $ Some $ Route_Zettel x
+        elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> targetUrl)) blank
 
 renderSearch :: DomBuilder t m => ZettelGraph -> Text -> m ()
 renderSearch graph script = do

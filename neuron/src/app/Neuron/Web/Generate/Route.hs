@@ -34,13 +34,19 @@ instance IsRoute Route where
       pure $ toString s <> ".html"
 
 staticRouteConfig :: RouteConfig t m
-staticRouteConfig = RouteConfig True renderStaticRoute
-
-renderStaticRoute :: DomBuilder t m => Some Route -> Map Text Text -> m a -> m a
-renderStaticRoute someR attrs w =
-  withSome someR $ \r -> do
-    let hrefAttr :: Map Text Text = "href" =: routeUrlRel r
-    elAttr "a" (attrs <> hrefAttr) w
+staticRouteConfig =
+  RouteConfig True renderStaticRoute staticRouteUrl
+  where
+    renderStaticRoute :: DomBuilder t m => Some Route -> Map Text Text -> m a -> m a
+    renderStaticRoute someR attrs w =
+      withSome someR $ \r -> do
+        let hrefAttr :: Map Text Text = "href" =: routeFor r
+        elAttr "a" (attrs <> hrefAttr) w
+    staticRouteUrl someR =
+      withSome someR $ \r -> do
+        routeFor r
+    -- Using relative URLs enables the site work in file:/// URLs
+    routeFor = routeUrlRel
 
 -- | Like `routeUrlRel` but takes a query parameter
 routeUrlRelWithQuery :: HasCallStack => IsRoute r => r a -> URI.RText 'URI.QueryKey -> Text -> Text

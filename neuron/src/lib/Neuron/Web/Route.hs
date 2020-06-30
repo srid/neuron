@@ -28,7 +28,9 @@ data RouteConfig t m = RouteConfig
   { -- | Whether the view is being rendered for static HTML generation
     routeConfigStaticallyGenerated :: Bool,
     -- | How to render a web route.
-    routeConfigRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> m ()
+    routeConfigRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> m (),
+    -- | Get the URL for a web route as plain text
+    routeConfigRouteURL :: Some Route -> Text
   }
 
 type NeuronWebT t m = ReaderT (RouteConfig t m) m
@@ -45,6 +47,11 @@ neuronRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> Neur
 neuronRouteLink someR attrs w = do
   f <- asks routeConfigRouteLink
   lift $ f someR attrs w
+
+neuronRouteURL :: Monad m => Some Route -> NeuronWebT t m Text
+neuronRouteURL someR = do
+  f <- asks routeConfigRouteURL
+  pure $ f someR
 
 routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
