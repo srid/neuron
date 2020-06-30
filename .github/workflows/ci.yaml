@@ -21,11 +21,11 @@ jobs:
     # This builds neuron, as well as run tests
     - run: nix-build -j4 ci.nix
   bundle:
+    needs: build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-    needs: build
     - name: Bundle up
       run: |
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
