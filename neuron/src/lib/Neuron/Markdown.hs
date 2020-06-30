@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -21,9 +19,9 @@ import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
 import Control.Monad.Except
-import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.YAML as YAML
 import Neuron.Orphans ()
+import Neuron.Zettelkasten.Zettel.ParseError
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
@@ -33,21 +31,6 @@ import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Pandoc.Walk as W
 import qualified Text.Parsec as P
 import Text.Show
-
-data ZettelParseError
-  = ZettelParseError_InvalidMarkdown Text
-  | ZettelParseError_InvalidYAML Text
-  | ZettelParseError_PartitionError Text
-  deriving (Eq, Generic, ToJSON, FromJSON)
-
-instance Show ZettelParseError where
-  show = \case
-    ZettelParseError_InvalidMarkdown e ->
-      show e
-    ZettelParseError_InvalidYAML e ->
-      toString e
-    ZettelParseError_PartitionError e ->
-      "Unable to determine YAML region: " <> toString e
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --

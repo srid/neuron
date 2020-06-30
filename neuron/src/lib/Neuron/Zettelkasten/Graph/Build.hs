@@ -21,13 +21,14 @@ import Neuron.Zettelkasten.Zettel.Parser
 import Relude
 
 buildZettelkasten ::
+  Map.Map Text (FilePath -> ZettelReader) ->
   [(FilePath, Text)] ->
   ( ZettelGraph,
     [ZettelC],
     Map ZettelID ZettelError
   )
-buildZettelkasten filesWithContent =
-  let zs = parseZettels filesWithContent
+buildZettelkasten readers filesWithContent =
+  let zs = parseZettels readers filesWithContent
       parseErrors = Map.fromList $ lefts zs <&> (zettelID &&& zettelError)
       (g, queryErrors) = mkZettelGraph $ fmap sansContent zs
       errors = fmap Left parseErrors `Map.union` fmap Right queryErrors

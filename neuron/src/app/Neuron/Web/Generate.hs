@@ -22,6 +22,8 @@ import Data.Traversable
 import Development.Shake (Action, need)
 import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Config.Type (Config (..))
+import Neuron.Markdown
+import Neuron.Org
 import Neuron.Version (neuronVersion, olderThan)
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
@@ -91,6 +93,13 @@ reportError route errors = do
         go (x : xs) =
           x : fmap (toText . (take n (repeat ' ') <>) . toString) xs
 
+supportedReaders :: Map.Map Text (FilePath -> ZettelReader)
+supportedReaders =
+  Map.fromList
+    [ (".md", parseMarkdown),
+      (".org", parseOrg)
+    ]
+
 loadZettelkasten ::
   Action
     ( ZettelGraph,
@@ -98,7 +107,7 @@ loadZettelkasten ::
       Map ZettelID ZettelError
     )
 loadZettelkasten =
-  loadZettelkastenFrom =<< Rib.forEvery ["*.md"] pure
+  loadZettelkastenFrom =<< Rib.forEvery ["*.md", "*.org"] pure
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFrom ::
@@ -114,4 +123,4 @@ loadZettelkastenFrom files = do
     need [path]
     s <- decodeUtf8With lenientDecode <$> readFileBS path
     pure (path, s)
-  pure $ G.buildZettelkasten filesWithContent
+  pure $ G.buildZettelkasten supportedReaders filesWithContent

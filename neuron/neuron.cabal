@@ -172,6 +172,7 @@ common app-common
       Neuron.Web.Generate.Route
       Neuron.Web.View
       Neuron.Web.StructuredData
+      Neuron.Org
       Neuron.Markdown
       Neuron.Zettelkasten.ID.Scheme
       Paths_neuron

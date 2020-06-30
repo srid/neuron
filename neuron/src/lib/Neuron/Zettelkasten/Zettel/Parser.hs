@@ -6,6 +6,7 @@
 module Neuron.Zettelkasten.Zettel.Parser where
 
 import Control.Monad.Writer
+import qualified Data.Map.Strict as Map
 import Data.Some
 import qualified Data.Text as T
 import qualified Neuron.Markdown as MD
@@ -16,17 +17,19 @@ import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Reflex.Dom.Pandoc.URILink (queryURILinks)
 import Relude
+import System.FilePath (takeExtension)
 import Text.Pandoc.Definition (Pandoc)
 
 -- | Parse a markdown-formatted zettel
 --
 -- In future this will support other formats supported by Pandoc.
 parseZettel ::
+  ZettelReader ->
   ZettelID ->
   Text ->
   ZettelC
-parseZettel zid s = do
-  case MD.parseMarkdown (zettelIDSourceFileName zid) s of
+parseZettel zreader zid s = do
+  case zreader s of
     Left parseErr ->
       Left $ Zettel zid "Unknown" False [] Nothing [] parseErr s
     Right (meta, doc) ->
@@ -59,9 +62,13 @@ parseZettel zid s = do
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
+  Map.Map Text (FilePath -> ZettelReader) ->
   [(FilePath, Text)] ->
   [ZettelC]
-parseZettels fs =
+parseZettels readers fs =
   flip mapMaybe fs $ \(path, s) -> do
+    -- TODO either use fromJust since this is supposed to be unreachable
+    --      or report unsupported extension
+    zreader <- Map.lookup (toText $ takeExtension path) readers
     zid <- getZettelID path
-    pure $ parseZettel zid s
+    pure $ parseZettel (zreader path) zid s
