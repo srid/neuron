@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -24,13 +25,13 @@ getFirstParagraphText = listToMaybe . W.query go
       _ ->
         []
 
-getH1 :: Pandoc -> Maybe [B.Inline]
+getH1 :: W.Walkable B.Block b => b -> Maybe (B.Attr, [B.Inline])
 getH1 = listToMaybe . W.query go
   where
-    go :: B.Block -> [[B.Inline]]
+    go :: B.Block -> [(B.Attr, [B.Inline])]
     go = \case
-      B.Header 1 _ inlines ->
-        [inlines]
+      B.Header 1 attr inlines ->
+        [(attr, inlines)]
       _ ->
         []
 

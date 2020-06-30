@@ -36,7 +36,7 @@ parseZettel zreader zid s = do
       let (title, titleInBody) = case Meta.title =<< meta of
             Just tit -> (tit, False)
             Nothing -> fromMaybe ("Untitled", False) $ do
-              ((,True) . plainify <$> getH1 doc)
+              ((,True) . plainify . snd <$> getH1 doc)
                 <|> ((,False) . takeInitial . plainify <$> getFirstParagraphText doc)
           tags = fromMaybe [] $ Meta.tags =<< meta
           day = case zid of
