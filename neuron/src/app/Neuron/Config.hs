@@ -13,39 +13,23 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Config
-  ( Config (..),
-    configFile,
-    getConfig,
+  ( getConfig,
   )
 where
 
 import Control.Monad.Except
 import Data.FileEmbed (embedFile)
 import Development.Shake (Action, readFile')
-import Dhall (FromDhall)
 import qualified Dhall
-import Dhall.TH
+import Neuron.Config.Orphans ()
+import Neuron.Config.Type (Config, configFile)
 import Relude
 import qualified Rib
 import System.Directory
 import System.FilePath
 
--- | Config type for @neuron.dhall@
---
--- See <https://neuron.zettel.page/2011701.html guide> for description of the fields.
-makeHaskellTypes
-  [ SingleConstructor "Config" "Config" "./src-dhall/Config/Type.dhall"
-  ]
-
-deriving instance Generic Config
-
-deriving instance FromDhall Config
-
 defaultConfig :: ByteString
 defaultConfig = $(embedFile "./src-dhall/Config/Default.dhall")
-
-configFile :: FilePath
-configFile = "neuron.dhall"
 
 -- | Read the optional @neuron.dhall@ config file from the zettelksaten
 getConfig :: Action Config

@@ -73,6 +73,7 @@ library
   import: library-common
   hs-source-dirs: src/lib
   exposed-modules:
+    Neuron.Config.Type
     Neuron.Markdown
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
@@ -165,6 +166,7 @@ common app-common
       Neuron.CLI.Types
       Neuron.Config
       Neuron.Config.Alias
+      Neuron.Config.Orphans
       Neuron.Version
       Neuron.Web.Generate
       Neuron.Web.Generate.Route

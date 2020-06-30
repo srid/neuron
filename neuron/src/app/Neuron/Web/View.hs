@@ -26,7 +26,7 @@ import qualified Data.Aeson.Text as Aeson
 import qualified Data.Set as Set
 import Data.Some
 import Data.TagTree (Tag (..))
-import Neuron.Config (Config (..))
+import Neuron.Config.Type (Config (..))
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
 import Neuron.Web.Manifest (Manifest, renderManifest)
 import qualified Neuron.Web.Query.View as QueryView
@@ -49,10 +49,6 @@ import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
 
 -- | Render the given route
---
--- TODO: In preparation for making this module a library:
--- * Move Config to lib
--- * Take skylighting data as well. Or better, pass them all as a new record called `RenderData`.
 renderRoutePage :: PandocBuilder t m => Text -> Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
 renderRoutePage neuronVersion config manifest r val =
   elAttr "html" ("lang" =: "en") $ do
