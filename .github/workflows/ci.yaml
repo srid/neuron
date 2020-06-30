@@ -34,5 +34,5 @@ jobs:
     - uses: actions/upload-artifact@v2
       if: ${{ runner.os == 'Linux' }}
       with:
-        name: neuron-bundle 
+        name: neuron-bundle-linux 
         path: ~/bundle/neuron
