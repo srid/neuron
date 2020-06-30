@@ -14,7 +14,7 @@ import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import qualified Data.Text as T
 import Data.Time.ISO8601 (formatISO8601)
-import Neuron.Config
+import Neuron.Config.Type
 import Neuron.Markdown (getFirstParagraphText)
 import Neuron.Web.Generate.Route (routeUri)
 import Neuron.Web.Route

@@ -5,7 +5,7 @@
 module Neuron.Config.Alias where
 
 import Control.Monad.Except (liftEither, runExcept, throwError)
-import Neuron.Config
+import Neuron.Config.Type
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID

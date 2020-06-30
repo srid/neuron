@@ -20,8 +20,8 @@ import Data.FileEmbed (embedStringFile)
 import qualified Data.Map.Strict as Map
 import Data.Traversable
 import Development.Shake (Action, need)
-import Neuron.Config (Config (..))
 import Neuron.Config.Alias (Alias (..), getAliases)
+import Neuron.Config.Type (Config (..))
 import Neuron.Version (neuronVersion, olderThan)
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
