@@ -23,13 +23,13 @@ jobs:
     # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
     # if: github.ref == 'refs/heads/master'
     - name: Bundle up
-      if: ${{ job.runs-on == 'ubuntu-latest' }}
+      if: ${{ runner.os == 'Linux' }}
       run: |
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
         ./nix-bundle.sh '(import ../..)' /bin/neuron
     - name: Upload bundle 
-      if: ${{ job.runs-on == 'ubuntu-latest' }}
+      if: ${{ runner.os == 'Linux' }}
       uses: actions/upload-artifact@v1
       with:
         name: neuron-bundle 
