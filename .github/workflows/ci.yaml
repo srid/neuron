@@ -20,7 +20,19 @@ jobs:
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     # This builds neuron, as well as run tests
     - run: nix-build -j4 ci.nix
+  bundle:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    needs: build
     - name: Bundle up
       run: |
-        git clone https://github.com/srid/nix-bundle.git ../nix-bundle
-        ../nix-bundle/nix-bundle.sh '(import ./.)' /bin/neuron
+        git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
+        cd tmp/nix-bundle
+        ./nix-bundle.sh '(import ../..)' /bin/neuron
+    - name: Upload bundle 
+      uses: actions/upload-artifact@v1
+      with:
+        name: neuron-bundle 
+        path: tmp/nix-bundle/neuron
