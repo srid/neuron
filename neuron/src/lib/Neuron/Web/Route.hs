@@ -20,7 +20,8 @@ data Route a where
   -- ZIndex takes a report of all errors in the zettelkasten.
   -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
   Route_ZIndex :: Route (Map ZettelID ZettelError)
-  Route_Search :: Route ()
+  -- | Takes search JS code as render data
+  Route_Search :: Route Text
   Route_Zettel :: ZettelID -> Route ZettelC
 
 data RouteConfig t m = RouteConfig

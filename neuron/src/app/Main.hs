@@ -12,6 +12,7 @@ import Development.Shake
 import Main.Utf8
 import Neuron.CLI (run)
 import qualified Neuron.Config as Config
+import Neuron.Version (neuronVersion)
 import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Generate.Route (staticRouteConfig)
 import qualified Neuron.Web.Manifest as Manifest
@@ -35,7 +36,7 @@ generateMainSite = do
       writeHtmlRoute r x = do
         html <- liftIO $ fmap snd $ renderStatic $ do
           runNeuronWeb staticRouteConfig $
-            renderRoutePage config manifest r x
+            renderRoutePage neuronVersion config manifest r x
         -- FIXME: Make rib take bytestrings
         Rib.writeRoute r $ decodeUtf8 @Text html
   void $ generateSite config writeHtmlRoute
