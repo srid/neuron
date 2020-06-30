@@ -26,6 +26,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
+    steps:
     - name: Bundle up
       run: |
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
