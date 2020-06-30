@@ -28,7 +28,7 @@ jobs:
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
         ./nix-bundle.sh '(import ../..)' /bin/neuron > neuron
-        chmod a+x bundle
+        chmod a+x neuron
         mkdir ~/bundle 
         cp neuron ~/bundle/neuron
     - uses: actions/upload-artifact@v2
