@@ -48,23 +48,13 @@ staticRouteConfig =
     -- Using relative URLs enables the site work in file:/// URLs
     routeFor = routeUrlRel
 
--- | Like `routeUrlRel` but takes a query parameter
-routeUrlRelWithQuery :: HasCallStack => IsRoute r => r a -> URI.RText 'URI.QueryKey -> Text -> Text
-routeUrlRelWithQuery r k v = maybe (error "Bad URI") URI.render $ do
-  param <- URI.QueryParam k <$> URI.mkQueryValue v
-  route <- URI.mkPathPiece $ routeUrlRel r
-  pure
-    URI.emptyURI
-      { URI.uriPath = Just (False, route :| []),
-        URI.uriQuery = [param]
-      }
-
 data BaseUrlError
   = BaseUrlNotAbsolute
   deriving (Eq, Show)
 
 instance Exception BaseUrlError
 
+-- | Make an absolute URI for a route, given a base URL.
 routeUri :: (HasCallStack, IsRoute r) => Text -> r a -> URI.URI
 routeUri siteBaseUrl r = either (error . toText . displayException) id $ runExcept $ do
   baseUrl <- liftEither $ URI.mkURI siteBaseUrl
