@@ -20,18 +20,16 @@ jobs:
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     # This builds neuron, as well as run tests
     - run: nix-build -j4 ci.nix
-  bundle:
-    # if: github.ref == 'refs/heads/master'
-    needs: build
     # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
-    runs-on: ubuntu-latest
-    steps:
+    # if: github.ref == 'refs/heads/master'
     - name: Bundle up
+      if: ${{ job.runs-on == 'ubuntu-latest' }}
       run: |
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
         ./nix-bundle.sh '(import ../..)' /bin/neuron
     - name: Upload bundle 
+      if: ${{ job.runs-on == 'ubuntu-latest' }}
       uses: actions/upload-artifact@v1
       with:
         name: neuron-bundle 
