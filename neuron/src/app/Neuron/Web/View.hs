@@ -7,7 +7,6 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -24,12 +23,10 @@ import qualified Clay as C
 import Control.Monad.Except
 import Data.Aeson ((.=), object)
 import qualified Data.Aeson.Text as Aeson
-import Data.FileEmbed (embedStringFile)
 import qualified Data.Set as Set
 import Data.Some
 import Data.TagTree (Tag (..))
-import Neuron.Config
-import Neuron.Version (neuronVersion)
+import Neuron.Config (Config (..))
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
 import Neuron.Web.Manifest (Manifest, renderManifest)
 import qualified Neuron.Web.Query.View as QueryView
@@ -48,20 +45,21 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding ((&))
-import Rib (routeUrlRel)
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
 
-searchScript :: Text
-searchScript = $(embedStringFile "./src-js/search.js")
-
-renderRoutePage :: PandocBuilder t m => Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
-renderRoutePage config manifest r val =
+-- | Render the given route
+--
+-- TODO: In preparation for making this module a library:
+-- * Move Config to lib
+-- * Take skylighting data as well. Or better, pass them all as a new record called `RenderData`.
+renderRoutePage :: PandocBuilder t m => Text -> Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
+renderRoutePage neuronVersion config manifest r val =
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
       renderRouteHead config manifest r val
     el "body" $ do
-      renderRouteBody config r val
+      renderRouteBody neuronVersion config r val
 
 renderRouteHead :: DomBuilder t m => Config -> Manifest -> Route a -> (ZettelGraph, a) -> m ()
 renderRouteHead config manifest route val = do
@@ -102,8 +100,8 @@ renderRouteHead config manifest route val = do
             then x
             else x <> " - " <> suffix
 
-renderRouteBody :: PandocBuilder t m => Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
-renderRouteBody Config {..} r (g, x) = do
+renderRouteBody :: PandocBuilder t m => Text -> Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
+renderRouteBody neuronVersion Config {..} r (g, x) = do
   divClass "ui fluid container" $ do
     let neuronTheme = Theme.mkTheme theme
     case r of
@@ -117,7 +115,7 @@ renderRouteBody Config {..} r (g, x) = do
       Route_Search {} -> do
         actionsNav neuronTheme editUrl Nothing
         divClass "ui text container" $ do
-          renderSearch g
+          renderSearch g x
           renderBrandFooter $ Just neuronVersion
         pure mempty
       Route_Zettel _ -> do
@@ -127,11 +125,11 @@ renderRouteBody Config {..} r (g, x) = do
         ZettelView.renderZettel (g, x)
           <* renderBrandFooter noVersion
       Route_Redirect _ -> do
-        elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> (Rib.routeUrlRel $ Route_Zettel x))) blank
-        pure mempty
+        targetUrl <- neuronRouteURL $ Some $ Route_Zettel x
+        elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> targetUrl)) blank
 
-renderSearch :: DomBuilder t m => ZettelGraph -> m ()
-renderSearch graph = do
+renderSearch :: DomBuilder t m => ZettelGraph -> Text -> m ()
+renderSearch graph script = do
   elClass "h1" "header" $ text "Search"
   divClass "ui fluid icon input search" $ do
     elAttr "input" ("type" =: "text" <> "id" =: "search-input") blank
@@ -150,7 +148,7 @@ renderSearch graph = do
   divClass "ui divider" blank
   elAttr "ul" ("id" =: "search-results" <> "class" =: "zettel-list") blank
   el "script" $ text $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
-  el "script" $ text searchScript
+  el "script" $ text script
 
 renderBrandFooter :: DomBuilder t m => Maybe Text -> m ()
 renderBrandFooter mver =

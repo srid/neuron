@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -15,6 +16,7 @@ module Neuron.Web.Generate
   )
 where
 
+import Data.FileEmbed (embedStringFile)
 import qualified Data.Map.Strict as Map
 import Data.Traversable
 import Development.Shake (Action, need)
@@ -33,6 +35,9 @@ import Relude
 import qualified Rib
 import Rib.Route
 import System.FilePath
+
+searchScript :: Text
+searchScript = $(embedStringFile "./src-js/search.js")
 
 -- | Generate the Zettelkasten site
 generateSite ::
@@ -55,7 +60,7 @@ generateSite config writeHtmlRoute' = do
   -- Generate the z-index
   writeHtmlRoute errors Z.Route_ZIndex
   -- Generate search page
-  writeHtmlRoute () Z.Route_Search
+  writeHtmlRoute searchScript Z.Route_Search
   -- Write alias redirects, unless a zettel with that name exists.
   aliases <- getAliases config zettelGraph
   forM_ aliases $ \Alias {..} ->

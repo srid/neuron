@@ -20,14 +20,17 @@ data Route a where
   -- ZIndex takes a report of all errors in the zettelkasten.
   -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
   Route_ZIndex :: Route (Map ZettelID ZettelError)
-  Route_Search :: Route ()
+  -- | Takes search JS code as render data
+  Route_Search :: Route Text
   Route_Zettel :: ZettelID -> Route ZettelC
 
 data RouteConfig t m = RouteConfig
   { -- | Whether the view is being rendered for static HTML generation
     routeConfigStaticallyGenerated :: Bool,
     -- | How to render a web route.
-    routeConfigRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> m ()
+    routeConfigRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> m (),
+    -- | Get the URL for a web route as plain text
+    routeConfigRouteURL :: Some Route -> Text
   }
 
 type NeuronWebT t m = ReaderT (RouteConfig t m) m
@@ -44,6 +47,11 @@ neuronRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> Neur
 neuronRouteLink someR attrs w = do
   f <- asks routeConfigRouteLink
   lift $ f someR attrs w
+
+neuronRouteURL :: Monad m => Some Route -> NeuronWebT t m Text
+neuronRouteURL someR = do
+  f <- asks routeConfigRouteURL
+  pure $ f someR
 
 routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
