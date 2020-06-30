@@ -10,7 +10,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v8
+    - uses: cachix/install-nix-action@v10
     # This also runs nix-build.
     - uses: cachix/cachix-action@v6
       with:
@@ -28,7 +28,8 @@ jobs:
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
         ./nix-bundle.sh '(import ../..)' /bin/neuron
-    - uses: actions/upload-artifact@v1
+        cd ../..
+    - uses: actions/upload-artifact@v2
       if: ${{ runner.os == 'Linux' }}
       with:
         name: neuron-bundle 
