@@ -102,6 +102,7 @@ library
     Neuron.Web.Theme
     Neuron.Orphans
     Text.Megaparsec.Simple
+    Text.Pandoc.Util
     Text.URI.Util
     Data.TagTree
     Data.PathTree

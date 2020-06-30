@@ -28,7 +28,6 @@ import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple
 import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
-import qualified Text.Pandoc.Walk as W
 import qualified Text.Parsec as P
 import Text.Show
 
@@ -85,42 +84,6 @@ partitionMarkdown fn =
       a <- toText <$> manyTill M.anySingle (M.try $ M.eol *> separatorP)
       b <- M.takeRest
       pure (Just a, b)
-
--- TODO: These two functions should be moved to Text.Pandoc.Util.
-
-getFirstParagraphText :: Pandoc -> Maybe [B.Inline]
-getFirstParagraphText = listToMaybe . W.query go
-  where
-    go :: B.Block -> [[B.Inline]]
-    go = \case
-      B.Para inlines ->
-        [inlines]
-      _ ->
-        []
-
-getH1 :: Pandoc -> Maybe [B.Inline]
-getH1 = listToMaybe . W.query go
-  where
-    go :: B.Block -> [[B.Inline]]
-    go = \case
-      B.Header 1 _ inlines ->
-        [inlines]
-      _ ->
-        []
-
--- | Convert Pandoc AST inlines to raw text.
-plainify :: [B.Inline] -> Text
-plainify = W.query $ \case
-  B.Str x -> x
-  B.Code _attr x -> x
-  B.Space -> " "
-  B.SoftBreak -> " "
-  B.LineBreak -> " "
-  B.RawInline _fmt s -> s
-  B.Math _mathTyp s -> s
-  -- Ignore the rest of AST nodes, as they are recursively defined in terms of
-  -- `Inline` which `W.query` will traverse again.
-  _ -> ""
 
 neuronSpec ::
   ( Monad m,

@@ -9,7 +9,6 @@ import Control.Monad.Writer
 import qualified Data.Map.Strict as Map
 import Data.Some
 import qualified Data.Text as T
-import qualified Neuron.Markdown as MD
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
@@ -19,6 +18,7 @@ import Reflex.Dom.Pandoc.URILink (queryURILinks)
 import Relude
 import System.FilePath (takeExtension)
 import Text.Pandoc.Definition (Pandoc)
+import Text.Pandoc.Util
 
 -- | Parse a markdown-formatted zettel
 --
@@ -36,8 +36,8 @@ parseZettel zreader zid s = do
       let (title, titleInBody) = case Meta.title =<< meta of
             Just tit -> (tit, False)
             Nothing -> fromMaybe ("Untitled", False) $ do
-              ((,True) . MD.plainify <$> MD.getH1 doc)
-                <|> ((,False) . takeInitial . MD.plainify <$> MD.getFirstParagraphText doc)
+              ((,True) . plainify <$> getH1 doc)
+                <|> ((,False) . takeInitial . plainify <$> getFirstParagraphText doc)
           tags = fromMaybe [] $ Meta.tags =<< meta
           day = case zid of
             -- We ignore the "data" meta field on legacy Date IDs, which encode the
