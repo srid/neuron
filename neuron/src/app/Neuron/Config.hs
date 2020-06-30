@@ -21,6 +21,7 @@ import Control.Monad.Except
 import Data.FileEmbed (embedFile)
 import Development.Shake (Action, readFile')
 import qualified Dhall
+import Neuron.Config.Orphans ()
 import Neuron.Config.Type (Config, configFile)
 import Relude
 import qualified Rib

@@ -1,14 +1,7 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -18,8 +11,6 @@ module Neuron.Config.Type
   )
 where
 
-import Dhall (FromDhall)
-import Dhall.TH
 import Relude
 
 configFile :: FilePath
@@ -28,10 +19,17 @@ configFile = "neuron.dhall"
 -- | Config type for @neuron.dhall@
 --
 -- See <https://neuron.zettel.page/2011701.html guide> for description of the fields.
-makeHaskellTypes
-  [ SingleConstructor "Config" "Config" "./src-dhall/Config/Type.dhall"
-  ]
+--
+-- TODO: Implement custom `FromDhall` instance, while using original field types
+data Config = Config
+  { aliases :: [Text],
+    author :: Maybe Text,
+    editUrl :: Maybe Text,
+    mathJaxSupport :: Bool,
+    minVersion :: Text,
+    siteBaseUrl :: Maybe Text,
+    siteTitle :: Text,
+    theme :: Text
+  }
 
 deriving instance Generic Config
-
-deriving instance FromDhall Config

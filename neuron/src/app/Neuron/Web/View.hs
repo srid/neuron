@@ -49,10 +49,6 @@ import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
 
 -- | Render the given route
---
--- TODO: In preparation for making this module a library:
--- * StructuredData and breadcr to
--- * Take skylighting data as well. Or better, pass them all as a new record called `RenderData`.
 renderRoutePage :: PandocBuilder t m => Text -> Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
 renderRoutePage neuronVersion config manifest r val =
   elAttr "html" ("lang" =: "en") $ do
