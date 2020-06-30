@@ -21,11 +21,10 @@ jobs:
     # This builds neuron, as well as run tests
     - run: nix-build -j4 ci.nix
   bundle:
+    # if: github.ref == 'refs/heads/master'
     needs: build
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
+    runs-on: ubuntu-latest
     steps:
     - name: Bundle up
       run: |
