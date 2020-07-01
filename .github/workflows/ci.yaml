@@ -27,7 +27,7 @@ jobs:
       run: |
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
-        ./nix-bundle.sh '(import ../..)' /bin/neuron > neuron
+        ./nix-bundle.sh '(import ../.. {})' /bin/neuron > neuron
         mkdir ~/bundle 
         cp neuron ~/bundle/neuron
         chmod a+x ~/bundle/neuron
