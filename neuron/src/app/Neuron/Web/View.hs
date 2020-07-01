@@ -21,7 +21,7 @@ where
 import Clay ((?), Css, em, gray, important, pct, px)
 import qualified Clay as C
 import Control.Monad.Except
-import Data.Aeson ((.=), object)
+import Data.Aeson ((.=), object, toJSON)
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Set as Set
 import Data.Some
@@ -145,6 +145,13 @@ renderSearch graph script = do
   elAttr "ul" ("id" =: "search-results" <> "class" =: "zettel-list") blank
   el "script" $ text $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
   el "script" $ text script
+  where
+    zettelJson Zettel {..} =
+      [ "id" .= toJSON zettelID,
+        "title" .= zettelTitle,
+        "tags" .= zettelTags,
+        "day" .= zettelDay
+      ]
 
 renderBrandFooter :: DomBuilder t m => Maybe Text -> m ()
 renderBrandFooter mver =
