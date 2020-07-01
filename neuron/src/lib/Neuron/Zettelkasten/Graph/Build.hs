@@ -21,7 +21,7 @@ import Neuron.Zettelkasten.Zettel.Parser
 import Relude
 
 buildZettelkasten ::
-  Map.Map Text (FilePath -> ZettelReader) ->
+  Map.Map Text ZettelReader ->
   [(FilePath, Text)] ->
   ( ZettelGraph,
     [ZettelC],

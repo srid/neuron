@@ -93,7 +93,7 @@ reportError route errors = do
         go (x : xs) =
           x : fmap (toText . (take n (repeat ' ') <>) . toString) xs
 
-supportedReaders :: Map.Map Text (FilePath -> ZettelReader)
+supportedReaders :: Map.Map Text ZettelReader
 supportedReaders =
   Map.fromList
     [ (".md", parseMarkdown),

@@ -32,6 +32,7 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
+import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Meta
 import Neuron.Zettelkasten.Zettel.ParseError
 import Relude hiding (show)
@@ -51,6 +52,7 @@ data ZettelQuery r where
 -- The metadata could have been inferred from the content.
 data ZettelT content = Zettel
   { zettelID :: ZettelID,
+    zettelFormat :: ZettelFormat,
     zettelTitle :: Text,
     zettelTitleInBody :: Bool,
     zettelTags :: [Tag],
@@ -64,7 +66,7 @@ data ZettelT content = Zettel
 newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
 
-type ZettelReader = Text -> Either ZettelParseError (Maybe Meta, Pandoc)
+type ZettelReader = FilePath -> Text -> Either ZettelParseError (Maybe Meta, Pandoc)
 
 type family ContentError c where
 -- The list of queries that failed to parse.

@@ -66,7 +66,7 @@ runGraphQuery g = \case
 
 zettelJsonFull :: forall a. KeyValue a => FilePath -> Zettel -> [a]
 zettelJsonFull notesDir z@Zettel {..} =
-  [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)
+  [ "path" .= (notesDir </> zettelIDSourceFileName zettelID zettelFormat)
   ]
     <> zettelJson z
 
