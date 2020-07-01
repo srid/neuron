@@ -23,7 +23,7 @@ import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
 import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Graph (backlinks, getConnections, getZettel)
+import Neuron.Zettelkasten.Graph (backlinks, getZettel)
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
@@ -63,12 +63,6 @@ runGraphQuery g = \case
         Left $ QueryResultError_NoSuchZettel zid
       Just z ->
         Right $ backlinks (maybe isJust (const (== conn)) conn) z g
-
-zettelJsonFull :: forall a. KeyValue a => FilePath -> Zettel -> [a]
-zettelJsonFull notesDir z@Zettel {..} =
-  [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)
-  ]
-    <> zettelJson z
 
 zettelQueryResultJson ::
   forall r.
@@ -131,6 +125,12 @@ graphQueryResultJson notesDir q er skippedZettels =
     resultJson :: r -> Value
     resultJson r = case q of
       GraphQuery_Id ->
-        toJSON (getConnections r)
+        toJSON r
       GraphQuery_BacklinksOf _ _ ->
         toJSON $ fmap (uncurry edgeJson) r
+
+zettelJsonFull :: forall a. KeyValue a => FilePath -> Zettel -> [a]
+zettelJsonFull notesDir z@Zettel {..} =
+  [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)
+  ]
+    <> zettelJson z
