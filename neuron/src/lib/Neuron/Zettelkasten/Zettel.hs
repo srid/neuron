@@ -18,6 +18,7 @@
 
 module Neuron.Zettelkasten.Zettel where
 
+import Control.Monad.Writer
 import Data.Aeson
 import Data.Aeson.GADT.TH
 import Data.Dependent.Sum.Orphans ()
@@ -66,7 +67,10 @@ data ZettelT content = Zettel
 newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
 
-type ZettelReader = FilePath -> Text -> Either ZettelParseError (Maybe Meta, Pandoc)
+data ZettelReader = ZettelReader
+  { readZettel :: FilePath -> Text -> Either ZettelParseError (Maybe Meta, Pandoc),
+    extractQueries :: forall m. MonadWriter [QueryParseError] m => Pandoc -> m [Some ZettelQuery]
+  }
 
 type family ContentError c where
 -- The list of queries that failed to parse.

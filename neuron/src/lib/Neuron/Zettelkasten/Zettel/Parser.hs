@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -7,19 +8,14 @@ module Neuron.Zettelkasten.Zettel.Parser where
 
 import Control.Monad.Writer
 import qualified Data.Map.Strict as Map
-import Data.Some
 import qualified Data.Text as T
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error
-import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Format
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
-import Reflex.Dom.Pandoc.URILink (queryURILinks)
 import Relude
 import Relude.Unsafe (fromJust)
 import System.FilePath (takeExtension)
-import Text.Pandoc.Definition (Pandoc)
 import Text.Pandoc.Util
 
 -- | Parse a markdown-formatted zettel
@@ -31,9 +27,9 @@ parseZettel ::
   ZettelID ->
   Text ->
   ZettelC
-parseZettel zettelReader fn zid s = do
+parseZettel ZettelReader {..} fn zid s = do
   let fmt = fromJust $ extensionToZettelFormat $ toText $ takeExtension fn
-  case zettelReader fn s of
+  case readZettel fn s of
     Left parseErr ->
       Left $ Zettel zid fmt "Unknown" False [] Nothing [] parseErr s
     Right (meta, doc) ->
@@ -51,16 +47,6 @@ parseZettel zettelReader fn zid s = do
           (queries, errors) = runWriter $ extractQueries doc
        in Right $ Zettel zid fmt title titleInBody tags day queries errors doc
   where
-    -- Extract all (valid) queries from the Pandoc document
-    extractQueries :: MonadWriter [QueryParseError] m => Pandoc -> m [Some ZettelQuery]
-    extractQueries doc =
-      fmap catMaybes $ forM (queryURILinks doc) $ \ul ->
-        case queryFromURILink ul of
-          Left e -> do
-            tell [e]
-            pure Nothing
-          Right v ->
-            pure v
     takeInitial =
       (<> " ...") . T.take 18
 
