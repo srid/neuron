@@ -68,10 +68,10 @@ runWith act App {..} =
           Left someQ ->
             withSome someQ $ \q -> do
               let result = Q.runZettelQuery (G.getZettels graph) q
-              putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson notesDir q result errors
+              putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson q result errors
           Right someQ ->
             withSome someQ $ \q -> do
               let result = Q.runGraphQuery graph q
-              putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson notesDir q result errors
+              putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result errors
     Search searchCmd ->
       interactiveSearch notesDir searchCmd
