@@ -63,7 +63,7 @@ extractMetadata body = traceShow body $ do
 extractOrgQueries :: MonadWriter [QueryParseError] m => Pandoc -> m [Some ZettelQuery]
 extractOrgQueries doc =
   fmap catMaybes $ forM (queryURILinks doc) $ \ul ->
-    traceShow ul $ case queryFromURILink ul of
+    case queryFromURILink ul of
       Left e -> do
         tell [e]
         pure Nothing

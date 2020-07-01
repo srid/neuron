@@ -70,6 +70,9 @@ queryFromURILink (URILink linkText uri) =
       case fmap URI.unRText (URI.uriScheme uri) of
         Just "z" -> do
           fmap snd (URI.uriPath uri) >>= \case
+            (URI.unRText -> "zettel") :| [URI.unRText -> path] -> do
+              zid <- rightToMaybe $ parseZettelID' path
+              pure $ Some $ ZettelQuery_ZettelByID zid mconn
             (URI.unRText -> "zettels") :| [] -> do
               pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns "tag") mconn queryView
             (URI.unRText -> "tags") :| [] -> do
