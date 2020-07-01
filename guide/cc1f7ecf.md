@@ -27,7 +27,7 @@ Use `jq` to extract needed information from the JSON output. For example, to
 extract only the IDs:
 
 ```bash
-$ neuron query -t purescript | jq -r '.[] | .id'
+$ neuron query -t purescript | jq -r '.result | .[] | .zettelID'
 2015302
 2015303
 2015304
