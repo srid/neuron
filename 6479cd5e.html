@@ -67,7 +67,7 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <span class="">  </span><span class="ex">neuron</span><span class=""> = (</span>
 <span class="">    </span><span class="bu">let</span><span class=""> neuronRev = </span><span class="st">&quot;GITREVHERE&quot;</span><span class="kw">;</span>
 <span class="">        </span><span class="ex">neuronSrc</span><span class=""> = builtins.fetchTarball https://github.com/srid/neuron/archive/</span><span class="va">${neuronRev}</span><span class="">.tar.gz</span><span class="kw">;</span>
-<span class="">     </span><span class="kw">in</span><span class=""> </span><span class="ex">import</span><span class=""> neuronSrc);</span>
+<span class="">     </span><span class="kw">in</span><span class=""> </span><span class="ex">import</span><span class=""> neuronSrc {});</span>
 <span class="kw">in</span><span class=""> </span><span class="kw">{</span>
 <span class="">  </span><span class="ex">Unit.Description</span><span class=""> = </span><span class="st">&quot;Neuron zettelkasten service&quot;</span><span class="kw">;</span>
 <span class="">  </span><span class="ex">Install.WantedBy</span><span class=""> = [ </span><span class="st">&quot;graphical-session.target&quot;</span><span class=""> ]</span><span class="kw">;</span>
