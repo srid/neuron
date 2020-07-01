@@ -29,7 +29,6 @@ import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Graph
 import Neuron.Zettelkasten.Zettel
 import Relude
-import System.FilePath
 
 runZettelQuery :: [Zettel] -> ZettelQuery r -> Either QueryResultError r
 runZettelQuery zs = \case
@@ -66,13 +65,12 @@ runGraphQuery g = \case
 zettelQueryResultJson ::
   forall r.
   (ToJSON (ZettelQuery r)) =>
-  FilePath ->
   ZettelQuery r ->
   Either QueryResultError r ->
   -- Zettels that cannot be parsed by neuron
   Map ZettelID ZettelError ->
   Value
-zettelQueryResultJson notesDir q er skippedZettels =
+zettelQueryResultJson q er skippedZettels =
   toJSON $
     object
       [ "query" .= toJSON q,
@@ -86,9 +84,9 @@ zettelQueryResultJson notesDir q er skippedZettels =
     resultJson :: r -> Value
     resultJson r = case q of
       ZettelQuery_ZettelByID _ _mconn ->
-        object $ zettelJsonFull notesDir r
+        toJSON r
       ZettelQuery_ZettelsByTag _ _mconn _mview ->
-        toJSON $ fmap (object . zettelJsonFull notesDir) r
+        toJSON r
       ZettelQuery_Tags _ ->
         toJSON $ fmap treeToJson . tagTree $ r
     treeToJson (Node (tag, count) children) =
@@ -123,9 +121,3 @@ graphQueryResultJson q er skippedZettels =
         toJSON r
       GraphQuery_BacklinksOf _ _ ->
         toJSON r
-
-zettelJsonFull :: forall a. KeyValue a => FilePath -> Zettel -> [a]
-zettelJsonFull notesDir z@Zettel {..} =
-  [ "path" .= (notesDir </> zettelIDSourceFileName zettelID)
-  ]
-    <> zettelJson z
