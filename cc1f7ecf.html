@@ -67,7 +67,7 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <span class="ex">neuron</span><span class=""> query -t science</span>
 </code></pre></div><p>You may also pass the same URI you use in <span class="zettel-link-container folgezettel"><span class="zettel-link"><a href="2011506.html">Automatic links using queries</a></span></span>:</p><div class="pandoc-code highlighted"><pre><code class="bash" id=""><span class="co"># Search using link URI</span>
 <span class="ex">neuron</span><span class=""> query --uri=</span><span class="st">&quot;z:zettels?tag=science&quot;</span>
-</code></pre></div><p>Use <code class="" id="">jq</code> to extract needed information from the JSON output. For example, to extract only the IDs:</p><div class="pandoc-code highlighted"><pre><code class="bash" id=""><span class="">$ </span><span class="ex">neuron</span><span class=""> query -t purescript </span><span class="kw">|</span><span class=""> </span><span class="ex">jq</span><span class=""> -r </span><span class="st">&#39;.[] | .id&#39;</span>
+</code></pre></div><p>Use <code class="" id="">jq</code> to extract needed information from the JSON output. For example, to extract only the IDs:</p><div class="pandoc-code highlighted"><pre><code class="bash" id=""><span class="">$ </span><span class="ex">neuron</span><span class=""> query -t purescript </span><span class="kw">|</span><span class=""> </span><span class="ex">jq</span><span class=""> -r </span><span class="st">&#39;.result | .[] | .zettelID&#39;</span>
 <span class="ex">2015302</span>
 <span class="ex">2015303</span>
 <span class="ex">2015304</span>
