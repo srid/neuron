@@ -1,5 +1,6 @@
+{ system ? builtins.currentSystem, withHoogle ? false }:
 let 
-  ghc = (import ./project.nix {}).ghc;
+  ghc = (import ./project.nix { inherit system withHoogle; }).ghc;
   neuron = ghc.neuron;
 in 
   neuron.overrideDerivation (drv: {

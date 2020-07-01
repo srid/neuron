@@ -1,4 +1,4 @@
-{ system ? builtins.currentSystem, withHoogle ? false }:
+{ system, withHoogle }:
 (import ./dep/reflex-platform { inherit system; }).project ({ pkgs, hackGet, ... }: 
 let 
   gitignoreSrc = pkgs.fetchFromGitHub { 
