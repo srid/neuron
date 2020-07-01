@@ -67,7 +67,8 @@ common library-common
     reflex-dom-core,
     reflex-dom-pandoc,
     clay,
-    tagged
+    tagged,
+    microlens-platform
 
 library
   import: library-common
