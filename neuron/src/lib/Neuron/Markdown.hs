@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,10 +7,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Markdown
-  ( markdownReader,
-  )
-where
+module Neuron.Markdown where
 
 import qualified Commonmark as CM
 import qualified Commonmark.Blocks as CM
@@ -23,15 +19,9 @@ import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
 import Control.Monad.Except
-import Control.Monad.Writer
-import Data.Some
 import qualified Data.YAML as YAML
 import Neuron.Orphans ()
-import Neuron.Zettelkasten.Query.Error
-import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
-import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.ParseError
-import Reflex.Dom.Pandoc.URILink (queryURILinks)
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
@@ -40,23 +30,6 @@ import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
 import Text.Show
-
-markdownReader :: ZettelReader
-markdownReader =
-  ZettelReader
-    { readZettel = parseMarkdown,
-      extractQueries = extractMarkdownQueries
-    }
-
-extractMarkdownQueries :: MonadWriter [QueryParseError] m => Pandoc -> m [Some ZettelQuery]
-extractMarkdownQueries doc =
-  fmap catMaybes $ forM (queryURILinks doc) $ \ul ->
-    case queryFromURILink ul of
-      Left e -> do
-        tell [e]
-        pure Nothing
-      Right v ->
-        pure v
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --

@@ -96,8 +96,8 @@ reportError route errors = do
 supportedReaders :: Map.Map Text ZettelReader
 supportedReaders =
   Map.fromList
-    [ (".md", markdownReader),
-      (".org", orgReader)
+    [ (".md", parseMarkdown),
+      (".org", parseOrg)
     ]
 
 loadZettelkasten ::
