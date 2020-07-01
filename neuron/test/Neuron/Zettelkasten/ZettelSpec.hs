@@ -13,6 +13,7 @@ import Data.Time.Calendar
 import Neuron.Markdown
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Meta (Meta)
 import Relude
 import Test.Hspec
@@ -28,6 +29,7 @@ spec = do
         mkZettel day idx =
           Zettel
             (ZettelDateID (mkDay day) idx)
+            ZettelFormat_Markdown
             "Some title"
             False
             [Tag "science", Tag "journal/class"]
@@ -46,6 +48,7 @@ spec = do
         zettel =
           Zettel
             zid
+            ZettelFormat_Markdown
             "Some title"
             False
             [Tag "science", Tag "journal/class"]
