@@ -23,6 +23,7 @@ spec = do
   let noQueries = mempty -- TODO: test queries
       noError = Right mempty
       noContent = MetadataOnly ()
+      parseMarkdown = readZettel markdownReader
   describe "sortZettelsReverseChronological" $ do
     let mkDay = fromGregorian 2020 3
         (_ :: Maybe Meta, _dummyContent) = either (error . show) id $ parseMarkdown "<spec>" "Dummy"
