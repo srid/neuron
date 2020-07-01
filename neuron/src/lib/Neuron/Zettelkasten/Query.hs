@@ -22,7 +22,6 @@ import Data.Aeson
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
-import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (backlinks, getZettel)
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
@@ -102,32 +101,28 @@ zettelQueryResultJson notesDir q er skippedZettels =
 graphQueryResultJson ::
   forall r.
   (ToJSON (GraphQuery r)) =>
-  FilePath ->
   GraphQuery r ->
   Either QueryResultError r ->
   -- Zettels that cannot be parsed by neuron (and as such are excluded from the graph)
   Map ZettelID ZettelError ->
   Value
-graphQueryResultJson notesDir q er skippedZettels =
+graphQueryResultJson q er skippedZettels =
   toJSON $
     object
       [ "query" .= toJSON q,
         either
           (\e -> "error" .= toJSON e)
-          (\r -> "result" .= toJSON (resultJson r))
+          (\r -> "result" .= resultJson r)
           er,
         "skipped" .= skippedZettels
       ]
   where
-    edgeJson :: Connection -> Zettel -> Value
-    edgeJson connection zettel =
-      object $ ["connection" .= toJSON connection] <> zettelJsonFull notesDir zettel
     resultJson :: r -> Value
     resultJson r = case q of
       GraphQuery_Id ->
         toJSON r
       GraphQuery_BacklinksOf _ _ ->
-        toJSON $ fmap (uncurry edgeJson) r
+        toJSON r
 
 zettelJsonFull :: forall a. KeyValue a => FilePath -> Zettel -> [a]
 zettelJsonFull notesDir z@Zettel {..} =
