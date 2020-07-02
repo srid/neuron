@@ -4,8 +4,16 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | HTML & CSS
-module Neuron.Web.Theme where
+module Neuron.Web.Theme
+  ( Theme (..),
+    mkTheme,
+    semanticColor,
+    textColor,
+    backgroundColor,
+  )
+where
 
+import Clay (Color, rgb, rgba)
 import Data.Text (toLower)
 import Relude
 
@@ -28,6 +36,28 @@ data Theme
   | Grey
   | Black
   deriving (Eq, Show, Enum, Bounded)
+
+-- | Make Theme from Semantic UI color name
+mkTheme :: Text -> Theme
+mkTheme s =
+  fromMaybe (error $ "Unsupported theme: " <> s)
+    $ listToMaybe
+    $ catMaybes
+    $ flip fmap [minBound .. maxBound]
+    $ \theme ->
+      if s == semanticColor theme
+        then Just theme
+        else Nothing
+
+-- | Convert Theme to Semantic UI color name
+semanticColor :: Theme -> Text
+semanticColor = toLower . show @Text
+
+textColor :: Theme -> Color
+textColor theme = withRgb theme rgb
+
+backgroundColor :: Theme -> Color
+backgroundColor theme = withRgb theme rgba 0.1
 
 withRgb :: Theme -> (Integer -> Integer -> Integer -> a) -> a
 withRgb theme f =
@@ -58,22 +88,3 @@ withRgb theme f =
       f 118 118 118
     Black ->
       f 27 28 29
-
--- | Convert Theme to Semantic UI color name
-semanticColor :: Theme -> Text
-semanticColor = toLower . show @Text
-
--- | Make Theme from Semantic UI color name
-mkTheme :: Text -> Theme
-mkTheme s =
-  fromMaybe (error $ "Unsupported theme: " <> s)
-    $ listToMaybe
-    $ catMaybes
-    $ flip fmap [minBound .. maxBound]
-    $ \theme ->
-      if s == semanticColor theme
-        then Just theme
-        else Nothing
-
-defaultTheme :: Theme
-defaultTheme = Teal

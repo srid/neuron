@@ -184,13 +184,12 @@ style theme = do
 
 zettelLinkCss :: Theme.Theme -> Css
 zettelLinkCss neuronTheme = do
-  let linkColor = Theme.withRgb neuronTheme C.rgb
   "span.zettel-link-container span.zettel-link a" ? do
     C.fontWeight C.bold
-    C.color linkColor
+    C.color $ Theme.textColor neuronTheme
     C.textDecoration C.none
   "span.zettel-link-container span.zettel-link a:hover" ? do
-    C.backgroundColor linkColor
+    C.backgroundColor $ Theme.textColor neuronTheme
     C.color C.white
   "span.zettel-link-container span.extra" ? do
     C.color C.auto

@@ -13,14 +13,6 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget.InvertedTree as IT
 import Relude hiding ((&))
 
-lightColor :: Theme.Theme -> Color
-lightColor neuronTheme =
-  Theme.withRgb neuronTheme C.rgba 0.1
-
-themeColor :: Theme.Theme -> Color
-themeColor neuronTheme =
-  Theme.withRgb neuronTheme C.rgba 1
-
 zettelCss :: Theme.Theme -> Css
 zettelCss neuronTheme = do
   zettelCommonCss neuronTheme
@@ -47,7 +39,6 @@ zettelCss neuronTheme = do
 
 zettelContentCss :: Theme.Theme -> Css
 zettelContentCss neuronTheme = do
-  let linkColor = Theme.withRgb neuronTheme C.rgb
   ".zettel-content" ? do
     -- All of these apply to the zettel content card only.
     "div.date" ? do
@@ -57,7 +48,7 @@ zettelContentCss neuronTheme = do
       C.paddingTop $ em 0.2
       C.paddingBottom $ em 0.2
       C.textAlign C.center
-      C.backgroundColor $ lightColor neuronTheme
+      C.backgroundColor $ Theme.backgroundColor neuronTheme
     C.h2 ? do
       C.borderBottom C.solid (px 1) C.steelblue
       C.marginBottom $ em 0.5
@@ -67,7 +58,7 @@ zettelContentCss neuronTheme = do
       C.opacity 0.8
     "div#footnotes" ? do
       C.marginTop $ em 4
-      C.borderTop C.groove (px 2) linkColor
+      C.borderTop C.groove (px 2) $ Theme.textColor neuronTheme
       C.fontSize $ em 0.9
     -- reflex-dom-pandoc footnote aside elements
     -- (only used for footnotes defined inside footnotes)
@@ -129,7 +120,7 @@ zettelCommonCss neuronTheme = do
     fontSize $ em 0.85
   ".deemphasized:hover" ? do
     opacity 1
-    "div.item a:hover" ? important (color $ themeColor neuronTheme)
+    "div.item a:hover" ? important (color $ Theme.textColor neuronTheme)
   ".deemphasized:not(:hover)" ? do
     opacity 0.7
     "span.zettel-link a, div.item a" ? important (color gray)
