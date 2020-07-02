@@ -107,13 +107,12 @@ commandParser defaultNotesDir today = do
       format <-
         option
           formatReader
-          ( metavar "FORMAT"
-              <> short 'f'
-              <> long "format"
-              <> help "The document format of the new zettel"
-              <> value ZettelFormat_Markdown
-              <> showDefaultWith (toString . zettelFormatToExtension)
-          )
+          $ metavar "FORMAT"
+            <> short 'f'
+            <> long "format"
+            <> help "The document format of the new zettel"
+            <> value ZettelFormat_Markdown
+            <> showDefaultWith (toString . zettelFormatToExtension)
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
       day <-
         option dayReader $
