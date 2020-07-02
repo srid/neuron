@@ -18,6 +18,7 @@ where
 
 import Data.FileEmbed (embedStringFile)
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
 import Data.Traversable
 import Development.Shake (Action, need)
 import Neuron.Config.Alias (Alias (..), getAliases)
@@ -71,10 +72,13 @@ generateSite config writeHtmlRoute' = do
   forM_ (Map.toList errors) $ \(zid, eerr) -> do
     reportError (Z.Route_Zettel zid) $
       case eerr of
-        Left parseErr ->
+        ZettelError_ParseError parseErr ->
           show parseErr :| []
-        Right queryErrs ->
+        ZettelError_QueryErrors queryErrs ->
           showQueryError <$> queryErrs
+        ZettelError_DuplicateIDs filePaths ->
+          ("Multiple zettels have the same ID: " <> T.intercalate ", " (fmap toText filePaths))
+            :| []
   pure zettelGraph
 
 -- | Report an error in the terminal

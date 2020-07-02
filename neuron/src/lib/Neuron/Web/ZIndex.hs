@@ -94,21 +94,28 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
 
 renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
 renderErrors errors = do
-  let eitherError f1 f2 = either (const f1) (const f2)
+  let eitherError f1 f2 f3 = \case
+        ZettelError_ParseError _ -> f1
+        ZettelError_QueryErrors _ -> f2
+        ZettelError_DuplicateIDs _ -> f3
   forM_ (Map.toList errors) $ \(zid, eError) ->
-    divClass ("ui tiny message " <> eitherError "negative" "warning" eError) $ do
+    divClass ("ui tiny message " <> eitherError "negative" "warning" "negative" eError) $ do
       divClass "header" $ do
         text $ "Zettel "
         QueryView.renderZettelLinkIDOnly zid
-        text $ eitherError " failed to parse" " has malformed queries" eError
+        text $ eitherError " failed to parse" " has malformed queries" " has other zettels with the same ID" eError
       el "p" $ do
         case eError of
-          Left parseError ->
+          ZettelError_ParseError parseError ->
             el "pre" $ text $ show parseError
-          Right queryErrors ->
+          ZettelError_QueryErrors queryErrors ->
             el "ol" $ do
               forM_ queryErrors $ \qe ->
                 el "li" $ el "pre" $ text $ showQueryError qe
+          ZettelError_DuplicateIDs filePaths ->
+            el "ol" $ do
+              forM_ filePaths $ \fp ->
+                el "li" $ text $ toText fp
 
 renderForest ::
   DomBuilder t m =>

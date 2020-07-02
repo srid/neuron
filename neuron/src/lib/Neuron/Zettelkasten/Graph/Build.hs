@@ -31,7 +31,7 @@ buildZettelkasten readers filesWithContent =
   let zs = parseZettels readers filesWithContent
       parseErrors = Map.fromList $ lefts zs <&> (zettelID &&& zettelError)
       (g, queryErrors) = mkZettelGraph $ fmap sansContent zs
-      errors = fmap Left parseErrors `Map.union` fmap Right queryErrors
+      errors = fmap ZettelError_ParseError parseErrors `Map.union` fmap ZettelError_QueryErrors queryErrors
    in (g, zs, errors)
 
 -- | Build the Zettelkasten graph from a list of zettels

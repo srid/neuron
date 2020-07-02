@@ -81,7 +81,11 @@ type family ContentError c where
 --
 -- NOTE: Unlike `ContentError MetadataOnly` this also includes QueryResultError
 -- (which can be determined only after *evaluating* the queries).
-type ZettelError = Either ZettelParseError (NonEmpty QueryError)
+data ZettelError
+  = ZettelError_ParseError ZettelParseError
+  | ZettelError_QueryErrors (NonEmpty QueryError)
+  | ZettelError_DuplicateIDs [FilePath]
+  deriving (Eq, Show, Generic, ToJSON)
 
 -- | Zettel without its content
 type Zettel = ZettelT MetadataOnly
