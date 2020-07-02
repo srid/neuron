@@ -13,11 +13,13 @@
 
 module Neuron.Config
   ( getConfig,
+    parsePure,
   )
 where
 
 import Control.Monad.Except
 import Data.Either.Validation (validationToEither)
+import Debug.Trace
 import Development.Shake (Action, readFile')
 import qualified Dhall
 import qualified Dhall.Core
@@ -26,7 +28,7 @@ import qualified Dhall.Substitution
 import qualified Dhall.TypeCheck
 import Neuron.Config.Orphans ()
 import Neuron.Config.Type (Config, configFile, mergeWithDefault)
-import Relude
+import Relude hiding (traceId, traceShowId)
 import qualified Rib
 import System.Directory
 import System.FilePath
@@ -45,11 +47,12 @@ getConfig = do
 
 parseConfig :: MonadIO m => Text -> m Config
 parseConfig =
+  -- liftIO . Dhall.input Dhall.auto
   pure . parsePure
 
 -- WIP
 parsePure :: Text -> Config
-parsePure (mergeWithDefault -> cfgText) =
+parsePure cfgText =
   either (error . show) id
     $ validationToEither
     $ Dhall.extract @Config Dhall.auto
@@ -60,4 +63,7 @@ parsePure (mergeWithDefault -> cfgText) =
     $ fromMaybe (error "imports")
     $ traverse (\_ -> Nothing)
     $ either (error . show) id
-    $ Dhall.Parser.exprFromText "neuron.dhall" cfgText
+    $ Dhall.Parser.exprFromText "neuron.dhall"
+    $ toText
+    $ traceId
+    $ toString cfgText
