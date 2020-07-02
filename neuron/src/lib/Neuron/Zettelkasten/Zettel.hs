@@ -53,6 +53,7 @@ data ZettelQuery r where
 data ZettelT content = Zettel
   { zettelID :: ZettelID,
     zettelFormat :: ZettelFormat,
+    zettelPath :: FilePath,
     zettelTitle :: Text,
     zettelTitleInBody :: Bool,
     zettelTags :: [Tag],

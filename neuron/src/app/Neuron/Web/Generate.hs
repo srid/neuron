@@ -119,8 +119,9 @@ loadZettelkastenFrom ::
     )
 loadZettelkastenFrom files = do
   notesDir <- Rib.ribInputDir
-  filesWithContent <- forM files $ \((notesDir </>) -> path) -> do
-    need [path]
-    s <- decodeUtf8With lenientDecode <$> readFileBS path
-    pure (path, s)
+  filesWithContent <- forM files $ \relPath -> do
+    let absPath = notesDir </> relPath
+    need [absPath]
+    s <- decodeUtf8With lenientDecode <$> readFileBS absPath
+    pure (relPath, s)
   pure $ G.buildZettelkasten supportedReaders filesWithContent

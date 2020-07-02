@@ -29,6 +29,7 @@ spec = do
           Zettel
             (ZettelDateID (mkDay day) idx)
             ZettelFormat_Markdown
+            "<spec>.md"
             "Some title"
             False
             [Tag "science", Tag "journal/class"]
