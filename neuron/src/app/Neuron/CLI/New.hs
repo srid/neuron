@@ -15,6 +15,7 @@ import qualified Data.Set as Set
 import Data.Some
 import Data.Text (strip)
 import qualified Data.Text as T
+import Data.Time
 import qualified Data.YAML as YAML
 import Development.Shake (Action)
 import Neuron.CLI.Types
@@ -22,6 +23,8 @@ import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
+import Neuron.Zettelkasten.Zettel.Format
+import Neuron.Zettelkasten.Zettel.Meta ()
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -52,18 +55,7 @@ newZettelFile NewCommand {..} = do
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-
           bool (pure showAction) mkEditActionFromEnv edit
-        let date = T.strip (decodeUtf8 (YAML.encode1 day))
-            defaultTitleName = "Zettel created on " <> date
-        writeFileText (notesDir </> zettelFile) $
-          T.intercalate
-            "\n"
-            [ "---",
-              "date: " <> date,
-              "---",
-              "",
-              "# " <> maybe defaultTitleName T.strip title,
-              "\n"
-            ]
+        writeFileText (notesDir </> zettelFile) $ defaultZettelContent format day title
         fileAction notesDir zettelFile
   where
     mkEditActionFromEnv :: IO (FilePath -> FilePath -> IO ())
@@ -88,3 +80,30 @@ newZettelFile NewCommand {..} = do
         Nothing -> pure Nothing
         Just (toString . strip . toText -> v) ->
           if null v then pure Nothing else pure (Just v)
+
+-- TODO use configurable template files?
+defaultZettelContent :: ZettelFormat -> Day -> Maybe Text -> Text
+defaultZettelContent format day mtitle = case format of
+  ZettelFormat_Markdown ->
+    T.intercalate
+      "\n"
+      [ "---",
+        "date: " <> date,
+        "---",
+        "",
+        "# " <> title,
+        "\n"
+      ]
+  ZettelFormat_Org ->
+    T.intercalate
+      "\n"
+      [ "* " <> title,
+        "    :PROPERTIES:",
+        "    :Date: " <> date,
+        "    :END:",
+        "\n"
+      ]
+  where
+    date = T.strip (decodeUtf8 (YAML.encode1 day))
+    defaultTitleName = "Zettel created on " <> date
+    title = maybe defaultTitleName T.strip mtitle
