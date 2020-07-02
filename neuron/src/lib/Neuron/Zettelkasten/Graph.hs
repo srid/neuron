@@ -13,7 +13,6 @@ module Neuron.Zettelkasten.Graph
     -- * Graph functions
     getZettels,
     getZettel,
-    getConnections,
     getConnection,
     topSort,
     frontlinkForest,
@@ -30,7 +29,6 @@ import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Data.Default
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
-import qualified Data.Map.Strict as Map
 import Data.Tree
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph.Type
@@ -101,9 +99,6 @@ getZettels = G.getVertices
 
 getZettel :: ZettelID -> ZettelGraph -> Maybe Zettel
 getZettel = G.findVertex
-
-getConnections :: ZettelGraph -> Map.Map ZettelID (Map.Map ZettelID (Maybe Connection))
-getConnections = LAM.adjacencyMap . G.getGraph
 
 -- | If no connection exists, this returns Nothing.
 getConnection :: Zettel -> Zettel -> ZettelGraph -> Maybe Connection

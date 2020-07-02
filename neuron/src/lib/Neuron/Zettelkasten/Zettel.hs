@@ -118,16 +118,6 @@ sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
   sortOn (Down . zettelDay)
 
--- TODO: Remove this in favour of the ToJSON instance (which now includes queries).
--- That will affect the `neuron query` output, as well neuron-mode.
-zettelJson :: forall a. KeyValue a => Zettel -> [a]
-zettelJson Zettel {..} =
-  [ "id" .= toJSON zettelID,
-    "title" .= zettelTitle,
-    "tags" .= zettelTags,
-    "day" .= zettelDay
-  ]
-
 deriveJSONGADT ''ZettelQuery
 
 deriveGEq ''ZettelQuery

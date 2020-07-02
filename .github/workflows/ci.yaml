@@ -10,7 +10,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v8
+    - uses: cachix/install-nix-action@v10
     # This also runs nix-build.
     - uses: cachix/cachix-action@v6
       with:
@@ -20,3 +20,19 @@ jobs:
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     # This builds neuron, as well as run tests
     - run: nix-build -j4 ci.nix
+    # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
+    # if: github.ref == 'refs/heads/master'
+    - name: Bundle up
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
+        cd tmp/nix-bundle
+        ./nix-bundle.sh '(import ../.. {})' /bin/neuron > neuron
+        mkdir ~/bundle 
+        cp neuron ~/bundle/neuron
+        chmod a+x ~/bundle/neuron
+    - uses: actions/upload-artifact@v2
+      if: ${{ runner.os == 'Linux' }}
+      with:
+        name: neuron-bundle-linux 
+        path: ~/bundle/neuron
