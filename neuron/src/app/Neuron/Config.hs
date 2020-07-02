@@ -25,7 +25,7 @@ import qualified Dhall.Core
 import qualified Dhall.Parser
 import qualified Dhall.TypeCheck
 import Neuron.Config.Orphans ()
-import Neuron.Config.Type (Config, configFile, mergeWithDefault)
+import Neuron.Config.Type (Config, configFile, defaultConfig, mergeWithDefault)
 import Relude
 import qualified Rib
 import System.Directory
@@ -37,9 +37,9 @@ getConfig = do
   configPath <- Rib.ribInputDir <&> (</> configFile)
   configVal :: Text <- liftIO (doesFileExist configPath) >>= \case
     True -> do
-      fmap toText $ readFile' configPath
+      mergeWithDefault . toText <$> readFile' configPath
     False ->
-      pure "{}"
+      pure defaultConfig
   either fail pure $ parsePure configFile $ mergeWithDefault configVal
 
 -- | Pure version of `Dhall.input Dhall.auto`

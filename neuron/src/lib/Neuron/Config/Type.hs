@@ -37,7 +37,7 @@ data Config = Config
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
-defaultConfig :: ByteString
+defaultConfig :: Text
 defaultConfig =
   "{ siteTitle =\
   \   \"My Zettelkasten\" \
@@ -61,4 +61,4 @@ defaultConfig =
 -- effectively merging the record with defaults with the user record.
 mergeWithDefault :: Text -> Text
 mergeWithDefault userConfig =
-  decodeUtf8 defaultConfig <> " // " <> userConfig
+  defaultConfig <> " // " <> userConfig
