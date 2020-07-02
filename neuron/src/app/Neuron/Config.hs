@@ -19,7 +19,6 @@ where
 
 import Control.Monad.Except
 import Data.Either.Validation (validationToEither)
-import Debug.Trace
 import Development.Shake (Action, readFile')
 import qualified Dhall
 import qualified Dhall.Core
@@ -28,7 +27,7 @@ import qualified Dhall.Substitution
 import qualified Dhall.TypeCheck
 import Neuron.Config.Orphans ()
 import Neuron.Config.Type (Config, configFile, mergeWithDefault)
-import Relude hiding (traceId, traceShowId)
+import Relude
 import qualified Rib
 import System.Directory
 import System.FilePath
@@ -58,12 +57,9 @@ parsePure cfgText =
     $ Dhall.extract @Config Dhall.auto
     $ Dhall.Core.normalize
     $ either (error . show) id
-    $ Dhall.TypeCheck.typeOf
+    $ (\a -> a <$ Dhall.TypeCheck.typeOf a)
     $ flip Dhall.Substitution.substitute Dhall.Substitution.empty
     $ fromMaybe (error "imports")
     $ traverse (\_ -> Nothing)
     $ either (error . show) id
-    $ Dhall.Parser.exprFromText "neuron.dhall"
-    $ toText
-    $ traceId
-    $ toString cfgText
+    $ Dhall.Parser.exprFromText "neuron.dhall" cfgText
