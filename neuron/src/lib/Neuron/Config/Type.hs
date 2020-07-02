@@ -1,16 +1,20 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Config.Type
   ( Config (..),
     configFile,
+    defaultConfig,
+    mergeWithDefault,
   )
 where
 
+import Data.Aeson
 import Relude
 
 configFile :: FilePath
@@ -31,5 +35,30 @@ data Config = Config
     siteTitle :: Text,
     theme :: Text
   }
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
-deriving instance Generic Config
+defaultConfig :: ByteString
+defaultConfig =
+  "{ siteTitle =\
+  \   \"My Zettelkasten\" \
+  \, author =\
+  \   None Text\
+  \, siteBaseUrl =\
+  \   None Text\
+  \, editUrl =\
+  \   None Text\
+  \, theme =\
+  \   \"blue\"\
+  \, aliases =\
+  \   [] : List Text\
+  \, mathJaxSupport =\
+  \   True\
+  \, minVersion =\
+  \   \"0.5\" \
+  \}"
+
+-- Dhall's combine operator (`//`) allows us to merge two records,
+-- effectively merging the record with defaults with the user record.
+mergeWithDefault :: Text -> Text
+mergeWithDefault userConfig =
+  decodeUtf8 defaultConfig <> " // " <> userConfig
