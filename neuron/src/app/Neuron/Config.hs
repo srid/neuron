@@ -7,45 +7,50 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Config
   ( getConfig,
+    parsePure,
   )
 where
 
-import Control.Monad.Except
-import Data.FileEmbed (embedFile)
+import Data.Either.Validation (validationToEither)
 import Development.Shake (Action, readFile')
 import qualified Dhall
+import Dhall (FromDhall)
+import qualified Dhall.Core
+import qualified Dhall.Parser
+import qualified Dhall.TypeCheck
 import Neuron.Config.Orphans ()
-import Neuron.Config.Type (Config, configFile)
+import Neuron.Config.Type (Config, configFile, defaultConfig, mergeWithDefault)
 import Relude
 import qualified Rib
 import System.Directory
 import System.FilePath
 
-defaultConfig :: ByteString
-defaultConfig = $(embedFile "./src-dhall/Config/Default.dhall")
-
--- | Read the optional @neuron.dhall@ config file from the zettelksaten
+-- | Read the optional @neuron.dhall@ config file
 getConfig :: Action Config
 getConfig = do
-  inputDir <- Rib.ribInputDir
-  let configPath = inputDir </> configFile
+  configPath <- Rib.ribInputDir <&> (</> configFile)
   configVal :: Text <- liftIO (doesFileExist configPath) >>= \case
     True -> do
-      userConfig <- fmap toText $ readFile' configPath
-      -- Dhall's combine operator (`//`) allows us to merge two records,
-      -- effectively merging the record with defaults with the user record.
-      pure $ decodeUtf8 defaultConfig <> " // " <> userConfig
+      mergeWithDefault . toText <$> readFile' configPath
     False ->
-      pure $ decodeUtf8 @Text defaultConfig
-  parseConfig configVal
+      pure defaultConfig
+  either fail pure $ parsePure configFile $ mergeWithDefault configVal
 
-parseConfig :: MonadIO m => Text -> m Config
-parseConfig s =
-  liftIO $ Dhall.input Dhall.auto s
+-- | Pure version of `Dhall.input Dhall.auto`
+--
+-- The config file cannot have imports, as that requires IO.
+parsePure :: forall a. FromDhall a => FilePath -> Text -> Either String a
+parsePure fn s = do
+  expr0 <- first show $ Dhall.Parser.exprFromText fn s
+  expr <- maybeToRight "Cannot have imports" $ traverse (const Nothing) expr0
+  void $ first show $ Dhall.TypeCheck.typeOf expr
+  first show
+    $ validationToEither
+    $ Dhall.extract @a Dhall.auto
+    $ Dhall.Core.normalize expr
