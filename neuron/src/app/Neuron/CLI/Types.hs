@@ -28,6 +28,7 @@ import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Query.Graph as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
+import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Meta (parseZettelDate)
 import Options.Applicative
 import Relude
@@ -41,6 +42,7 @@ data App = App
 
 data NewCommand = NewCommand
   { title :: Maybe Text,
+    format :: ZettelFormat,
     day :: Day,
     idScheme :: Some IDScheme,
     edit :: Bool
@@ -102,6 +104,16 @@ commandParser defaultNotesDir today = do
           ]
     newCommand = do
       title <- optional $ strArgument (metavar "TITLE" <> help "Title of the new Zettel")
+      format <-
+        option
+          formatReader
+          ( metavar "FORMAT"
+              <> short 'f'
+              <> long "format"
+              <> help "The document format of the new zettel"
+              <> value ZettelFormat_Markdown
+              <> showDefaultWith (toString . zettelFormatToExtension)
+          )
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
       day <-
         option dayReader $
@@ -121,7 +133,7 @@ commandParser defaultNotesDir today = do
           <|> fmap
             (const . Some . IDSchemeCustom)
             (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
-      pure $ New $ NewCommand title day (idSchemeF day) edit
+      pure $ New $ NewCommand title format day (idSchemeF day) edit
     openCommand =
       pure Open
     queryCommand =
@@ -178,6 +190,8 @@ commandParser defaultNotesDir today = do
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
       eitherReader $ first show . parseZettelID' . toText
+    formatReader :: ReadM ZettelFormat
+    formatReader = maybeReader (extensionToZettelFormat . toText)
     queryReader :: ReadM (Some Q.ZettelQuery)
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of

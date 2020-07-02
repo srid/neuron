@@ -22,7 +22,6 @@ import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
-import Neuron.Zettelkasten.Zettel.Format
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -49,7 +48,7 @@ newZettelFile NewCommand {..} = do
     Right zid -> do
       notesDir <- Rib.ribInputDir
       -- TODO add argument for org file?
-      let zettelFile = zettelIDSourceFileName zid ZettelFormat_Markdown
+      let zettelFile = zettelIDSourceFileName zid format
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-
           bool (pure showAction) mkEditActionFromEnv edit
