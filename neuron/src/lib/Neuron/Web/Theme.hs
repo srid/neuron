@@ -7,13 +7,14 @@
 module Neuron.Web.Theme
   ( Theme (..),
     mkTheme,
+    themeCss,
     semanticColor,
-    textColor,
-    backgroundColor,
+    themeIdentifier,
   )
 where
 
-import Clay (Color, rgb, rgba)
+import Clay ((?), Css, rgb, rgba)
+import qualified Clay as C
 import Data.Text (toLower)
 import Relude
 
@@ -53,11 +54,32 @@ mkTheme s =
 semanticColor :: Theme -> Text
 semanticColor = toLower . show @Text
 
-textColor :: Theme -> Color
-textColor theme = withRgb theme rgb
+themeIdentifier :: Theme -> String
+themeIdentifier theme =
+  "neuron-theme-default-" <> toString (semanticColor theme)
 
-backgroundColor :: Theme -> Color
-backgroundColor theme = withRgb theme rgba 0.1
+themeCss :: Css
+themeCss = do
+  forM_ [minBound .. maxBound] $ \(theme :: Theme) -> do
+    let selector = fromString $ "div#" <> themeIdentifier theme
+        textColor = withRgb theme rgb
+        backgroundColor = withRgb theme rgba 0.1
+    selector ? do
+      -- Zettel heading's background color
+      ".zettel-content h1" ? do
+        C.backgroundColor backgroundColor
+      -- Zettel links
+      "span.zettel-link-container span.zettel-link a" ? do
+        C.color textColor
+      "span.zettel-link-container span.zettel-link a:hover" ? do
+        C.color C.white
+        C.backgroundColor textColor
+      -- Deemphasized items in uptree; restore link colors
+      ".deemphasized:hover" ? do
+        "div.item a:hover" ? C.important (C.color textColor)
+      -- Zettel footnote's top marging line
+      "div#footnotes" ? do
+        C.borderTopColor textColor
 
 withRgb :: Theme -> (Integer -> Integer -> Integer -> a) -> a
 withRgb theme f =

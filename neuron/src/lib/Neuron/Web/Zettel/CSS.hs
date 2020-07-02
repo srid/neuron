@@ -13,9 +13,10 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget.InvertedTree as IT
 import Relude hiding ((&))
 
-zettelCss :: Theme.Theme -> Css
-zettelCss neuronTheme = do
-  zettelCommonCss neuronTheme
+zettelCss :: Css
+zettelCss = do
+  Theme.themeCss
+  zettelCommonCss
   C.queryOnly CM.screen [CM.maxWidth $ px 768] $ do
     "div#zettel-container" ? do
       -- Fix too big of margin on mobile.
@@ -30,15 +31,15 @@ zettelCss neuronTheme = do
       C.listStyleType C.square
       C.li ? do
         mempty -- C.paddingBottom $ em 1
-    zettelContentCss neuronTheme
+    zettelContentCss
   IT.style
   ".ui.label.zettel-tag a.tag-inner" ? do
     C.color black
     "a" ? do
       C.color black
 
-zettelContentCss :: Theme.Theme -> Css
-zettelContentCss neuronTheme = do
+zettelContentCss :: Css
+zettelContentCss = do
   ".zettel-content" ? do
     -- All of these apply to the zettel content card only.
     "div.date" ? do
@@ -48,7 +49,6 @@ zettelContentCss neuronTheme = do
       C.paddingTop $ em 0.2
       C.paddingBottom $ em 0.2
       C.textAlign C.center
-      C.backgroundColor $ Theme.backgroundColor neuronTheme
     C.h2 ? do
       C.borderBottom C.solid (px 1) C.steelblue
       C.marginBottom $ em 0.5
@@ -58,7 +58,8 @@ zettelContentCss neuronTheme = do
       C.opacity 0.8
     "div#footnotes" ? do
       C.marginTop $ em 4
-      C.borderTop C.groove (px 2) $ Theme.textColor neuronTheme
+      C.borderTopStyle C.groove
+      C.borderTopWidth $ px 2
       C.fontSize $ em 0.9
     -- reflex-dom-pandoc footnote aside elements
     -- (only used for footnotes defined inside footnotes)
@@ -110,8 +111,8 @@ zettelContentCss neuronTheme = do
         sym2 C.margin (em 1.5) (px 0)
         sym2 C.padding (em 0.5) (px 10)
 
-zettelCommonCss :: Theme.Theme -> Css
-zettelCommonCss neuronTheme = do
+zettelCommonCss :: Css
+zettelCommonCss = do
   "p" ? do
     C.lineHeight $ pct 150
   "img" ? do
@@ -120,7 +121,6 @@ zettelCommonCss neuronTheme = do
     fontSize $ em 0.85
   ".deemphasized:hover" ? do
     opacity 1
-    "div.item a:hover" ? important (color $ Theme.textColor neuronTheme)
   ".deemphasized:not(:hover)" ? do
     opacity 0.7
     "span.zettel-link a, div.item a" ? important (color gray)
