@@ -81,7 +81,7 @@ renderRouteHead config manifest route val = do
       elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
   where
     renderCommon = do
-      let neuronCss = toText $ C.renderWith C.compact [] $ style config
+      let neuronCss = toText $ C.renderWith C.compact [] style
       elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.5/dist/semantic.min.css") blank
       elAttr "style" ("type" =: "text/css") $ text neuronCss
       elLinkGoogleFonts neuronFonts
@@ -98,8 +98,9 @@ renderRouteHead config manifest route val = do
 
 renderRouteBody :: PandocBuilder t m => Text -> Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
 renderRouteBody neuronVersion Config {..} r (g, x) = do
-  divClass "ui fluid container" $ do
-    let neuronTheme = Theme.mkTheme theme
+  let neuronTheme = Theme.mkTheme theme
+      themeSelector = toText $ Theme.themeIdentifier neuronTheme
+  elAttr "div" ("class" =: "ui fluid container" <> "id" =: themeSelector) $ do
     case r of
       Route_ZIndex -> do
         actionsNav neuronTheme editUrl Nothing
@@ -183,14 +184,13 @@ actionsNav theme editUrl mzid = elClass "nav" "top-menu" $ do
     neuronRouteLink (Some Route_Search) ("class" =: "right item" <> "title" =: "Search Zettels") $ do
       semanticIcon "search"
 
-style :: Config -> Css
-style Config {..} = do
-  let neuronTheme = Theme.mkTheme theme
+style :: Css
+style = do
   "body" ? do
     neuronCommonStyle
     ZIndex.style
-    ZettelCSS.zettelCss neuronTheme
-    QueryView.style neuronTheme
+    ZettelCSS.zettelCss
+    QueryView.style
     footerStyle
     navBarStyle
   where

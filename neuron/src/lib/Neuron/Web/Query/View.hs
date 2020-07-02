@@ -31,7 +31,6 @@ import Data.TagTree (Tag (..), TagNode (..), TagPattern (..), constructTag, fold
 import qualified Data.Text as T
 import Data.Tree
 import Neuron.Web.Route
-import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
@@ -173,25 +172,20 @@ tagUrl :: Tag -> Text
 tagUrl (Tag s) =
   "search.html?tag=" <> s
 
-style :: Theme.Theme -> Css
-style theme = do
-  zettelLinkCss theme
+style :: Css
+style = do
+  zettelLinkCss
   "div.tag-tree" ? do
     "div.node" ? do
       C.fontWeight C.bold
       "a.inactive" ? do
         C.color "#555"
 
-zettelLinkCss :: Theme.Theme -> Css
-zettelLinkCss neuronTheme = do
-  let linkColor = Theme.withRgb neuronTheme C.rgb
+zettelLinkCss :: Css
+zettelLinkCss = do
   "span.zettel-link-container span.zettel-link a" ? do
     C.fontWeight C.bold
-    C.color linkColor
     C.textDecoration C.none
-  "span.zettel-link-container span.zettel-link a:hover" ? do
-    C.backgroundColor linkColor
-    C.color C.white
   "span.zettel-link-container span.extra" ? do
     C.color C.auto
     C.paddingRight $ em 0.3
