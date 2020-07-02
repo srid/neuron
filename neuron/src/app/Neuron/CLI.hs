@@ -22,6 +22,7 @@ import qualified Neuron.Version as Version
 import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
+import Neuron.Config
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -63,7 +64,8 @@ runWith act App {..} =
         liftIO $ executeFile opener True [indexHtmlPath] Nothing
     Query eSomeQ ->
       runRibOnceQuietly notesDir $ do
-        (graph, _, errors) <- Gen.loadZettelkasten
+        config <- getConfig
+        (graph, _, errors) <- Gen.loadZettelkasten config
         case eSomeQ of
           Left someQ ->
             withSome someQ $ \q -> do

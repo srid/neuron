@@ -10,6 +10,12 @@
     "blue"
 , aliases =
     [] : List Text
+, formats =
+    -- REVIEW How to share the Format type in a cleaner way?
+    [ { pattern = "*.md",
+        format  = < Markdown
+      }
+    ]
 , mathJaxSupport =
     True
 , minVersion =

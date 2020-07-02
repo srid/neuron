@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -33,11 +34,14 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Zettel.Format
 import Options.Applicative
 import Relude
+import Relude.Extra.Group (groupBy)
 import qualified Rib
 import Rib.Route
 import System.FilePath
+import System.FilePattern
 
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
@@ -54,7 +58,7 @@ generateSite config writeHtmlRoute' = do
         <> minVersion config
         <> ", but your neuron version is "
         <> neuronVersion
-  (zettelGraph, zettelContents, errors) <- loadZettelkasten
+  (zettelGraph, zettelContents, errors) <- loadZettelkasten config
   let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
       writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
@@ -69,9 +73,9 @@ generateSite config writeHtmlRoute' = do
   forM_ aliases $ \Alias {..} ->
     writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
   -- Report all errors
-  forM_ (Map.toList errors) $ \(zid, eerr) -> do
+  forM_ (Map.toList errors) $ \(zid, err) -> do
     reportError (Z.Route_Zettel zid) $
-      case eerr of
+      case err of
         ZettelError_ParseError parseErr ->
           show parseErr :| []
         ZettelError_QueryErrors queryErrs ->
@@ -97,35 +101,46 @@ reportError route errors = do
         go (x : xs) =
           x : fmap (toText . (take n (repeat ' ') <>) . toString) xs
 
-supportedReaders :: Map.Map Text ZettelReader
-supportedReaders =
-  Map.fromList
-    [ (".md", parseMarkdown),
-      (".org", parseOrg)
-    ]
+readerForZettelFormat :: ZettelFormat -> ZettelReader
+readerForZettelFormat = \case
+  ZettelFormat_Markdown -> parseMarkdown
+  ZettelFormat_Org -> parseOrg
 
 loadZettelkasten ::
+  Config ->
   Action
     ( ZettelGraph,
       [ZettelC],
       Map ZettelID ZettelError
     )
-loadZettelkasten =
-  loadZettelkastenFrom =<< Rib.forEvery ["*.md", "*.org"] pure
+loadZettelkasten config =
+  let filePatterns = fmap fst $ formats config
+   in loadZettelkastenFrom config =<< Rib.forEvery filePatterns pure
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFrom ::
+  Config ->
   [FilePath] ->
   Action
     ( ZettelGraph,
       [ZettelC],
       Map ZettelID ZettelError
     )
-loadZettelkastenFrom files = do
+loadZettelkastenFrom config files = do
   notesDir <- Rib.ribInputDir
-  filesWithContent <- forM files $ \relPath -> do
+  filesPerFormat <- forM files $ \relPath -> do
     let absPath = notesDir </> relPath
+        extensionError = fail $ "Unrecognized extension: " <> toString relPath
     need [absPath]
+    format <- maybe extensionError pure $ getFileFormat (formats config) relPath
     s <- decodeUtf8With lenientDecode <$> readFileBS absPath
-    pure (relPath, s)
-  pure $ G.buildZettelkasten supportedReaders filesWithContent
+    pure (format, (relPath, s))
+  let groupedFiles :: Map.Map ZettelFormat [(FilePath, Text)]
+      groupedFiles = fmap snd . toList <$> groupBy fst filesPerFormat
+  pure $ G.buildZettelkasten (first readerForZettelFormat <$> Map.assocs groupedFiles)
+
+getFileFormat :: [(FilePattern, ZettelFormat)] -> FilePath -> Maybe ZettelFormat
+getFileFormat [] _ = Nothing
+getFileFormat ((pat, fmt) : rules) fn
+  | pat ?== fn = Just fmt
+  | otherwise = getFileFormat rules fn

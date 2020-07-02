@@ -22,6 +22,7 @@ import Neuron.CLI.Types
 import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
+import Neuron.Config
 import Neuron.Zettelkasten.Zettel (zettelID)
 import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Meta ()
@@ -38,7 +39,8 @@ import System.Posix.Process
 -- As well as print the path to the created file.
 newZettelFile :: NewCommand -> Action ()
 newZettelFile NewCommand {..} = do
-  (_, zettels, _) <- Gen.loadZettelkasten
+  config <- getConfig
+  (_, zettels, _) <- Gen.loadZettelkasten config
   mzid <- withSome idScheme $ \scheme -> do
     val <- liftIO $ IDScheme.genVal scheme
     pure $

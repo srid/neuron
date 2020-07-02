@@ -10,6 +10,8 @@
     Text
 , aliases :
     List Text
+, formats :
+    List { pattern : Text, format : ./Format }
 , mathJaxSupport :
     Bool
 , minVersion :

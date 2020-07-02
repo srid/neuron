@@ -12,7 +12,7 @@ import Relude
 data ZettelFormat
   = ZettelFormat_Markdown
   | ZettelFormat_Org
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Ord, Show, Generic, FromJSON, ToJSON)
 
 zettelFormatToExtension :: ZettelFormat -> Text
 zettelFormatToExtension = \case

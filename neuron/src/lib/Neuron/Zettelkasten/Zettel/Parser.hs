@@ -6,7 +6,6 @@
 module Neuron.Zettelkasten.Zettel.Parser where
 
 import Control.Monad.Writer
-import qualified Data.Map.Strict as Map
 import Data.Some
 import qualified Data.Text as T
 import Neuron.Zettelkasten.ID
@@ -66,13 +65,12 @@ parseZettel zettelReader fn zid s = do
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
-  Map.Map Text ZettelReader ->
-  [(FilePath, Text)] ->
+  [(ZettelReader, [(FilePath, Text)])] ->
   [ZettelC]
-parseZettels readers fs =
-  flip mapMaybe fs $ \(path, s) -> do
-    -- TODO either use fromJust since this is supposed to be unreachable
-    --      or report unsupported extension
-    zreader <- Map.lookup (toText $ takeExtension path) readers
-    zid <- getZettelID path
-    pure $ parseZettel zreader path zid s
+parseZettels filesPerReader =
+  concat $ forM filesPerReader $ \(zreader, files) ->
+    flip mapMaybe files $ \(path, s) -> do
+      -- TODO either use fromJust since this is supposed to be unreachable
+      --      or report unsupported extension
+      zid <- getZettelID path
+      pure $ parseZettel zreader path zid s
