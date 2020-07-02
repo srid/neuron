@@ -17,13 +17,12 @@ module Neuron.Config
   )
 where
 
-import Control.Monad.Except
 import Data.Either.Validation (validationToEither)
 import Development.Shake (Action, readFile')
 import qualified Dhall
+import Dhall (FromDhall)
 import qualified Dhall.Core
 import qualified Dhall.Parser
-import qualified Dhall.Substitution
 import qualified Dhall.TypeCheck
 import Neuron.Config.Orphans ()
 import Neuron.Config.Type (Config, configFile, mergeWithDefault)
@@ -32,34 +31,26 @@ import qualified Rib
 import System.Directory
 import System.FilePath
 
--- | Read the optional @neuron.dhall@ config file from the zettelksaten
+-- | Read the optional @neuron.dhall@ config file
 getConfig :: Action Config
 getConfig = do
-  inputDir <- Rib.ribInputDir
-  let configPath = inputDir </> configFile
+  configPath <- Rib.ribInputDir <&> (</> configFile)
   configVal :: Text <- liftIO (doesFileExist configPath) >>= \case
     True -> do
       fmap toText $ readFile' configPath
     False ->
       pure "{}"
-  parseConfig $ mergeWithDefault configVal
+  either fail pure $ parsePure configFile $ mergeWithDefault configVal
 
-parseConfig :: MonadIO m => Text -> m Config
-parseConfig =
-  -- liftIO . Dhall.input Dhall.auto
-  pure . parsePure
-
--- WIP
-parsePure :: Text -> Config
-parsePure cfgText =
-  either (error . show) id
+-- | Pure version of `Dhall.input Dhall.auto`
+--
+-- The config file cannot have imports, as that requires IO.
+parsePure :: forall a. FromDhall a => FilePath -> Text -> Either String a
+parsePure fn s = do
+  expr0 <- first show $ Dhall.Parser.exprFromText fn s
+  expr <- maybeToRight "Cannot have imports" $ traverse (const Nothing) expr0
+  void $ first show $ Dhall.TypeCheck.typeOf expr
+  first show
     $ validationToEither
-    $ Dhall.extract @Config Dhall.auto
-    $ Dhall.Core.normalize
-    $ either (error . show) id
-    $ (\a -> a <$ Dhall.TypeCheck.typeOf a)
-    $ flip Dhall.Substitution.substitute Dhall.Substitution.empty
-    $ fromMaybe (error "imports")
-    $ traverse (\_ -> Nothing)
-    $ either (error . show) id
-    $ Dhall.Parser.exprFromText "neuron.dhall" cfgText
+    $ Dhall.extract @a Dhall.auto
+    $ Dhall.Core.normalize expr
