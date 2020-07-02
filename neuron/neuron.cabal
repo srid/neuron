@@ -19,7 +19,6 @@ extra-source-files:
 data-files:
   src-js/search.js
   src-bash/neuron-search
-  src-dhall/Config/*.dhall
 
 source-repository head
     type: git
