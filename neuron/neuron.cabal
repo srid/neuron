@@ -147,7 +147,8 @@ common app-common
     uuid,
     shake,
     with-utf8,
-    shower
+    shower,
+    either
   if (!flag(ghcid))
     autogen-modules:
       Paths_neuron

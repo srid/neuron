@@ -7,7 +7,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -18,9 +17,13 @@ module Neuron.Config
 where
 
 import Control.Monad.Except
-import Data.FileEmbed (embedFile)
+import Data.Either.Validation (validationToEither)
 import Development.Shake (Action, readFile')
 import qualified Dhall
+import qualified Dhall.Core
+import qualified Dhall.Parser
+import qualified Dhall.Substitution
+import qualified Dhall.TypeCheck
 import Neuron.Config.Orphans ()
 import Neuron.Config.Type (Config, configFile, mergeWithDefault)
 import Relude
@@ -41,5 +44,20 @@ getConfig = do
   parseConfig $ mergeWithDefault configVal
 
 parseConfig :: MonadIO m => Text -> m Config
-parseConfig s =
-  liftIO $ Dhall.input Dhall.auto s
+parseConfig =
+  pure . parsePure
+
+-- WIP
+parsePure :: Text -> Config
+parsePure (mergeWithDefault -> cfgText) =
+  either (error . show) id
+    $ validationToEither
+    $ Dhall.extract @Config Dhall.auto
+    $ Dhall.Core.normalize
+    $ either (error . show) id
+    $ Dhall.TypeCheck.typeOf
+    $ flip Dhall.Substitution.substitute Dhall.Substitution.empty
+    $ fromMaybe (error "imports")
+    $ traverse (\_ -> Nothing)
+    $ either (error . show) id
+    $ Dhall.Parser.exprFromText "neuron.dhall" cfgText
