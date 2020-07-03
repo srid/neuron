@@ -29,7 +29,6 @@ import Neuron.Zettelkasten.Query.Graph as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
 import Neuron.Zettelkasten.Zettel.Format
-import Neuron.Config (getConfig)
 import Neuron.Zettelkasten.Zettel.Meta (parseZettelDate)
 import Options.Applicative
 import Relude
@@ -106,8 +105,8 @@ commandParser defaultNotesDir today = do
     newCommand = do
       title <- optional $ strArgument (metavar "TITLE" <> help "Title of the new Zettel")
       format <-
-        optional $
-          option formatReader
+        optional
+          $ option formatReader
           $ metavar "FORMAT"
             <> short 'f'
             <> long "format"
@@ -189,7 +188,7 @@ commandParser defaultNotesDir today = do
     zettelIDReader =
       eitherReader $ first show . parseZettelID' . toText
     formatReader :: ReadM ZettelFormat
-    formatReader = maybeReader (extensionToZettelFormat . toText)
+    formatReader = maybeReader (formatDescToZettelFormat . toText)
     queryReader :: ReadM (Some Q.ZettelQuery)
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of

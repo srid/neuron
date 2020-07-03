@@ -22,6 +22,7 @@ import qualified Neuron.Version as Version
 import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
+import Neuron.Config.Type
 import Neuron.Config
 import Options.Applicative
 import Relude
@@ -31,7 +32,7 @@ import System.FilePath
 import System.Info (os)
 import System.Posix.Process
 
-run :: Action () -> IO ()
+run :: (Config -> Action ()) -> IO ()
 run act = do
   today <- utctDay <$> liftIO getCurrentTime
   defaultNotesDir <- (</> "zettelkasten") <$> getHomeDirectory
@@ -48,14 +49,15 @@ run act = do
         (toString Version.neuronVersion)
         (long "version" <> help "Show version")
 
-runWith :: Action () -> App -> IO ()
+runWith :: (Config -> Action ()) -> App -> IO ()
 runWith act App {..} =
   case cmd of
     Rib ribCfg ->
-      runRib act notesDir ribCfg
+      runRib (act =<< getConfig) notesDir ribCfg
     New newCommand ->
       runRibOnceQuietly notesDir $ do
-        newZettelFile newCommand
+        config <- getConfig
+        newZettelFile newCommand config
     Open ->
       runRibOnceQuietly notesDir $ do
         indexHtmlPath <- fmap (</> "index.html") Rib.ribOutputDir

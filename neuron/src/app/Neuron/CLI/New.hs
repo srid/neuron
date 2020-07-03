@@ -19,14 +19,13 @@ import Data.Time
 import qualified Data.YAML as YAML
 import Development.Shake (Action)
 import Neuron.CLI.Types
+import Neuron.Config.Type (Config (..))
 import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
-import Neuron.Config
 import Neuron.Zettelkasten.Zettel (zettelID)
 import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Meta ()
-import Neuron.Config.Type (Config(..))
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -38,9 +37,8 @@ import System.Posix.Process
 -- | Create a new zettel file and open it in editor if requested
 --
 -- As well as print the path to the created file.
-newZettelFile :: NewCommand -> Action ()
-newZettelFile NewCommand {..} = do
-  config <- getConfig
+newZettelFile :: NewCommand -> Config -> Action ()
+newZettelFile NewCommand {..} config = do
   (_, zettels, _) <- Gen.loadZettelkasten config
   mzid <- withSome idScheme $ \scheme -> do
     val <- liftIO $ IDScheme.genVal scheme
