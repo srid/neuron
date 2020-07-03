@@ -10,14 +10,14 @@ module Neuron.Org where
 import Data.TagTree
 import qualified Data.Text as Text
 import qualified Data.Text.Read as Text
-import Neuron.Zettelkasten.Zettel.Meta
-import Neuron.Zettelkasten.Zettel.ParseError
+import Neuron.Zettelkasten.Zettel.Meta (Meta (..), parseZettelDate)
+import Neuron.Zettelkasten.Zettel.ParseError (ZettelParseError (..))
 import Relude
 import Text.Pandoc (def, runPure)
 import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition hiding (Meta (..))
 import Text.Pandoc.Readers.Org (readOrg)
-import Text.Pandoc.Util
+import Text.Pandoc.Util (getH1)
 import qualified Text.Pandoc.Walk as W
 import Prelude (lookup)
 
