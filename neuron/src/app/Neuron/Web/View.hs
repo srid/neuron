@@ -40,7 +40,6 @@ import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
-import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
@@ -178,7 +177,7 @@ actionsNav theme editUrl mz = elClass "nav" "top-menu" $ do
     neuronRouteLink (Some Route_ZIndex) ("class" =: "left item" <> "title" =: "All Zettels (z-index)") $
       semanticIcon "tree"
     whenJust ((,) <$> mz <*> editUrl) $ \(Zettel {..}, urlPrefix) -> do
-      let attrs = ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zettelID zettelFormat)) <> "title" =: "Edit this Zettel")
+      let attrs = ("href" =: (urlPrefix <> toText zettelPath) <> "title" =: "Edit this Zettel")
       elAttr "a" ("class" =: "center item" <> attrs) $ do
         semanticIcon "edit"
     neuronRouteLink (Some Route_Search) ("class" =: "right item" <> "title" =: "Search Zettels") $ do
