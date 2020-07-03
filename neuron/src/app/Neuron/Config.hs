@@ -21,6 +21,7 @@ import Data.Either.Validation (validationToEither)
 import Development.Shake (Action, readFile')
 import qualified Dhall
 import Dhall (FromDhall)
+import Neuron.Config.Orphans ()
 import qualified Dhall.Core
 import qualified Dhall.Parser
 import qualified Dhall.TypeCheck

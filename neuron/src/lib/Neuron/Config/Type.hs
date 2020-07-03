@@ -15,7 +15,6 @@ module Neuron.Config.Type
 where
 
 import Dhall
-import Neuron.Zettelkasten.Zettel.Format
 import Relude hiding (bool, maybe)
 import System.FilePattern
 import Data.Aeson
@@ -33,35 +32,13 @@ data Config = Config
     author :: Maybe Text,
     editUrl :: Maybe Text,
     mathJaxSupport :: Bool,
-    formats :: [(FilePattern, ZettelFormat)],
+    formats :: [(FilePattern, Text)],
     minVersion :: Text,
     siteBaseUrl :: Maybe Text,
     siteTitle :: Text,
     theme :: Text
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
-
-instance FromDhall Config where
-  autoWith opts =
-    record $
-      Config <$> field "aliases" (list strictText)
-        <*> field "author" (maybe strictText)
-        <*> field "editUrl" (maybe strictText)
-        <*> field "mathJaxSupport" bool
-        <*> field "formats" (list formatRuleDecoder)
-        <*> field "minVersion" strictText
-        <*> field "siteBaseUrl" (maybe strictText)
-        <*> field "siteTitle" strictText
-        <*> field "theme" strictText
-    where
-      formatDecoder =
-        union $
-          (ZettelFormat_Markdown <$ constructor "Markdown" unit)
-            <> (ZettelFormat_Org <$ constructor "Org" unit)
-      formatRuleDecoder =
-        record $
-          (,) <$> (fmap toString $ field "pattern" strictText)
-            <*> field "format" formatDecoder
 
 defaultConfig :: Text
 defaultConfig =
@@ -77,6 +54,8 @@ defaultConfig =
   \   \"blue\"\
   \, aliases =\
   \   [] : List Text\
+  \, formats =\
+  \   [ { _1 = \"*.md\", _2 = \"md\" } ]\
   \, mathJaxSupport =\
   \   True\
   \, minVersion =\

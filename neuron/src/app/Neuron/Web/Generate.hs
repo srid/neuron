@@ -127,12 +127,18 @@ loadZettelkastenFrom ::
       Map ZettelID ZettelError
     )
 loadZettelkastenFrom config files = do
+  formatRules <- forM (formats config) $ \(pat, fmt) -> do
+    format <- case fmt of
+      "md" -> pure ZettelFormat_Markdown
+      "org" -> pure ZettelFormat_Org
+      _ -> fail $ "Unrecognized format: " <> toString fmt
+    pure (pat, format)
   notesDir <- Rib.ribInputDir
   filesPerFormat <- forM files $ \relPath -> do
     let absPath = notesDir </> relPath
-        extensionError = fail $ "Unrecognized extension: " <> toString relPath
+        extensionError = fail $ "Unsupported extension: " <> toString relPath
     need [absPath]
-    format <- maybe extensionError pure $ getFileFormat (formats config) relPath
+    format <- maybe extensionError pure $ getFileFormat formatRules relPath
     s <- decodeUtf8With lenientDecode <$> readFileBS absPath
     pure (format, (relPath, s))
   let groupedFiles :: Map.Map ZettelFormat [(FilePath, Text)]
