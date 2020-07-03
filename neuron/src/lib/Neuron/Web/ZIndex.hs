@@ -119,7 +119,7 @@ renderErrors errors = do
               forM_ queryErrors $ \qe ->
                 el "li" $ el "pre" $ text $ showQueryError qe
           ZettelError_DuplicateIDs filePaths ->
-            el "ol" $ do
+            el "ul" $ do
               forM_ filePaths $ \fp ->
                 el "li" $ text $ toText fp
 
