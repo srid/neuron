@@ -41,7 +41,6 @@ import Relude.Extra.Group (groupBy)
 import qualified Rib
 import Rib.Route
 import System.FilePath
-import System.FilePattern
 
 searchScript :: Text
 searchScript = $(embedStringFile "./src-js/search.js")
@@ -113,45 +112,37 @@ loadZettelkasten ::
       [ZettelC],
       Map ZettelID ZettelError
     )
-loadZettelkasten config =
-  let filePatterns = fmap fst $ formats config
-   in loadZettelkastenFrom config =<< Rib.forEvery filePatterns pure
-
--- | Load the Zettelkasten from disk, using the given list of zettel files
-loadZettelkastenFrom ::
-  Config ->
-  [FilePath] ->
-  Action
-    ( ZettelGraph,
-      [ZettelC],
-      Map ZettelID ZettelError
-    )
-loadZettelkastenFrom config files = do
+loadZettelkasten config = do
   formatRules <- forM (formats config) $ \(pat, fmt) -> do
     format <- case fmt of
       "md" -> pure ZettelFormat_Markdown
       "org" -> pure ZettelFormat_Org
       _ -> fail $ "Unrecognized format: " <> toString fmt
     pure (pat, format)
-  notesDir <- Rib.ribInputDir
-  (duplicates, filesPerFormat) <- fmap partitionEithers $ forM (Map.assocs $ groupBy takeBaseName $ sort files) $ \case
-    (_, relPath :| []) -> do
-      let absPath = notesDir </> relPath
-          extensionError = fail $ "Unsupported extension: " <> toString relPath
-      need [absPath]
-      format <- maybe extensionError pure $ getFileFormat formatRules relPath
-      s <- decodeUtf8With lenientDecode <$> readFileBS absPath
-      pure $ Right (format, (relPath, s))
-    (baseName, duplicates) -> do
-      let zid = parseZettelID (toText baseName)
-      pure $ Left $ Map.singleton zid $ ZettelError_DuplicateIDs duplicates
-  let groupedFiles :: Map.Map ZettelFormat [(FilePath, Text)]
-      groupedFiles = fmap snd . toList <$> groupBy fst filesPerFormat
-      (g, zs, errs) = G.buildZettelkasten (first readerForZettelFormat <$> Map.assocs groupedFiles)
-  pure (g, zs, Map.unions $ errs : duplicates)
+  filesPerFormat <- forM formatRules $ \(filePattern, format) -> do
+    -- REVIEW make formats :: [([FilePatterns], Format)] ?
+    (format,) <$> Rib.forEvery [filePattern] pure
+  loadZettelkastenFrom filesPerFormat
 
-getFileFormat :: [(FilePattern, ZettelFormat)] -> FilePath -> Maybe ZettelFormat
-getFileFormat [] _ = Nothing
-getFileFormat ((pat, fmt) : rules) fn
-  | pat ?== fn = Just fmt
-  | otherwise = getFileFormat rules fn
+-- | Load the Zettelkasten from disk, using the given list of zettel files
+loadZettelkastenFrom ::
+  [(ZettelFormat, [FilePath])] ->
+  Action
+    ( ZettelGraph,
+      [ZettelC],
+      Map ZettelID ZettelError
+    )
+loadZettelkastenFrom filesPerFormat = do
+  notesDir <- Rib.ribInputDir
+  let allFiles = concatMap snd filesPerFormat
+      groupedFiles = groupBy (toText . takeBaseName) allFiles
+      (uniqueIds, duplicates) = Map.partition (\files -> length files == 1) groupedFiles
+  filesWithContent <- forM filesPerFormat $ \(format, files) -> do
+    let uniqueFiles = filter (\file -> Map.notMember (toText $ takeBaseName file) duplicates) files
+    fmap (format,) $ forM uniqueFiles $ \relPath -> do
+      let absPath = notesDir </> relPath
+      need [absPath]
+      s <- decodeUtf8With lenientDecode <$> readFileBS absPath
+      pure (relPath, s)
+  let (g, zs, errs) = G.buildZettelkasten (first readerForZettelFormat <$> filesWithContent)
+  pure (g, zs, Map.union errs $ fmap ZettelError_DuplicateIDs $ Map.mapKeys parseZettelID duplicates)

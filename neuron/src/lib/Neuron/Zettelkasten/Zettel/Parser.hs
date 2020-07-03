@@ -68,9 +68,7 @@ parseZettels ::
   [(ZettelReader, [(FilePath, Text)])] ->
   [ZettelC]
 parseZettels filesPerReader =
-  concat $ forM filesPerReader $ \(zreader, files) ->
+  flip concatMap filesPerReader $ \(zreader, files) ->
     flip mapMaybe files $ \(path, s) -> do
-      -- TODO either use fromJust since this is supposed to be unreachable
-      --      or report unsupported extension
       zid <- getZettelID path
       pure $ parseZettel zreader path zid s
