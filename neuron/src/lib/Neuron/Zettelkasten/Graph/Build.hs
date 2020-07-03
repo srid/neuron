@@ -18,19 +18,32 @@ import Neuron.Zettelkasten.Query.Error (QueryError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Parser
+import Neuron.Zettelkasten.Zettel.Format
 import Relude
+import Relude.Extra.Group
+import System.FilePath
 
 buildZettelkasten ::
-  [(ZettelReader, [(FilePath, Text)])] ->
+  [(ZettelFormat, ZettelReader, [(FilePath, Text)])] ->
   ( ZettelGraph,
     [ZettelC],
     Map ZettelID ZettelError
   )
-buildZettelkasten filesPerReader =
-  let zs = parseZettels filesPerReader
+buildZettelkasten filesPerFormat =
+  let allFiles = concatMap (\ (_, _, filesWithContent) -> fmap fst filesWithContent) filesPerFormat
+      groupedFiles = groupBy (toText . takeBaseName) allFiles
+      duplicates = Map.filter (\files -> length files > 1) groupedFiles
+      filterUnique (format, zreader, filesWithContent) =
+        (format, zreader, filter (\(file, _) ->
+                                    Map.notMember (toText $ takeBaseName file) duplicates) filesWithContent)
+      zs = parseZettels $ fmap filterUnique filesPerFormat
       parseErrors = Map.fromList $ lefts zs <&> (zettelID &&& zettelError)
       (g, queryErrors) = mkZettelGraph $ fmap sansContent zs
-      errors = fmap ZettelError_ParseError parseErrors `Map.union` fmap ZettelError_QueryErrors queryErrors
+      errors = Map.unions
+        [ fmap ZettelError_ParseError parseErrors,
+          fmap ZettelError_QueryErrors queryErrors,
+          fmap ZettelError_DuplicateIDs $ Map.mapKeys parseZettelID duplicates
+        ]
    in (g, zs, errors)
 
 -- | Build the Zettelkasten graph from a list of zettels

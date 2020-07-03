@@ -31,13 +31,12 @@ import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
+import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Format
 import Options.Applicative
 import Relude
-import Relude.Extra.Group (groupBy)
 import qualified Rib
 import Rib.Route
 import System.FilePath
@@ -134,15 +133,12 @@ loadZettelkastenFrom ::
     )
 loadZettelkastenFrom filesPerFormat = do
   notesDir <- Rib.ribInputDir
-  let allFiles = concatMap snd filesPerFormat
-      groupedFiles = groupBy (toText . takeBaseName) allFiles
-      (uniqueIds, duplicates) = Map.partition (\files -> length files == 1) groupedFiles
   filesWithContent <- forM filesPerFormat $ \(format, files) -> do
-    let uniqueFiles = filter (\file -> Map.notMember (toText $ takeBaseName file) duplicates) files
-    fmap (format,) $ forM uniqueFiles $ \relPath -> do
+    let zreader = readerForZettelFormat format
+    fmap (format,zreader,) $ forM files $ \relPath -> do
       let absPath = notesDir </> relPath
       need [absPath]
       s <- decodeUtf8With lenientDecode <$> readFileBS absPath
       pure (relPath, s)
-  let (g, zs, errs) = G.buildZettelkasten (first readerForZettelFormat <$> filesWithContent)
-  pure (g, zs, Map.union errs $ fmap ZettelError_DuplicateIDs $ Map.mapKeys parseZettelID duplicates)
+  let (g, zs, errs) = G.buildZettelkasten filesWithContent
+  pure (g, zs, errs)

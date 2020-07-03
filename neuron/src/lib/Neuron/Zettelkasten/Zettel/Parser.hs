@@ -16,8 +16,6 @@ import Neuron.Zettelkasten.Zettel.Format
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Reflex.Dom.Pandoc.URILink (queryURILinks)
 import Relude
-import Relude.Unsafe (fromJust)
-import System.FilePath (takeExtension)
 import Text.Pandoc.Definition (Pandoc)
 import Text.Pandoc.Util
 
@@ -25,16 +23,16 @@ import Text.Pandoc.Util
 --
 -- In future this will support other formats supported by Pandoc.
 parseZettel ::
+  ZettelFormat ->
   ZettelReader ->
   FilePath ->
   ZettelID ->
   Text ->
   ZettelC
-parseZettel zettelReader fn zid s = do
-  let fmt = fromJust $ extensionToZettelFormat $ toText $ takeExtension fn
-  case zettelReader fn s of
+parseZettel format zreader fn zid s = do
+  case zreader fn s of
     Left parseErr ->
-      Left $ Zettel zid fmt fn "Unknown" False [] Nothing [] parseErr s
+      Left $ Zettel zid format fn "Unknown" False [] Nothing [] parseErr s
     Right (meta, doc) ->
       let (title, titleInBody) = case Meta.title =<< meta of
             Just tit -> (tit, False)
@@ -48,7 +46,7 @@ parseZettel zettelReader fn zid s = do
             ZettelDateID v _ -> Just v
             ZettelCustomID _ -> Meta.date =<< meta
           (queries, errors) = runWriter $ extractQueries doc
-       in Right $ Zettel zid fmt fn title titleInBody tags day queries errors doc
+       in Right $ Zettel zid format fn title titleInBody tags day queries errors doc
   where
     -- Extract all (valid) queries from the Pandoc document
     extractQueries :: MonadWriter [QueryParseError] m => Pandoc -> m [Some ZettelQuery]
@@ -65,10 +63,10 @@ parseZettel zettelReader fn zid s = do
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
-  [(ZettelReader, [(FilePath, Text)])] ->
+  [(ZettelFormat, ZettelReader, [(FilePath, Text)])] ->
   [ZettelC]
-parseZettels filesPerReader =
-  flip concatMap filesPerReader $ \(zreader, files) ->
+parseZettels filesPerFormat =
+  flip concatMap filesPerFormat $ \(format, zreader, files) ->
     flip mapMaybe files $ \(path, s) -> do
       zid <- getZettelID path
-      pure $ parseZettel zreader path zid s
+      pure $ parseZettel format zreader path zid s
