@@ -52,7 +52,6 @@ newZettelFile NewCommand {..} = do
     Left e -> die $ show e
     Right zid -> do
       notesDir <- Rib.ribInputDir
-      -- TODO add argument for org file?
       let zettelFile = zettelIDSourceFileName zid format
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-

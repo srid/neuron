@@ -119,7 +119,7 @@ loadZettelkasten config = do
       _ -> fail $ "Unrecognized format: " <> toString fmt
     pure (pat, format)
   filesPerFormat <- forM formatRules $ \(filePattern, format) -> do
-    -- REVIEW make formats :: [([FilePatterns], Format)] ?
+    -- REVIEW make formats :: [([FilePattern], Format)] instead of [(FilePattern, Format)]?
     (format,) <$> Rib.forEvery [filePattern] pure
   loadZettelkastenFrom filesPerFormat
 
