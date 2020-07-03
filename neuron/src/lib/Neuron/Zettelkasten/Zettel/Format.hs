@@ -24,3 +24,9 @@ extensionToZettelFormat = \case
   ".md" -> Just ZettelFormat_Markdown
   ".org" -> Just ZettelFormat_Org
   _ -> Nothing
+
+formatDescToZettelFormat :: Text -> Maybe ZettelFormat
+formatDescToZettelFormat = \case
+  "markdown" -> Just ZettelFormat_Markdown
+  "org" -> Just ZettelFormat_Org
+  _ -> Nothing

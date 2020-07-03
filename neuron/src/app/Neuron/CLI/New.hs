@@ -26,6 +26,7 @@ import Neuron.Config
 import Neuron.Zettelkasten.Zettel (zettelID)
 import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Meta ()
+import Neuron.Config.Type (Config(..))
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -52,11 +53,15 @@ newZettelFile NewCommand {..} = do
     Left e -> die $ show e
     Right zid -> do
       notesDir <- Rib.ribInputDir
-      let zettelFile = zettelIDSourceFileName zid format
+      defaultFormat <- maybe (fail "Cannot pick default format: neuron configuration does not specify any formats") pure $ do
+        (_, fmt) <- viaNonEmpty head $ formats config
+        formatDescToZettelFormat fmt
+      let zettelFormat = fromMaybe defaultFormat format
+          zettelFile = zettelIDSourceFileName zid zettelFormat
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-
           bool (pure showAction) mkEditActionFromEnv edit
-        writeFileText (notesDir </> zettelFile) $ defaultZettelContent format day title
+        writeFileText (notesDir </> zettelFile) $ defaultZettelContent zettelFormat day title
         fileAction notesDir zettelFile
   where
     mkEditActionFromEnv :: IO (FilePath -> FilePath -> IO ())

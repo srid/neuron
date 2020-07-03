@@ -113,10 +113,8 @@ loadZettelkasten ::
     )
 loadZettelkasten config = do
   formatRules <- forM (formats config) $ \(pat, fmt) -> do
-    format <- case fmt of
-      "md" -> pure ZettelFormat_Markdown
-      "org" -> pure ZettelFormat_Org
-      _ -> fail $ "Unrecognized format: " <> toString fmt
+    format <- maybe (fail $ "Unrecognized format: " <> toString fmt) pure
+      $ formatDescToZettelFormat fmt
     pure (pat, format)
   filesPerFormat <- forM formatRules $ \(filePattern, format) -> do
     -- REVIEW make formats :: [([FilePattern], Format)] instead of [(FilePattern, Format)]?
