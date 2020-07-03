@@ -59,26 +59,30 @@ queryFromURILink (URILink linkText uri) =
       -- First, we expect that this is inside <..> (so same link text as link)
       guard angleBracketLink
       -- Then, non-relevant parts of the URI should be empty
-      guard
-        `mapM_` [ URI.uriAuthority uri == Left False,
-                  URI.uriFragment uri == Nothing
-                ]
+      guard $ URI.uriFragment uri == Nothing
       let mconn =
             if hasQueryFlag [queryKey|cf|] uri
               then Just OrdinaryConnection
               else Nothing
+          noAuth = guard $ URI.uriAuthority uri == Left False
       case fmap URI.unRText (URI.uriScheme uri) of
         Just "z" -> do
           fmap snd (URI.uriPath uri) >>= \case
             (URI.unRText -> "zettel") :| [URI.unRText -> path] -> do
+              noAuth
               zid <- rightToMaybe $ parseZettelID' path
               pure $ Some $ ZettelQuery_ZettelByID zid mconn
             (URI.unRText -> "zettels") :| [] -> do
+              noAuth
               pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns "tag") mconn queryView
             (URI.unRText -> "tags") :| [] -> do
+              noAuth
               pure $ Some $ ZettelQuery_Tags (tagPatterns "filter")
-            _ ->
-              Nothing
+            (URI.unRText -> path) :| []
+              | Right zid <- parseZettelID' path -> do
+                guard $ URI.isPathAbsolute uri
+                pure $ Some $ ZettelQuery_ZettelByID zid mconn
+            _ -> Nothing
         Just _ -> do
           Nothing
         Nothing -> do

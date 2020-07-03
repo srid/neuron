@@ -84,6 +84,9 @@ shortLinks = do
     it "even with ?cf" $ do
       queryFromURILink (shortLink "foo-bar?cf")
         `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (parseZettelID "foo-bar") (Just OrdinaryConnection))
+    it "parses prefixed short link" $ do
+      queryFromURILink (shortLink "z:/foo-bar")
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (parseZettelID "foo-bar") Nothing)
     it "z:zettels" $ do
       queryFromURILink (shortLink "z:zettels")
         `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelsByTag [] Nothing def)
