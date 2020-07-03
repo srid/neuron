@@ -21,7 +21,7 @@ import Control.Monad.Combinators (manyTill)
 import Control.Monad.Except
 import qualified Data.YAML as YAML
 import Neuron.Orphans ()
-import Neuron.Zettelkasten.Zettel.ParseError
+import Neuron.Zettelkasten.Zettel.ParseError (ZettelParseError (..))
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M

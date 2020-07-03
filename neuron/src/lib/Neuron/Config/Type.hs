@@ -14,9 +14,9 @@ module Neuron.Config.Type
   )
 where
 
+import Data.Aeson
 import Relude
 import System.FilePattern
-import Data.Aeson
 
 configFile :: FilePath
 configFile = "neuron.dhall"

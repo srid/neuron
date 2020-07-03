@@ -19,9 +19,6 @@ import Relude
 import Text.Pandoc.Definition (Pandoc)
 import Text.Pandoc.Util
 
--- | Parse a markdown-formatted zettel
---
--- In future this will support other formats supported by Pandoc.
 parseZettel ::
   ZettelFormat ->
   ZettelReader ->
