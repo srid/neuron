@@ -1,13 +1,16 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Config.Type
   ( Config (..),
     configFile,
+    defaultConfig,
+    mergeWithDefault,
   )
 where
 
@@ -15,6 +18,7 @@ import Dhall
 import Neuron.Zettelkasten.Zettel.Format
 import Relude hiding (bool, maybe)
 import System.FilePattern
+import Data.Aeson
 
 configFile :: FilePath
 configFile = "neuron.dhall"
@@ -35,6 +39,7 @@ data Config = Config
     siteTitle :: Text,
     theme :: Text
   }
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
 instance FromDhall Config where
   autoWith opts =
@@ -58,4 +63,28 @@ instance FromDhall Config where
           (,) <$> (fmap toString $ field "pattern" strictText)
             <*> field "format" formatDecoder
 
-deriving instance Generic Config
+defaultConfig :: Text
+defaultConfig =
+  "{ siteTitle =\
+  \   \"My Zettelkasten\" \
+  \, author =\
+  \   None Text\
+  \, siteBaseUrl =\
+  \   None Text\
+  \, editUrl =\
+  \   None Text\
+  \, theme =\
+  \   \"blue\"\
+  \, aliases =\
+  \   [] : List Text\
+  \, mathJaxSupport =\
+  \   True\
+  \, minVersion =\
+  \   \"0.5\" \
+  \}"
+
+-- Dhall's combine operator (`//`) allows us to merge two records,
+-- effectively merging the record with defaults with the user record.
+mergeWithDefault :: Text -> Text
+mergeWithDefault userConfig =
+  defaultConfig <> " // " <> userConfig

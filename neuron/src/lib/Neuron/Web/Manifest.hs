@@ -67,7 +67,17 @@ renderManifest Manifest {..} = do
     defaultFaviconUrl =
       "https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg"
     linkRel rel path =
-      elAttr "link" ("rel" =: rel <> "href" =: toText path) blank
+      -- crossorigin="use-credentials"
+      elAttr
+        "link"
+        ( "rel" =: rel
+            <> "href" =: toText path
+            -- The use-credentials value must be used when fetching a manifest that requires credentials, even if the file is from the same origin.
+            -- cf. https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/crossorigin
+            -- cf. https://thatemil.com/blog/2018/02/21/pwa-basic-auth/
+            <> (if rel == "manifest" then "crossorigin" =: "use-credentials" else mempty)
+        )
+        blank
 
 manifestPatterns :: [FilePath]
 manifestPatterns =

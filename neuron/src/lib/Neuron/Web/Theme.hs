@@ -4,8 +4,17 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | HTML & CSS
-module Neuron.Web.Theme where
+module Neuron.Web.Theme
+  ( Theme (..),
+    mkTheme,
+    themeCss,
+    semanticColor,
+    themeIdentifier,
+  )
+where
 
+import Clay ((?), Css, rgb, rgba)
+import qualified Clay as C
 import Data.Text (toLower)
 import Relude
 
@@ -28,6 +37,49 @@ data Theme
   | Grey
   | Black
   deriving (Eq, Show, Enum, Bounded)
+
+-- | Make Theme from Semantic UI color name
+mkTheme :: Text -> Theme
+mkTheme s =
+  fromMaybe (error $ "Unsupported theme: " <> s)
+    $ listToMaybe
+    $ catMaybes
+    $ flip fmap [minBound .. maxBound]
+    $ \theme ->
+      if s == semanticColor theme
+        then Just theme
+        else Nothing
+
+-- | Convert Theme to Semantic UI color name
+semanticColor :: Theme -> Text
+semanticColor = toLower . show @Text
+
+themeIdentifier :: Theme -> String
+themeIdentifier theme =
+  "neuron-theme-default-" <> toString (semanticColor theme)
+
+themeCss :: Css
+themeCss = do
+  forM_ [minBound .. maxBound] $ \(theme :: Theme) -> do
+    let selector = fromString $ "div#" <> themeIdentifier theme
+        textColor = withRgb theme rgb
+        backgroundColor = withRgb theme rgba 0.1
+    selector ? do
+      -- Zettel heading's background color
+      ".zettel-content h1" ? do
+        C.backgroundColor backgroundColor
+      -- Zettel links
+      "span.zettel-link-container span.zettel-link a" ? do
+        C.color textColor
+      "span.zettel-link-container span.zettel-link a:hover" ? do
+        C.color C.white
+        C.backgroundColor textColor
+      -- Deemphasized items in uptree; restore link colors
+      ".deemphasized:hover" ? do
+        "div.item a:hover" ? C.important (C.color textColor)
+      -- Zettel footnote's top marging line
+      "div#footnotes" ? do
+        C.borderTopColor textColor
 
 withRgb :: Theme -> (Integer -> Integer -> Integer -> a) -> a
 withRgb theme f =
@@ -58,22 +110,3 @@ withRgb theme f =
       f 118 118 118
     Black ->
       f 27 28 29
-
--- | Convert Theme to Semantic UI color name
-semanticColor :: Theme -> Text
-semanticColor = toLower . show @Text
-
--- | Make Theme from Semantic UI color name
-mkTheme :: Text -> Theme
-mkTheme s =
-  fromMaybe (error $ "Unsupported theme: " <> s)
-    $ listToMaybe
-    $ catMaybes
-    $ flip fmap [minBound .. maxBound]
-    $ \theme ->
-      if s == semanticColor theme
-        then Just theme
-        else Nothing
-
-defaultTheme :: Theme
-defaultTheme = Teal
