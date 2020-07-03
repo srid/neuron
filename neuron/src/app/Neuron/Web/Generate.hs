@@ -31,7 +31,7 @@ import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Format
@@ -81,7 +81,7 @@ generateSite config writeHtmlRoute' = do
         ZettelError_QueryErrors queryErrs ->
           showQueryError <$> queryErrs
         ZettelError_DuplicateIDs filePaths ->
-          ("Multiple zettels have the same ID: " <> T.intercalate ", " (fmap toText filePaths))
+          ("Multiple zettels have the same ID: " <> T.intercalate ", " (fmap toText $ toList filePaths))
             :| []
   pure zettelGraph
 
@@ -134,16 +134,21 @@ loadZettelkastenFrom config files = do
       _ -> fail $ "Unrecognized format: " <> toString fmt
     pure (pat, format)
   notesDir <- Rib.ribInputDir
-  filesPerFormat <- forM files $ \relPath -> do
-    let absPath = notesDir </> relPath
-        extensionError = fail $ "Unsupported extension: " <> toString relPath
-    need [absPath]
-    format <- maybe extensionError pure $ getFileFormat formatRules relPath
-    s <- decodeUtf8With lenientDecode <$> readFileBS absPath
-    pure (format, (relPath, s))
+  (duplicates, filesPerFormat) <- fmap partitionEithers $ forM (Map.assocs $ groupBy takeBaseName $ sort files) $ \case
+    (_, relPath :| []) -> do
+      let absPath = notesDir </> relPath
+          extensionError = fail $ "Unsupported extension: " <> toString relPath
+      need [absPath]
+      format <- maybe extensionError pure $ getFileFormat formatRules relPath
+      s <- decodeUtf8With lenientDecode <$> readFileBS absPath
+      pure $ Right (format, (relPath, s))
+    (baseName, duplicates) -> do
+      let zid = parseZettelID (toText baseName)
+      pure $ Left $ Map.singleton zid $ ZettelError_DuplicateIDs duplicates
   let groupedFiles :: Map.Map ZettelFormat [(FilePath, Text)]
       groupedFiles = fmap snd . toList <$> groupBy fst filesPerFormat
-  pure $ G.buildZettelkasten (first readerForZettelFormat <$> Map.assocs groupedFiles)
+      (g, zs, errs) = G.buildZettelkasten (first readerForZettelFormat <$> Map.assocs groupedFiles)
+  pure (g, zs, Map.unions $ errs : duplicates)
 
 getFileFormat :: [(FilePattern, ZettelFormat)] -> FilePath -> Maybe ZettelFormat
 getFileFormat [] _ = Nothing

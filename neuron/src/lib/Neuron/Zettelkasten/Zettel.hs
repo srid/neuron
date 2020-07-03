@@ -84,7 +84,7 @@ type family ContentError c where
 data ZettelError
   = ZettelError_ParseError ZettelParseError
   | ZettelError_QueryErrors (NonEmpty QueryError)
-  | ZettelError_DuplicateIDs [FilePath]
+  | ZettelError_DuplicateIDs (NonEmpty FilePath)
   deriving (Eq, Show, Generic, ToJSON)
 
 -- | Zettel without its content
