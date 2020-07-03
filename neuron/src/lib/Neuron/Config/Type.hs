@@ -14,8 +14,7 @@ module Neuron.Config.Type
   )
 where
 
-import Dhall
-import Relude hiding (bool, maybe)
+import Relude
 import System.FilePattern
 import Data.Aeson
 
