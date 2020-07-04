@@ -54,7 +54,7 @@ legacyLinks = do
             `shouldBe` zettelsByTag [] (ZettelsView def True)
         it "Handles ?linkTheme=withDate" $ do
           queryFromURILink (legacyLink $ withScheme "://search?linkTheme=withDate")
-            `shouldBe` zettelsByTag [] (ZettelsView (LinkView True) False)
+            `shouldBe` zettelsByTag [] (ZettelsView (LinkView_ShowDate) False)
   describe "Parse zettels by ID URI" $ do
     let zid = parseZettelID "1234567"
     it "parses z:/" $
