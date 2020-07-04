@@ -112,7 +112,6 @@ loadZettelkasten config = do
         readMaybe (toString fmt)
     pure (pat, format)
   filesPerFormat <- forM formatRules $ \(filePattern, format) -> do
-    -- REVIEW make formats :: [([FilePattern], Format)] instead of [(FilePattern, Format)]?
     (format,) <$> Rib.forEvery [filePattern] pure
   loadZettelkastenFrom filesPerFormat
 
