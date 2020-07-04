@@ -17,6 +17,9 @@ import Text.Pandoc.Readers.Org (readOrg)
 import Text.Pandoc.Util (getH1)
 import Prelude (lookup)
 
+-- REVIEW Use parseOrg :: ZettelReader?
+
+-- | Parse Org document, extracting the zettel metadata.
 parseOrg ::
   FilePath ->
   Text ->
@@ -27,6 +30,7 @@ parseOrg _ s =
     Right (Pandoc _ body) ->
       Right (extractMetadata body, Pandoc mempty body)
 
+-- | Extract metadata from the properties that are attached to the first headline
 extractMetadata :: [B.Block] -> Maybe Meta
 extractMetadata body = do
   ((_, _, properties), _) <- getH1 body

@@ -4,8 +4,7 @@ module Neuron.Reader where
 
 import Neuron.Reader.Markdown
 import Neuron.Reader.Org
-import Neuron.Reader.Type (ZettelFormat (..))
-import Neuron.Zettelkasten.Zettel (ZettelReader)
+import Neuron.Reader.Type
 
 readerForZettelFormat :: ZettelFormat -> ZettelReader
 readerForZettelFormat = \case

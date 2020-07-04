@@ -5,15 +5,20 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Reader.Type
-  ( ZettelFormat (..),
+  ( ZettelReader,
+    ZettelFormat (..),
     zettelFormatToExtension,
   )
 where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Neuron.Zettelkasten.Zettel.Meta
 import Relude
+import Text.Pandoc.Definition (Pandoc)
 import Text.Read
 import Prelude (show)
+
+type ZettelReader = FilePath -> Text -> Either Text (Maybe Meta, Pandoc)
 
 data ZettelFormat
   = ZettelFormat_Markdown

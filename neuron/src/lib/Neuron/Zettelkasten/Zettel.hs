@@ -33,7 +33,6 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
-import Neuron.Zettelkasten.Zettel.Meta
 import Relude hiding (show)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
@@ -66,8 +65,6 @@ data ZettelT content = Zettel
 
 newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
-
-type ZettelReader = FilePath -> Text -> Either Text (Maybe Meta, Pandoc)
 
 type family ContentError c where
 -- The list of queries that failed to parse.
