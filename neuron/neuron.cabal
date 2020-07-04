@@ -176,8 +176,6 @@ common app-common
       Neuron.Web.StructuredData
       Neuron.Reader
       Neuron.Reader.Org
-      Neuron.Reader.Markdown
-      Neuron.Reader.Type
       Neuron.Zettelkasten.ID.Scheme
       Paths_neuron
       Text.Megaparsec.Simple
