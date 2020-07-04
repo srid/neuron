@@ -31,6 +31,7 @@ data Config = Config
     author :: Maybe Text,
     editUrl :: Maybe Text,
     mathJaxSupport :: Bool,
+    -- TODO: This should use `NonEmpty`.
     formats :: [(FilePattern, Text)],
     minVersion :: Text,
     siteBaseUrl :: Maybe Text,
@@ -54,7 +55,7 @@ defaultConfig =
   \, aliases =\
   \   [] : List Text\
   \, formats =\
-  \   [ { _1 = \"*.md\", _2 = \"md\" } ]\
+  \   [ { _1 = \"*.md\", _2 = \"markdown\" } ]\
   \, mathJaxSupport =\
   \   True\
   \, minVersion =\
