@@ -19,13 +19,14 @@ data ZettelsView = ZettelsView
 
 type ZettelView = LinkView
 
-data LinkView = LinkView
-  { linkViewShowDate :: Bool
-  }
+data LinkView
+  = LinkView_Default
+  | LinkView_ShowDate
+  | LinkView_ShowID
   deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
 
 instance Default LinkView where
-  def = LinkView False
+  def = LinkView_Default
 
 instance Default ZettelsView where
   def = ZettelsView def False
