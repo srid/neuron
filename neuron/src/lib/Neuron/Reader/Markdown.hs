@@ -24,6 +24,8 @@ import Control.Monad.Combinators (manyTill)
 import Control.Monad.Except
 import qualified Data.YAML as YAML
 import Neuron.Orphans ()
+import Neuron.Reader.Type (ZettelReader)
+import Neuron.Zettelkasten.Zettel.Meta (Meta)
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
@@ -38,12 +40,7 @@ import Text.Show
 -- We are not using the Pandoc AST "metadata" field (as it is not clear whether
 -- we actually need it), and instead directly decoding the metadata as Haskell
 -- object.
-parseMarkdown ::
-  forall meta.
-  YAML.FromYAML meta =>
-  FilePath ->
-  Text ->
-  Either Text (Maybe meta, Pandoc)
+parseMarkdown :: ZettelReader
 parseMarkdown fn s = do
   (metaVal, markdown) <-
     first ("Unable to determine YAML region: " <>) $
@@ -56,7 +53,7 @@ parseMarkdown fn s = do
   where
     -- NOTE: HsYAML parsing is rather slow due to its use of DList.
     -- See https://github.com/haskell-hvr/HsYAML/issues/40
-    parseMeta :: FilePath -> Text -> Either Text meta
+    parseMeta :: FilePath -> Text -> Either Text Meta
     parseMeta n v = do
       let raw = encodeUtf8 v
       let mkError (loc, emsg) = toText $ n <> ":" <> YAML.prettyPosWithSource loc raw " error" <> emsg

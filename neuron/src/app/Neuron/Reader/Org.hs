@@ -10,6 +10,7 @@ module Neuron.Reader.Org where
 
 import qualified Data.Map as Map
 import Data.TagTree (Tag (Tag))
+import Neuron.Reader.Type (ZettelReader)
 import Neuron.Zettelkasten.Zettel.Meta (Meta (..), parseZettelDate)
 import Relude
 import Relude.Extra.Map (lookup)
@@ -18,13 +19,8 @@ import Text.Pandoc.Definition hiding (Meta (..))
 import Text.Pandoc.Readers.Org (readOrg)
 import Text.Pandoc.Util (getH1)
 
--- REVIEW Use parseOrg :: ZettelReader?
-
 -- | Parse Org document, extracting the zettel metadata.
-parseOrg ::
-  FilePath ->
-  Text ->
-  Either Text (Maybe Meta, Pandoc)
+parseOrg :: ZettelReader
 parseOrg _ s = do
   doc <- first show $ runPure $ readOrg def s
   meta <- extractMetadata doc
