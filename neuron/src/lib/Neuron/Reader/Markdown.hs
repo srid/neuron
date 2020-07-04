@@ -22,9 +22,10 @@ import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
 import Control.Monad.Except
+import Data.Tagged (Tagged (..))
 import qualified Data.YAML as YAML
 import Neuron.Orphans ()
-import Neuron.Reader.Type (ZettelReader)
+import Neuron.Reader.Type (ZettelParseError, ZettelReader)
 import Neuron.Zettelkasten.Zettel.Meta (Meta)
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
@@ -43,20 +44,21 @@ import Text.Show
 parseMarkdown :: ZettelReader
 parseMarkdown fn s = do
   (metaVal, markdown) <-
-    first ("Unable to determine YAML region: " <>) $
+    first (Tagged . ("Unable to determine YAML region: " <>)) $
       partitionMarkdown fn s
   v <-
-    first (toText . show) $
+    first (Tagged . toText . show) $
       commonmarkPandocWith neuronSpec fn markdown
   meta <- traverse (parseMeta fn) metaVal
   pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
   where
     -- NOTE: HsYAML parsing is rather slow due to its use of DList.
     -- See https://github.com/haskell-hvr/HsYAML/issues/40
-    parseMeta :: FilePath -> Text -> Either Text Meta
+    parseMeta :: FilePath -> Text -> Either ZettelParseError Meta
     parseMeta n v = do
       let raw = encodeUtf8 v
-      let mkError (loc, emsg) = toText $ n <> ":" <> YAML.prettyPosWithSource loc raw " error" <> emsg
+      let mkError (loc, emsg) =
+            Tagged $ toText $ n <> ":" <> YAML.prettyPosWithSource loc raw " error" <> emsg
       first mkError $ YAML.decode1 raw
     -- Like commonmarkWith, but parses directly into the Pandoc AST.
     commonmarkPandocWith ::

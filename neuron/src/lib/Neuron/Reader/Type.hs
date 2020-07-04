@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
@@ -6,19 +7,23 @@
 
 module Neuron.Reader.Type
   ( ZettelReader,
+    ZettelParseError,
     ZettelFormat (..),
     zettelFormatToExtension,
   )
 where
 
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Tagged
 import Neuron.Zettelkasten.Zettel.Meta
 import Relude
 import Text.Pandoc.Definition (Pandoc)
 import Text.Read
 import Prelude (show)
 
-type ZettelReader = FilePath -> Text -> Either Text (Maybe Meta, Pandoc)
+type ZettelReader = FilePath -> Text -> Either ZettelParseError (Maybe Meta, Pandoc)
+
+type ZettelParseError = Tagged "ZettelParserError" Text
 
 data ZettelFormat
   = ZettelFormat_Markdown

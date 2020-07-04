@@ -70,7 +70,7 @@ type family ContentError c where
 -- The list of queries that failed to parse.
   ContentError Pandoc = [QueryParseError]
 -- When a zettel fails to parse, we use its raw text along with its parse error.
-  ContentError Text = Text
+  ContentError Text = ZettelParseError
 -- When working with zettel sans content, we gather both kinds of errors (above)
   ContentError MetadataOnly = Either (ContentError Text) (ContentError Pandoc)
 
@@ -79,7 +79,7 @@ type family ContentError c where
 -- NOTE: Unlike `ContentError MetadataOnly` this also includes QueryResultError
 -- (which can be determined only after *evaluating* the queries).
 data ZettelError
-  = ZettelError_ParseError Text
+  = ZettelError_ParseError ZettelParseError
   | ZettelError_QueryErrors (NonEmpty QueryError)
   | ZettelError_AmbiguousFiles (NonEmpty FilePath)
   deriving (Eq, Show, Generic, ToJSON, FromJSON)

@@ -19,6 +19,7 @@ where
 
 import Data.FileEmbed (embedStringFile)
 import qualified Data.Map.Strict as Map
+import Data.Tagged (untag)
 import qualified Data.Text as T
 import Data.Traversable
 import Development.Shake (Action, need)
@@ -73,7 +74,7 @@ generateSite config writeHtmlRoute' = do
   forM_ (Map.toList errors) $ \(zid, err) -> do
     reportError (Z.Route_Zettel zid) $
       case err of
-        ZettelError_ParseError parseErr ->
+        ZettelError_ParseError (untag -> parseErr) ->
           parseErr :| []
         ZettelError_QueryErrors queryErrs ->
           showQueryError <$> queryErrs
