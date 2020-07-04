@@ -21,7 +21,6 @@ import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Parser
 import Relude
 import Relude.Extra.Group
-import System.FilePath
 
 buildZettelkasten ::
   [(ZettelFormat, ZettelReader, [(FilePath, Text)])] ->
@@ -30,26 +29,30 @@ buildZettelkasten ::
     Map ZettelID ZettelError
   )
 buildZettelkasten filesPerFormat =
-  let allFiles = concatMap (\(_, _, filesWithContent) -> fmap fst filesWithContent) filesPerFormat
-      groupedFiles = groupBy (toText . takeBaseName) allFiles
-      duplicates = Map.filter (\files -> length files > 1) groupedFiles
-      filterUnique (format, zreader, filesWithContent) =
-        ( format,
-          zreader,
-          filter
-            (\(file, _) -> Map.notMember (toText $ takeBaseName file) duplicates)
-            filesWithContent
-        )
-      zs = parseZettels $ fmap filterUnique filesPerFormat
+  let filesPerFormatAndId = annotateIDs filesPerFormat
+      allFiles = concatMap getFilesWithID filesPerFormatAndId
+      filesPerID = groupByID allFiles
+      duplicates = Map.filter (\ids -> length ids > 1) filesPerID
+      isUnique entry = Map.notMember (getID entry) duplicates
+      zs = parseZettels $ fmap (mapThird $ filter isUnique) filesPerFormatAndId
       parseErrors = Map.fromList $ lefts zs <&> (zettelID &&& zettelError)
       (g, queryErrors) = mkZettelGraph $ fmap sansContent zs
       errors =
         Map.unions
           [ fmap ZettelError_ParseError parseErrors,
             fmap ZettelError_QueryErrors queryErrors,
-            fmap ZettelError_AmbiguousFiles $ Map.mapKeys parseZettelID duplicates
+            fmap ZettelError_AmbiguousFiles duplicates
           ]
    in (g, zs, errors)
+  where
+    mapThird f (x, y, z) = (x, y, f z)
+    getID (zid, _, _) = zid
+    getPath (_, path, _) = path
+    getFilesWithID (_, _, filesWithID) = filesWithID
+    addIDToEntry (path, s) = getZettelID path <&> (,path,s)
+    annotateIDs = fmap $ mapThird $ mapMaybe addIDToEntry
+    groupByID :: [(ZettelID, FilePath, Text)] -> Map.Map ZettelID (NonEmpty FilePath)
+    groupByID files = fmap getPath <$> groupBy getID files
 
 -- | Build the Zettelkasten graph from a list of zettels
 --
