@@ -7,7 +7,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Markdown
+module Neuron.Reader.Markdown
   ( parseMarkdown,
   )
 where

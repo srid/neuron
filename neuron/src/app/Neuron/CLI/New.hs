@@ -20,11 +20,11 @@ import qualified Data.YAML as YAML
 import Development.Shake (Action)
 import Neuron.CLI.Types
 import Neuron.Config.Type (Config (..))
+import Neuron.Reader.Type (ZettelFormat (..))
 import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
-import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Meta ()
 import Options.Applicative
 import Relude
@@ -53,7 +53,7 @@ newZettelFile NewCommand {..} config = do
       notesDir <- Rib.ribInputDir
       defaultFormat <- maybe (fail "Cannot pick default format: neuron configuration does not specify any formats") pure $ do
         (_, fmt) <- viaNonEmpty head $ formats config
-        formatDescToZettelFormat fmt
+        readMaybe $ toString fmt
       let zettelFormat = fromMaybe defaultFormat format
           zettelFile = zettelIDSourceFileName zid zettelFormat
       liftIO $ do

@@ -8,8 +8,8 @@ where
 
 import qualified Data.Aeson as Aeson
 import Data.Time.Calendar
+import qualified Neuron.Reader.Type as Z
 import qualified Neuron.Zettelkasten.ID as Z
-import qualified Neuron.Zettelkasten.Zettel.Format as Z
 import Relude
 import Test.Hspec
 

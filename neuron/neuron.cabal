@@ -73,7 +73,8 @@ library
   hs-source-dirs: src/lib
   exposed-modules:
     Neuron.Config.Type
-    Neuron.Markdown
+    Neuron.Reader.Markdown
+    Neuron.Reader.Type
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
@@ -173,8 +174,10 @@ common app-common
       Neuron.Web.Generate.Route
       Neuron.Web.View
       Neuron.Web.StructuredData
-      Neuron.Org
-      Neuron.Markdown
+      Neuron.Reader
+      Neuron.Reader.Org
+      Neuron.Reader.Markdown
+      Neuron.Reader.Type
       Neuron.Zettelkasten.ID.Scheme
       Paths_neuron
       Text.Megaparsec.Simple

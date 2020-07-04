@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Org where
+module Neuron.Reader.Org where
 
 import Data.TagTree
 import Neuron.Zettelkasten.Zettel.Meta (Meta (..), parseZettelDate)

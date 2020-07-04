@@ -21,6 +21,7 @@ import Data.Default (def)
 import Data.Some
 import Data.TagTree (mkTagPattern)
 import Data.Time
+import Neuron.Reader.Type (ZettelFormat)
 import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
@@ -28,7 +29,6 @@ import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Query.Graph as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
-import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Meta (parseZettelDate)
 import Options.Applicative
 import Relude
@@ -106,7 +106,7 @@ commandParser defaultNotesDir today = do
       title <- optional $ strArgument (metavar "TITLE" <> help "Title of the new Zettel")
       format <-
         optional
-          $ option formatReader
+          $ option auto
           $ metavar "FORMAT"
             <> short 'f'
             <> long "format"
@@ -187,8 +187,6 @@ commandParser defaultNotesDir today = do
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
       eitherReader $ first show . parseZettelID' . toText
-    formatReader :: ReadM ZettelFormat
-    formatReader = maybeReader (formatDescToZettelFormat . toText)
     queryReader :: ReadM (Some Q.ZettelQuery)
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of

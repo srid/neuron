@@ -24,7 +24,7 @@ import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
 import qualified Data.Text as T
 import Data.Time
-import Neuron.Zettelkasten.Zettel.Format
+import Neuron.Reader.Type
 import Relude
 import System.FilePath
 import qualified Text.Megaparsec as M

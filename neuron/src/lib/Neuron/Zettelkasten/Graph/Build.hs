@@ -11,13 +11,13 @@ where
 import Control.Monad.Writer (runWriterT)
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
+import Neuron.Reader.Type
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error (QueryError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Parser
 import Relude
 import Relude.Extra.Group

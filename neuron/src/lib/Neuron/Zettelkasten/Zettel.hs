@@ -28,11 +28,11 @@ import Data.Some
 import Data.TagTree (Tag)
 import Data.TagTree (TagPattern (..))
 import Data.Time.Calendar
+import Neuron.Reader.Type
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
-import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Meta
 import Relude hiding (show)
 import Text.Pandoc.Definition (Pandoc (..))

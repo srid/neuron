@@ -24,8 +24,8 @@ import Data.Traversable
 import Development.Shake (Action, need)
 import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Config.Type (Config (..))
-import Neuron.Markdown
-import Neuron.Org
+import Neuron.Reader (readerForZettelFormat)
+import Neuron.Reader.Type (ZettelFormat)
 import Neuron.Version (neuronVersion, olderThan)
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
@@ -34,7 +34,6 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.Zettel.Format
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -99,11 +98,6 @@ reportError route errors = do
         go (x : xs) =
           x : fmap (toText . (take n (repeat ' ') <>) . toString) xs
 
-readerForZettelFormat :: ZettelFormat -> ZettelReader
-readerForZettelFormat = \case
-  ZettelFormat_Markdown -> parseMarkdown
-  ZettelFormat_Org -> parseOrg
-
 loadZettelkasten ::
   Config ->
   Action
@@ -115,7 +109,7 @@ loadZettelkasten config = do
   formatRules <- forM (formats config) $ \(pat, fmt) -> do
     format <-
       maybe (fail $ "Unrecognized format: " <> toString fmt) pure $
-        formatDescToZettelFormat fmt
+        readMaybe (toString fmt)
     pure (pat, format)
   filesPerFormat <- forM formatRules $ \(filePattern, format) -> do
     -- REVIEW make formats :: [([FilePattern], Format)] instead of [(FilePattern, Format)]?

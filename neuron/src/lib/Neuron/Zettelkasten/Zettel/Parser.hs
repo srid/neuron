@@ -8,11 +8,11 @@ module Neuron.Zettelkasten.Zettel.Parser where
 import Control.Monad.Writer
 import Data.Some
 import qualified Data.Text as T
+import Neuron.Reader.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.Zettel.Format
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Reflex.Dom.Pandoc.URILink (queryURILinks)
 import Relude
