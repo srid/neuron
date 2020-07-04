@@ -126,7 +126,7 @@ renderErrors errors = do
           ZettelError_AmbiguousFiles filePaths ->
             el "ul" $ do
               forM_ filePaths $ \fp ->
-                el "li" $ text $ toText fp
+                el "li" $ el "tt" $ text $ toText fp
 
 renderForest ::
   DomBuilder t m =>
