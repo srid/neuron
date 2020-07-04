@@ -85,7 +85,7 @@ data ZettelError
   = ZettelError_ParseError ZettelParseError
   | ZettelError_QueryErrors (NonEmpty QueryError)
   | ZettelError_AmbiguousFiles (NonEmpty FilePath)
-  deriving (Eq, Show, Generic, ToJSON)
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Zettel without its content
 type Zettel = ZettelT MetadataOnly
