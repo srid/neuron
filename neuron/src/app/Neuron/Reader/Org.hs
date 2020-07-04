@@ -36,9 +36,11 @@ extractMetadata :: [B.Block] -> Either Text (Maybe Meta)
 extractMetadata body
   | Just ((_, _, properties), _) <- getH1 body,
     not (null properties) = do
-    date <- traverse parseZettelDate $ lookup "date" properties
+    date <- traverse parseDate $ lookup "date" properties
     -- title is now deprecated
     let title = Nothing
         tags = fmap Tag . words <$> lookup "tags" properties
     pure $ Just Meta {..}
   | otherwise = pure Nothing
+  where
+    parseDate date = maybeToRight ("Invalid date format: " <> date) $ parseZettelDate date

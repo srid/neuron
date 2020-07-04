@@ -74,7 +74,7 @@ generateSite config writeHtmlRoute' = do
     reportError (Z.Route_Zettel zid) $
       case err of
         ZettelError_ParseError parseErr ->
-          show parseErr :| []
+          parseErr :| []
         ZettelError_QueryErrors queryErrs ->
           showQueryError <$> queryErrs
         ZettelError_AmbiguousFiles filePaths ->

@@ -46,14 +46,12 @@ parseMarkdown ::
   Either Text (Maybe meta, Pandoc)
 parseMarkdown fn s = do
   (metaVal, markdown) <-
-    first (toText . show) $
+    first ("Unable to determine YAML region: " <>) $
       partitionMarkdown fn s
   v <-
     first (toText . show) $
       commonmarkPandocWith neuronSpec fn markdown
-  meta <-
-    first ("Unable to determine YAML region: " <>) $
-      traverse (parseMeta fn) metaVal
+  meta <- traverse (parseMeta fn) metaVal
   pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
   where
     -- NOTE: HsYAML parsing is rather slow due to its use of DList.
