@@ -9,7 +9,6 @@ module Neuron.Org where
 
 import Data.TagTree
 import Neuron.Zettelkasten.Zettel.Meta (Meta (..), parseZettelDate)
-import Neuron.Zettelkasten.Zettel.ParseError (ZettelParseError (..))
 import Relude
 import Text.Pandoc (def, runPure)
 import qualified Text.Pandoc.Builder as B
@@ -21,10 +20,10 @@ import Prelude (lookup)
 parseOrg ::
   FilePath ->
   Text ->
-  Either ZettelParseError (Maybe Meta, Pandoc)
+  Either Text (Maybe Meta, Pandoc)
 parseOrg _ s =
   case runPure (readOrg def s) of
-    Left e -> Left $ ZettelParseError_InvalidOrg (show e)
+    Left e -> Left $ show e
     Right (Pandoc _ body) ->
       Right (extractMetadata body, Pandoc mempty body)
 

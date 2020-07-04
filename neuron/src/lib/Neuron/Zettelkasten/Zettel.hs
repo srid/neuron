@@ -34,7 +34,6 @@ import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel.Format
 import Neuron.Zettelkasten.Zettel.Meta
-import Neuron.Zettelkasten.Zettel.ParseError
 import Relude hiding (show)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
@@ -68,13 +67,13 @@ data ZettelT content = Zettel
 newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
 
-type ZettelReader = FilePath -> Text -> Either ZettelParseError (Maybe Meta, Pandoc)
+type ZettelReader = FilePath -> Text -> Either Text (Maybe Meta, Pandoc)
 
 type family ContentError c where
 -- The list of queries that failed to parse.
   ContentError Pandoc = [QueryParseError]
 -- When a zettel fails to parse, we use its raw text along with its parse error.
-  ContentError Text = ZettelParseError
+  ContentError Text = Text
 -- When working with zettel sans content, we gather both kinds of errors (above)
   ContentError MetadataOnly = Either (ContentError Text) (ContentError Pandoc)
 
@@ -83,7 +82,7 @@ type family ContentError c where
 -- NOTE: Unlike `ContentError MetadataOnly` this also includes QueryResultError
 -- (which can be determined only after *evaluating* the queries).
 data ZettelError
-  = ZettelError_ParseError ZettelParseError
+  = ZettelError_ParseError Text
   | ZettelError_QueryErrors (NonEmpty QueryError)
   | ZettelError_AmbiguousFiles (NonEmpty FilePath)
   deriving (Eq, Show, Generic, ToJSON, FromJSON)

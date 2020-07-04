@@ -7,7 +7,10 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Markdown where
+module Neuron.Markdown
+  ( parseMarkdown,
+  )
+where
 
 import qualified Commonmark as CM
 import qualified Commonmark.Blocks as CM
@@ -21,7 +24,6 @@ import Control.Monad.Combinators (manyTill)
 import Control.Monad.Except
 import qualified Data.YAML as YAML
 import Neuron.Orphans ()
-import Neuron.Zettelkasten.Zettel.ParseError (ZettelParseError (..))
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
@@ -41,16 +43,16 @@ parseMarkdown ::
   YAML.FromYAML meta =>
   FilePath ->
   Text ->
-  Either ZettelParseError (Maybe meta, Pandoc)
+  Either Text (Maybe meta, Pandoc)
 parseMarkdown fn s = do
   (metaVal, markdown) <-
-    first ZettelParseError_PartitionError $
+    first (toText . show) $
       partitionMarkdown fn s
   v <-
-    first (ZettelParseError_InvalidMarkdown . toText . show) $
+    first (toText . show) $
       commonmarkPandocWith neuronSpec fn markdown
   meta <-
-    first ZettelParseError_InvalidYAML $
+    first ("Unable to determine YAML region: " <>) $
       traverse (parseMeta fn) metaVal
   pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
   where
