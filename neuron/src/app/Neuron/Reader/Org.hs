@@ -27,15 +27,18 @@ parseOrg ::
 parseOrg _ s =
   case runPure (readOrg def s) of
     Left e -> Left $ show e
-    Right (Pandoc _ body) ->
-      Right (extractMetadata body, Pandoc mempty body)
+    Right (Pandoc _ body) -> do
+      meta <- extractMetadata body
+      pure (meta, Pandoc mempty body)
 
 -- | Extract metadata from the properties that are attached to the first headline
-extractMetadata :: [B.Block] -> Maybe Meta
-extractMetadata body = do
-  ((_, _, properties), _) <- getH1 body
-  date <- parseZettelDate <$> lookup "date" properties
-  -- title is now deprecated
-  let title = Nothing
-      tags = fmap Tag . words <$> lookup "tags" properties
-  pure $ Meta {..}
+extractMetadata :: [B.Block] -> Either Text (Maybe Meta)
+extractMetadata body
+  | Just ((_, _, properties), _) <- getH1 body,
+    not (null properties) = do
+    date <- traverse parseZettelDate $ lookup "date" properties
+    -- title is now deprecated
+    let title = Nothing
+        tags = fmap Tag . words <$> lookup "tags" properties
+    pure $ Just Meta {..}
+  | otherwise = pure Nothing
