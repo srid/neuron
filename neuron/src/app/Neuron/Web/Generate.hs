@@ -133,5 +133,4 @@ loadZettelkastenFrom filesPerFormat = do
       need [absPath]
       s <- decodeUtf8With lenientDecode <$> readFileBS absPath
       pure (relPath, s)
-  let (g, zs, errs) = G.buildZettelkasten filesWithContent
-  pure (g, zs, errs)
+  pure $ G.buildZettelkasten filesWithContent
