@@ -53,6 +53,7 @@ data ZettelQuery r where
 data ZettelT content = Zettel
   { zettelID :: ZettelID,
     zettelFormat :: ZettelFormat,
+    -- Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
     zettelTitle :: Text,
     zettelTitleInBody :: Bool,
