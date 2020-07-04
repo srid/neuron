@@ -1,21 +1,22 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Reader.Org where
 
-import Data.TagTree
+import qualified Data.Map as Map
+import Data.TagTree (Tag (Tag))
 import Neuron.Zettelkasten.Zettel.Meta (Meta (..), parseZettelDate)
 import Relude
+import Relude.Extra.Map (lookup)
 import Text.Pandoc (def, runPure)
-import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition hiding (Meta (..))
 import Text.Pandoc.Readers.Org (readOrg)
 import Text.Pandoc.Util (getH1)
-import Prelude (lookup)
 
 -- REVIEW Use parseOrg :: ZettelReader?
 
@@ -24,18 +25,15 @@ parseOrg ::
   FilePath ->
   Text ->
   Either Text (Maybe Meta, Pandoc)
-parseOrg _ s =
-  case runPure (readOrg def s) of
-    Left e -> Left $ show e
-    Right (Pandoc _ body) -> do
-      meta <- extractMetadata body
-      pure (meta, Pandoc mempty body)
+parseOrg _ s = do
+  doc <- first show $ runPure $ readOrg def s
+  meta <- extractMetadata doc
+  pure (meta, doc)
 
 -- | Extract metadata from the properties that are attached to the first headline
-extractMetadata :: [B.Block] -> Either Text (Maybe Meta)
-extractMetadata body
-  | Just ((_, _, properties), _) <- getH1 body,
-    not (null properties) = do
+extractMetadata :: Pandoc -> Either Text (Maybe Meta)
+extractMetadata doc
+  | Just ((_, _, Map.fromList -> properties), _) <- getH1 doc = do
     date <- traverse parseDate $ lookup "date" properties
     -- title is now deprecated
     let title = Nothing

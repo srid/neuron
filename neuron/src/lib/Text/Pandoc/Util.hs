@@ -25,7 +25,7 @@ getFirstParagraphText = listToMaybe . W.query go
       _ ->
         []
 
-getH1 :: W.Walkable B.Block b => b -> Maybe (B.Attr, [B.Inline])
+getH1 :: Pandoc -> Maybe (B.Attr, [B.Inline])
 getH1 = listToMaybe . W.query go
   where
     go :: B.Block -> [(B.Attr, [B.Inline])]
