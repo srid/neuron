@@ -97,7 +97,7 @@ renderErrors errors = do
   let severity = \case
         ZettelError_ParseError _ -> "negative"
         ZettelError_QueryErrors _ -> "warning"
-        ZettelError_DuplicateIDs _ -> "negative"
+        ZettelError_AmbiguousFiles _ -> "negative"
       errorMessageHeader zid = \case
         ZettelError_ParseError _ -> do
           text "Zettel "
@@ -107,7 +107,7 @@ renderErrors errors = do
           text "Zettel "
           QueryView.renderZettelLinkIDOnly zid
           text " has malformed queries"
-        ZettelError_DuplicateIDs _ -> do
+        ZettelError_AmbiguousFiles _ -> do
           text "More than one file define the same zettel ID ("
           QueryView.renderZettelLinkIDOnly zid
           text "):"
@@ -122,7 +122,7 @@ renderErrors errors = do
             el "ol" $ do
               forM_ queryErrors $ \qe ->
                 el "li" $ el "pre" $ text $ showQueryError qe
-          ZettelError_DuplicateIDs filePaths ->
+          ZettelError_AmbiguousFiles filePaths ->
             el "ul" $ do
               forM_ filePaths $ \fp ->
                 el "li" $ text $ toText fp

@@ -78,7 +78,7 @@ generateSite config writeHtmlRoute' = do
           show parseErr :| []
         ZettelError_QueryErrors queryErrs ->
           showQueryError <$> queryErrs
-        ZettelError_DuplicateIDs filePaths ->
+        ZettelError_AmbiguousFiles filePaths ->
           ("Multiple zettels have the same ID: " <> T.intercalate ", " (fmap toText $ toList filePaths))
             :| []
   pure zettelGraph

@@ -47,7 +47,7 @@ buildZettelkasten filesPerFormat =
         Map.unions
           [ fmap ZettelError_ParseError parseErrors,
             fmap ZettelError_QueryErrors queryErrors,
-            fmap ZettelError_DuplicateIDs $ Map.mapKeys parseZettelID duplicates
+            fmap ZettelError_AmbiguousFiles $ Map.mapKeys parseZettelID duplicates
           ]
    in (g, zs, errors)
 
