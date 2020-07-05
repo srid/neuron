@@ -107,15 +107,15 @@ loadZettelkasten ::
       Map ZettelID ZettelError
     )
 loadZettelkasten config = do
-  formatRules <- forM (formats config) $ \fmt -> do
-    -- TODO: propagate error to zindex
-    format <-
-      maybe (fail $ "Unrecognized format: " <> toString fmt) pure $
-        readMaybe (toString fmt)
-    pure (toString $ "*" <> zettelFormatToExtension format, format)
-  filesPerFormat <- forM formatRules $ \(filePattern, format) -> do
-    (format,) <$> Rib.forEvery [filePattern] pure
-  loadZettelkastenFrom filesPerFormat
+  zettelFiles <- forM (formats config) $ \s -> do
+    case readMaybe (toString s) of
+      Nothing ->
+        fail $ "Unrecognized format: " <> toString s
+      Just fmt -> do
+        let pat = toString $ "*" <> zettelFormatToExtension fmt
+        files <- Rib.forEvery [pat] pure
+        pure (fmt, files)
+  loadZettelkastenFrom zettelFiles
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFrom ::
@@ -125,11 +125,11 @@ loadZettelkastenFrom ::
       [ZettelC],
       Map ZettelID ZettelError
     )
-loadZettelkastenFrom filesPerFormat = do
+loadZettelkastenFrom fs = do
   notesDir <- Rib.ribInputDir
-  filesWithContent <- forM filesPerFormat $ \(format, files) -> do
+  filesWithContent <- forM fs $ \(format, files) -> do
     let zreader = readerForZettelFormat format
-    fmap (format,zreader,) $ forM files $ \relPath -> do
+    fmap ((format, zreader),) $ forM files $ \relPath -> do
       let absPath = notesDir </> relPath
       need [absPath]
       s <- decodeUtf8With lenientDecode <$> readFileBS absPath

@@ -23,34 +23,43 @@ import Relude
 import Relude.Extra.Group
 
 buildZettelkasten ::
-  [(ZettelFormat, ZettelReader, [(FilePath, Text)])] ->
+  [((ZettelFormat, ZettelReader), [(FilePath, Text)])] ->
   ( ZettelGraph,
     [ZettelC],
     Map ZettelID ZettelError
   )
-buildZettelkasten filesPerFormat =
+buildZettelkasten fs =
+  let (fs', dups) = detectAmbiguousZettelIDs fs
+      zs = parseZettels fs'
+      (g, queryErrors) = mkZettelGraph $ sansContent <$> zs
+      errors =
+        Map.unions
+          [ fmap ZettelError_ParseError
+              $ Map.fromList
+              $ lefts zs <&> (zettelID &&& zettelError),
+            fmap ZettelError_QueryErrors queryErrors,
+            fmap ZettelError_AmbiguousFiles dups
+          ]
+   in (g, zs, errors)
+
+detectAmbiguousZettelIDs ::
+  [(k, [(FilePath, Text)])] ->
+  ( [(k, [(ZettelID, FilePath, Text)])],
+    Map ZettelID (NonEmpty FilePath)
+  )
+detectAmbiguousZettelIDs filesPerFormat =
   let filesPerFormatAndId = annotateIDs filesPerFormat
-      allFiles = concatMap getFilesWithID filesPerFormatAndId
+      allFiles = concatMap snd filesPerFormatAndId
       filesPerID = groupByID allFiles
       duplicates = Map.filter (\ids -> length ids > 1) filesPerID
       isUnique entry = Map.notMember (getID entry) duplicates
-      zs = parseZettels $ fmap (mapThird $ filter isUnique) filesPerFormatAndId
-      parseErrors = Map.fromList $ lefts zs <&> (zettelID &&& zettelError)
-      (g, queryErrors) = mkZettelGraph $ fmap sansContent zs
-      errors =
-        Map.unions
-          [ fmap ZettelError_ParseError parseErrors,
-            fmap ZettelError_QueryErrors queryErrors,
-            fmap ZettelError_AmbiguousFiles duplicates
-          ]
-   in (g, zs, errors)
+      jesus = fmap (fmap $ filter isUnique) filesPerFormatAndId
+   in (jesus, duplicates)
   where
-    mapThird f (x, y, z) = (x, y, f z)
     getID (zid, _, _) = zid
     getPath (_, path, _) = path
-    getFilesWithID (_, _, filesWithID) = filesWithID
     addIDToEntry (path, s) = getZettelID path <&> (,path,s)
-    annotateIDs = fmap $ mapThird $ mapMaybe addIDToEntry
+    annotateIDs = fmap $ fmap $ mapMaybe addIDToEntry
     groupByID :: [(ZettelID, FilePath, Text)] -> Map.Map ZettelID (NonEmpty FilePath)
     groupByID files = fmap getPath <$> groupBy getID files
 

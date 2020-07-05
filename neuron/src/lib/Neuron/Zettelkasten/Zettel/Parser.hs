@@ -60,9 +60,9 @@ parseZettel format zreader fn zid s = do
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
-  [(ZettelFormat, ZettelReader, [(ZettelID, FilePath, Text)])] ->
+  [((ZettelFormat, ZettelReader), [(ZettelID, FilePath, Text)])] ->
   [ZettelC]
 parseZettels filesPerFormat =
-  flip concatMap filesPerFormat $ \(format, zreader, files) ->
+  flip concatMap filesPerFormat $ \((format, zreader), files) ->
     flip fmap files $ \(zid, path, s) ->
       parseZettel format zreader path zid s
