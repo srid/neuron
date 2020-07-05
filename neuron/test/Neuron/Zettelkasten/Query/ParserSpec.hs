@@ -87,6 +87,9 @@ shortLinks = do
     it "parses prefixed short link" $ do
       queryFromURILink (shortLink "z:/foo-bar")
         `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (parseZettelID "foo-bar") Nothing)
+    it "resolves ambiguity using absolute URI" $ do
+      queryFromURILink (shortLink "z:/tags")
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (parseZettelID "tags") Nothing)
     it "z:zettels" $ do
       queryFromURILink (shortLink "z:zettels")
         `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelsByTag [] Nothing def)

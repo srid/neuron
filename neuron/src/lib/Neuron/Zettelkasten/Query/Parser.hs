@@ -68,6 +68,10 @@ queryFromURILink (URILink linkText uri) =
       case fmap URI.unRText (URI.uriScheme uri) of
         Just "z" -> do
           fmap snd (URI.uriPath uri) >>= \case
+            (URI.unRText -> path) :| []
+              | Right zid <- parseZettelID' path,
+                URI.isPathAbsolute uri -> do
+                pure $ Some $ ZettelQuery_ZettelByID zid mconn
             (URI.unRText -> "zettel") :| [URI.unRText -> path] -> do
               noAuth
               zid <- rightToMaybe $ parseZettelID' path
@@ -78,10 +82,6 @@ queryFromURILink (URILink linkText uri) =
             (URI.unRText -> "tags") :| [] -> do
               noAuth
               pure $ Some $ ZettelQuery_Tags (tagPatterns "filter")
-            (URI.unRText -> path) :| []
-              | Right zid <- parseZettelID' path -> do
-                guard $ URI.isPathAbsolute uri
-                pure $ Some $ ZettelQuery_ZettelByID zid mconn
             _ -> Nothing
         Just _ -> do
           Nothing
