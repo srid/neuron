@@ -55,7 +55,7 @@ queryFromURILink (URILink linkText uri) =
         _ ->
           throwError $ QueryParseError_UnsupportedHost uri
     _ -> pure $ do
-      -- Initial support for the upcoming short links.
+      -- Modern links:
       -- First, we expect that this is inside <..> (so same link text as link)
       guard angleBracketLink
       -- Then, non-relevant parts of the URI should be empty
@@ -64,24 +64,27 @@ queryFromURILink (URILink linkText uri) =
             if hasQueryFlag [queryKey|cf|] uri
               then Just OrdinaryConnection
               else Nothing
-          noAuth = guard $ URI.uriAuthority uri == Left False
+          -- Found "z:" without a trailing slash
+          noSlash = URI.uriAuthority uri == Left False
+          -- Found "z:/" instead of "z:"
+          hasSlash = URI.uriAuthority uri == Left True
       case fmap URI.unRText (URI.uriScheme uri) of
         Just "z" -> do
           fmap snd (URI.uriPath uri) >>= \case
             (URI.unRText -> path) :| []
-              | Right zid <- parseZettelID' path,
-                URI.isPathAbsolute uri -> do
+              | hasSlash -> do
+                zid <- rightToMaybe $ parseZettelID' path
                 pure $ Some $ ZettelQuery_ZettelByID zid mconn
-            (URI.unRText -> "zettel") :| [URI.unRText -> path] -> do
-              noAuth
-              zid <- rightToMaybe $ parseZettelID' path
-              pure $ Some $ ZettelQuery_ZettelByID zid mconn
-            (URI.unRText -> "zettels") :| [] -> do
-              noAuth
-              pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns "tag") mconn queryView
-            (URI.unRText -> "tags") :| [] -> do
-              noAuth
-              pure $ Some $ ZettelQuery_Tags (tagPatterns "filter")
+            (URI.unRText -> "zettel") :| [URI.unRText -> path]
+              | noSlash -> do
+                zid <- rightToMaybe $ parseZettelID' path
+                pure $ Some $ ZettelQuery_ZettelByID zid mconn
+            (URI.unRText -> "zettels") :| []
+              | noSlash -> do
+                pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns "tag") mconn queryView
+            (URI.unRText -> "tags") :| []
+              | noSlash -> do
+                pure $ Some $ ZettelQuery_Tags (tagPatterns "filter")
             _ -> Nothing
         Just _ -> do
           Nothing
