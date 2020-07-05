@@ -94,21 +94,25 @@ renderQuery someQ =
 
 -- | Render a link to an individual zettel.
 renderZettelLink :: DomBuilder t m => Maybe Connection -> Maybe LinkView -> Zettel -> NeuronWebT t m ()
-renderZettelLink conn (fromMaybe def -> LinkView {..}) Zettel {..} = do
+renderZettelLink conn (fromMaybe def -> linkView) Zettel {..} = do
   let connClass = show <$> conn
       rawClass = either (const $ Just "raw") (const Nothing) zettelError
       mextra =
-        if linkViewShowDate
-          then case zettelDay of
-            Just day ->
-              Just $ elTime day
-            Nothing ->
-              Nothing
-          else Nothing
+        case linkView of
+          LinkView_Default ->
+            Nothing
+          LinkView_ShowDate ->
+            elTime <$> zettelDay
+          LinkView_ShowID ->
+            Just $ el "tt" $ text $ zettelIDText zettelID
       classes :: [Text] = catMaybes $ [Just "zettel-link-container"] <> [connClass, rawClass]
   elClass "span" (T.intercalate " " classes) $ do
     forM_ mextra $ \extra ->
-      elClass "span" "extra monoFont" $ extra
+      elClass "span" "extra monoFont" $ do
+        extra
+        -- The extra space is so that double clicking on this extra text
+        -- doesn't select the title next.
+        text " "
     let linkTooltip =
           if null zettelTags
             then Nothing
@@ -188,7 +192,6 @@ zettelLinkCss = do
     C.textDecoration C.none
   "span.zettel-link-container span.extra" ? do
     C.color C.auto
-    C.paddingRight $ em 0.3
   "span.zettel-link-container.folgezettel::after" ? do
     C.paddingLeft $ em 0.3
     C.content $ C.stringContent "ᛦ"

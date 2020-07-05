@@ -107,7 +107,14 @@ queryFromURILink (URILink linkText uri) =
             getQueryParam [queryKey|linkTheme|] uri == Just "withDate"
               || hasQueryFlag [queryKey|timeline|] uri
           isGrouped = hasQueryFlag [queryKey|grouped|] uri
-       in ZettelsView (LinkView isTimeline) isGrouped
+          linkView =
+            if isTimeline
+              then LinkView_ShowDate
+              else
+                if hasQueryFlag [queryKey|showid|] uri
+                  then LinkView_ShowID
+                  else LinkView_Default
+       in ZettelsView linkView isGrouped
     getParamValues k u =
       flip mapMaybe (URI.uriQuery u) $ \case
         URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
