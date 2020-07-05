@@ -20,48 +20,24 @@ import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Parser
 import Relude
-import Relude.Extra.Group
 
 buildZettelkasten ::
-  [((ZettelFormat, ZettelReader), [(FilePath, Text)])] ->
+  [((ZettelFormat, ZettelReader), [(ZettelID, FilePath, Text)])] ->
   ( ZettelGraph,
     [ZettelC],
     Map ZettelID ZettelError
   )
 buildZettelkasten fs =
-  let (fs', dups) = detectAmbiguousZettelIDs fs
-      zs = parseZettels fs'
+  let zs = parseZettels fs
       (g, queryErrors) = mkZettelGraph $ sansContent <$> zs
       errors =
         Map.unions
           [ fmap ZettelError_ParseError
               $ Map.fromList
               $ lefts zs <&> (zettelID &&& zettelError),
-            fmap ZettelError_QueryErrors queryErrors,
-            fmap ZettelError_AmbiguousFiles dups
+            fmap ZettelError_QueryErrors queryErrors
           ]
    in (g, zs, errors)
-
-detectAmbiguousZettelIDs ::
-  [(k, [(FilePath, Text)])] ->
-  ( [(k, [(ZettelID, FilePath, Text)])],
-    Map ZettelID (NonEmpty FilePath)
-  )
-detectAmbiguousZettelIDs filesPerFormat =
-  let filesPerFormatAndId = annotateIDs filesPerFormat
-      allFiles = concatMap snd filesPerFormatAndId
-      filesPerID = groupByID allFiles
-      duplicates = Map.filter (\ids -> length ids > 1) filesPerID
-      isUnique entry = Map.notMember (getID entry) duplicates
-      jesus = fmap (fmap $ filter isUnique) filesPerFormatAndId
-   in (jesus, duplicates)
-  where
-    getID (zid, _, _) = zid
-    getPath (_, path, _) = path
-    addIDToEntry (path, s) = getZettelID path <&> (,path,s)
-    annotateIDs = fmap $ fmap $ mapMaybe addIDToEntry
-    groupByID :: [(ZettelID, FilePath, Text)] -> Map.Map ZettelID (NonEmpty FilePath)
-    groupByID files = fmap getPath <$> groupBy getID files
 
 -- | Build the Zettelkasten graph from a list of zettels
 --
