@@ -16,7 +16,6 @@ where
 
 import Data.Aeson
 import Relude
-import System.FilePattern
 
 configFile :: FilePath
 configFile = "neuron.dhall"
@@ -32,7 +31,7 @@ data Config = Config
     editUrl :: Maybe Text,
     mathJaxSupport :: Bool,
     -- TODO: This should use `NonEmpty`.
-    formats :: [(FilePattern, Text)],
+    formats :: [Text],
     minVersion :: Text,
     siteBaseUrl :: Maybe Text,
     siteTitle :: Text,
@@ -55,7 +54,7 @@ defaultConfig =
   \, aliases =\
   \   [] : List Text\
   \, formats =\
-  \   [ { _1 = \"*.md\", _2 = \"markdown\" } ]\
+  \   [ \"markdown\" ]\
   \, mathJaxSupport =\
   \   True\
   \, minVersion =\

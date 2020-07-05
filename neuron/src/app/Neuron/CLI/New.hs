@@ -52,7 +52,7 @@ newZettelFile NewCommand {..} config = do
     Right zid -> do
       notesDir <- Rib.ribInputDir
       defaultFormat <- maybe (fail "Cannot pick default format: neuron configuration does not specify any formats") pure $ do
-        (_, fmt) <- viaNonEmpty head $ formats config
+        fmt <- viaNonEmpty head $ formats config
         readMaybe $ toString fmt
       let zettelFormat = fromMaybe defaultFormat format
           zettelFile = zettelIDSourceFileName zid zettelFormat

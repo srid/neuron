@@ -26,7 +26,7 @@ import Development.Shake (Action, need)
 import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Config.Type (Config (..))
 import Neuron.Reader (readerForZettelFormat)
-import Neuron.Reader.Type (ZettelFormat)
+import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Neuron.Version (neuronVersion, olderThan)
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
@@ -107,11 +107,12 @@ loadZettelkasten ::
       Map ZettelID ZettelError
     )
 loadZettelkasten config = do
-  formatRules <- forM (formats config) $ \(pat, fmt) -> do
+  formatRules <- forM (formats config) $ \fmt -> do
+    -- TODO: propagate error to zindex
     format <-
       maybe (fail $ "Unrecognized format: " <> toString fmt) pure $
         readMaybe (toString fmt)
-    pure (pat, format)
+    pure (toString $ "*" <> zettelFormatToExtension format, format)
   filesPerFormat <- forM formatRules $ \(filePattern, format) -> do
     (format,) <$> Rib.forEvery [filePattern] pure
   loadZettelkastenFrom filesPerFormat
