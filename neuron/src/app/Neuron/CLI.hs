@@ -18,12 +18,12 @@ import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Rib
 import Neuron.CLI.Search (interactiveSearch)
+import Neuron.Config (getConfig)
+import Neuron.Config.Type (Config)
 import qualified Neuron.Version as Version
 import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
-import Neuron.Config.Type
-import Neuron.Config
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -56,8 +56,7 @@ runWith act App {..} =
       runRib (act =<< getConfig) notesDir ribCfg
     New newCommand ->
       runRibOnceQuietly notesDir $ do
-        config <- getConfig
-        newZettelFile newCommand config
+        newZettelFile newCommand =<< getConfig
     Open ->
       runRibOnceQuietly notesDir $ do
         indexHtmlPath <- fmap (</> "index.html") Rib.ribOutputDir
@@ -66,8 +65,7 @@ runWith act App {..} =
         liftIO $ executeFile opener True [indexHtmlPath] Nothing
     Query eSomeQ ->
       runRibOnceQuietly notesDir $ do
-        config <- getConfig
-        (graph, _, errors) <- Gen.loadZettelkasten config
+        (graph, _, errors) <- Gen.loadZettelkasten =<< getConfig
         case eSomeQ of
           Left someQ ->
             withSome someQ $ \q -> do

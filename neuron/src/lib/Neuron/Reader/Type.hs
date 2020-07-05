@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Reader.Type
@@ -13,10 +14,10 @@ module Neuron.Reader.Type
   )
 where
 
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson
 import Data.Tagged
 import Neuron.Zettelkasten.Zettel.Meta
-import Relude
+import Relude hiding (readEither, show)
 import Text.Pandoc.Definition (Pandoc)
 import Text.Read
 import Prelude (show)
@@ -28,7 +29,15 @@ type ZettelParseError = Tagged "ZettelParserError" Text
 data ZettelFormat
   = ZettelFormat_Markdown
   | ZettelFormat_Org
-  deriving (Eq, Ord, Generic, FromJSON, ToJSON)
+  deriving (Eq, Ord, Generic)
+
+instance FromJSON ZettelFormat where
+  parseJSON =
+    either fail pure . readEither <=< parseJSON
+
+instance ToJSON ZettelFormat where
+  toJSON =
+    toJSON . show
 
 instance Show ZettelFormat where
   show ZettelFormat_Markdown = "markdown"
