@@ -16,7 +16,6 @@ import Data.Some
 import Data.Text (strip)
 import qualified Data.Text as T
 import Data.Time
-import qualified Data.YAML as YAML
 import Development.Shake (Action)
 import Neuron.CLI.Types
 import Neuron.Config.Type (Config (..), getZettelFormats)
@@ -25,7 +24,7 @@ import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
-import Neuron.Zettelkasten.Zettel.Meta ()
+import Neuron.Zettelkasten.Zettel.Meta (formatZettelDate)
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -106,6 +105,6 @@ defaultZettelContent format day mtitle = case format of
         "\n"
       ]
   where
-    date = T.strip (decodeUtf8 (YAML.encode1 day))
+    date = formatZettelDate day
     defaultTitleName = "Zettel created on " <> date
     title = maybe defaultTitleName T.strip mtitle
