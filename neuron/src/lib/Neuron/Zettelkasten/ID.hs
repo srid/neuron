@@ -24,6 +24,7 @@ import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
 import qualified Data.Text as T
 import Data.Time
+import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Relude
 import System.FilePath
 import qualified Text.Megaparsec as M
@@ -81,8 +82,8 @@ formatDay day =
         . T.replace "Sat" "6"
         . T.replace "Sun" "7"
 
-zettelIDSourceFileName :: ZettelID -> FilePath
-zettelIDSourceFileName zid = toString $ zettelIDText zid <> ".md"
+zettelIDSourceFileName :: ZettelID -> ZettelFormat -> FilePath
+zettelIDSourceFileName zid fmt = toString $ zettelIDText zid <> zettelFormatToExtension fmt
 
 ---------
 -- Parser

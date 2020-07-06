@@ -94,21 +94,39 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
 
 renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
 renderErrors errors = do
-  let eitherError f1 f2 = either (const f1) (const f2)
-  forM_ (Map.toList errors) $ \(zid, eError) ->
-    divClass ("ui tiny message " <> eitherError "negative" "warning" eError) $ do
-      divClass "header" $ do
-        text $ "Zettel "
-        QueryView.renderZettelLinkIDOnly zid
-        text $ eitherError " failed to parse" " has malformed queries" eError
+  let severity = \case
+        ZettelError_ParseError _ -> "negative"
+        ZettelError_QueryErrors _ -> "warning"
+        ZettelError_AmbiguousFiles _ -> "negative"
+      errorMessageHeader zid = \case
+        ZettelError_ParseError _ -> do
+          text "Zettel "
+          QueryView.renderZettelLinkIDOnly zid
+          text " failed to parse"
+        ZettelError_QueryErrors _ -> do
+          text "Zettel "
+          QueryView.renderZettelLinkIDOnly zid
+          text " has malformed queries"
+        ZettelError_AmbiguousFiles _ -> do
+          text $
+            "More than one file define the same zettel ID ("
+              <> zettelIDText zid
+              <> "):"
+  forM_ (Map.toList errors) $ \(zid, zError) ->
+    divClass ("ui tiny message " <> severity zError) $ do
+      divClass "header" $ errorMessageHeader zid zError
       el "p" $ do
-        case eError of
-          Left parseError ->
+        case zError of
+          ZettelError_ParseError parseError ->
             el "pre" $ text $ show parseError
-          Right queryErrors ->
+          ZettelError_QueryErrors queryErrors ->
             el "ol" $ do
               forM_ queryErrors $ \qe ->
                 el "li" $ el "pre" $ text $ showQueryError qe
+          ZettelError_AmbiguousFiles filePaths ->
+            el "ul" $ do
+              forM_ filePaths $ \fp ->
+                el "li" $ el "tt" $ text $ toText fp
 
 renderForest ::
   DomBuilder t m =>

@@ -15,13 +15,17 @@ import qualified Data.Set as Set
 import Data.Some
 import Data.Text (strip)
 import qualified Data.Text as T
+import Data.Time
 import qualified Data.YAML as YAML
 import Development.Shake (Action)
 import Neuron.CLI.Types
+import Neuron.Config.Type (Config (..), getZettelFormats)
+import Neuron.Reader.Type (ZettelFormat (..))
 import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
+import Neuron.Zettelkasten.Zettel.Meta ()
 import Options.Applicative
 import Relude
 import qualified Rib
@@ -33,9 +37,9 @@ import System.Posix.Process
 -- | Create a new zettel file and open it in editor if requested
 --
 -- As well as print the path to the created file.
-newZettelFile :: NewCommand -> Action ()
-newZettelFile NewCommand {..} = do
-  (_, zettels, _) <- Gen.loadZettelkasten
+newZettelFile :: NewCommand -> Config -> Action ()
+newZettelFile NewCommand {..} config = do
+  (_, zettels, _) <- Gen.loadZettelkasten config
   mzid <- withSome idScheme $ \scheme -> do
     val <- liftIO $ IDScheme.genVal scheme
     pure $
@@ -47,22 +51,13 @@ newZettelFile NewCommand {..} = do
     Left e -> die $ show e
     Right zid -> do
       notesDir <- Rib.ribInputDir
-      let zettelFile = zettelIDSourceFileName zid
+      defaultFormat <- head <$> getZettelFormats config
+      let zettelFormat = fromMaybe defaultFormat format
+          zettelFile = zettelIDSourceFileName zid zettelFormat
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-
           bool (pure showAction) mkEditActionFromEnv edit
-        let date = T.strip (decodeUtf8 (YAML.encode1 day))
-            defaultTitleName = "Zettel created on " <> date
-        writeFileText (notesDir </> zettelFile) $
-          T.intercalate
-            "\n"
-            [ "---",
-              "date: " <> date,
-              "---",
-              "",
-              "# " <> maybe defaultTitleName T.strip title,
-              "\n"
-            ]
+        writeFileText (notesDir </> zettelFile) $ defaultZettelContent zettelFormat day title
         fileAction notesDir zettelFile
   where
     mkEditActionFromEnv :: IO (FilePath -> FilePath -> IO ())
@@ -87,3 +82,30 @@ newZettelFile NewCommand {..} = do
         Nothing -> pure Nothing
         Just (toString . strip . toText -> v) ->
           if null v then pure Nothing else pure (Just v)
+
+-- TODO use configurable template files?
+defaultZettelContent :: ZettelFormat -> Day -> Maybe Text -> Text
+defaultZettelContent format day mtitle = case format of
+  ZettelFormat_Markdown ->
+    T.intercalate
+      "\n"
+      [ "---",
+        "date: " <> date,
+        "---",
+        "",
+        "# " <> title,
+        "\n"
+      ]
+  ZettelFormat_Org ->
+    T.intercalate
+      "\n"
+      [ "* " <> title,
+        "    :PROPERTIES:",
+        "    :Date: " <> date,
+        "    :END:",
+        "\n"
+      ]
+  where
+    date = T.strip (decodeUtf8 (YAML.encode1 day))
+    defaultTitleName = "Zettel created on " <> date
+    title = maybe defaultTitleName T.strip mtitle

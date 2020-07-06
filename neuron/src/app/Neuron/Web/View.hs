@@ -40,7 +40,6 @@ import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID, zettelIDSourceFileName)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
@@ -118,7 +117,7 @@ renderRouteBody neuronVersion Config {..} r (g, x) = do
       Route_Zettel _ -> do
         -- Don't inject neuron verison in zettel pages, to prevent unnecessary rebuilds when upgrading neuron
         let noVersion = Nothing
-        actionsNav neuronTheme editUrl (Just $ either zettelID zettelID x)
+        actionsNav neuronTheme editUrl (Just $ sansContent x)
         ZettelView.renderZettel (g, x)
           <* renderBrandFooter noVersion
       Route_Redirect _ -> do
@@ -172,13 +171,13 @@ renderBrandFooter mver =
 fa :: DomBuilder t m => Text -> m ()
 fa k = elClass "i" k blank
 
-actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe ZettelID -> NeuronWebT t m ()
-actionsNav theme editUrl mzid = elClass "nav" "top-menu" $ do
+actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> NeuronWebT t m ()
+actionsNav theme editUrl mz = elClass "nav" "top-menu" $ do
   divClass ("ui inverted compact neuron icon menu " <> Theme.semanticColor theme) $ do
     neuronRouteLink (Some Route_ZIndex) ("class" =: "left item" <> "title" =: "All Zettels (z-index)") $
       semanticIcon "tree"
-    whenJust ((,) <$> mzid <*> editUrl) $ \(zid, urlPrefix) -> do
-      let attrs = ("href" =: (urlPrefix <> toText (zettelIDSourceFileName zid)) <> "title" =: "Edit this Zettel")
+    whenJust ((,) <$> mz <*> editUrl) $ \(Zettel {..}, urlPrefix) -> do
+      let attrs = ("href" =: (urlPrefix <> toText zettelPath) <> "title" =: "Edit this Zettel")
       elAttr "a" ("class" =: "center item" <> attrs) $ do
         semanticIcon "edit"
     neuronRouteLink (Some Route_Search) ("class" =: "right item" <> "title" =: "Search Zettels") $ do

@@ -8,7 +8,7 @@ module Neuron.Zettelkasten.Zettel.Parser where
 import Control.Monad.Writer
 import Data.Some
 import qualified Data.Text as T
-import qualified Neuron.Markdown as MD
+import Neuron.Reader.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
@@ -17,24 +17,25 @@ import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Reflex.Dom.Pandoc.URILink (queryURILinks)
 import Relude
 import Text.Pandoc.Definition (Pandoc)
+import Text.Pandoc.Util
 
--- | Parse a markdown-formatted zettel
---
--- In future this will support other formats supported by Pandoc.
 parseZettel ::
+  ZettelFormat ->
+  ZettelReader ->
+  FilePath ->
   ZettelID ->
   Text ->
   ZettelC
-parseZettel zid s = do
-  case MD.parseMarkdown (zettelIDSourceFileName zid) s of
+parseZettel format zreader fn zid s = do
+  case zreader fn s of
     Left parseErr ->
-      Left $ Zettel zid "Unknown" False [] Nothing [] parseErr s
+      Left $ Zettel zid format fn "Unknown" False [] Nothing [] parseErr s
     Right (meta, doc) ->
       let (title, titleInBody) = case Meta.title =<< meta of
             Just tit -> (tit, False)
             Nothing -> fromMaybe ("Untitled", False) $ do
-              ((,True) . MD.plainify <$> MD.getH1 doc)
-                <|> ((,False) . takeInitial . MD.plainify <$> MD.getFirstParagraphText doc)
+              ((,True) . plainify . snd <$> getH1 doc)
+                <|> ((,False) . takeInitial . plainify <$> getFirstParagraphText doc)
           tags = fromMaybe [] $ Meta.tags =<< meta
           day = case zid of
             -- We ignore the "data" meta field on legacy Date IDs, which encode the
@@ -42,7 +43,7 @@ parseZettel zid s = do
             ZettelDateID v _ -> Just v
             ZettelCustomID _ -> Meta.date =<< meta
           (queries, errors) = runWriter $ extractQueries doc
-       in Right $ Zettel zid title titleInBody tags day queries errors doc
+       in Right $ Zettel zid format fn title titleInBody tags day queries errors doc
   where
     -- Extract all (valid) queries from the Pandoc document
     extractQueries :: MonadWriter [QueryParseError] m => Pandoc -> m [Some ZettelQuery]
@@ -59,9 +60,9 @@ parseZettel zid s = do
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
-  [(FilePath, Text)] ->
+  [((ZettelFormat, ZettelReader), [(ZettelID, FilePath, Text)])] ->
   [ZettelC]
-parseZettels fs =
-  flip mapMaybe fs $ \(path, s) -> do
-    zid <- getZettelID path
-    pure $ parseZettel zid s
+parseZettels filesPerFormat =
+  flip concatMap filesPerFormat $ \((format, zreader), files) ->
+    flip fmap files $ \(zid, path, s) ->
+      parseZettel format zreader path zid s

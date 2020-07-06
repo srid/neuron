@@ -11,7 +11,7 @@ import Control.Monad.Reader
 import Development.Shake
 import Main.Utf8
 import Neuron.CLI (run)
-import qualified Neuron.Config as Config
+import Neuron.Config.Type (Config)
 import Neuron.Version (neuronVersion)
 import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Generate.Route (staticRouteConfig)
@@ -26,11 +26,10 @@ import qualified Rib
 main :: IO ()
 main = withUtf8 $ run generateMainSite
 
-generateMainSite :: Action ()
-generateMainSite = do
+generateMainSite :: Config -> Action ()
+generateMainSite config = do
   notesDir <- Rib.ribInputDir
   Rib.buildStaticFiles ["static/**", ".nojekyll"]
-  config <- Config.getConfig
   manifest <- fmap Manifest.mkManifest $ getDirectoryFiles notesDir Manifest.manifestPatterns
   let writeHtmlRoute :: Route a -> (ZettelGraph, a) -> Action ()
       writeHtmlRoute r x = do

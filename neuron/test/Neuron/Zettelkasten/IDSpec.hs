@@ -8,6 +8,7 @@ where
 
 import qualified Data.Aeson as Aeson
 import Data.Time.Calendar
+import qualified Neuron.Reader.Type as Z
 import qualified Neuron.Zettelkasten.ID as Z
 import Relude
 import Test.Hspec
@@ -22,14 +23,14 @@ spec = do
         Z.parseZettelID "2011401" `shouldBe` zid
       it "parses a zettel ID from zettel filename" $ do
         Z.getZettelID "2011401.md" `shouldBe` Just zid
-        Z.zettelIDSourceFileName zid `shouldBe` "2011401.md"
+        Z.zettelIDSourceFileName zid Z.ZettelFormat_Markdown `shouldBe` "2011401.md"
     context "custom id parsing" $ do
       let zid = Z.ZettelCustomID "20abcde"
       it "parses a custom zettel ID" $ do
         Z.parseZettelID' "20abcde" `shouldBe` Right zid
       it "parses a custom zettel ID from zettel filename" $ do
         Z.getZettelID "20abcde.md" `shouldBe` Just zid
-        Z.zettelIDSourceFileName zid `shouldBe` "20abcde.md"
+        Z.zettelIDSourceFileName zid Z.ZettelFormat_Markdown `shouldBe` "20abcde.md"
       let deceptiveZid = Z.ZettelCustomID "2136537e"
       it "parses a custom zettel ID that looks like date ID" $ do
         Z.parseZettelID' "2136537e" `shouldBe` Right deceptiveZid

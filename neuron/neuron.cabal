@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 0.5.8.0
+version: 0.5.9.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -73,7 +73,8 @@ library
   hs-source-dirs: src/lib
   exposed-modules:
     Neuron.Config.Type
-    Neuron.Markdown
+    Neuron.Reader.Markdown
+    Neuron.Reader.Type
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
@@ -101,6 +102,7 @@ library
     Neuron.Web.Theme
     Neuron.Orphans
     Text.Megaparsec.Simple
+    Text.Pandoc.Util
     Text.URI.Util
     Data.TagTree
     Data.PathTree
@@ -172,7 +174,8 @@ common app-common
       Neuron.Web.Generate.Route
       Neuron.Web.View
       Neuron.Web.StructuredData
-      Neuron.Markdown
+      Neuron.Reader
+      Neuron.Reader.Org
       Neuron.Zettelkasten.ID.Scheme
       Paths_neuron
       Text.Megaparsec.Simple

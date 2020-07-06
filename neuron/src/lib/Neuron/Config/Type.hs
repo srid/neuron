@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -11,11 +12,14 @@ module Neuron.Config.Type
     configFile,
     defaultConfig,
     mergeWithDefault,
+    getZettelFormats,
   )
 where
 
 import Data.Aeson
-import Relude
+import Neuron.Reader.Type (ZettelFormat)
+import Relude hiding (readEither)
+import Text.Read (readEither)
 
 configFile :: FilePath
 configFile = "neuron.dhall"
@@ -30,12 +34,19 @@ data Config = Config
     author :: Maybe Text,
     editUrl :: Maybe Text,
     mathJaxSupport :: Bool,
+    -- TODO: This should use `NonEmpty`.
+    formats :: [Text],
     minVersion :: Text,
     siteBaseUrl :: Maybe Text,
     siteTitle :: Text,
     theme :: Text
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
+
+getZettelFormats :: MonadFail m => Config -> m (NonEmpty ZettelFormat)
+getZettelFormats Config {..} = do
+  formats' <- maybe (fail "Empty formats") pure $ nonEmpty formats
+  traverse (either (fail . toString) pure . readEither . toString) formats'
 
 defaultConfig :: Text
 defaultConfig =
@@ -51,6 +62,8 @@ defaultConfig =
   \   \"blue\"\
   \, aliases =\
   \   [] : List Text\
+  \, formats =\
+  \   [ \"markdown\" ]\
   \, mathJaxSupport =\
   \   True\
   \, minVersion =\

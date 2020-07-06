@@ -15,7 +15,6 @@ import qualified Data.Structured.Breadcrumb as Breadcrumb
 import qualified Data.Text as T
 import Data.Time.ISO8601 (formatISO8601)
 import Neuron.Config.Type
-import Neuron.Markdown (getFirstParagraphText)
 import Neuron.Web.Generate.Route (routeUri)
 import Neuron.Web.Route
 import Neuron.Zettelkasten.Connection
@@ -28,6 +27,7 @@ import Rib.Extra.OpenGraph
 import qualified Rib.Parser.Pandoc as Pandoc
 import Text.Pandoc (runPure, writePlain)
 import Text.Pandoc.Definition (Block (Plain), Inline, Pandoc (..))
+import Text.Pandoc.Util (getFirstParagraphText)
 import qualified Text.URI as URI
 
 renderStructuredData :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()

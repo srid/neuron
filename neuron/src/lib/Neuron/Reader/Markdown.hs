@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,7 +7,10 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Markdown where
+module Neuron.Reader.Markdown
+  ( parseMarkdown,
+  )
+where
 
 import qualified Commonmark as CM
 import qualified Commonmark.Blocks as CM
@@ -21,63 +22,43 @@ import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
 import Control.Monad.Except
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Tagged (Tagged (..))
 import qualified Data.YAML as YAML
 import Neuron.Orphans ()
+import Neuron.Reader.Type (ZettelParseError, ZettelReader)
+import Neuron.Zettelkasten.Zettel.Meta (Meta)
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple
 import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
-import qualified Text.Pandoc.Walk as W
 import qualified Text.Parsec as P
 import Text.Show
-
-data ZettelParseError
-  = ZettelParseError_InvalidMarkdown Text
-  | ZettelParseError_InvalidYAML Text
-  | ZettelParseError_PartitionError Text
-  deriving (Eq, Generic, ToJSON, FromJSON)
-
-instance Show ZettelParseError where
-  show = \case
-    ZettelParseError_InvalidMarkdown e ->
-      show e
-    ZettelParseError_InvalidYAML e ->
-      toString e
-    ZettelParseError_PartitionError e ->
-      "Unable to determine YAML region: " <> toString e
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --
 -- We are not using the Pandoc AST "metadata" field (as it is not clear whether
 -- we actually need it), and instead directly decoding the metadata as Haskell
 -- object.
-parseMarkdown ::
-  forall meta.
-  YAML.FromYAML meta =>
-  FilePath ->
-  Text ->
-  Either ZettelParseError (Maybe meta, Pandoc)
+parseMarkdown :: ZettelReader
 parseMarkdown fn s = do
   (metaVal, markdown) <-
-    first ZettelParseError_PartitionError $
+    first (Tagged . ("Unable to determine YAML region: " <>)) $
       partitionMarkdown fn s
   v <-
-    first (ZettelParseError_InvalidMarkdown . toText . show) $
+    first (Tagged . toText . show) $
       commonmarkPandocWith neuronSpec fn markdown
-  meta <-
-    first ZettelParseError_InvalidYAML $
-      traverse (parseMeta fn) metaVal
+  meta <- traverse (parseMeta fn) metaVal
   pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
   where
     -- NOTE: HsYAML parsing is rather slow due to its use of DList.
     -- See https://github.com/haskell-hvr/HsYAML/issues/40
-    parseMeta :: FilePath -> Text -> Either Text meta
+    parseMeta :: FilePath -> Text -> Either ZettelParseError Meta
     parseMeta n v = do
       let raw = encodeUtf8 v
-      let mkError (loc, emsg) = toText $ n <> ":" <> YAML.prettyPosWithSource loc raw " error" <> emsg
+      let mkError (loc, emsg) =
+            Tagged $ toText $ n <> ":" <> YAML.prettyPosWithSource loc raw " error" <> emsg
       first mkError $ YAML.decode1 raw
     -- Like commonmarkWith, but parses directly into the Pandoc AST.
     commonmarkPandocWith ::
@@ -102,42 +83,6 @@ partitionMarkdown fn =
       a <- toText <$> manyTill M.anySingle (M.try $ M.eol *> separatorP)
       b <- M.takeRest
       pure (Just a, b)
-
--- TODO: These two functions should be moved to Text.Pandoc.Util.
-
-getFirstParagraphText :: Pandoc -> Maybe [B.Inline]
-getFirstParagraphText = listToMaybe . W.query go
-  where
-    go :: B.Block -> [[B.Inline]]
-    go = \case
-      B.Para inlines ->
-        [inlines]
-      _ ->
-        []
-
-getH1 :: Pandoc -> Maybe [B.Inline]
-getH1 = listToMaybe . W.query go
-  where
-    go :: B.Block -> [[B.Inline]]
-    go = \case
-      B.Header 1 _ inlines ->
-        [inlines]
-      _ ->
-        []
-
--- | Convert Pandoc AST inlines to raw text.
-plainify :: [B.Inline] -> Text
-plainify = W.query $ \case
-  B.Str x -> x
-  B.Code _attr x -> x
-  B.Space -> " "
-  B.SoftBreak -> " "
-  B.LineBreak -> " "
-  B.RawInline _fmt s -> s
-  B.Math _mathTyp s -> s
-  -- Ignore the rest of AST nodes, as they are recursively defined in terms of
-  -- `Inline` which `W.query` will traverse again.
-  _ -> ""
 
 neuronSpec ::
   ( Monad m,

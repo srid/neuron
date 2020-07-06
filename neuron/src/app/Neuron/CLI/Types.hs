@@ -21,6 +21,7 @@ import Data.Default (def)
 import Data.Some
 import Data.TagTree (mkTagPattern)
 import Data.Time
+import Neuron.Reader.Type (ZettelFormat)
 import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
@@ -41,6 +42,7 @@ data App = App
 
 data NewCommand = NewCommand
   { title :: Maybe Text,
+    format :: Maybe ZettelFormat,
     day :: Day,
     idScheme :: Some IDScheme,
     edit :: Bool
@@ -102,6 +104,13 @@ commandParser defaultNotesDir today = do
           ]
     newCommand = do
       title <- optional $ strArgument (metavar "TITLE" <> help "Title of the new Zettel")
+      format <-
+        optional
+          $ option auto
+          $ metavar "FORMAT"
+            <> short 'f'
+            <> long "format"
+            <> help "The document format of the new zettel"
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
       day <-
         option dayReader $
@@ -121,7 +130,7 @@ commandParser defaultNotesDir today = do
           <|> fmap
             (const . Some . IDSchemeCustom)
             (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
-      pure $ New $ NewCommand title day (idSchemeF day) edit
+      pure $ New $ NewCommand title format day (idSchemeF day) edit
     openCommand =
       pure Open
     queryCommand =

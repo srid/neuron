@@ -28,7 +28,7 @@ import Data.Some
 import Data.TagTree (Tag)
 import Data.TagTree (TagPattern (..))
 import Data.Time.Calendar
-import Neuron.Markdown
+import Neuron.Reader.Type
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
@@ -50,6 +50,9 @@ data ZettelQuery r where
 -- The metadata could have been inferred from the content.
 data ZettelT content = Zettel
   { zettelID :: ZettelID,
+    zettelFormat :: ZettelFormat,
+    -- Relative path to this zettel in the zettelkasten directory
+    zettelPath :: FilePath,
     zettelTitle :: Text,
     zettelTitleInBody :: Bool,
     zettelTags :: [Tag],
@@ -75,7 +78,11 @@ type family ContentError c where
 --
 -- NOTE: Unlike `ContentError MetadataOnly` this also includes QueryResultError
 -- (which can be determined only after *evaluating* the queries).
-type ZettelError = Either ZettelParseError (NonEmpty QueryError)
+data ZettelError
+  = ZettelError_ParseError ZettelParseError
+  | ZettelError_QueryErrors (NonEmpty QueryError)
+  | ZettelError_AmbiguousFiles (NonEmpty FilePath)
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Zettel without its content
 type Zettel = ZettelT MetadataOnly

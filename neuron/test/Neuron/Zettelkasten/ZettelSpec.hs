@@ -9,7 +9,8 @@ where
 
 import Data.TagTree
 import Data.Time.Calendar
-import Neuron.Markdown
+import Neuron.Reader.Markdown
+import Neuron.Reader.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Meta (Meta)
@@ -27,6 +28,8 @@ spec = do
         mkZettel day idx =
           Zettel
             (ZettelDateID (mkDay day) idx)
+            ZettelFormat_Markdown
+            "<spec>.md"
             "Some title"
             False
             [Tag "science", Tag "journal/class"]
