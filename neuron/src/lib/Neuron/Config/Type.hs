@@ -18,7 +18,8 @@ where
 
 import Data.Aeson
 import Neuron.Reader.Type (ZettelFormat)
-import Relude
+import Relude hiding (readEither)
+import Text.Read (readEither)
 
 configFile :: FilePath
 configFile = "neuron.dhall"
@@ -44,8 +45,8 @@ data Config = Config
 
 getZettelFormats :: MonadFail m => Config -> m (NonEmpty ZettelFormat)
 getZettelFormats Config {..} = do
-  formats' :: NonEmpty Text <- maybe (fail "Empty formats") pure $ nonEmpty formats
-  traverse (either (fail . toString) pure . readEither) formats'
+  formats' <- maybe (fail "Empty formats") pure $ nonEmpty formats
+  traverse (either (fail . toString) pure . readEither . toString) formats'
 
 defaultConfig :: Text
 defaultConfig =
