@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -11,10 +12,12 @@ module Neuron.Config.Type
     configFile,
     defaultConfig,
     mergeWithDefault,
+    getZettelFormats,
   )
 where
 
 import Data.Aeson
+import Neuron.Reader.Type (ZettelFormat)
 import Relude
 
 configFile :: FilePath
@@ -38,6 +41,11 @@ data Config = Config
     theme :: Text
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
+
+getZettelFormats :: MonadFail m => Config -> m (NonEmpty ZettelFormat)
+getZettelFormats Config {..} = do
+  formats' :: NonEmpty Text <- maybe (fail "Empty formats") pure $ nonEmpty formats
+  traverse (either (fail . toString) pure . readEither) formats'
 
 defaultConfig :: Text
 defaultConfig =

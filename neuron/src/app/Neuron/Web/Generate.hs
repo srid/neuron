@@ -24,7 +24,7 @@ import qualified Data.Text as T
 import Data.Traversable
 import Development.Shake (Action, need)
 import Neuron.Config.Alias (Alias (..), getAliases)
-import Neuron.Config.Type (Config (..))
+import Neuron.Config.Type (Config (minVersion), getZettelFormats)
 import Neuron.Reader (readerForZettelFormat)
 import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Neuron.Version (neuronVersion, olderThan)
@@ -107,19 +107,16 @@ loadZettelkasten ::
       Map ZettelID ZettelError
     )
 loadZettelkasten config = do
-  zettelFiles <- forM (formats config) $ \s -> do
-    case readMaybe (toString s) of
-      Nothing ->
-        fail $ "Unrecognized format: " <> toString s
-      Just fmt -> do
-        let pat = toString $ "*" <> zettelFormatToExtension fmt
-        files <- Rib.forEvery [pat] pure
-        pure (fmt, files)
+  formats <- getZettelFormats config
+  zettelFiles <- forM formats $ \fmt -> do
+    let pat = toString $ "*" <> zettelFormatToExtension fmt
+    files <- Rib.forEvery [pat] pure
+    pure (fmt, files)
   loadZettelkastenFrom zettelFiles
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFrom ::
-  [(ZettelFormat, [FilePath])] ->
+  NonEmpty (ZettelFormat, [FilePath]) ->
   Action
     ( ZettelGraph,
       [ZettelC],
