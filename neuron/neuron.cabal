@@ -138,7 +138,7 @@ common app-common
     modern-uri,
     foldl,
     filepath,
-    dhall >= 1.30,
+    dhall >= 1.31,
     which,
     unix,
     megaparsec >= 8.0,

@@ -60,6 +60,6 @@ formatZettelDate :: Day -> Text
 formatZettelDate =
   toText . formatTime defaultTimeLocale zettelDateFormat
 
-parseZettelDate :: Monad m => Text -> m Day
+parseZettelDate :: MonadFail m => Text -> m Day
 parseZettelDate =
   parseTimeM False defaultTimeLocale zettelDateFormat . toString

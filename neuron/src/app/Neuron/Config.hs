@@ -31,7 +31,7 @@ import qualified Rib
 import System.Directory
 import System.FilePath
 
--- | Read the optional @neuron.dhall@ config file
+-- | Read the optional @neuron.dhall@ config file from the zettelkasten
 getConfig :: Action Config
 getConfig = do
   configPath <- Rib.ribInputDir <&> (</> configFile)

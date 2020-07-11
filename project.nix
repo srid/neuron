@@ -1,211 +1,126 @@
-{ system, withHoogle }:
-(import ./dep/reflex-platform { inherit system; }).project ({ pkgs, hackGet, ... }: 
-let 
-  gitignoreSrc = pkgs.fetchFromGitHub { 
-    owner = "hercules-ci";
-    repo = "gitignore";
-    # put the latest commit sha of gitignore Nix library here:
-    rev = "00b237f";
-    # use what nix suggests in the mismatch message here:
-    sha256 = "sha256:186pvp1y5fid8mm8c7ycjzwzhv7i6s3hh33rbi05ggrs7r3as3yy";
+let nixpkgsRev = "8d05772";
+in {
+  pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") { },
+  # Cabal project name
+  name ? "neuron",
+  compiler ? pkgs.haskellPackages,
+  withHoogle ? true,
+  ...
+}:
+
+let
+  inherit (pkgs.haskell.lib)
+    overrideCabal markUnbroken doJailbreak appendPatch justStaticExecutables;
+
+  inherit (import (builtins.fetchTarball
+    "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") {
+      inherit (pkgs) lib;
+    })
+    gitignoreSource;
+  sources = {
+    neuron = "${gitignoreSource ./.}/neuron";
+    rib = import ./dep/rib/thunk.nix;
+    commonmark = import ./dep/commonmark-hs/thunk.nix;
+    reflex-dom-pandoc = import ./dep/reflex-dom-pandoc/thunk.nix;
   };
-  inherit (import gitignoreSrc { inherit (pkgs) lib; }) gitignoreSource;
 
-  commonmark = hackGet ./dep/commonmark-hs;
-  test-framework = hackGet ./dep/test-framework;
-
-  neuronSrc = pkgs.lib.cleanSource (gitignoreSource ./neuron);
-
-  neuronSearchScript = pkgs.runCommand "neuron-search" { buildInputs = [ pkgs.makeWrapper ]; } 
-    ''
+  searchBuilder = ''
     mkdir -p $out/bin
-    makeWrapper ${neuronSrc}/src-bash/neuron-search $out/bin/neuron-search --prefix 'PATH' ':' \
-        "${pkgs.fzf}/bin:${pkgs.ripgrep}/bin:${pkgs.gawk}/bin:${pkgs.bat}/bin:${pkgs.findutils}/bin:${pkgs.envsubst}/bin"
-    '';
+    cp $src/src-bash/neuron-search $out/bin/neuron-search
+    chmod +x $out/bin/neuron-search
+    wrapProgram $out/bin/neuron-search --prefix 'PATH' ':' ${
+      with pkgs;
+      lib.makeBinPath [ fzf ripgrep gawk bat findutils envsubst ]
+    }
+    PATH=$PATH:$out/bin
+  '';
+  wrapSearchScript = drv: {
+    buildTools = [ pkgs.makeWrapper ];
+    preConfigure = searchBuilder;
+  };
+
+  overrides = self: super: {
+    # We include rib because it is quite tightly coupled with neuron development
+    rib = self.callCabal2nix "rib" sources.rib { };
+
+    # commonmark is not released on hackage yet
+    commonmark =
+      self.callCabal2nix "commonmark" (sources.commonmark + "/commonmark") { };
+    commonmark-extensions = self.callCabal2nix "commonmark-extensions"
+      (sources.commonmark + "/commonmark-extensions") { };
+    commonmark-pandoc = self.callCabal2nix "commonmark-pandoc"
+      (sources.commonmark + "/commonmark-pandoc") { };
+
+    # Also not released yet
+    reflex-dom-pandoc =
+      self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { };
+
+    # Override pandoc-types and dependencies because stack-lts versions are to old
+    hslua = self.hslua_1_1_2;
+    jira-wiki-markup = self.jira-wiki-markup_1_3_2;
+    pandoc = self.pandoc_2_10;
+    pandoc-types = self.pandoc-types_1_21;
+    # pandoc-include-code sadly has not raised the version bound to the newer pandoc we picked
+    pandoc-include-code = doJailbreak super.pandoc-include-code;
+
+    # Version bumps for nixpkgs compat, have not been merged by upstream yet.
+    dependent-sum-aeson-orphans = markUnbroken
+      (appendPatch super.dependent-sum-aeson-orphans (pkgs.fetchpatch {
+        url =
+          "https://github.com/obsidiansystems/dependent-sum-aeson-orphans/commit/5a369e433ad7e3eef54c7c3725d34270f6aa48cc.patch";
+        sha256 = "1lzrcicvdg77hd8j2fg37z19amp5yna5xmw1fc06zi0j95csll4r";
+      }));
+
+    neuron = (justStaticExecutables
+      (overrideCabal (self.callCabal2nix "neuron" sources.neuron { })
+        wrapSearchScript)).overrideDerivation (drv: {
+          # Avoid transitive runtime dependency on the whole GHC distribution due to
+          # Cabal's `Path_*` module thingy. For details, see:
+          # https://github.com/NixOS/nixpkgs/blob/46405e7952c4b41ca0ba9c670fe9a84e8a5b3554/pkgs/development/tools/pandoc/default.nix#L13-L28
+          #
+          # In order to keep this list up to date, use nix-store and why-depends as
+          # explained here: https://www.srid.ca/04b88e01.html
+          disallowedReferences = [
+            self.pandoc
+            self.pandoc-types
+            self.shake
+            self.warp
+            self.HTTP
+            self.js-jquery
+            self.js-dgtable
+            self.js-flot
+          ];
+          postInstall = ''
+            remove-references-to -t ${self.pandoc} $out/bin/neuron
+            remove-references-to -t ${self.pandoc-types} $out/bin/neuron
+            remove-references-to -t ${self.shake} $out/bin/neuron
+            remove-references-to -t ${self.warp} $out/bin/neuron
+            remove-references-to -t ${self.HTTP} $out/bin/neuron
+            remove-references-to -t ${self.js-jquery} $out/bin/neuron
+            remove-references-to -t ${self.js-dgtable} $out/bin/neuron
+            remove-references-to -t ${self.js-flot} $out/bin/neuron
+          '';
+        });
+  };
+
+  localHaskellPackages = compiler.override { overrides = overrides; };
+
+  nixShellSearchScript = pkgs.stdenv.mkDerivation {
+    name = "neuron-search";
+    src = sources.neuron;
+    buildInputs = [ pkgs.makeWrapper ];
+    buildCommand = searchBuilder;
+  };
 
 in {
-  inherit withHoogle;
-
-  shellToolOverrides = ghc: super: {
-    inherit neuronSearchScript;
+  neuron = localHaskellPackages.neuron;
+  shell = localHaskellPackages.shellFor {
+    inherit withHoogle;
+    packages = p: [ p.neuron ];
+    buildInputs = [
+      localHaskellPackages.ghcid
+      localHaskellPackages.cabal-install
+      nixShellSearchScript
+    ];
   };
-
-  packages = {
-    neuron = neuronSrc;
-    # TODO: expose these overrides so it can be used in the other project
-    #that uses neuron as a thunk.
-
-    reflex-dom-pandoc = hackGet ./dep/reflex-dom-pandoc;
-    shake = hackGet ./dep/shake;
-    dependent-sum-aeson-orphans = hackGet ./dep/dependent-sum-aeson-orphans;
-    
-    # commonmark
-    commonmark = commonmark + "/commonmark";
-    commonmark-extensions = commonmark + "/commonmark-extensions";
-    commonmark-pandoc = commonmark + "/commonmark-pandoc";
-    emojis = hackGet ./dep/emojis;
-    pandoc-types = hackGet ./dep/pandoc-types;
-    texmath = hackGet ./dep/texmath;
-    hslua = hackGet ./dep/hslua;
-    doctemplates = hackGet ./dep/doctemplates;
-    doclayout = hackGet ./dep/doclayout;
-    jira-wiki-markup = hackGet ./dep/jira-wiki-markup;
-
-    test-framework = test-framework + "/core";
-    # test-framework-th = null;
-    test-framework-hunit = test-framework + "/hunit";
-    test-framework-quickcheck2 = test-framework + "/quickcheck2";
-
-    # pandoc
-    pandoc = hackGet ./dep/pandoc;
-    regex-base = hackGet ./dep/regex-base;
-    regex-posix = hackGet ./dep/regex-posix;
-    regex-pcre = hackGet ./dep/regex-pcre;
-    regex-pcre-builtin = hackGet ./dep/regex-pcre-builtin;
-
-    algebraic-graphs = hackGet ./dep/alga;
-    clay = hackGet ./dep/clay;
-    HsYAML = hackGet ./dep/HsYAML;
-
-    rib = hackGet ./dep/rib;
-  };
-
-  overrides = self: super: with pkgs.haskell.lib; let 
-    skylighting-core = overrideCabal super.skylighting-core (drv: {
-      isExecutable = true;
-      isLibrary = true;
-      configureFlags = [ "-fexecutable" ];  # We need the CLI tool later.
-    });
-
-    # Strip off the library part, so we trim out dependencies to only those
-    # needed by the executable.
-    #
-    # FIXME: This causes cyclic references, with the binary depending on the
-    # library derivation (`strings` on the executable reports
-    # "lib/ghc-8.6.5/x86_64-linux-ghc-8.6.5" etc).
-    #
-    # Might also be related to this:
-    #  https://github.com/NixOS/cabal2nix/issues/433
-    makeExecutable = x: overrideCabal x (drv: {
-      enableSeparateBinOutput = true;
-      enableSeparateDataOutput = true;
-    });
-  in {
-    neuron = justStaticExecutables (generateOptparseApplicativeCompletion "neuron" (dontHaddock (super.neuron.overrideDerivation (drv: {
-        propagatedBuildInputs = drv.propagatedBuildInputs ++ [neuronSearchScript];
-    }))));
-
-    shake = dontCheck super.shake;
-    modern-uri = dontCheck (self.callHackageDirect {
-        pkg = "modern-uri";
-        ver = "0.3.2.0";
-        sha256 = "14pr856vwva3gjv573rxfs2mg30icwkk4avyi682cnr0ld8yq8iw"; 
-    } {});
-    megaparsec = dontCheck (self.callHackageDirect {
-        pkg = "megaparsec";
-        ver = "8.0.0";
-        sha256 = "1bk4jsa69maryj97jcvxxc211icvnkr21xrj2bqq9ddfizkq5lg0"; 
-    } {});
-    mmark = dontCheck (self.callHackageDirect {
-        pkg = "mmark";
-        ver = "0.0.7.2";
-        sha256 = "04024dbrnxq8hrv553knahn90wlrxrggqamgx8axcnrhhxxvknz2"; 
-    } {});
-    mmark-ext = doJailbreak (dontCheck (self.callHackageDirect {
-        pkg = "mmark-ext";
-        ver = "0.2.1.2";
-        sha256 = "05mcxhnclblzaqq4blmpk4mp37rq7b19jfq6vwxz15629gfxby7p"; 
-    } {}));
-
-    relude = self.callHackageDirect {
-        pkg = "relude";
-        ver = "0.6.0.0";
-        sha256 = "1x2d7w3dm10lcz5k9ryy1hy8mwh53cjnriqzz7rqfxxcxnsgzl5l";
-    } {};
-
-    with-utf8 = self.callHackageDirect {
-        pkg = "with-utf8";
-        ver = "1.0.1.0";
-        sha256 = "129bsyawcmfig1m3cch91d4nn6wlji3g5lm26jkf08yp54l76lrq"; 
-    } {};
-    connection = self.callHackageDirect {
-        pkg = "connection";
-        ver = "0.3.1";
-        sha256 = "0qjdz2fxxszbns7cszhnkwm8x8l3xlnad6iydx2snfi416sypiy0"; 
-    } {};
-    haddock-library = dontCheck (self.callHackageDirect {
-        pkg = "haddock-library";
-        ver = "1.9.0";
-        sha256 = "12nr4qzas6fzn5p4ka27m5gs2rym0bgbfrym34yp0cd6rw9zdcl3"; 
-    } {});
-    optparse-applicative = self.callHackageDirect {
-        pkg = "optparse-applicative";
-        ver = "0.15.1.0";
-        sha256 = "1mii408cscjvids2xqdcy2p18dvanb0qc0q1bi7234r23wz60ajk"; 
-    } {};
-    base-compat = self.callHackageDirect {
-        pkg = "base-compat";
-        ver = "0.10.5";
-        sha256 = "0fq38x47dlwz3j6bdrlfslscz83ccwsjrmqq6l7m005331yn7qc6"; 
-    } {};
-    dhall = dontCheck (self.callHackageDirect {
-        pkg = "dhall";
-        ver = "1.30.0";
-        sha256 = "1iqvn3kalb5q8j1czx7r6qxfrsng5jrxzyx5gzzxcw46bpjig8n5"; 
-    } {});
-    prettyprinter = dontCheck (self.callHackageDirect {
-        pkg = "prettyprinter";
-        ver = "1.6.1";
-        sha256 = "05hccfk3bvdlginx95skyfh9cwr3126zf9qiz0bmmzpms98q37p9"; 
-    } {});
-    atomic-write = dontCheck (self.callHackageDirect {
-        pkg = "atomic-write";
-        ver = "0.2.0.7";
-        sha256 = "1r9ckwljdbw3mi8rmzmsnh89z8nhw2qnds9n271gkjgavb6hxxf3"; 
-    } {});
-    cborg-json = dontCheck (self.callHackageDirect {
-        pkg = "cborg-json";
-        ver = "0.2.2.0";
-        sha256 = "1s7pv3jz8s1qb0ydcc5nra9f63jp4ay4d0vncv919bakf8snj4vw"; 
-    } {});
-
-    algebraic-graphs = dontCheck super.algebraic-graphs;
-    clay = dontCheck super.clay;
-    Glob = dontCheck super.Glob;
-    exception-transformers = dontCheck super.exception-transformers;
-    exceptions = dontCheck super.exceptions;
-    SHA = dontCheck super.SHA;
-    aeson = dontCheck (self.callHackage "aeson" "1.4.5.0" {});
-    aeson-diff = dontCheck super.aeson-diff;
-    blaze-builder = dontCheck super.blaze-builder;
-    base64-bytestring = dontCheck super.base64-bytestring;
-    network-uri = dontCheck super.network-uri;
-    hashable = dontCheck super.hashable;
-    http-types = dontCheck super.http-types;
-    cereal = dontCheck super.cereal;
-    pandoc = dontHaddock (dontCheck super.pandoc);
-
-    quickcheck-instances = null;
-    serialise = dontCheck super.serialise;
-    vector-builder = dontCheck super.vector-builder;
-    edit-distance-vector = dontCheck super.edit-distance-vector;
-    hslua = dontCheck super.hslua;
-    parsers = dontCheck super.parsers;
-
-    # Try to use the latest version for fixes.
-    skylighting-core = dontCheck (self.callHackageDirect {
-        pkg = "skylighting-core";
-        ver = "0.8.4";
-        sha256 = "10k7r67a14pxlwd4zd0j06s3gdh09g6bjgsn6mlg3aha9nj52rgl"; 
-    } {});
-    skylighting = dontCheck (self.callHackageDirect {
-        pkg = "skylighting";
-        ver = "0.8.4";
-        sha256 = "0vcw9p0hs0s21xrxymbpbjzz6f8x7683y25p5kl4d9m9x6kblb9c"; 
-    } {});
-  };
-
-  shells = {
-    ghc = ["neuron"];
-  };
-})
+}
