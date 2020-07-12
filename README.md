@@ -48,7 +48,12 @@ ob thunk unpack dep/reflex-dom-pandoc
 
 # Let's work on that repo
 cd dep/reflex-dom-pandoc
+```
 
+For `nix-build` and `nix-shell` to still work while a dependency is unpacked, you need to change the source patch in `project.nix` to e.g. `reflex-dom-pandoc = ./dep/reflex-dom-pandoc`.
+
+Then you can try your changes with
+```
 # Run ghcid (using neuron's nix config)
 nix-shell ../../shell.nix --run ghcid
 ```
@@ -63,3 +68,5 @@ rm -rf dep/reflex-platform/dist-newstyle # cleanup build artifacts before packin
 ob thunk pack dep/reflex-dom-pandoc
 git add dep/reflex-dom-pandoc
 ```
+
+Don‘t forget to revert the temporary changes to your `project.nix`.

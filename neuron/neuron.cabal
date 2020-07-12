@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 0.5.9.0
+version: 0.5.10.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -138,7 +138,7 @@ common app-common
     modern-uri,
     foldl,
     filepath,
-    dhall >= 1.30,
+    dhall >= 1.31,
     which,
     unix,
     megaparsec >= 8.0,
