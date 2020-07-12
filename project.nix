@@ -4,7 +4,7 @@ in {
   # Cabal project name
   name ? "neuron",
   compiler ? pkgs.haskellPackages,
-  withHoogle ? true,
+  withHoogle ? false,
   ...
 }:
 
