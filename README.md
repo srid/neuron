@@ -28,7 +28,7 @@ When modifying the source code, use `bin/run` (which uses ghcid) to test your ch
 bin/run -d $(pwd)/guide rib -wS
 ```
 
-This command automatically recompiles and restarts when you change any of the Haskell source files, as well run site generation on the given Zettelkasten. You can pass the same neuron arguments to `bin/run`. This is essentially equivalent to running development version of neuron with instant reload.
+This command automatically recompiles and restarts when you change any of the Haskell source files. Furthermore, this command runs site generation on the given Zettelkasten. You can pass the same neuron arguments to `bin/run`. This is essentially equivalent to running a development version of neuron with instant reload.
 
 ### Running tests
 
