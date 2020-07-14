@@ -108,7 +108,7 @@ renderZettelLink conn (fromMaybe def -> linkView) Zettel {..} = do
       classes :: [Text] = catMaybes $ [Just "zettel-link-container"] <> [connClass, rawClass]
   elClass "span" (T.intercalate " " classes) $ do
     forM_ mextra $ \extra ->
-      elClass "span" "extra monoFont" $ do
+      elAttr "span" ("class" =: "extra monoFont" <> noSnippet) $ do
         extra
         -- The extra space is so that double clicking on this extra text
         -- doesn't select the title next.
@@ -120,6 +120,10 @@ renderZettelLink conn (fromMaybe def -> linkView) Zettel {..} = do
     elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
       neuronRouteLink (Some $ Route_Zettel zettelID) mempty $ text zettelTitle
   where
+    -- Prevent this element from appearing in Google search results
+    -- https://developers.google.com/search/reference/robots_meta_tag#data-nosnippet-attr
+    noSnippet :: Map Text Text
+    noSnippet = "data-nosnippet" =: ""
     withTooltip :: Maybe Text -> Map Text Text
     withTooltip = \case
       Nothing -> mempty
