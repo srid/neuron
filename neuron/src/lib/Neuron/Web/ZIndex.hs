@@ -18,6 +18,7 @@ import Clay ((?), Css, em)
 import qualified Clay as C
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
+import Data.TagTree (mkTagPattern)
 import Data.Tree
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
@@ -26,6 +27,7 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Query (zettelsByTag)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
@@ -40,7 +42,8 @@ data ZIndex = ZIndex
     zIndexClusters :: [Forest (Zettel, [Zettel])],
     -- | All zettel errors
     zIndexErrors :: Map ZettelID ZettelError,
-    zIndexStats :: Stats
+    zIndexStats :: Stats,
+    zPinned :: [Zettel]
   }
 
 data Stats = Stats
@@ -56,7 +59,8 @@ buildZIndex graph errors =
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
-   in ZIndex (fmap sortCluster clusters') errors stats
+      pinnedZettels = zettelsByTag (G.getZettels graph) [mkTagPattern "pinned"]
+   in ZIndex (fmap sortCluster clusters') errors stats pinnedZettels
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortCluster fs =
@@ -84,6 +88,10 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
       text "Each cluster's "
       elAttr "a" ("href" =: "https://neuron.zettel.page/2017401.html") $ text "folgezettel heterarchy"
       text " is rendered as a forest."
+    forM_ (nonEmpty zPinned) $ \zs ->
+      divClass "ui message pinned raised segment" $ do
+        el "ul" $ forM_ zs $ \z ->
+          el "li" $ QueryView.renderZettelLink Nothing def z
     forM_ zIndexClusters $ \forest ->
       divClass ("ui " <> themeColor <> " segment") $ do
         el "ul" $ renderForest forest

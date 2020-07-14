@@ -14,13 +14,14 @@ module Neuron.Zettelkasten.Query
     runGraphQuery,
     zettelQueryResultJson,
     graphQueryResultJson,
+    zettelsByTag,
   )
 where
 
 import Control.Monad.Except
 import Data.Aeson
 import qualified Data.Map.Strict as Map
-import Data.TagTree (Tag, tagMatch, tagMatchAny, tagTree)
+import Data.TagTree (Tag, TagPattern, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
 import Neuron.Zettelkasten.Graph (backlinks, getZettel)
 import Neuron.Zettelkasten.Graph.Type
@@ -39,9 +40,7 @@ runZettelQuery zs = \case
       Just z ->
         Right z
   ZettelQuery_ZettelsByTag pats _mconn _mview ->
-    Right $ sortZettelsReverseChronological $ flip filter zs $ \Zettel {..} ->
-      and $ flip fmap pats $ \pat ->
-        any (tagMatch pat) zettelTags
+    Right $ zettelsByTag zs pats
   ZettelQuery_Tags [] ->
     Right allTags
   ZettelQuery_Tags pats ->
@@ -51,6 +50,12 @@ runZettelQuery zs = \case
     allTags =
       Map.fromListWith (+) $
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
+
+zettelsByTag :: [Zettel] -> [TagPattern] -> [Zettel]
+zettelsByTag zs pats =
+  sortZettelsReverseChronological $ flip filter zs $ \Zettel {..} ->
+    and $ flip fmap pats $ \pat ->
+      any (tagMatch pat) zettelTags
 
 runGraphQuery :: ZettelGraph -> GraphQuery r -> Either QueryResultError r
 runGraphQuery g = \case
