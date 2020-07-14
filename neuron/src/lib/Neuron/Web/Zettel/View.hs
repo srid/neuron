@@ -120,6 +120,7 @@ renderZettelContent handleLink Zettel {..} = do
     void $ elPandoc (Config handleLink) zettelContent
     whenJust zettelDay $ \day ->
       elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ do
+        text "Created on: "
         elTime day
 
 renderZettelRawContent :: (DomBuilder t m) => ZettelT Text -> m ()

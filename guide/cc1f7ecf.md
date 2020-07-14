@@ -1,7 +1,3 @@
----
-date: "2020-06-26"
----
-
 # Querying with JSON output
 
 Use the `query` command to query your Zettelkasten and return the matches in JSON format. 
