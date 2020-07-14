@@ -40,6 +40,7 @@ import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
+import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
@@ -99,17 +100,18 @@ renderRouteBody :: PandocBuilder t m => Text -> Config -> Route a -> (ZettelGrap
 renderRouteBody neuronVersion Config {..} r (g, x) = do
   let neuronTheme = Theme.mkTheme theme
       themeSelector = toText $ Theme.themeIdentifier neuronTheme
+      indexZettel = G.getZettel (ZettelCustomID "index") g
   elAttr "div" ("class" =: "ui fluid container" <> "id" =: themeSelector) $ do
     case r of
       Route_ZIndex -> do
-        actionsNav neuronTheme editUrl Nothing
+        actionsNav neuronTheme indexZettel Nothing
         divClass "ui text container" $ do
           let zIndexData = ZIndex.buildZIndex g x
           ZIndex.renderZIndex neuronTheme zIndexData
           renderBrandFooter $ Just neuronVersion
         pure mempty
       Route_Search {} -> do
-        actionsNav neuronTheme editUrl Nothing
+        actionsNav neuronTheme indexZettel Nothing
         divClass "ui text container" $ do
           renderSearch g x
           renderBrandFooter $ Just neuronVersion
@@ -117,7 +119,8 @@ renderRouteBody neuronVersion Config {..} r (g, x) = do
       Route_Zettel _ -> do
         -- Don't inject neuron verison in zettel pages, to prevent unnecessary rebuilds when upgrading neuron
         let noVersion = Nothing
-        actionsNav neuronTheme editUrl (Just $ sansContent x)
+            zettelEditUrl = (<> toText (zettelPath $ sansContent x)) <$> editUrl
+        actionsNav neuronTheme indexZettel zettelEditUrl
         ZettelView.renderZettel (g, x)
           <* renderBrandFooter noVersion
       Route_Redirect _ -> do
@@ -171,13 +174,16 @@ renderBrandFooter mver =
 fa :: DomBuilder t m => Text -> m ()
 fa k = elClass "i" k blank
 
-actionsNav :: DomBuilder t m => Theme -> Maybe Text -> Maybe Zettel -> NeuronWebT t m ()
-actionsNav theme editUrl mz = elClass "nav" "top-menu" $ do
+actionsNav :: DomBuilder t m => Theme -> Maybe Zettel -> Maybe Text -> NeuronWebT t m ()
+actionsNav theme mIndexZettel mEditUrl = elClass "nav" "top-menu" $ do
   divClass ("ui inverted compact neuron icon menu " <> Theme.semanticColor theme) $ do
+    forM_ mIndexZettel $ \Zettel {..} ->
+      neuronRouteLink (Some $ Route_Zettel zettelID) ("class" =: "left item" <> "title" =: "Home") $
+        semanticIcon "home"
     neuronRouteLink (Some Route_ZIndex) ("class" =: "left item" <> "title" =: "All Zettels (z-index)") $
       semanticIcon "tree"
-    whenJust ((,) <$> mz <*> editUrl) $ \(Zettel {..}, urlPrefix) -> do
-      let attrs = ("href" =: (urlPrefix <> toText zettelPath) <> "title" =: "Edit this Zettel")
+    forM_ mEditUrl $ \editUrl -> do
+      let attrs = ("href" =: editUrl <> "title" =: "Edit this Zettel")
       elAttr "a" ("class" =: "center item" <> attrs) $ do
         semanticIcon "edit"
     neuronRouteLink (Some Route_Search) ("class" =: "right item" <> "title" =: "Search Zettels") $ do
