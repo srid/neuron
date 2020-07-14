@@ -34,9 +34,7 @@ import System.Posix.Process
 
 run :: (Config -> Action ()) -> IO ()
 run act = do
-  today <- utctDay <$> liftIO getCurrentTime
-  defaultNotesDir <- (</> "zettelkasten") <$> getHomeDirectory
-  let cliParser = commandParser defaultNotesDir today
+  cliParser <- commandParser <$> defaultNotesDir <*> today
   app <-
     execParser $
       info
@@ -48,6 +46,11 @@ run act = do
       infoOption
         (toString Version.neuronVersion)
         (long "version" <> help "Show version")
+    defaultNotesDir =
+      (</> "zettelkasten") <$> getHomeDirectory
+    today = do
+      tz <- getCurrentTimeZone
+      localDay . utcToLocalTime tz <$> liftIO getCurrentTime
 
 runWith :: (Config -> Action ()) -> App -> IO ()
 runWith act App {..} =
