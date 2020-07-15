@@ -31,7 +31,8 @@ instance FromYAML Meta where
     withMap "Meta" $ \m ->
       Meta
         <$> m .:? "title"
-        <*> (maybe (m .:? "keywords") (pure . Just) =<< m .:? "tags")
+        -- "keywords" is an alias for "tags"
+        <*> (liftA2 (<|>) (m .:? "tags") (m .:? "keywords"))
         <*> m .:? "date"
 
 -- NOTE: Not using this instance because it generates "tags: null" when tags is
