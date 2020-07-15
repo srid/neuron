@@ -1,6 +1,14 @@
-let nixpkgsRev = "8d05772";
+let 
+  nixpkgsSrc = builtins.fetchTarball {
+    url = "https://github.com/nixos/nixpkgs/archive/8d05772.tar.gz";
+    sha256 = "0pnyg26c1yhnp3ymzglc71pd9j0567ymqy6il5ywc82bbm1zy25a";
+  };
+  gitignoreSrc = builtins.fetchTarball {
+    url = "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz";
+    sha256 = "1zd1ylgkndbb5szji32ivfhwh04mr1sbgrnvbrqpmfb67g2g3r9i";
+  };
 in {
-  pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") { },
+  pkgs ? import nixpkgsSrc { },
   # Cabal project name
   name ? "neuron",
   compiler ? pkgs.haskellPackages,
@@ -12,11 +20,8 @@ let
   inherit (pkgs.haskell.lib)
     overrideCabal markUnbroken doJailbreak appendPatch justStaticExecutables;
 
-  inherit (import (builtins.fetchTarball
-    "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") {
-      inherit (pkgs) lib;
-    })
-    gitignoreSource;
+  inherit (import (gitignoreSrc) { inherit (pkgs) lib; }) gitignoreSource;
+
   sources = {
     neuron = "${gitignoreSource ./.}/neuron";
     rib = import ./dep/rib/thunk.nix;
