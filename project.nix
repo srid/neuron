@@ -8,7 +8,8 @@ let
     sha256 = "1zd1ylgkndbb5szji32ivfhwh04mr1sbgrnvbrqpmfb67g2g3r9i";
   };
 in {
-  pkgs ? import nixpkgsSrc { },
+  system ? builtins.currentSystem,
+  pkgs ? import nixpkgsSrc { inherit system; },
   # Cabal project name
   name ? "neuron",
   compiler ? pkgs.haskellPackages,
