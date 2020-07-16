@@ -2,6 +2,8 @@
 
 ## 0.5.0.0 (UNRELEASED)
 
+NOTE: This section is largely out of date. Checkout the PR and commit history.
+
 - Markdown: switch to Pandoc, and commonmark (with [extensions](https://github.com/jgm/commonmark-hs/tree/master/commonmark-extensions)). #166
   - Markdown parsing is consequently less strict and more permissive
   - With this change, neuron can potentially support other text formats (org,
