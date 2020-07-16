@@ -7,14 +7,13 @@
 [![Zulip chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://funprog.zulipchat.com/#narrow/stream/231929-Neuron)
 [![Matrix chat](https://matrix.to/img/matrix-badge.svg)](https://matrix.to/#/#neuron:matrix.org)
 
-neuron is a future-proof command-line app for managing your plain-text [Zettelkasten](https://neuron.zettel.page/2011401.html) notes.
+neuron is a **future-proof** command-line app for managing your plain-text [Zettelkasten](https://neuron.zettel.page/2011401.html) notes.
 
-**Features**
+**Highlights**
 
-- Extended Markdown for easy linking between zettels
-- Web interface (auto generated static site)
-- Graph view of zettels (folgezettel heterarchy)
-- Hash-based note IDs
+- Markdown with zettel linking and hierarchical tagging
+- Auto-generated static web site (see [examples](https://neuron.zettel.page/2013101.html))
+- Simple to use, with optional editor integration (emacs, vim)
 
 ## Getting started
 
