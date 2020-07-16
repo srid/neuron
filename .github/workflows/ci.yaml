@@ -23,7 +23,7 @@ jobs:
     # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
     # if: github.ref == 'refs/heads/master'
     - name: Bundle up
-      if: ${{ runner.os == 'Linux' }}
+      if: ${{ github.ref == 'refs/heads/master' && runner.os == 'Linux' }}
       run: |
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
@@ -32,7 +32,7 @@ jobs:
         cp neuron ~/bundle/neuron
         chmod a+x ~/bundle/neuron
     - uses: actions/upload-artifact@v2
-      if: ${{ runner.os == 'Linux' }}
+      if: ${{ github.ref == 'refs/heads/master' && runner.os == 'Linux' }}
       with:
         name: neuron-bundle-linux 
         path: ~/bundle/neuron
