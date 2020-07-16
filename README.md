@@ -11,7 +11,8 @@ neuron is a **future-proof** command-line app for managing your plain-text [Zett
 
 **Highlights**
 
-- Markdown with zettel linking and hierarchical tagging
+- Work with a directory of markdown files
+- Powerful linking syntax and hierarchical tagging
 - Auto-generated static web site (see [examples](https://neuron.zettel.page/2013101.html))
 - Simple to use, with optional editor integration (emacs, vim)
 
