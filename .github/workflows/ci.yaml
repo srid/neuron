@@ -49,7 +49,7 @@ jobs:
       run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
     - name: Upload bundle to nightly release
       if: ${{ github.ref == 'refs/heads/nightly-releases-test' }}
-      uses: meeDamian/github-release@v2.0
+      uses: meeDamian/github-release@v2.0.3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: nightly
