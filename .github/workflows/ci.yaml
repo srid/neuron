@@ -48,6 +48,7 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: ${{ env.BUNDLEFILE }}
+        path: ~/
     - name: Get current date and time
       id: date
       run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
@@ -62,6 +63,6 @@ jobs:
           last updated on ${{ steps.date.outputs.date }}.
         prerelease: true
         # TODO: Use BUNDLEFILE
-        files: neuron-bundle-linux.zip:neuron-bundle-linux
+        files: neuron-bundle-linux.zip:~/neuron-bundle-linux-testing.zip
         gzip: false
         allow_override: true
