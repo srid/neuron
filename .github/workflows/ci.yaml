@@ -41,20 +41,11 @@ jobs:
       with:
         name: ${{ env.BUNDLEFILE }}
         path: ~/bundle/neuron
-  update-nightly-release:
-    runs-on: ubuntu-latest
-    needs: build
-    if: ${{ github.ref == 'refs/heads/nightly-releases-test' }}
-    steps:
-    - name: Download latest linux bundle artifact
-      uses: actions/download-artifact@v2
-      with:
-        name: ${{ env.BUNDLEFILE }}
-        path: ~/
     - name: Get current date and time
       id: date
       run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
     - name: Update nightly release with current bundle
+      if: ${{ github.ref == 'refs/heads/nightly-releases-test' }}
       uses: meeDamian/github-release@v2.0.3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
