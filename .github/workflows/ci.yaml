@@ -22,9 +22,11 @@ jobs:
         # Only needed for private caches
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     # This gets everything from cache, but doesn't build neuron (yet).
-    - run: nix-build -j4 shell.nix
+    - name: Pull from Nix cache
+      run: nix-build -j4 shell.nix
     # This builds neuron, as well as run tests
-    - run: nix-build -j4 ci.nix
+    - name: Build neuron 
+      run: nix-build -j4 ci.nix
     # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
     # if: github.ref == 'refs/heads/master'
     - name: Bundle up
@@ -36,7 +38,8 @@ jobs:
         mkdir ~/bundle
         cp neuron ~/bundle/neuron
         chmod a+x ~/bundle/neuron
-    - uses: actions/upload-artifact@v2
+    - name: Upload bundle as artifact 
+      uses: actions/upload-artifact@v2
       if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
       with:
         name: ${{ env.BUNDLEFILE }}
@@ -44,7 +47,7 @@ jobs:
     - name: Get current date and time
       id: date
       run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
-    - name: Update nightly release with current bundle
+    - name: Upload bundle to nightly release
       if: ${{ github.ref == 'refs/heads/nightly-releases-test' }}
       uses: meeDamian/github-release@v2.0.3
       with:
@@ -56,6 +59,6 @@ jobs:
           last updated on ${{ steps.date.outputs.date }}.
         prerelease: true
         # TODO: Use BUNDLEFILE
-        files: neuron-bundle-linux.zip:~/neuron-bundle-linux-testing.zip
+        files: ~/bundle/neuron
         gzip: false
         allow_override: true
