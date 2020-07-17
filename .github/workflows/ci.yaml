@@ -2,6 +2,9 @@ name: "CI"
 on:
   pull_request:
   push:
+env:
+  MAINLINE: refs/heads/master
+  BUNDLEFILE: neuron-bundle-linux-testing
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -23,7 +26,7 @@ jobs:
     # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
     # if: github.ref == 'refs/heads/master'
     - name: Bundle up
-      if: ${{ github.ref == 'refs/heads/master' && runner.os == 'Linux' }}
+      if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
       run: |
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
@@ -32,19 +35,19 @@ jobs:
         cp neuron ~/bundle/neuron
         chmod a+x ~/bundle/neuron
     - uses: actions/upload-artifact@v2
-      if: ${{ github.ref == 'refs/heads/master' && runner.os == 'Linux' }}
+      if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
       with:
-        name: neuron-bundle-linux
+        name: ${{ env.BUNDLEFILE }}
         path: ~/bundle/neuron
   update-nightly-release:
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ github.ref == 'refs/heads/master' }}
+    if: ${{ github.ref == env.MAINLINE }}
     steps:
     - name: Download latest linux bundle artifact
       uses: actions/download-artifact@v2
       with:
-        name: neuron-bundle-linux
+        name: ${{ env.BUNDLEFILE }}
     - name: Get current date and time
       id: date
       run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
@@ -58,6 +61,7 @@ jobs:
           Current build of Neuron from `master` branch -
           last updated on ${{ steps.date.outputs.date }}.
         prerelease: true
+        # TODO: Use BUNDLEFILE
         files: neuron-bundle-linux.zip:neuron-bundle-linux
         gzip: false
         allow_override: true
