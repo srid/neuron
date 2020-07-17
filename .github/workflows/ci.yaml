@@ -37,7 +37,7 @@ jobs:
         ./nix-bundle.sh '(import ../.. {})' /bin/neuron > neuron
         mkdir ~/bundle
         cp neuron ~/bundle/neuron
-        chmod a+x ~/bundle/neuron
+        chmod a+x neuron ~/bundle/neuron
     - name: Upload bundle as artifact 
       uses: actions/upload-artifact@v2
       if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
@@ -58,7 +58,7 @@ jobs:
           Current build of Neuron from `master` branch -
           last updated on ${{ steps.date.outputs.date }}.
         prerelease: true
-        # TODO: Use BUNDLEFILE
-        files: neuron:~/bundle/neuron
+        # files: neuron:~/bundle/neuron
+        files: neuron:tmp/nix-bundle/neuron
         gzip: false
         allow_override: true
