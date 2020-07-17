@@ -10,7 +10,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest] # TODO , macos-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v10
@@ -21,6 +21,8 @@ jobs:
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
         # Only needed for private caches
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    # This gets everything from cache, but doesn't build neuron (yet).
+    - run: nix-build -j4 shell.nix
     # This builds neuron, as well as run tests
     - run: nix-build -j4 ci.nix
     # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
