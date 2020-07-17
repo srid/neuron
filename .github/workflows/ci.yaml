@@ -49,7 +49,7 @@ jobs:
       run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
     - name: Upload bundle to nightly release
       if: ${{ github.ref == 'refs/heads/nightly-releases-test' }}
-      uses: meeDamian/github-release@v2.0.3
+      uses: meeDamian/github-release@v2.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: nightly
@@ -59,6 +59,6 @@ jobs:
           last updated on ${{ steps.date.outputs.date }}.
         prerelease: true
         # TODO: Use BUNDLEFILE
-        files: ~/bundle/neuron
+        files: neuron:~/bundle/neuron
         gzip: false
         allow_override: true
