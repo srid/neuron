@@ -28,11 +28,41 @@ jobs:
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
         ./nix-bundle.sh '(import ../.. {})' /bin/neuron > neuron
-        mkdir ~/bundle 
+        mkdir ~/bundle
         cp neuron ~/bundle/neuron
         chmod a+x ~/bundle/neuron
     - uses: actions/upload-artifact@v2
-      if: ${{ github.ref == 'refs/heads/master' && runner.os == 'Linux' }}
+      if: github.ref == 'refs/heads/master' && runner.os == 'Linux'
       with:
-        name: neuron-bundle-linux 
+        name: neuron-bundle-linux
         path: ~/bundle/neuron
+  create-nightly-release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/master' && runner.os == 'Linux'
+    steps:
+    - name: Download latest linux bundle artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: neuron-bundle-linux
+    - name: Get current date and time
+      id: date
+      run: echo "::set-output name=date::$(date +'%Y%m%d%H%M%S')"
+    - name: Create new nightly release
+      id: release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag: nightly-${{ steps.date.outputs.date }}
+        release-name: nightly-${{ steps.date.outputs.date }}
+        prerelease: true
+    - name: Upload latest linux bundle to release
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.release.outputs.upload_url }}
+        asset_path: neuron-bundle-linux
+        asset_name: neuron-nightly-bundle-linux.zip
+        asset_content_type: application/zip
