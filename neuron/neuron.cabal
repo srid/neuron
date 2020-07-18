@@ -10,9 +10,9 @@ category: Web
 homepage: https://neuron.zettel.page
 bug-reports: https://github.com/srid/neuron/issues
 synopsis:
-  Haskell meets Zettelkasten, for your plain-text delight.
+  Future-proof system for plain-text notes.
 description:
-  neuron is a system for managing your plain-text Zettelkasten notes.
+  neuron is a future-proof system for managing your plain-text Zettelkasten notes.
 extra-source-files:
   README.md
   CHANGELOG.md
@@ -64,7 +64,7 @@ common library-common
     data-default,
     reflex,
     reflex-dom-core,
-    reflex-dom-pandoc,
+    reflex-dom-pandoc >= 0.2.0.0,
     clay,
     tagged
 
