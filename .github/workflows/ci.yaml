@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] # TODO: , macos-latest]
+        os: [ubuntu-latest, macos-latest]
     env:
       MAINLINE: refs/heads/nightly-releases-test
     steps:
