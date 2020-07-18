@@ -32,11 +32,11 @@ jobs:
       run: |
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
-        ./nix-bundle.sh '(import ../.. {})' /bin/neuron > ../../neuron
+        ./nix-bundle.sh '(import ../.. {})' /bin/neuron > ../../neuron-linux
         cd -
         mkdir ~/bundle
-        cp neuron ~/bundle/neuron
-        chmod a+x neuron ~/bundle/neuron
+        cp neuron-linux ~/bundle/neuron
+        chmod a+x neuron-linux ~/bundle/neuron
     - name: Upload bundle as artifact 
       uses: actions/upload-artifact@v2
       if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
@@ -57,5 +57,6 @@ jobs:
           Current build of Neuron from `${{ env.MAINLINE }}` branch -
           last updated on ${{ steps.date.outputs.date }}.
         prerelease: true
-        files: neuron-linux:neuron
+        files: neuron-linux
+        gzip: false
         allow_override: true
