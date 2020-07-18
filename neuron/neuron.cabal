@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 0.5.10.3
+version: 0.5.11.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -10,9 +10,9 @@ category: Web
 homepage: https://neuron.zettel.page
 bug-reports: https://github.com/srid/neuron/issues
 synopsis:
-  Haskell meets Zettelkasten, for your plain-text delight.
+  Future-proof system for plain-text notes.
 description:
-  neuron is a system for managing your plain-text Zettelkasten notes.
+  neuron is a future-proof system for managing your plain-text Zettelkasten notes.
 extra-source-files:
   README.md
   CHANGELOG.md
@@ -50,9 +50,9 @@ common library-common
     containers,
     filepattern,
     megaparsec,
-    commonmark,
-    commonmark-extensions,
-    commonmark-pandoc,
+    commonmark ^>= 0.1.0.0,
+    commonmark-extensions ^>= 0.1.0.0,
+    commonmark-pandoc ^>= 0.1.0.0,
     pandoc-types,
     parsec,
     modern-uri,
@@ -64,7 +64,7 @@ common library-common
     data-default,
     reflex,
     reflex-dom-core,
-    reflex-dom-pandoc,
+    reflex-dom-pandoc >= 0.2.0.0,
     clay,
     tagged
 
@@ -131,14 +131,14 @@ common app-common
     skylighting-core,
     relude,
     iso8601-time,
-    rib ^>=0.11,
+    rib ^>=0.12,
     shake -any,
     time,
     text,
     modern-uri,
     foldl,
     filepath,
-    dhall >= 1.31,
+    dhall >= 1.30,
     which,
     unix,
     megaparsec >= 8.0,

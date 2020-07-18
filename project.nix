@@ -1,11 +1,11 @@
 let 
   nixpkgsSrc = builtins.fetchTarball {
-    url = "https://github.com/nixos/nixpkgs/archive/8d05772.tar.gz";
-    sha256 = "0pnyg26c1yhnp3ymzglc71pd9j0567ymqy6il5ywc82bbm1zy25a";
+    url = "https://github.com/nixos/nixpkgs/archive/d7e20ee25ed8.tar.gz";
+    sha256 = "1ar7prnrmmlqj17g57nqp82hgy5283dxb94akaqrwpbaz7qfwi4y";
   };
   gitignoreSrc = builtins.fetchTarball {
-    url = "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz";
-    sha256 = "1zd1ylgkndbb5szji32ivfhwh04mr1sbgrnvbrqpmfb67g2g3r9i";
+    url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
+    sha256 = "1npnx0h6bd0d7ql93ka7azhj40zgjp815fw2r6smg8ch9p7mzdlx";
   };
 in {
   system ? builtins.currentSystem,
