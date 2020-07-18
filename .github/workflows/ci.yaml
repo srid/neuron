@@ -58,6 +58,5 @@ jobs:
           last updated on ${{ steps.date.outputs.date }}.
         prerelease: true
         # files: neuron:~/bundle/neuron
-        files: neuron:tmp/nix-bundle/neuron
-        gzip: false
+        files: neuron-linux:tmp/nix-bundle/neuron
         allow_override: true
