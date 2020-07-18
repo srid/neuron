@@ -9,7 +9,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     env:
-      MAINLINE: refs/heads/nightly-releases-test
+      MAINLINE: refs/heads/master
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v10
