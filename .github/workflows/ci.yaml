@@ -8,6 +8,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
+    env:
+      MAINLINE: refs/heads/master
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v10
@@ -18,21 +20,43 @@ jobs:
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
         # Only needed for private caches
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    # This gets everything from cache, but doesn't build neuron (yet).
+    - name: Pull from Nix cache
+      run: nix-build -j4 shell.nix
     # This builds neuron, as well as run tests
-    - run: nix-build -j4 ci.nix
+    - name: Build neuron 🔧
+      run: nix-build -j4 ci.nix
     # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
-    # if: github.ref == 'refs/heads/master'
     - name: Bundle up
-      if: ${{ github.ref == 'refs/heads/master' && runner.os == 'Linux' }}
+      if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
       run: |
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
-        ./nix-bundle.sh '(import ../.. {})' /bin/neuron > neuron
-        mkdir ~/bundle 
-        cp neuron ~/bundle/neuron
-        chmod a+x ~/bundle/neuron
-    - uses: actions/upload-artifact@v2
-      if: ${{ github.ref == 'refs/heads/master' && runner.os == 'Linux' }}
+        ./nix-bundle.sh '(import ../.. {})' /bin/neuron > ../../neuron-linux-bundle
+        cd -
+        mkdir ~/bundle
+        cp neuron-linux-bundle ~/bundle/neuron
+        chmod a+x neuron-linux-bundle ~/bundle/neuron
+    - name: Upload bundle as artifact 
+      uses: actions/upload-artifact@v2
+      if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
       with:
-        name: neuron-bundle-linux 
+        name: neuron-bundle-linux
         path: ~/bundle/neuron
+    - name: Get current date and time
+      id: date
+      run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
+    - name: Upload bundle to nightly release
+      uses: meeDamian/github-release@v2.0.3
+      if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: nightly
+        name: Neuron nightly
+        body: >
+          Current build of Neuron from `${{ env.MAINLINE }}` branch -
+          last updated on ${{ steps.date.outputs.date }}.
+        prerelease: true
+        files: neuron-linux-bundle
+        gzip: false
+        allow_override: true
