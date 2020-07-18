@@ -3,13 +3,13 @@ on:
   pull_request:
   push:
 jobs:
-  env:
-    MAINLINE: refs/heads/nightly-releases-test
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest] # TODO: , macos-latest]
+    env:
+      MAINLINE: refs/heads/nightly-releases-test
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v10
@@ -54,7 +54,7 @@ jobs:
         tag: nightly
         name: Neuron nightly
         body: >
-          Current build of Neuron from `master` branch -
+          Current build of Neuron from `${{ env.MAINLINE }}` branch -
           last updated on ${{ steps.date.outputs.date }}.
         prerelease: true
         # files: neuron:~/bundle/neuron
