@@ -24,16 +24,16 @@ jobs:
     - name: Pull from Nix cache
       run: nix-build -j4 shell.nix
     # This builds neuron, as well as run tests
-    - name: Build neuron 
+    - name: Build neuron 🔧
       run: nix-build -j4 ci.nix
     # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
-    # if: github.ref == 'refs/heads/master'
     - name: Bundle up
       if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
       run: |
         git clone https://github.com/srid/nix-bundle.git tmp/nix-bundle
         cd tmp/nix-bundle
-        ./nix-bundle.sh '(import ../.. {})' /bin/neuron > neuron
+        ./nix-bundle.sh '(import ../.. {})' /bin/neuron > ../../neuron
+        cd -
         mkdir ~/bundle
         cp neuron ~/bundle/neuron
         chmod a+x neuron ~/bundle/neuron
@@ -47,8 +47,8 @@ jobs:
       id: date
       run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
     - name: Upload bundle to nightly release
-      if: ${{ github.ref == env.MAINLINE }}
       uses: meeDamian/github-release@v2.0.3
+      if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         tag: nightly
@@ -57,6 +57,5 @@ jobs:
           Current build of Neuron from `${{ env.MAINLINE }}` branch -
           last updated on ${{ steps.date.outputs.date }}.
         prerelease: true
-        # files: neuron:~/bundle/neuron
-        files: neuron-linux:tmp/nix-bundle/neuron
+        files: neuron-linux:neuron
         allow_override: true

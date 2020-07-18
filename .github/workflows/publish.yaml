@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v9
+    - uses: cachix/install-nix-action@v10
     - uses: cachix/cachix-action@v6
       with:
         name: srid
@@ -21,7 +21,7 @@ jobs:
         neuron --version
         neuron -d guide/ rib
     - name: Deploy to GitHub Pages 🚀
-      uses: JamesIves/github-pages-deploy-action@3.5.6
+      uses: JamesIves/github-pages-deploy-action@3.5.8
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BRANCH: gh-pages
