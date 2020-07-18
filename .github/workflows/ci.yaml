@@ -2,15 +2,14 @@ name: "CI"
 on:
   pull_request:
   push:
-env:
-  MAINLINE: refs/heads/nightly-releases-test
-  BUNDLEFILE: neuron-bundle-linux-testing
 jobs:
+  env:
+    MAINLINE: refs/heads/nightly-releases-test
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] # TODO , macos-latest]
+        os: [ubuntu-latest] # TODO: , macos-latest]
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v10
@@ -42,13 +41,13 @@ jobs:
       uses: actions/upload-artifact@v2
       if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
       with:
-        name: ${{ env.BUNDLEFILE }}
+        name: neuron-bundle-linux
         path: ~/bundle/neuron
     - name: Get current date and time
       id: date
       run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
     - name: Upload bundle to nightly release
-      if: ${{ github.ref == 'refs/heads/nightly-releases-test' }}
+      if: ${{ github.ref == env.MAINLINE }}
       uses: meeDamian/github-release@v2.0.3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
