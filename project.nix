@@ -24,7 +24,7 @@ let
   inherit (import (gitignoreSrc) { inherit (pkgs) lib; }) gitignoreSource;
 
   sources = {
-    neuron = "${gitignoreSource ./.}/neuron";
+    neuron = gitignoreSource ./neuron;
     rib = import ./dep/rib/thunk.nix;
     commonmark = import ./dep/commonmark-hs/thunk.nix;
     reflex-dom-pandoc = import ./dep/reflex-dom-pandoc/thunk.nix;
