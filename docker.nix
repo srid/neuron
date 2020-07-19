@@ -15,5 +15,5 @@ pkgs.dockerTools.buildImage {
   fromImage = baseImage;
   name = "sridca/neuron";
   tag = "test";
-  contents = [ (import ./.) ];
+  contents = [ (import ./. {}) ];
 }
