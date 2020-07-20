@@ -60,3 +60,9 @@ jobs:
         files: neuron-linux-bundle
         gzip: false
         allow_override: true
+    - name: Publish nightly Docker image 
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        docker load -i $(nix-build docker.nix --arg tag ci)
+        docker login -u sridca ${DOCKER_PASS}
+        docker push sridca/neuron:ci
