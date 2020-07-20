@@ -24,5 +24,5 @@ marker elemId offsetPx = do
 script :: DomBuilder t m => Text -> m ()
 script markerId = do
   let s =
-        "document.getElementById(\"" <> markerId <> "\").scrollIntoView({behavior: \"smooth\", block: \"start\"});"
+        "if (window.scrollY == 0) { document.getElementById(\"" <> markerId <> "\").scrollIntoView({behavior: \"smooth\", block: \"start\"}); }"
   el "script" $ text s
