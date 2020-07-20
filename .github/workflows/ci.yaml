@@ -63,6 +63,6 @@ jobs:
     - name: Publish Docker image to Docker Hub
       if: ${{ runner.os == 'Linux' }}
       run: |
-        docker load -i $(nix-build docker.nix --argstr tag ci)
-        docker login -u sridca -p ${DOCKER_PASS}
-        docker push sridca/neuron:ci
+        docker load -i $(nix-build docker.nix --argstr tag test)
+        docker login -u sridca -p ${{ secrets.DOCKER_PASS }}
+        docker push sridca/neuron:test
