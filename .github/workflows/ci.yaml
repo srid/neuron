@@ -64,5 +64,5 @@ jobs:
       if: ${{ runner.os == 'Linux' }}
       run: |
         docker load -i $(nix-build docker.nix --argstr tag ci)
-        docker login -u sridca ${DOCKER_PASS}
+        docker login -u sridca -p ${DOCKER_PASS}
         docker push sridca/neuron:ci

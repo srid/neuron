@@ -1,19 +1,21 @@
 # Builds a docker image containing the neuron executable
+#
 # Run as:
 #   docker load -i $(
 #     nix-build docker.nix \
-#       --arg name '"<image name>"' \
-#       --arg tag '"<image tag>"'
+#       --argstr name <image-name> \
+#       --argstr tag <image-tag>
 #   )
 let
+  # TODO: Use the same nixpkgs used in project.nix (create a shared
+  # nixpkgs.nix?)
   pkgs = import <nixpkgs> {};
   neuron = import ./. {};
 in {
   name ? "sridca/neuron"
-, tag ? "test"
+, tag ? "dev"
 }: pkgs.dockerTools.buildImage {
-  name = name;
-  tag = tag;
+  inherit name tag;
   contents = [ 
     neuron
     # These are required for the GitLab CI runner
