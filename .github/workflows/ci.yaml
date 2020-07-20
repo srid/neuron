@@ -60,7 +60,7 @@ jobs:
         files: neuron-linux-bundle
         gzip: false
         allow_override: true
-    - name: Publish nightly Docker image 
+    - name: Publish Docker image to Docker Hub
       if: ${{ runner.os == 'Linux' }}
       run: |
         docker load -i $(nix-build docker.nix --arg tag ci)
