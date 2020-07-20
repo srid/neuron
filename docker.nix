@@ -14,5 +14,10 @@ in {
 }: pkgs.dockerTools.buildImage {
   name = name;
   tag = tag;
-  contents = [ neuron pkgs.coreutils pkgs.bash_5 ];
+  contents = [ 
+    neuron
+    # These are required for the GitLab CI runner
+    pkgs.coreutils 
+    pkgs.bash_5 
+  ];
 }
