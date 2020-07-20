@@ -4,10 +4,14 @@
 let
   pkgs = import <nixpkgs> {};
   neuron = import ./. {};
-in
-
-pkgs.dockerTools.buildImage {
-  name = "sridca/neuron";
-  tag = "test";
-  contents = [ neuron ];
+in {
+  name ? "sridca/neuron"
+, tag ? "test"
+, includeShell ? false
+}: pkgs.dockerTools.buildImage {
+  name = name;
+  tag = tag;
+  contents = [ neuron ] ++ (if includeShell
+    then [ pkgs.coreutils pkgs.bash_5 ]
+    else []);
 }
