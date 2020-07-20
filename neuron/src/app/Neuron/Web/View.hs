@@ -180,14 +180,14 @@ actionsNav theme mIndexZettel mEditUrl = elClass "nav" "top-menu" $ do
     forM_ mIndexZettel $ \Zettel {..} ->
       neuronRouteLink (Some $ Route_Zettel zettelID) ("class" =: "left item" <> "title" =: "Home") $
         semanticIcon "home"
-    neuronRouteLink (Some Route_ZIndex) ("class" =: "left item" <> "title" =: "All Zettels (z-index)") $
-      semanticIcon "tree"
+    neuronRouteLink (Some Route_Search) ("class" =: "right item" <> "title" =: "Search Zettels") $ do
+      semanticIcon "search"
     forM_ mEditUrl $ \editUrl -> do
       let attrs = ("href" =: editUrl <> "title" =: "Edit this Zettel")
       elAttr "a" ("class" =: "center item" <> attrs) $ do
         semanticIcon "edit"
-    neuronRouteLink (Some Route_Search) ("class" =: "right item" <> "title" =: "Search Zettels") $ do
-      semanticIcon "search"
+    neuronRouteLink (Some Route_ZIndex) ("class" =: "left item" <> "title" =: "All Zettels (z-index)") $
+      semanticIcon "tree"
 
 style :: Css
 style = do
