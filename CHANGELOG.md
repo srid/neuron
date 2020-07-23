@@ -1,21 +1,30 @@
 # Change Log for neuron
 
-## 0.5.0.0 (UNRELEASED)
-
-NOTE: This section is largely out of date. Checkout the PR and commit history.
+## 0.6.0.0
 
 - Markdown: switch to Pandoc, and commonmark (with [extensions](https://github.com/jgm/commonmark-hs/tree/master/commonmark-extensions)). #166
   - Markdown parsing is consequently less strict and more permissive
-  - With this change, neuron can potentially support other text formats (org,
-    reST, etc.)
-- Switch to GHC 8.6 (for reflex-dom)
-- Raw HTML support (#191)
-- Introduce new "uplink tree" view (#195)
-- Resilient error handling (#202, #215)
-- Added `neuron query --graph` to get the entire graph as JSON export
-- YAML block is now optional; title is also optional, while native Markdown H1 titles are now supported (#230)
+  - With this change, neuron can potentially support other text formats (experimental org support already in)
+  - Raw HTML support (#191)
+  - YAML block is now optional; title is also optional, while native Markdown H1 titles are now supported (#230)
+- Web Interface
+  - Introduce new "uplink tree" view, replacing connections pane (#195)
+  - Allow customizing favicon
+  - z-index: Allow cycles (#248)
+  - z-index: display parse and query errors (#220, #221)
+- CLI:
+  - Resilient error handling (#202, #215)
+  - Added `neuron query --graph` to get the entire graph as JSON export
+    - Add backlinks query (#216)
+  - Add bash/zsh shell completion (#239)
+  - neuron new: title is optional (#232)
 - Bug fixes
   - Fix 'neuron new' generating invalid Markdown when title contains special characters (#163)
+  - Allow custom CLI in $EDITOR (#227)
+- Others
+  - Reduce install size (#240)
+  - Nightly docker releases 
+  - Automatic publishing through [neuron-template](https://github.com/srid/neuron-template)
 
 ## 0.4.0.0
 
