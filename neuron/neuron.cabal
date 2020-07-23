@@ -128,7 +128,7 @@ common app-common
     skylighting-core,
     relude,
     iso8601-time,
-    rib ^>=0.12,
+    rib >=0.12,
     shake -any,
     time,
     text,
