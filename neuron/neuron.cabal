@@ -13,9 +13,6 @@ synopsis:
   Future-proof system for plain-text notes.
 description:
   neuron is a future-proof system for managing your plain-text Zettelkasten notes.
-extra-source-files:
-  README.md
-  CHANGELOG.md
 data-files:
   src-js/search.js
   src-bash/neuron-search
