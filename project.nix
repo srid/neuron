@@ -1,7 +1,7 @@
 let 
   nixpkgsSrc = builtins.fetchTarball {
-    url = "https://github.com/nixos/nixpkgs/archive/d7e20ee25ed8.tar.gz";
-    sha256 = "1ar7prnrmmlqj17g57nqp82hgy5283dxb94akaqrwpbaz7qfwi4y";
+    url = "https://github.com/nixos/nixpkgs/archive/b8c367a7bd05.tar.gz";
+    sha256 = "0y17zxhwdw0afml2bwkmhvkymd9fv242hksl3l3xz82gmlg1zks4";
   };
   gitignoreSrc = builtins.fetchTarball {
     url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";

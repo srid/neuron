@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Updates
-  - Bump commonmark-hs
+  - Bump commonmark, commonmark-extensions (0.2)
 
 ## 0.6.0.0
 
