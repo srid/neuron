@@ -1,8 +1,9 @@
 # Change Log for neuron
 
-## 0.6.0.1
+## Unreleased
 
-- Bump commonmark-hs dependencies to newest version
+- Updates
+  - Bump commonmark-hs
 
 ## 0.6.0.0
 
