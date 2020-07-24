@@ -99,7 +99,8 @@ neuronSpec ::
     CE.HasFootnote il bl,
     CE.HasMath il,
     CE.HasDefinitionList il bl,
-    CE.HasDiv bl
+    CE.HasDiv bl,
+    CE.HasQuoted il
   ) =>
   CM.SyntaxSpec m il bl
 neuronSpec =
