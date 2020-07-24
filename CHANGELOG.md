@@ -1,5 +1,10 @@
 # Change Log for neuron
 
+## Unreleased
+
+- Updates
+  - Bump commonmark-hs
+
 ## 0.6.0.0
 
 - Markdown: switch to Pandoc, and commonmark (with [extensions](https://github.com/jgm/commonmark-hs/tree/master/commonmark-extensions)). #166
