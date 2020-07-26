@@ -12,6 +12,9 @@ neuronCommonStyle :: Css
 neuronCommonStyle = do
   C.important $ C.backgroundColor "#eee"
   C.important $ C.fontFamily [bodyFont] [C.serif]
+  ".ui.container" ? do
+    -- Override Semantic UI's font
+    C.important $ C.fontFamily [bodyFont] [C.serif]
   "h1, h2, h3, h4, h5, h6, .ui.header, .headerFont" ? do
     C.important $ C.fontFamily [headerFont] [C.sansSerif]
   "code, pre, tt, .monoFont" ? do

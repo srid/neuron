@@ -4,6 +4,8 @@
 
 - Updates
   - Bump commonmark, commonmark-extensions (0.2)
+- Web Interface
+  - Fix incorrect body font
 
 ## 0.6.0.0
 
