@@ -40,6 +40,10 @@ zettelCss = do
 
 zettelContentCss :: Css
 zettelContentCss = do
+  ".pandoc" ? do
+    -- GitHub task list
+    ".ui.disabled.fitted.checkbox" ? do
+      C.marginRight $ em 0.3
   ".zettel-content" ? do
     -- All of these apply to the zettel content card only.
     "div.date" ? do

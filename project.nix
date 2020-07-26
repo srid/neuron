@@ -59,7 +59,7 @@ let
 
     # Also not released yet
     reflex-dom-pandoc =
-      self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { };
+      pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
 
     # Override pandoc-types and dependencies because stack-lts versions are to old
     hslua = self.hslua_1_1_2;
