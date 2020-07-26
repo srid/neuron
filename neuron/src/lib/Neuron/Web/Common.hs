@@ -24,10 +24,10 @@ neuronFonts :: [Text]
 neuronFonts = [headerFont, bodyFont, monoFont]
 
 headerFont :: Text
-headerFont = "Neuton"
+headerFont = "Kanit"
 
 bodyFont :: Text
-bodyFont = "Lato"
+bodyFont = "Ubuntu"
 
 monoFont :: Text
 monoFont = "Roboto Mono"
