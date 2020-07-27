@@ -5,7 +5,9 @@
 - Updates
   - Bump commonmark, commonmark-extensions (0.2)
 - Web Interface
-  - Fix incorrect body font
+  - Styling fixes
+    - Fix incorrect body font (esp. on Windows)
+    - Fix task list checkbox styling (#233)
 
 ## 0.6.0.0
 
