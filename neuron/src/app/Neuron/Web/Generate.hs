@@ -65,7 +65,7 @@ generateSite config writeHtmlRoute' = do
   -- Generate the z-index
   writeHtmlRoute errors Z.Route_ZIndex
   -- Generate search page
-  writeHtmlRoute searchScript Z.Route_Search
+  writeHtmlRoute searchScript $ Z.Route_Search Nothing
   -- Write alias redirects, unless a zettel with that name exists.
   aliases <- getAliases config zettelGraph
   forM_ aliases $ \Alias {..} ->

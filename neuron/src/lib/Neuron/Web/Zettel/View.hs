@@ -15,6 +15,7 @@ module Neuron.Web.Zettel.View
   )
 where
 
+import Data.Some
 import Data.TagTree
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route
@@ -131,19 +132,18 @@ renderZettelRawContent Zettel {..} = do
   elClass "article" "ui raised attached segment zettel-content raw" $ do
     el "pre" $ text $ zettelContent
 
-renderTags :: DomBuilder t m => NonEmpty Tag -> m ()
+renderTags :: DomBuilder t m => NonEmpty Tag -> NeuronWebT t m ()
 renderTags tags = do
   forM_ tags $ \t -> do
     -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
     -- the top pushes the zettel content down, introducing unnecessary white
     -- space below the title. So we put it at the bottom for now.
     elAttr "span" ("class" =: "ui right ribbon label zettel-tag" <> "title" =: "Tag") $ do
-      elAttr
-        "a"
-        ( "href" =: (Q.tagUrl t)
-            <> "class" =: "tag-inner"
+      neuronRouteLink
+        (Some $ Route_Search $ Just t)
+        ( "class" =: "tag-inner"
             <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
         )
-        $ text
-        $ unTag t
+        $ do
+          text $ unTag t
     el "p" blank

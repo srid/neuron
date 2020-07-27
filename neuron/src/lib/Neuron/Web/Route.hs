@@ -10,6 +10,7 @@ module Neuron.Web.Route where
 
 import Control.Monad.Reader
 import Data.Some
+import Data.TagTree (Tag)
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core
@@ -21,7 +22,9 @@ data Route a where
   -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
   Route_ZIndex :: Route (Map ZettelID ZettelError)
   -- | Takes search JS code as render data
-  Route_Search :: Route Text
+  -- The tag argument is only used in rendering the URL, and not when writing the file.
+  -- TODO: Fix this bad use of types.
+  Route_Search :: Maybe Tag -> Route Text
   Route_Zettel :: ZettelID -> Route ZettelC
 
 data RouteConfig t m = RouteConfig
@@ -57,6 +60,6 @@ routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
   Route_Redirect _ -> "Redirecting..."
   Route_ZIndex -> "Zettel Index"
-  Route_Search -> "Search"
+  Route_Search _mtag -> "Search"
   Route_Zettel _ ->
     either zettelTitle zettelTitle v

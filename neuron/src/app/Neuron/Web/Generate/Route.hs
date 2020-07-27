@@ -15,6 +15,7 @@ module Neuron.Web.Generate.Route where
 
 import Control.Monad.Except
 import Data.Some
+import Data.TagTree (unTag)
 import Neuron.Web.Route (Route (..), RouteConfig (..))
 import Neuron.Zettelkasten.ID
 import Reflex.Dom.Core
@@ -28,7 +29,7 @@ instance IsRoute Route where
       routeFile $ Route_Zettel zid
     Route_ZIndex ->
       pure "z-index.html"
-    Route_Search ->
+    Route_Search _mtag ->
       pure "search.html"
     Route_Zettel (zettelIDText -> s) ->
       pure $ toString s <> ".html"
@@ -46,7 +47,10 @@ staticRouteConfig =
       withSome someR $ \r -> do
         routeFor r
     -- Using relative URLs enables the site work in file:/// URLs
-    routeFor = routeUrlRel
+    routeFor = \case
+      -- HACK: Hack around Rib.Route's limitation in dealing with query arguments
+      r@(Route_Search (Just t)) -> routeUrlRel r <> "?tag=" <> unTag t
+      r -> routeUrlRel r
 
 data BaseUrlError
   = BaseUrlNotAbsolute

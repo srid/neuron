@@ -56,7 +56,7 @@ routeOpenGraph Config {..} v r =
       _openGraph_description = case r of
         Route_Redirect _ -> Nothing
         Route_ZIndex -> Just "Zettelkasten Index"
-        Route_Search -> Just "Search Zettelkasten"
+        (Route_Search _mtag) -> Just "Search Zettelkasten"
         Route_Zettel _ -> do
           doc <- getPandocDoc v
           para <- getFirstParagraphText doc

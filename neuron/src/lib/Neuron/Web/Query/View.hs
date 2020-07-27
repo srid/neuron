@@ -14,8 +14,6 @@ module Neuron.Web.Query.View
   ( renderQueryResult,
     renderZettelLink,
     renderZettelLinkIDOnly,
-    zettelUrl,
-    tagUrl,
     style,
   )
 where
@@ -140,28 +138,31 @@ renderZettelLinkIDOnly zid =
     elClass "span" "zettel-link" $ do
       neuronRouteLink (Some $ Route_Zettel zid) mempty $ text $ zettelIDText zid
 
-renderTagTree :: forall t m. DomBuilder t m => Forest (NonEmpty TagNode, Natural) -> m ()
+renderTagTree :: forall t m. DomBuilder t m => Forest (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
 renderTagTree t =
   divClass "tag-tree" $
     renderForest mempty t
   where
-    renderForest :: [TagNode] -> Forest (NonEmpty TagNode, Natural) -> m ()
+    renderForest :: [TagNode] -> Forest (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
     renderForest ancestors forest =
       el "ul" $ do
         forM_ forest $ \tree ->
           el "li" $ renderTree ancestors tree
-    renderTree :: [TagNode] -> Tree (NonEmpty TagNode, Natural) -> m ()
+    renderTree :: [TagNode] -> Tree (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
     renderTree ancestors (Node (tagNode, count) children) = do
       renderTag ancestors (tagNode, count)
       renderForest (ancestors <> toList tagNode) $ toList children
-    renderTag :: [TagNode] -> (NonEmpty TagNode, Natural) -> m ()
+    renderTag :: [TagNode] -> (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
     renderTag ancestors (tagNode, count) = do
       let tag = constructTag $ maybe tagNode (<> tagNode) $ nonEmpty ancestors
           tit = show count <> " zettels tagged"
           cls = bool "" "inactive" $ count == 0
       divClass "node" $ do
-        elAttr "a" ("class" =: cls <> "title" =: tit <> "href" =: tagUrl tag) $ do
-          text $ renderTagNode tagNode
+        neuronRouteLink
+          (Some $ Route_Search $ Just tag)
+          ("class" =: cls <> "title" =: tit)
+          $ do
+            text $ renderTagNode tagNode
     renderTagNode :: NonEmpty TagNode -> Text
     renderTagNode = \case
       n :| (nonEmpty -> mrest) ->
@@ -170,15 +171,6 @@ renderTagTree t =
             unTagNode n
           Just rest ->
             unTagNode n <> "/" <> renderTagNode rest
-
--- TODO: not using Rib for ghcjs, but factorize this
-zettelUrl :: ZettelID -> Text
-zettelUrl zid =
-  zettelIDText zid <> ".html"
-
-tagUrl :: Tag -> Text
-tagUrl (Tag s) =
-  "search.html?tag=" <> s
 
 style :: Css
 style = do
