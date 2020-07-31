@@ -1,7 +1,7 @@
 let 
   nixpkgsSrc = builtins.fetchTarball {
-    url = "https://github.com/nixos/nixpkgs/archive/b8c367a7bd05.tar.gz";
-    sha256 = "0y17zxhwdw0afml2bwkmhvkymd9fv242hksl3l3xz82gmlg1zks4";
+    url = "https://github.com/nixos/nixpkgs/archive/78215a8395f4.tar.gz";
+    sha256 = "0b8hjrzxv41n2792nmy9ir9fzc82i40yg83yp2z8spq6rkywig0n";
   };
   gitignoreSrc = builtins.fetchTarball {
     url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
@@ -64,18 +64,8 @@ let
     # Override pandoc-types and dependencies because stack-lts versions are to old
     hslua = self.hslua_1_1_2;
     jira-wiki-markup = self.jira-wiki-markup_1_3_2;
-    pandoc = self.pandoc_2_10;
+    pandoc = self.pandoc_2_10_1;
     pandoc-types = self.pandoc-types_1_21;
-    # pandoc-include-code sadly has not raised the version bound to the newer pandoc we picked
-    pandoc-include-code = doJailbreak super.pandoc-include-code;
-
-    # Version bumps for nixpkgs compat, have not been merged by upstream yet.
-    dependent-sum-aeson-orphans = markUnbroken
-      (appendPatch super.dependent-sum-aeson-orphans (pkgs.fetchpatch {
-        url =
-          "https://github.com/obsidiansystems/dependent-sum-aeson-orphans/commit/5a369e433ad7e3eef54c7c3725d34270f6aa48cc.patch";
-        sha256 = "1lzrcicvdg77hd8j2fg37z19amp5yna5xmw1fc06zi0j95csll4r";
-      }));
 
     neuron = (justStaticExecutables
       (overrideCabal (self.callCabal2nix "neuron" sources.neuron { })
