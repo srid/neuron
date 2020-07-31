@@ -125,10 +125,10 @@ common app-common
     file-embed,
     optparse-applicative,
     pandoc,
-    skylighting-core,
+    skylighting-core >= 0.9,
     relude,
     iso8601-time,
-    rib >=0.12,
+    rib-core >=0.13,
     shake -any,
     time,
     text,
@@ -157,6 +157,8 @@ common app-common
       Data.Graph.Labelled.Type
       Data.PathTree
       Data.Structured.Breadcrumb
+      Data.Structured.OpenGraph
+      Data.Structured.OpenGraph.Render
       Data.TagTree
       Neuron.CLI
       Neuron.CLI.New

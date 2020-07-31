@@ -21,15 +21,16 @@ import Neuron.Web.View (renderRoutePage)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Reflex.Dom.Core
 import Relude
-import qualified Rib
+import Rib.Route (writeRoute)
+import Rib.Shake (buildStaticFiles, ribInputDir)
 
 main :: IO ()
 main = withUtf8 $ run generateMainSite
 
 generateMainSite :: Config -> Action ()
 generateMainSite config = do
-  notesDir <- Rib.ribInputDir
-  Rib.buildStaticFiles ["static/**", ".nojekyll"]
+  notesDir <- ribInputDir
+  buildStaticFiles ["static/**", ".nojekyll"]
   manifest <- fmap Manifest.mkManifest $ getDirectoryFiles notesDir Manifest.manifestPatterns
   let writeHtmlRoute :: Route a -> (ZettelGraph, a) -> Action ()
       writeHtmlRoute r x = do
@@ -37,5 +38,5 @@ generateMainSite config = do
           runNeuronWeb staticRouteConfig $
             renderRoutePage neuronVersion config manifest r x
         -- FIXME: Make rib take bytestrings
-        Rib.writeRoute r $ decodeUtf8 @Text html
+        writeRoute r $ decodeUtf8 @Text html
   void $ generateSite config writeHtmlRoute
