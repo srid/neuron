@@ -1,8 +1,8 @@
 {
   "owner": "srid",
   "repo": "rib",
-  "branch": "master",
+  "branch": "split",
   "private": false,
-  "rev": "aaa24793f45de6773f85e8640aad4721f2bcc853",
-  "sha256": "0l0v2c6zhx2plqxa44s043m6k6942b3f4x8h5f6dj6b0g640mwvz"
+  "rev": "80411af40d6da23d312d5a905eab39a628ea7e23",
+  "sha256": "1988a5p8nw014dbsqsrj2mx8jljlf1z68saia2jskqdryjjf3ggy"
 }

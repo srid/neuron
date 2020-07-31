@@ -27,14 +27,14 @@ import qualified Dhall.TypeCheck
 import Neuron.Config.Orphans ()
 import Neuron.Config.Type (Config, configFile, defaultConfig, mergeWithDefault)
 import Relude
-import qualified Rib
+import Rib.Shake (ribInputDir)
 import System.Directory
 import System.FilePath
 
 -- | Read the optional @neuron.dhall@ config file from the zettelkasten
 getConfig :: Action Config
 getConfig = do
-  configPath <- Rib.ribInputDir <&> (</> configFile)
+  configPath <- ribInputDir <&> (</> configFile)
   configVal :: Text <- liftIO (doesFileExist configPath) >>= \case
     True -> do
       mergeWithDefault . toText <$> readFile' configPath

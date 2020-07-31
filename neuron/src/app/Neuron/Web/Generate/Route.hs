@@ -20,7 +20,7 @@ import Neuron.Web.Route (Route (..), RouteConfig (..))
 import Neuron.Zettelkasten.ID
 import Reflex.Dom.Core
 import Relude
-import Rib (IsRoute (..), routeUrl, routeUrlRel)
+import Rib.Route (IsRoute (..), routeUrl, routeUrlRel)
 import qualified Text.URI as URI
 
 instance IsRoute Route where

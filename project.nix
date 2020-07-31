@@ -47,7 +47,7 @@ let
 
   overrides = self: super: {
     # We include rib because it is quite tightly coupled with neuron development
-    rib = self.callCabal2nix "rib" sources.rib { };
+    rib-core = self.callCabal2nix "rib-core" (sources.rib + "/rib-core") { };
 
     # commonmark is not released on hackage yet
     commonmark =
@@ -64,8 +64,21 @@ let
     # Override pandoc-types and dependencies because stack-lts versions are to old
     hslua = self.hslua_1_1_2;
     jira-wiki-markup = self.jira-wiki-markup_1_3_2;
-    pandoc = self.pandoc_2_10_1;
+    # pandoc = self.pandoc_2_10_1;
     pandoc-types = self.pandoc-types_1_21;
+    skylighting = self.callHackageDirect {
+      pkg = "skylighting";
+      ver = "0.9";
+      sha256 = "1zk8flzfafnmpb7wy7sf3q0biaqfh7svxz2da7wlc3am3n9fpxbr";
+    } {};
+    skylighting-core = self.callHackageDirect {
+      pkg = "skylighting-core";
+      ver = "0.9";
+      sha256 = "1fb3j5kmfdycxwr7vjdg1hrdz6s61ckp489qj3899klk18pcmpnh";
+    } {};
+    # Jailbreak to allow newer skylighting. Next version of pandoc shouldn't
+    # require this.
+    pandoc = doJailbreak super.pandoc_2_10_1;
 
     neuron = (justStaticExecutables
       (overrideCabal (self.callCabal2nix "neuron" sources.neuron { })

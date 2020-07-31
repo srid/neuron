@@ -37,8 +37,8 @@ import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
 import Options.Applicative
 import Relude
-import qualified Rib
 import Rib.Route
+import Rib.Shake (forEvery, ribInputDir)
 import System.FilePath
 
 searchScript :: Text
@@ -110,7 +110,7 @@ loadZettelkasten config = do
   formats <- getZettelFormats config
   zettelFiles <- forM formats $ \fmt -> do
     let pat = toString $ "*" <> zettelFormatToExtension fmt
-    files <- Rib.forEvery [pat] pure
+    files <- forEvery [pat] pure
     pure (fmt, files)
   loadZettelkastenFrom zettelFiles
 
@@ -123,7 +123,7 @@ loadZettelkastenFrom ::
       Map ZettelID ZettelError
     )
 loadZettelkastenFrom fs = do
-  notesDir <- Rib.ribInputDir
+  notesDir <- ribInputDir
   -- Use State monad to "gather" duplicate zettel files using same IDs, in the
   -- `Right` of the Either state value; with the `Left` collecting the actual
   -- zettel files to load into the graph.

@@ -27,7 +27,7 @@ import Neuron.Zettelkasten.Zettel (zettelID)
 import Neuron.Zettelkasten.Zettel.Meta (formatZettelDate)
 import Options.Applicative
 import Relude
-import qualified Rib
+import Rib.Shake (ribInputDir)
 import System.Directory (setCurrentDirectory)
 import System.FilePath
 import qualified System.Posix.Env as Env
@@ -49,7 +49,7 @@ newZettelFile NewCommand {..} config = do
   case mzid of
     Left e -> die $ show e
     Right zid -> do
-      notesDir <- Rib.ribInputDir
+      notesDir <- ribInputDir
       defaultFormat <- head <$> getZettelFormats config
       let zettelFormat = fromMaybe defaultFormat format
           zettelFile = zettelIDSourceFileName zid zettelFormat

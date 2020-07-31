@@ -23,12 +23,12 @@ import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Relude
-import Rib.Extra.OpenGraph
-import qualified Rib.Parser.Pandoc as Pandoc
 import Text.Pandoc (runPure, writePlain)
-import Text.Pandoc.Definition (Block (Plain), Inline, Pandoc (..))
+import Text.Pandoc.Definition (Block (Plain), Inline (Image), Pandoc (..))
 import Text.Pandoc.Util (getFirstParagraphText)
+import Text.Pandoc.Walk (query)
 import qualified Text.URI as URI
+import Web.OpenGraph
 
 renderStructuredData :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
 renderStructuredData config route val = do
@@ -69,7 +69,7 @@ routeOpenGraph Config {..} v r =
       _openGraph_image = case r of
         Route_Zettel _ -> do
           doc <- getPandocDoc v
-          image <- URI.mkURI =<< Pandoc.getFirstImg doc
+          image <- URI.mkURI =<< getFirstImg doc
           baseUrl <- URI.mkURI =<< siteBaseUrl
           URI.relativeTo image baseUrl
         _ -> Nothing,
@@ -79,6 +79,13 @@ routeOpenGraph Config {..} v r =
     }
   where
     getPandocDoc = either (const Nothing) (Just . zettelContent)
+    getFirstImg ::
+      Pandoc ->
+      -- | Relative URL path to the image
+      Maybe Text
+    getFirstImg (Pandoc _ bs) = listToMaybe $ flip query bs $ \case
+      Image _ _ (url, _) -> [toText url]
+      _ -> []
 
 renderOpenGraph :: forall t m. DomBuilder t m => OpenGraph -> m ()
 renderOpenGraph OpenGraph {..} = do

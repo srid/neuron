@@ -26,7 +26,7 @@ import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
 import Options.Applicative
 import Relude
-import qualified Rib
+import Rib.Shake (ribOutputDir)
 import System.Directory
 import System.FilePath
 import System.Info (os)
@@ -62,7 +62,7 @@ runWith act App {..} =
         newZettelFile newCommand =<< getConfig
     Open ->
       runRibOnceQuietly notesDir $ do
-        indexHtmlPath <- fmap (</> "index.html") Rib.ribOutputDir
+        indexHtmlPath <- fmap (</> "index.html") ribOutputDir
         putStrLn indexHtmlPath
         let opener = if os == "darwin" then "open" else "xdg-open"
         liftIO $ executeFile opener True [indexHtmlPath] Nothing
