@@ -4,7 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -- | Meta tags for The Open Graph protocol: https://ogp.me/
-module Web.OpenGraph
+module Data.Structured.OpenGraph
   ( OpenGraph (..),
     OGType (..),
     Article (..),

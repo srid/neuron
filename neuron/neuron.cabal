@@ -157,6 +157,8 @@ common app-common
       Data.Graph.Labelled.Type
       Data.PathTree
       Data.Structured.Breadcrumb
+      Data.Structured.OpenGraph
+      Data.Structured.OpenGraph.Render
       Data.TagTree
       Neuron.CLI
       Neuron.CLI.New

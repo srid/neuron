@@ -12,8 +12,9 @@ where
 
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
+import Data.Structured.OpenGraph
+import Data.Structured.OpenGraph.Render (renderOpenGraph)
 import qualified Data.Text as T
-import Data.Time.ISO8601 (formatISO8601)
 import Neuron.Config.Type
 import Neuron.Web.Generate.Route (routeUri)
 import Neuron.Web.Route
@@ -28,7 +29,6 @@ import Text.Pandoc.Definition (Block (Plain), Inline (Image), Pandoc (..))
 import Text.Pandoc.Util (getFirstParagraphText)
 import Text.Pandoc.Walk (query)
 import qualified Text.URI as URI
-import Web.OpenGraph
 
 renderStructuredData :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
 renderStructuredData config route val = do
@@ -86,37 +86,6 @@ routeOpenGraph Config {..} v r =
     getFirstImg (Pandoc _ bs) = listToMaybe $ flip query bs $ \case
       Image _ _ (url, _) -> [toText url]
       _ -> []
-
-renderOpenGraph :: forall t m. DomBuilder t m => OpenGraph -> m ()
-renderOpenGraph OpenGraph {..} = do
-  meta' "author" `mapM_` _openGraph_author
-  meta' "description" `mapM_` _openGraph_description
-  requireAbsolute "OGP URL" (\ourl -> elAttr "link" ("rel" =: "canonical" <> "href" =: ourl) blank) `mapM_` _openGraph_url
-  metaOg "title" _openGraph_title
-  metaOg "site_name" _openGraph_siteName
-  whenJust _openGraph_type $ \case
-    OGType_Article (Article {..}) -> do
-      metaOg "type" "article"
-      metaOg "article:section" `mapM_` _article_section
-      metaOgTime "article:modified_time" `mapM_` _article_modifiedTime
-      metaOgTime "article:published_time" `mapM_` _article_publishedTime
-      metaOgTime "article:expiration_time" `mapM_` _article_expirationTime
-      metaOg "article:tag" `mapM_` _article_tag
-    OGType_Website -> do
-      metaOg "type" "website"
-  requireAbsolute "OGP image URL" (metaOg "image") `mapM_` _openGraph_image
-  where
-    meta' k v =
-      elAttr "meta" ("name" =: k <> "content" =: v) blank
-    metaOg k v =
-      elAttr "meta" ("property" =: ("og:" <> k) <> "content" =: v) blank
-    metaOgTime k t =
-      metaOg k $ toText $ formatISO8601 t
-    requireAbsolute :: Text -> (Text -> m ()) -> URI.URI -> m ()
-    requireAbsolute description f uri' =
-      if isJust (URI.uriScheme uri')
-        then f $ URI.render uri'
-        else error $ description <> " must be absolute. this URI is not: " <> URI.render uri'
 
 renderPandocAsText :: [Inline] -> Maybe Text
 renderPandocAsText =
