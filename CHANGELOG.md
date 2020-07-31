@@ -4,6 +4,7 @@
 
 - Updates
   - Bump commonmark, commonmark-extensions (0.2)
+  - Skylighting 0.9 (pure Haskell syntax highlighting)
 - Web Interface
   - Styling fixes
     - Fix incorrect body font (esp. on Windows)
