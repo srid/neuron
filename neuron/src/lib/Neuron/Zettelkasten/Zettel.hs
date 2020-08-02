@@ -56,6 +56,7 @@ data ZettelT content = Zettel
     zettelTitleInBody :: Bool,
     zettelTags :: [Tag],
     zettelDay :: Maybe Day,
+    zettelUnlisted :: Bool,
     zettelQueries :: [Some ZettelQuery],
     zettelError :: ContentError content,
     zettelContent :: content

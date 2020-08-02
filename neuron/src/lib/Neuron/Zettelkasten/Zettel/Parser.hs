@@ -29,7 +29,7 @@ parseZettel ::
 parseZettel format zreader fn zid s = do
   case zreader fn s of
     Left parseErr ->
-      Left $ Zettel zid format fn "Unknown" False [] Nothing [] parseErr s
+      Left $ Zettel zid format fn "Unknown" False [] Nothing False [] parseErr s
     Right (meta, doc) ->
       let (title, titleInBody) = case Meta.title =<< meta of
             Just tit -> (tit, False)
@@ -42,8 +42,9 @@ parseZettel format zreader fn zid s = do
             -- creation date in the ID.
             ZettelDateID v _ -> Just v
             ZettelCustomID _ -> Meta.date =<< meta
+          unlisted = fromMaybe False $ Meta.unlisted =<< meta
           (queries, errors) = runWriter $ extractQueries doc
-       in Right $ Zettel zid format fn title titleInBody tags day queries errors doc
+       in Right $ Zettel zid format fn title titleInBody tags day unlisted queries errors doc
   where
     -- Extract all (valid) queries from the Pandoc document
     extractQueries :: MonadWriter [QueryParseError] m => Pandoc -> m [Some ZettelQuery]

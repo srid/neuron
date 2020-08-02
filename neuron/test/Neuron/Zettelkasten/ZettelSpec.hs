@@ -34,6 +34,7 @@ spec = do
             False
             [Tag "science", Tag "journal/class"]
             (Just $ mkDay day)
+            False
             noQueries
             noError
             noContent
