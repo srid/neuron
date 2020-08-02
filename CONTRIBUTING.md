@@ -20,7 +20,7 @@ Unit tests can be run via ghcid as follows:
 bin/test
 ```
 
-### Developing on reflex-dom-pandoc
+### Modify Pandoc's HTML layout
 
 Neuron delegates HTML rendering of the Pandoc AST to [reflex-dom-pandoc](https://github.com/srid/reflex-dom-pandoc). To hack on it, first [install Obelisk](https://github.com/obsidiansystems/obelisk#installing-obelisk) and then:
 
