@@ -12,6 +12,7 @@ module Neuron.CLI.Types
     NewCommand (..),
     SearchBy (..),
     SearchCommand (..),
+    OpenCommand (..),
     RibConfig (..),
     commandParser,
   )
@@ -60,11 +61,16 @@ data SearchBy
   | SearchByContent
   deriving (Eq, Show)
 
+data OpenCommand = OpenCommand
+  { zettelId :: Maybe Text
+  }
+  deriving (Eq, Show)
+
 data Command
   = -- | Create a new zettel file
     New NewCommand
   | -- | Open the locally generated Zettelkasten
-    Open
+    Open OpenCommand
   | -- | Search a zettel by title
     Search SearchCommand
   | -- | Run a query against the Zettelkasten
@@ -131,8 +137,9 @@ commandParser defaultNotesDir today = do
             (const . Some . IDSchemeCustom)
             (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
       pure $ New $ NewCommand title format day (idSchemeF day) edit
-    openCommand =
-      pure Open
+    openCommand = do
+      zettelId <- optional $ strArgument (metavar "ID" <> help "Open the locally generated zettel")
+      pure $ Open $ OpenCommand zettelId
     queryCommand =
       fmap Query $
         ( fmap
