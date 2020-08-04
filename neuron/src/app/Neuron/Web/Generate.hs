@@ -17,7 +17,7 @@ module Neuron.Web.Generate
   )
 where
 
-import Data.FileEmbed (embedStringFile)
+import Data.FileEmbed (embedOneStringFileOf)
 import qualified Data.Map.Strict as Map
 import Data.Tagged (untag)
 import qualified Data.Text as T
@@ -41,8 +41,12 @@ import Rib.Route
 import Rib.Shake (forEvery, ribInputDir)
 import System.FilePath
 
+-- | The contents of search.js
+--
+-- We specify an alternate path, that is relative to project root, so that
+-- ghcide will be able to compile this module.
 searchScript :: Text
-searchScript = $(embedStringFile "./src-js/search.js")
+searchScript = $(embedOneStringFileOf ["./src-js/search.js", "./neuron/src-js/search.js"])
 
 -- | Generate the Zettelkasten site
 generateSite ::
