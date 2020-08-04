@@ -63,7 +63,7 @@ Don‘t forget to revert the temporary changes to your `project.nix`.
 
 ### Autoformatting
 
-I autoformat every Haskell source using [ormolu](https://github.com/tweag/ormolu). Before opening a PR you are encouraged to do the same. However if you have trouble installing ormolu for whatever reason, don't let that prevent you from contributing.
+Run the `bin/format` script to auto-format your Haskell source changes using [ormolu](https://github.com/tweag/ormolu). 
 
 ### Test your build
 

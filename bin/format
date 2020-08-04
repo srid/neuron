@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -xe
+nix-shell --pure --run "find neuron/src -name \*.hs | xargs ormolu -m inplace"

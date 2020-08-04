@@ -130,6 +130,7 @@ in {
       haskellPackages.ghcid
       haskellPackages.cabal-install
       haskellPackages.ghcide
+      haskellPackages.ormolu
       nixShellSearchScript
     ];
   };
