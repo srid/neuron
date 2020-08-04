@@ -148,7 +148,8 @@ wrappedLinkSpec linkP =
 angleBracketLinkP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
 angleBracketLinkP = do
   void $ symbol '<'
-  x <- some (noneOfToks [Symbol '>', Spaces, UnicodeSpace, LineEnd])
+  -- TODO: Use `parseZettel'`, after consolidating the two parsers
+  x <- some (noneOfToks [Symbol '>', Symbol '/', Spaces, UnicodeSpace, LineEnd])
   void $ symbol '>'
   pure x
 
