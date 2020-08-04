@@ -129,7 +129,8 @@ in {
     buildInputs = [
       haskellPackages.ghcid
       haskellPackages.cabal-install
-      haskellPackages.ghcide
+      haskellPackages.haskell-language-server
+      haskellPackages.hlint
       haskellPackages.ormolu
       nixShellSearchScript
     ];
