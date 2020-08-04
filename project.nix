@@ -45,7 +45,7 @@ let
     preConfigure = searchBuilder;
   };
 
-  overrides = self: super: {
+  haskellOverrides = self: super: {
     # We include rib because it is quite tightly coupled with neuron development
     rib-core = self.callCabal2nix "rib-core" (sources.rib + "/rib-core") { };
 
@@ -112,7 +112,7 @@ let
         });
   };
 
-  localHaskellPackages = compiler.override { overrides = overrides; };
+  haskellPackages = compiler.override { overrides = haskellOverrides; };
 
   nixShellSearchScript = pkgs.stdenv.mkDerivation {
     name = "neuron-search";
@@ -122,13 +122,14 @@ let
   };
 
 in {
-  neuron = localHaskellPackages.neuron;
-  shell = localHaskellPackages.shellFor {
+  neuron = haskellPackages.neuron;
+  shell = haskellPackages.shellFor {
     inherit withHoogle;
     packages = p: [ p.neuron ];
     buildInputs = [
-      localHaskellPackages.ghcid
-      localHaskellPackages.cabal-install
+      haskellPackages.ghcid
+      haskellPackages.cabal-install
+      haskellPackages.ghcide
       nixShellSearchScript
     ];
   };
