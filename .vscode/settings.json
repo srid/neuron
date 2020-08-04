@@ -1,3 +1,5 @@
 {
-    "nixEnvSelector.nixShellConfig": "${workspaceRoot}/shell.nix"
+    "nixEnvSelector.nixShellConfig": "${workspaceRoot}/shell.nix",
+    "editor.formatOnType": true,
+    "editor.formatOnSave": true
 }
