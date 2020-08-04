@@ -1,9 +1,8 @@
 cradle:
-  direct:
-    arguments:
-      - -fwarn-unused-binds
-      - -fwarn-unused-imports
-      - -fwarn-orphans
-      - -isrc/lib
-      - -isrc/app
-      - -idist/build/autogen
+  cabal:
+    - path: "./neuron/src/lib"
+      component: "lib:neuron"
+    - path: "./neuron/src/app"
+      component: "exe:neuron"
+    - path: "./neuron/test"
+      component: "test:neuron-test"

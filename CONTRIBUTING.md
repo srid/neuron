@@ -4,6 +4,10 @@ This document describes how to develop neuron, as well as some guidelines when i
 
 ## Developing
 
+`nix-shell` is your friend when developing on neuron. The scripts under ./bin make use of nix-shell as well as `ghcid` to make development experience smoother (see below). IDE support is builtin via [ghcide](https://github.com/digital-asset/ghcide); just start your text editor from within a nix-shell (for eg., `nix-shell --run nvim`).
+
+### Instant reload
+
 When modifying the source code, use `bin/run` (which uses ghcid) to test your changes in real-time:
 
 ```bash
@@ -20,7 +24,9 @@ Unit tests can be run via ghcid as follows:
 bin/test
 ```
 
-### Modify Pandoc's HTML layout
+This too reloads when any of the source files change.
+
+### Hacking on Pandoc's HTML layout
 
 Neuron delegates HTML rendering of the Pandoc AST to [reflex-dom-pandoc](https://github.com/srid/reflex-dom-pandoc). To hack on it, first [install Obelisk](https://github.com/obsidiansystems/obelisk#installing-obelisk) and then:
 
