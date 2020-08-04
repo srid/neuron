@@ -14,7 +14,7 @@ module Neuron.Web.ZIndex
   )
 where
 
-import Clay ((?), Css, em)
+import Clay (Css, em, (?))
 import qualified Clay as C
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
@@ -64,8 +64,9 @@ buildZIndex graph errors =
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortCluster fs =
-      sortZettelForest $ flip fmap fs $ \Node {..} ->
-        Node rootLabel $ sortZettelForest subForest
+      sortZettelForest $
+        flip fmap fs $ \Node {..} ->
+          Node rootLabel $ sortZettelForest subForest
     -- Sort zettel trees so that trees containing the most recent zettel (by ID) come first.
     sortZettelForest = reverse . sortOn maximum
 
@@ -90,8 +91,9 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
       text " is rendered as a forest."
     forM_ (nonEmpty zPinned) $ \zs ->
       divClass "ui message pinned raised segment" $ do
-        el "ul" $ forM_ zs $ \z ->
-          el "li" $ QueryView.renderZettelLink Nothing def z
+        el "ul" $
+          forM_ zs $ \z ->
+            el "li" $ QueryView.renderZettelLink Nothing def z
     forM_ zIndexClusters $ \forest ->
       divClass ("ui " <> themeColor <> " segment") $ do
         el "ul" $ renderForest forest

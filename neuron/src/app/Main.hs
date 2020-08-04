@@ -34,9 +34,11 @@ generateMainSite config = do
   manifest <- fmap Manifest.mkManifest $ getDirectoryFiles notesDir Manifest.manifestPatterns
   let writeHtmlRoute :: Route a -> (ZettelGraph, a) -> Action ()
       writeHtmlRoute r x = do
-        html <- liftIO $ fmap snd $ renderStatic $ do
-          runNeuronWeb staticRouteConfig $
-            renderRoutePage neuronVersion config manifest r x
+        html <- liftIO $
+          fmap snd $
+            renderStatic $ do
+              runNeuronWeb staticRouteConfig $
+                renderRoutePage neuronVersion config manifest r x
         -- FIXME: Make rib take bytestrings
         writeRoute r $ decodeUtf8 @Text html
   void $ generateSite config writeHtmlRoute

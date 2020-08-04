@@ -83,9 +83,10 @@ routeOpenGraph Config {..} v r =
       Pandoc ->
       -- | Relative URL path to the image
       Maybe Text
-    getFirstImg (Pandoc _ bs) = listToMaybe $ flip query bs $ \case
-      Image _ _ (url, _) -> [toText url]
-      _ -> []
+    getFirstImg (Pandoc _ bs) = listToMaybe $
+      flip query bs $ \case
+        Image _ _ (url, _) -> [toText url]
+        _ -> []
 
 renderPandocAsText :: [Inline] -> Maybe Text
 renderPandocAsText =

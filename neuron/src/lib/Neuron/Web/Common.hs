@@ -4,7 +4,7 @@
 
 module Neuron.Web.Common where
 
-import Clay ((?), Css)
+import Clay (Css, (?))
 import qualified Clay as C
 import Relude
 

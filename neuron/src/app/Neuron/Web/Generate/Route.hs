@@ -60,9 +60,10 @@ instance Exception BaseUrlError
 
 -- | Make an absolute URI for a route, given a base URL.
 routeUri :: (HasCallStack, IsRoute r) => Text -> r a -> URI.URI
-routeUri siteBaseUrl r = either (error . toText . displayException) id $ runExcept $ do
-  baseUrl <- liftEither $ URI.mkURI siteBaseUrl
-  uri <- liftEither $ URI.mkURI $ routeUrl r
-  case URI.relativeTo uri baseUrl of
-    Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
-    Just x -> pure x
+routeUri siteBaseUrl r = either (error . toText . displayException) id $
+  runExcept $ do
+    baseUrl <- liftEither $ URI.mkURI siteBaseUrl
+    uri <- liftEither $ URI.mkURI $ routeUrl r
+    case URI.relativeTo uri baseUrl of
+      Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
+      Just x -> pure x

@@ -25,8 +25,7 @@ import Data.GADT.Compare.TH
 import Data.GADT.Show.TH
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some
-import Data.TagTree (Tag)
-import Data.TagTree (TagPattern (..))
+import Data.TagTree (Tag, TagPattern (..))
 import Data.Time.Calendar
 import Neuron.Reader.Type
 import Neuron.Zettelkasten.Connection

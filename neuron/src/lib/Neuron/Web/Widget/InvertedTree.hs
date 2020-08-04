@@ -91,22 +91,24 @@ pureCssTreeDiagram = do
       C.listStyleType none
       C.position relative
       C.padding (em 1) (em 0.5) (em 0) (em 0.5)
-      forM_ [C.before, C.after] $ \sel -> sel & do
-        C.content $ stringContent ""
-        C.position absolute
-        C.top $ px 0
-        C.right $ pct 50
-        C.borderTop solid cellBorderWidth "#ccc"
-        C.width $ pct 50
-        C.height $ em 1.2
+      forM_ [C.before, C.after] $ \sel ->
+        sel & do
+          C.content $ stringContent ""
+          C.position absolute
+          C.top $ px 0
+          C.right $ pct 50
+          C.borderTop solid cellBorderWidth "#ccc"
+          C.width $ pct 50
+          C.height $ em 1.2
       C.after & do
         C.right auto
         C.left $ pct 50
         C.borderLeft solid cellBorderWidth "#ccc"
       C.onlyChild & do
         C.paddingTop $ em 0
-        forM_ [C.after, C.before] $ \sel -> sel & do
-          C.display none
+        forM_ [C.after, C.before] $ \sel ->
+          sel & do
+            C.display none
       C.firstChild & do
         C.before & do
           C.borderStyle none

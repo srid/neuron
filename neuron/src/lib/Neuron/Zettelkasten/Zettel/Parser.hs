@@ -48,13 +48,14 @@ parseZettel format zreader fn zid s = do
     -- Extract all (valid) queries from the Pandoc document
     extractQueries :: MonadWriter [QueryParseError] m => Pandoc -> m [Some ZettelQuery]
     extractQueries doc =
-      fmap catMaybes $ forM (queryURILinks doc) $ \ul ->
-        case queryFromURILink ul of
-          Left e -> do
-            tell [e]
-            pure Nothing
-          Right v ->
-            pure v
+      fmap catMaybes $
+        forM (queryURILinks doc) $ \ul ->
+          case queryFromURILink ul of
+            Left e -> do
+              tell [e]
+              pure Nothing
+            Right v ->
+              pure v
     takeInitial =
       (<> " ...") . T.take 18
 

@@ -18,10 +18,10 @@ module Neuron.Web.View
   )
 where
 
-import Clay ((?), Css, em, gray, important, pct, px)
+import Clay (Css, em, gray, important, pct, px, (?))
 import qualified Clay as C
 import Control.Monad.Except
-import Data.Aeson ((.=), object, toJSON)
+import Data.Aeson (object, toJSON, (.=))
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Set as Set
 import Data.Some
@@ -38,8 +38,8 @@ import Neuron.Web.Widget
 import qualified Neuron.Web.ZIndex as ZIndex
 import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
-import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph (ZettelGraph)
+import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))

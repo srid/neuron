@@ -32,9 +32,9 @@ buildZettelkasten fs =
       (g, queryErrors) = mkZettelGraph $ sansContent <$> zs
       errors =
         Map.unions
-          [ fmap ZettelError_ParseError
-              $ Map.fromList
-              $ lefts zs <&> (zettelID &&& zettelError),
+          [ fmap ZettelError_ParseError $
+              Map.fromList $
+                lefts zs <&> (zettelID &&& zettelError),
             fmap ZettelError_QueryErrors queryErrors
           ]
    in (g, zs, errors)
@@ -52,10 +52,12 @@ mkZettelGraph zettels =
   let res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryError]))] =
         flip fmap zettels $ \z ->
           (z, runQueryConnections zettels z)
-      g :: ZettelGraph = G.mkGraphFrom zettels $ flip concatMap res $ \(z1, fst -> conns) ->
-        edgeFromConnection z1 <$> conns
-      errors = Map.fromList $ flip mapMaybe res $ \(z, (nonEmpty . snd -> merrs)) ->
-        (zettelID z,) <$> merrs
+      g :: ZettelGraph = G.mkGraphFrom zettels $
+        flip concatMap res $ \(z1, fst -> conns) ->
+          edgeFromConnection z1 <$> conns
+      errors = Map.fromList $
+        flip mapMaybe res $ \(z, (nonEmpty . snd -> merrs)) ->
+          (zettelID z,) <$> merrs
    in (g, errors)
 
 runQueryConnections :: [Zettel] -> Zettel -> ([(Maybe Connection, Zettel)], [QueryError])

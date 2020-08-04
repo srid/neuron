@@ -48,8 +48,10 @@ queryFromURILink (URILink linkText uri) =
       case uriHost uri of
         Right "search" -> do
           let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
-          pure $ Just $ Some $
-            ZettelQuery_ZettelsByTag (tagPatterns "tag") mconn queryView
+          pure $
+            Just $
+              Some $
+                ZettelQuery_ZettelsByTag (tagPatterns "tag") mconn queryView
         Right "tags" ->
           pure $ Just $ Some $ ZettelQuery_Tags (tagPatterns "filter")
         _ ->

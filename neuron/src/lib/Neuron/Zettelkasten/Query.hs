@@ -53,9 +53,11 @@ runZettelQuery zs = \case
 
 zettelsByTag :: [Zettel] -> [TagPattern] -> [Zettel]
 zettelsByTag zs pats =
-  sortZettelsReverseChronological $ flip filter zs $ \Zettel {..} ->
-    and $ flip fmap pats $ \pat ->
-      any (tagMatch pat) zettelTags
+  sortZettelsReverseChronological $
+    flip filter zs $ \Zettel {..} ->
+      and $
+        flip fmap pats $ \pat ->
+          any (tagMatch pat) zettelTags
 
 runGraphQuery :: ZettelGraph -> GraphQuery r -> Either QueryResultError r
 runGraphQuery g = \case

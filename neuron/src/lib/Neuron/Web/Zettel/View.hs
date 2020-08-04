@@ -72,19 +72,19 @@ renderZettelBottomPane :: DomBuilder t m => ZettelGraph -> Zettel -> NeuronWebT 
 renderZettelBottomPane graph z@Zettel {..} = do
   let cfBacklinks = nonEmpty $ fmap snd $ G.backlinks (== Just OrdinaryConnection) z graph
       tags = nonEmpty zettelTags
-  when (isJust cfBacklinks || isJust tags)
-    $ elClass "nav" "ui bottom attached segment deemphasized"
-    $ do
-      divClass "ui two column grid" $ do
-        divClass "column" $ do
-          whenJust cfBacklinks $ \links -> do
-            elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here, but without branching") $
-              text "More backlinks"
-            el "ul" $ do
-              forM_ links $ \zl ->
-                el "li" $ Q.renderZettelLink Nothing def zl
-        whenJust tags $
-          divClass "column" . renderTags
+  when (isJust cfBacklinks || isJust tags) $
+    elClass "nav" "ui bottom attached segment deemphasized" $
+      do
+        divClass "ui two column grid" $ do
+          divClass "column" $ do
+            whenJust cfBacklinks $ \links -> do
+              elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here, but without branching") $
+                text "More backlinks"
+              el "ul" $ do
+                forM_ links $ \zl ->
+                  el "li" $ Q.renderZettelLink Nothing def zl
+          whenJust tags $
+            divClass "column" . renderTags
 
 evalAndRenderZettelQuery ::
   PandocBuilder t m =>

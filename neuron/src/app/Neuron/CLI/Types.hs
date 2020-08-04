@@ -105,12 +105,12 @@ commandParser defaultNotesDir today = do
     newCommand = do
       title <- optional $ strArgument (metavar "TITLE" <> help "Title of the new Zettel")
       format <-
-        optional
-          $ option auto
-          $ metavar "FORMAT"
-            <> short 'f'
-            <> long "format"
-            <> help "The document format of the new zettel"
+        optional $
+          option auto $
+            metavar "FORMAT"
+              <> short 'f'
+              <> long "format"
+              <> help "The document format of the new zettel"
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
       day <-
         option dayReader $

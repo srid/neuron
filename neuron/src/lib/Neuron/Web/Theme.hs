@@ -13,7 +13,7 @@ module Neuron.Web.Theme
   )
 where
 
-import Clay ((?), Css, rgb, rgba)
+import Clay (Css, rgb, rgba, (?))
 import qualified Clay as C
 import Data.Text (toLower)
 import Relude
@@ -41,14 +41,14 @@ data Theme
 -- | Make Theme from Semantic UI color name
 mkTheme :: Text -> Theme
 mkTheme s =
-  fromMaybe (error $ "Unsupported theme: " <> s)
-    $ listToMaybe
-    $ catMaybes
-    $ flip fmap [minBound .. maxBound]
-    $ \theme ->
-      if s == semanticColor theme
-        then Just theme
-        else Nothing
+  fromMaybe (error $ "Unsupported theme: " <> s) $
+    listToMaybe $
+      catMaybes $
+        flip fmap [minBound .. maxBound] $
+          \theme ->
+            if s == semanticColor theme
+              then Just theme
+              else Nothing
 
 -- | Convert Theme to Semantic UI color name
 semanticColor :: Theme -> Text

@@ -84,10 +84,10 @@ constructTag (fmap unTagNode . toList -> nodes) =
 -- | Construct a tree from a list of tags
 tagTree :: ann ~ Natural => Map Tag ann -> Forest (TagNode, ann)
 tagTree tags =
-  fmap (annotatePathsWith $ countFor tags)
-    $ mkTreeFromPaths
-    $ fmap (toList . deconstructTag)
-    $ Map.keys tags
+  fmap (annotatePathsWith $ countFor tags) $
+    mkTreeFromPaths $
+      fmap (toList . deconstructTag) $
+        Map.keys tags
   where
     countFor tags' path =
       fromMaybe 0 $ Map.lookup (constructTag path) tags'

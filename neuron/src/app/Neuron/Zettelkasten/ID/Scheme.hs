@@ -65,10 +65,12 @@ nextAvailableZettelID ::
   Either IDConflict ZettelID
 nextAvailableZettelID zs val = \case
   IDSchemeDate day -> do
-    let dayIndices = nonEmpty $ sort $ flip mapMaybe (Set.toList zs) $ \case
-          ZettelDateID d x
-            | d == day -> Just x
-          _ -> Nothing
+    let dayIndices = nonEmpty $
+          sort $
+            flip mapMaybe (Set.toList zs) $ \case
+              ZettelDateID d x
+                | d == day -> Just x
+              _ -> Nothing
     case last <$> dayIndices of
       Nothing -> pure $ ZettelDateID day 1
       Just 99 -> throwError IDConflict_DateIDExhausted

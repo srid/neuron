@@ -75,10 +75,10 @@ preSetWithEdgeLabelMany e g =
 
 topSort :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
 topSort g =
-  bimap (fmap (getVertex g)) (fmap (getVertex g))
-    $ Algo.topSort
-    $ LAM.skeleton
-    $ graph g
+  bimap (fmap (getVertex g)) (fmap (getVertex g)) $
+    Algo.topSort $
+      LAM.skeleton $
+        graph g
 
 -- | Returns the clusters in an ayclic graph.
 --

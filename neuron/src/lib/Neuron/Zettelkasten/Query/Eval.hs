@@ -61,13 +61,14 @@ queryConnections Zettel {..} = do
       tell $ Left <$> queryParseErrors
     Left _ ->
       pure ()
-  fmap concat $ forM zettelQueries $ \someQ ->
-    runExceptT (runSomeZettelQuery someQ) >>= \case
-      Left e -> do
-        tell [Right e]
-        pure mempty
-      Right res ->
-        pure $ getConnections res
+  fmap concat $
+    forM zettelQueries $ \someQ ->
+      runExceptT (runSomeZettelQuery someQ) >>= \case
+        Left e -> do
+          tell [Right e]
+          pure mempty
+        Right res ->
+          pure $ getConnections res
   where
     getConnections :: DSum ZettelQuery Identity -> [(Maybe Connection, Zettel)]
     getConnections = \case

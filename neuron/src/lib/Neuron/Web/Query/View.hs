@@ -18,8 +18,8 @@ module Neuron.Web.Query.View
   )
 where
 
+import Clay (Css, em, (?))
 import qualified Clay as C
-import Clay ((?), Css, em)
 import Control.Monad.Except
 import Data.Default
 import Data.Dependent.Sum
@@ -48,18 +48,20 @@ renderQueryResult = \case
       renderQuery $ Some q
       case zettelsViewGroupByTag view of
         False ->
-          el "ul" $ forM_ res $ \z -> do
-            el "li" $
-              renderZettelLink (Just conn) (Just $ zettelsViewLinkView view) z
+          el "ul" $
+            forM_ res $ \z -> do
+              el "li" $
+                renderZettelLink (Just conn) (Just $ zettelsViewLinkView view) z
         True ->
           forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
             el "section" $ do
               elClass "span" "ui basic pointing below grey label" $ do
                 semanticIcon "tag"
                 text $ unTag tag
-              el "ul" $ forM_ zettelGrp $ \z ->
-                el "li" $
-                  renderZettelLink (Just conn) (Just $ zettelsViewLinkView view) z
+              el "ul" $
+                forM_ zettelGrp $ \z ->
+                  el "li" $
+                    renderZettelLink (Just conn) (Just $ zettelsViewLinkView view) z
   q@(ZettelQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
@@ -67,8 +69,10 @@ renderQueryResult = \case
   where
     -- TODO: Instead of doing this here, group the results in runQuery itself.
     groupZettelsByTagsMatching pats matches =
-      fmap sortZettelsReverseChronological $ Map.fromListWith (<>) $ flip concatMap matches $ \z ->
-        flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
+      fmap sortZettelsReverseChronological $
+        Map.fromListWith (<>) $
+          flip concatMap matches $ \z ->
+            flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
 
 renderQuery :: DomBuilder t m => Some ZettelQuery -> m ()
 renderQuery someQ =
