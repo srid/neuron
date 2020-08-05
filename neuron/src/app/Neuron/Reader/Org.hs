@@ -15,12 +15,12 @@ where
 import qualified Data.Map as Map
 import Data.TagTree (Tag (Tag))
 import Data.Tagged
+import Data.Text (toLower)
 import Data.Time.Calendar (Day)
 import Neuron.Reader.Type (ZettelParseError, ZettelReader)
 import Neuron.Zettelkasten.Zettel.Meta (Meta (..), parseZettelDate)
 import Relude
 import Relude.Extra.Map (lookup)
-import Data.Text (toLower)
 import Text.Pandoc (def, runPure)
 import Text.Pandoc.Definition hiding (Meta (..))
 import Text.Pandoc.Readers.Org (readOrg)
