@@ -16,6 +16,7 @@ import Data.Some
 import Data.Time
 import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
+import Neuron.CLI.Open (openLocallyGeneratedFile)
 import Neuron.CLI.Rib
 import Neuron.CLI.Search (interactiveSearch)
 import Neuron.Config (getConfig)
@@ -26,11 +27,8 @@ import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
 import Options.Applicative
 import Relude
-import Rib.Shake (ribOutputDir)
 import System.Directory
 import System.FilePath
-import System.Info (os)
-import System.Posix.Process
 
 run :: (Config -> Action ()) -> IO ()
 run act = do
@@ -60,12 +58,9 @@ runWith act App {..} =
     New newCommand ->
       runRibOnceQuietly notesDir $ do
         newZettelFile newCommand =<< getConfig
-    Open ->
+    Open openCommand ->
       runRibOnceQuietly notesDir $ do
-        indexHtmlPath <- fmap (</> "index.html") ribOutputDir
-        putStrLn indexHtmlPath
-        let opener = if os == "darwin" then "open" else "xdg-open"
-        liftIO $ executeFile opener True [indexHtmlPath] Nothing
+        openLocallyGeneratedFile openCommand
     Query eSomeQ ->
       runRibOnceQuietly notesDir $ do
         (graph, _, errors) <- Gen.loadZettelkasten =<< getConfig

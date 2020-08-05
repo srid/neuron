@@ -12,6 +12,7 @@ module Neuron.CLI.Types
     NewCommand (..),
     SearchBy (..),
     SearchCommand (..),
+    OpenCommand (..),
     RibConfig (..),
     commandParser,
   )
@@ -22,6 +23,7 @@ import Data.Some
 import Data.TagTree (mkTagPattern)
 import Data.Time
 import Neuron.Reader.Type (ZettelFormat)
+import qualified Neuron.Web.Route as R
 import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
@@ -60,11 +62,16 @@ data SearchBy
   | SearchByContent
   deriving (Eq, Show)
 
+data OpenCommand = OpenCommand
+  { route :: Some R.Route
+  }
+  deriving (Eq, Show)
+
 data Command
   = -- | Create a new zettel file
     New NewCommand
   | -- | Open the locally generated Zettelkasten
-    Open
+    Open OpenCommand
   | -- | Search a zettel by title
     Search SearchCommand
   | -- | Run a query against the Zettelkasten
@@ -131,8 +138,17 @@ commandParser defaultNotesDir today = do
             (const . Some . IDSchemeCustom)
             (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
       pure $ New $ NewCommand title format day (idSchemeF day) edit
-    openCommand =
-      pure Open
+    openCommand = do
+      fmap Open $
+        fmap
+          (const $ OpenCommand $ Some $ R.Route_ZIndex)
+          (switch (long "zindex" <> help "Open z-index"))
+          <|> fmap
+            (const $ OpenCommand $ Some $ R.Route_Search Nothing)
+            (switch (long "search" <> help "Open the search page"))
+          <|> fmap
+            (OpenCommand . Some . R.Route_Zettel)
+            (option zettelIDReader (long "id" <> help "Open the zettel HTML page" <> metavar "ID"))
     queryCommand =
       fmap Query $
         ( fmap

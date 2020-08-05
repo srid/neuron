@@ -9,6 +9,10 @@
   - Styling fixes
     - Fix incorrect body font (esp. on Windows)
     - Fix task list checkbox styling (#233)
+- Zettel format
+  - Add `unlisted` metadata property to hide a zettel from z-index (#318)
+- CLI
+  - Add `--id` and `--search` options to `open` command to open given zettel ID or search page respectively  (#317)
 
 ## 0.6.0.0
 
