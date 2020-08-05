@@ -23,6 +23,7 @@ import Data.Some
 import Data.TagTree (mkTagPattern)
 import Data.Time
 import Neuron.Reader.Type (ZettelFormat)
+import qualified Neuron.Web.Route as R
 import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
@@ -62,7 +63,7 @@ data SearchBy
   deriving (Eq, Show)
 
 data OpenCommand = OpenCommand
-  { zettelId :: Maybe Text
+  { route :: Some R.Route
   }
   deriving (Eq, Show)
 
@@ -138,8 +139,13 @@ commandParser defaultNotesDir today = do
             (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
       pure $ New $ NewCommand title format day (idSchemeF day) edit
     openCommand = do
-      zettelId <- optional $ strArgument (metavar "ID" <> help "Open the locally generated zettel")
-      pure $ Open $ OpenCommand zettelId
+      fmap Open $
+        fmap
+          (const $ OpenCommand $ Some $ R.Route_ZIndex)
+          (switch (long "zindex" <> help "Open z-index"))
+          <|> fmap
+            (OpenCommand . Some . R.Route_Zettel)
+            (option zettelIDReader (long "id" <> help "zettelId"))
     queryCommand =
       fmap Query $
         ( fmap

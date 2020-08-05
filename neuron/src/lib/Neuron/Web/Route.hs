@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -9,6 +10,8 @@
 module Neuron.Web.Route where
 
 import Control.Monad.Reader
+import Data.GADT.Compare.TH
+import Data.GADT.Show.TH
 import Data.Some
 import Data.TagTree (Tag)
 import Neuron.Zettelkasten.ID
@@ -63,3 +66,7 @@ routeTitle' v = \case
   Route_Search _mtag -> "Search"
   Route_Zettel _ ->
     either zettelTitle zettelTitle v
+
+deriveGEq ''Route
+
+deriveGShow ''Route
