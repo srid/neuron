@@ -9,6 +9,8 @@
   - Styling fixes
     - Fix incorrect body font (esp. on Windows)
     - Fix task list checkbox styling (#233)
+- CLI
+  - Add an `--id` option to open command (#317)
 
 ## 0.6.0.0
 
