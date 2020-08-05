@@ -29,7 +29,7 @@ buildZettelkasten ::
   )
 buildZettelkasten fs =
   let zs = parseZettels fs
-      (g, queryErrors) = mkZettelGraph $ sansContent <$> zs
+      (g, queryErrors) = mkZettelGraph $ filter (not . zettelUnlisted) $ sansContent <$> zs
       errors =
         Map.unions
           [ fmap ZettelError_ParseError $

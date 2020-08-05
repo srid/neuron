@@ -22,7 +22,9 @@ data Meta = Meta
   { title :: Maybe Text,
     tags :: Maybe [Tag],
     -- | Creation day
-    date :: Maybe Day
+    date :: Maybe Day,
+    -- | List in the z-index
+    unlisted :: Maybe Bool
   }
   deriving (Eq, Show, Generic)
 
@@ -34,6 +36,7 @@ instance FromYAML Meta where
         -- "keywords" is an alias for "tags"
         <*> (liftA2 (<|>) (m .:? "tags") (m .:? "keywords"))
         <*> m .:? "date"
+        <*> m .:? "unlisted"
 
 -- NOTE: Not using this instance because it generates "tags: null" when tags is
 -- Nothing.
