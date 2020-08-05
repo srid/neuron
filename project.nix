@@ -1,7 +1,7 @@
 let 
   nixpkgsSrc = builtins.fetchTarball {
-    url = "https://github.com/nixos/nixpkgs/archive/76f2e271a2ef.tar.gz";
-    sha256 = "1r4da3kyghqq7vzya5yb295jpnha1fgp755bi6wda4fmhyaynnsp";
+    url = "https://github.com/nixos/nixpkgs/archive/5e7fb7699c84.tar.gz";
+    sha256 = "12rqn4a88maggk1vhhfi2vn2j0vf543qnv2zby922mnnrij476gw";
   };
   gitignoreSrc = builtins.fetchTarball {
     url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
@@ -62,10 +62,8 @@ let
       pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
 
     # Override pandoc-types and dependencies because stack-lts versions are to old
-    hslua = self.hslua_1_1_2;
-    jira-wiki-markup = self.jira-wiki-markup_1_3_2;
-    # pandoc = self.pandoc_2_10_1;
     pandoc-types = self.pandoc-types_1_21;
+
     skylighting = self.callHackageDirect {
       pkg = "skylighting";
       ver = "0.9";
@@ -75,7 +73,7 @@ let
       pkg = "skylighting-core";
       ver = "0.9";
       sha256 = "1fb3j5kmfdycxwr7vjdg1hrdz6s61ckp489qj3899klk18pcmpnh";
-    } {};
+    } {}; 
     # Jailbreak to allow newer skylighting. Next version of pandoc shouldn't
     # require this.
     pandoc = doJailbreak super.pandoc_2_10_1;

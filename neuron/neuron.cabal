@@ -50,7 +50,7 @@ common library-common
     commonmark ^>= 0.1.0.2,
     commonmark-extensions ^>= 0.2.0.0,
     commonmark-pandoc >= 0.1.0.0 && < 0.3,
-    pandoc-types,
+    pandoc-types >= 1.21,
     parsec,
     modern-uri,
     HsYAML,
@@ -61,7 +61,7 @@ common library-common
     data-default,
     reflex,
     reflex-dom-core,
-    reflex-dom-pandoc >= 0.2.2.0,
+    reflex-dom-pandoc >= 0.2.3.0,
     clay,
     tagged
 

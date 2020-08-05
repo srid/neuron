@@ -9,7 +9,7 @@ import Data.Some
 import qualified Data.Text as T
 import Development.Shake (Action)
 import Neuron.CLI.Types (OpenCommand (..))
-import Neuron.Web.Generate.Route
+import Neuron.Web.Generate.Route ()
 import Relude
 import Rib.Route (routeUrlRel)
 import Rib.Shake (ribOutputDir)
