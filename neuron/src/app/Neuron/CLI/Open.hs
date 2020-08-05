@@ -19,7 +19,7 @@ import System.Posix.Process
 
 openLocallyGeneratedFile :: OpenCommand -> Action ()
 openLocallyGeneratedFile OpenCommand {..} = do
-  let htmlFile = withSome route $ \r -> T.unpack $ routeUrlRel r
+  let htmlFile = T.unpack $ routeUrlRel `foldSome` route
   indexHtmlPath <- fmap (</> htmlFile) ribOutputDir
   let opener = if os == "darwin" then "open" else "xdg-open"
   liftIO $ executeFile opener True [indexHtmlPath] Nothing

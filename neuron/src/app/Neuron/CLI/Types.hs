@@ -144,6 +144,9 @@ commandParser defaultNotesDir today = do
           (const $ OpenCommand $ Some $ R.Route_ZIndex)
           (switch (long "zindex" <> help "Open z-index"))
           <|> fmap
+            (const $ OpenCommand $ Some $ R.Route_Search Nothing)
+            (switch (long "search" <> help "Open search"))
+          <|> fmap
             (OpenCommand . Some . R.Route_Zettel)
             (option zettelIDReader (long "id" <> help "Open the given zettel ID" <> metavar "ID"))
     queryCommand =

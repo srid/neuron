@@ -10,7 +10,7 @@
     - Fix incorrect body font (esp. on Windows)
     - Fix task list checkbox styling (#233)
 - CLI
-  - Add an `--id` option to open command (#317)
+  - Add `--id` and `--search` options to `open` command to open given zettel ID or search page respectively  (#317)
 
 ## 0.6.0.0
 
