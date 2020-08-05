@@ -9,6 +9,7 @@
   - Styling fixes
     - Fix incorrect body font (esp. on Windows)
     - Fix task list checkbox styling (#233)
+  - Add `unlisted` metadata property to hide zettel from z-index (#318)
 
 ## 0.6.0.0
 
