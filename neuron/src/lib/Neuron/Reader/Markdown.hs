@@ -148,6 +148,9 @@ wrappedLinkSpec linkP =
 angleBracketLinkP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
 angleBracketLinkP = do
   void $ symbol '<'
+  -- NOTE: Intentionally be lenient to support `<z:zettels?t...>` style
+  -- queries. FIXME: Should fail on `</foo>` though (HTML end tags). TODO:
+  -- Add unit tests before modifying this matching any further.
   x <- some (noneOfToks [Symbol '>', Spaces, UnicodeSpace, LineEnd])
   void $ symbol '>'
   pure x
