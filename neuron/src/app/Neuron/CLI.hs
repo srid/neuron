@@ -65,12 +65,10 @@ runWith act App {..} =
         openLocallyGeneratedFile openCommand
     Query (QueryCommand {..}) ->
       runRibOnceQuietly notesDir $ do
-        readMode <-
-          bool
-            (Cache.ReadMode_Direct <$> getConfig)
-            (pure Cache.ReadMode_Cached)
-            cached
-        (graph, errors) <- Gen.loadZettelkastenGraph readMode
+        (graph, errors) <-
+          if cached
+            then Cache.getCache
+            else Gen.loadZettelkastenGraph =<< getConfig
         case query of
           Left someQ ->
             withSome someQ $ \q -> do

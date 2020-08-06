@@ -31,6 +31,12 @@ updateCache v = do
   f <- cacheFile
   liftIO $ encodeFile f v
 
+getCache :: Action CacheData
+getCache = do
+  (liftIO . eitherDecodeFileStrict =<< cacheFile) >>= \case
+    Left err -> fail err
+    Right v -> pure v
+
 evalUnlessCacheRequested ::
   ReadMode -> (Config -> Action CacheData) -> Action CacheData
 evalUnlessCacheRequested mode f = do

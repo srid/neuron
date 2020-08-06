@@ -158,40 +158,45 @@ commandParser defaultNotesDir today = do
             (OpenCommand . Some . R.Route_Zettel)
             (option zettelIDReader (long "id" <> help "Open the zettel HTML page" <> metavar "ID"))
     queryCommand = do
-      -- TODO: Refactor and move to new file
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
       query <-
-        ( fmap
-            Left
-            ( fmap (Some . flip Q.ZettelQuery_ZettelByID Nothing) (option zettelIDReader (long "id"))
-                <|> fmap (\x -> Some $ Q.ZettelQuery_ZettelsByTag x Nothing def) (many (mkTagPattern <$> option str (long "tag" <> short 't')))
-                <|> option queryReader (long "uri" <> short 'u')
-            )
-            <|> fmap
-              Right
-              (fmap (const $ Some $ Q.GraphQuery_Id) $ switch (long "graph" <> help "Get the entire zettelkasten graph as JSON"))
-            <|> fmap
-              Right
-              ( fmap (Some . Q.GraphQuery_BacklinksOf Nothing) $
-                  option
-                    zettelIDReader
-                    ( long "backlinks-of"
-                        <> help "Get backlinks to the given zettel ID"
-                        <> metavar "ID"
-                    )
-              )
-            <|> fmap
-              Right
-              ( fmap (Some . Q.GraphQuery_BacklinksOf (Just C.Folgezettel)) $
-                  option
-                    zettelIDReader
-                    ( long "uplinks-of"
-                        <> help "Get uplinks to the given zettel ID"
-                        <> metavar "ID"
-                    )
-              )
+        fmap
+          Left
+          ( fmap
+              (Some . flip Q.ZettelQuery_ZettelByID Nothing)
+              (option zettelIDReader (long "id"))
+              <|> fmap
+                (\x -> Some $ Q.ZettelQuery_ZettelsByTag x Nothing def)
+                (many (mkTagPattern <$> option str (long "tag" <> short 't')))
+              <|> option queryReader (long "uri" <> short 'u')
           )
-      pure $ Query $ QueryCommand cached query
+          <|> fmap
+            Right
+            ( fmap
+                (const $ Some $ Q.GraphQuery_Id)
+                ( switch $
+                    long "graph" <> help "Get the entire zettelkasten graph as JSON"
+                )
+                <|> fmap
+                  (Some . Q.GraphQuery_BacklinksOf Nothing)
+                  ( option
+                      zettelIDReader
+                      ( long "backlinks-of"
+                          <> help "Get backlinks to the given zettel ID"
+                          <> metavar "ID"
+                      )
+                  )
+                <|> fmap
+                  (Some . Q.GraphQuery_BacklinksOf (Just C.Folgezettel))
+                  ( option
+                      zettelIDReader
+                      ( long "uplinks-of"
+                          <> help "Get uplinks to the given zettel ID"
+                          <> metavar "ID"
+                      )
+                  )
+            )
+      pure $ Query $ QueryCommand {..}
     searchCommand = do
       searchBy <-
         bool SearchByTitle SearchByContent

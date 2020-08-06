@@ -110,12 +110,11 @@ reportError route errors = do
 --
 -- Also allows retrieving the cached data for faster execution.
 loadZettelkastenGraph ::
-  Cache.ReadMode ->
+  Config ->
   Action (ZettelGraph, Map ZettelID ZettelError)
-loadZettelkastenGraph mode =
-  Cache.evalUnlessCacheRequested mode $ \config -> do
-    (g, _, errs) <- loadZettelkasten config
-    pure (g, errs)
+loadZettelkastenGraph config = do
+  (g, _, errs) <- loadZettelkasten config
+  pure (g, errs)
 
 loadZettelkasten ::
   Config ->
