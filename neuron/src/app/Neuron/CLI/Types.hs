@@ -13,6 +13,7 @@ module Neuron.CLI.Types
     SearchBy (..),
     SearchCommand (..),
     OpenCommand (..),
+    QueryCommand (..),
     RibConfig (..),
     commandParser,
   )
@@ -67,6 +68,13 @@ data OpenCommand = OpenCommand
   }
   deriving (Eq, Show)
 
+data QueryCommand = QueryCommand
+  { -- Use cache instead of building the zettelkasten from scratch
+    cached :: Bool,
+    query :: Either (Some Q.ZettelQuery) (Some Q.GraphQuery)
+  }
+  deriving (Eq, Show)
+
 data Command
   = -- | Create a new zettel file
     New NewCommand
@@ -75,7 +83,7 @@ data Command
   | -- | Search a zettel by title
     Search SearchCommand
   | -- | Run a query against the Zettelkasten
-    Query (Either (Some Q.ZettelQuery) (Some Q.GraphQuery))
+    Query QueryCommand
   | -- | Delegate to Rib's command parser
     Rib RibConfig
 
@@ -149,8 +157,10 @@ commandParser defaultNotesDir today = do
           <|> fmap
             (OpenCommand . Some . R.Route_Zettel)
             (option zettelIDReader (long "id" <> help "Open the zettel HTML page" <> metavar "ID"))
-    queryCommand =
-      fmap Query $
+    queryCommand = do
+      -- TODO: Refactor and move to new file
+      cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
+      query <-
         ( fmap
             Left
             ( fmap (Some . flip Q.ZettelQuery_ZettelByID Nothing) (option zettelIDReader (long "id"))
@@ -180,7 +190,8 @@ commandParser defaultNotesDir today = do
                         <> metavar "ID"
                     )
               )
-        )
+          )
+      pure $ Query $ QueryCommand cached query
     searchCommand = do
       searchBy <-
         bool SearchByTitle SearchByContent

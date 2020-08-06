@@ -19,6 +19,7 @@ import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Open (openLocallyGeneratedFile)
 import Neuron.CLI.Rib
 import Neuron.CLI.Search (interactiveSearch)
+import Neuron.CLI.Types (QueryCommand (..))
 import Neuron.Config (getConfig)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Version as Version
@@ -61,10 +62,15 @@ runWith act App {..} =
     Open openCommand ->
       runRibOnceQuietly notesDir $ do
         openLocallyGeneratedFile openCommand
-    Query eSomeQ ->
+    Query (QueryCommand {..}) ->
       runRibOnceQuietly notesDir $ do
-        (graph, _, errors) <- Gen.loadZettelkasten =<< getConfig
-        case eSomeQ of
+        readMode <-
+          bool
+            (Gen.ReadMode_Direct <$> getConfig)
+            (pure Gen.ReadMode_Cached)
+            cached
+        (graph, errors) <- Gen.loadZettelkastenGraph readMode
+        case query of
           Left someQ ->
             withSome someQ $ \q -> do
               let result = Q.runZettelQuery (G.getZettels graph) q

@@ -14,9 +14,12 @@
 module Neuron.Web.Generate
   ( generateSite,
     loadZettelkasten,
+    ReadMode (..),
+    loadZettelkastenGraph,
   )
 where
 
+import Data.Aeson (eitherDecodeFileStrict, encodeFile)
 import Data.FileEmbed (embedOneStringFileOf)
 import qualified Data.Map.Strict as Map
 import Data.Tagged (untag)
@@ -104,6 +107,29 @@ reportError route errors = do
         go (x : xs) =
           x : fmap (toText . (take n (repeat ' ') <>) . toString) xs
 
+data ReadMode
+  = ReadMode_Direct Config
+  | ReadMode_Cached
+  deriving (Eq, Show)
+
+-- | Like `loadZettelkasten` but without the content
+--
+-- Also allows retrieving the cached data for faster execution.
+loadZettelkastenGraph ::
+  ReadMode ->
+  Action (ZettelGraph, Map ZettelID ZettelError)
+loadZettelkastenGraph = \case
+  ReadMode_Direct config -> do
+    (g, _, errs) <- loadZettelkasten config
+    pure (g, errs)
+  ReadMode_Cached -> do
+    cacheFile <- (</> ".neuron/cache.json") <$> ribInputDir
+    liftIO (eitherDecodeFileStrict cacheFile) >>= \case
+      Left err ->
+        fail err
+      Right v ->
+        pure v
+
 loadZettelkasten ::
   Config ->
   Action
@@ -117,7 +143,10 @@ loadZettelkasten config = do
     let pat = toString $ "*" <> zettelFormatToExtension fmt
     files <- forEvery [pat] pure
     pure (fmt, files)
-  loadZettelkastenFrom zettelFiles
+  res@(g, _, errs) <- loadZettelkastenFrom zettelFiles
+  cacheFile <- (</> ".neuron/cache.json") <$> ribInputDir
+  liftIO $ encodeFile cacheFile (g, errs)
+  pure res
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFrom ::
