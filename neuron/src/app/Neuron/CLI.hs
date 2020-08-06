@@ -19,9 +19,11 @@ import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Open (openLocallyGeneratedFile)
 import Neuron.CLI.Rib
 import Neuron.CLI.Search (interactiveSearch)
+import Neuron.CLI.Types (QueryCommand (..))
 import Neuron.Config (getConfig)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Version as Version
+import qualified Neuron.Web.Cache as Cache
 import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
@@ -61,10 +63,13 @@ runWith act App {..} =
     Open openCommand ->
       runRibOnceQuietly notesDir $ do
         openLocallyGeneratedFile openCommand
-    Query eSomeQ ->
+    Query (QueryCommand {..}) ->
       runRibOnceQuietly notesDir $ do
-        (graph, _, errors) <- Gen.loadZettelkasten =<< getConfig
-        case eSomeQ of
+        (graph, errors) <-
+          if cached
+            then Cache.getCache
+            else Gen.loadZettelkastenGraph =<< getConfig
+        case query of
           Left someQ ->
             withSome someQ $ \q -> do
               let result = Q.runZettelQuery (G.getZettels graph) q

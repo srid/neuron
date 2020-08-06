@@ -14,6 +14,7 @@
 module Neuron.Web.Generate
   ( generateSite,
     loadZettelkasten,
+    loadZettelkastenGraph,
   )
 where
 
@@ -28,6 +29,7 @@ import Neuron.Config.Type (Config (minVersion), getZettelFormats)
 import Neuron.Reader (readerForZettelFormat)
 import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Neuron.Version (neuronVersion, olderThan)
+import qualified Neuron.Web.Cache as Cache
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
@@ -104,6 +106,16 @@ reportError route errors = do
         go (x : xs) =
           x : fmap (toText . (take n (repeat ' ') <>) . toString) xs
 
+-- | Like `loadZettelkasten` but without the content
+--
+-- Also allows retrieving the cached data for faster execution.
+loadZettelkastenGraph ::
+  Config ->
+  Action (ZettelGraph, Map ZettelID ZettelError)
+loadZettelkastenGraph config = do
+  (g, _, errs) <- loadZettelkasten config
+  pure (g, errs)
+
 loadZettelkasten ::
   Config ->
   Action
@@ -117,7 +129,9 @@ loadZettelkasten config = do
     let pat = toString $ "*" <> zettelFormatToExtension fmt
     files <- forEvery [pat] pure
     pure (fmt, files)
-  loadZettelkastenFrom zettelFiles
+  res@(g, _, errs) <- loadZettelkastenFrom zettelFiles
+  Cache.updateCache (g, errs)
+  pure res
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFrom ::
