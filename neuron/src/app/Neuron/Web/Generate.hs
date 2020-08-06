@@ -14,12 +14,10 @@
 module Neuron.Web.Generate
   ( generateSite,
     loadZettelkasten,
-    ReadMode (..),
     loadZettelkastenGraph,
   )
 where
 
-import Data.Aeson (eitherDecodeFileStrict, encodeFile)
 import Data.FileEmbed (embedOneStringFileOf)
 import qualified Data.Map.Strict as Map
 import Data.Tagged (untag)
@@ -31,6 +29,7 @@ import Neuron.Config.Type (Config (minVersion), getZettelFormats)
 import Neuron.Reader (readerForZettelFormat)
 import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Neuron.Version (neuronVersion, olderThan)
+import qualified Neuron.Web.Cache as Cache
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
@@ -107,28 +106,16 @@ reportError route errors = do
         go (x : xs) =
           x : fmap (toText . (take n (repeat ' ') <>) . toString) xs
 
-data ReadMode
-  = ReadMode_Direct Config
-  | ReadMode_Cached
-  deriving (Eq, Show)
-
 -- | Like `loadZettelkasten` but without the content
 --
 -- Also allows retrieving the cached data for faster execution.
 loadZettelkastenGraph ::
-  ReadMode ->
+  Cache.ReadMode ->
   Action (ZettelGraph, Map ZettelID ZettelError)
-loadZettelkastenGraph = \case
-  ReadMode_Direct config -> do
+loadZettelkastenGraph mode =
+  Cache.evalUnlessCacheRequested mode $ \config -> do
     (g, _, errs) <- loadZettelkasten config
     pure (g, errs)
-  ReadMode_Cached -> do
-    cacheFile <- (</> ".neuron/cache.json") <$> ribInputDir
-    liftIO (eitherDecodeFileStrict cacheFile) >>= \case
-      Left err ->
-        fail err
-      Right v ->
-        pure v
 
 loadZettelkasten ::
   Config ->
@@ -144,8 +131,7 @@ loadZettelkasten config = do
     files <- forEvery [pat] pure
     pure (fmt, files)
   res@(g, _, errs) <- loadZettelkastenFrom zettelFiles
-  cacheFile <- (</> ".neuron/cache.json") <$> ribInputDir
-  liftIO $ encodeFile cacheFile (g, errs)
+  Cache.updateCache (g, errs)
   pure res
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files

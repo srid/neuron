@@ -23,6 +23,7 @@ import Neuron.CLI.Types (QueryCommand (..))
 import Neuron.Config (getConfig)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Version as Version
+import qualified Neuron.Web.Cache as Cache
 import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
@@ -66,8 +67,8 @@ runWith act App {..} =
       runRibOnceQuietly notesDir $ do
         readMode <-
           bool
-            (Gen.ReadMode_Direct <$> getConfig)
-            (pure Gen.ReadMode_Cached)
+            (Cache.ReadMode_Direct <$> getConfig)
+            (pure Cache.ReadMode_Cached)
             cached
         (graph, errors) <- Gen.loadZettelkastenGraph readMode
         case query of
