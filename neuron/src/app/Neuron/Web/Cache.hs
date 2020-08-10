@@ -14,6 +14,7 @@ import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Zettel (ZettelError)
 import Relude
 import Rib.Shake
+import System.Directory (createDirectoryIfMissing)
 import System.FilePath
 
 data ReadMode
@@ -24,7 +25,10 @@ data ReadMode
 type CacheData = (ZettelGraph, Map ZettelID ZettelError)
 
 cacheFile :: Action FilePath
-cacheFile = (</> ".neuron/cache.json") <$> ribInputDir
+cacheFile = do
+  neuronDir <- (</> ".neuron") <$> ribInputDir
+  liftIO $ createDirectoryIfMissing True neuronDir
+  pure $ neuronDir </> "cache.json"
 
 updateCache :: CacheData -> Action ()
 updateCache v = do
