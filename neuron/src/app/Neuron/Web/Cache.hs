@@ -26,13 +26,9 @@ type CacheData = (ZettelGraph, Map ZettelID ZettelError)
 
 cacheFile :: Action FilePath
 cacheFile = do
-    ribDir <- ribInputDir
-
-    let neuronDir = ribDir </> ".neuron"
-
-    liftIO (createDirectoryIfMissing True neuronDir)
-
-    pure (neuronDir </> "cache.json")
+  neuronDir <- (</> ".neuron") <$> ribInputDir
+  liftIO $ createDirectoryIfMissing True neuronDir
+  pure $ neuronDir </> "cache.json"
 
 updateCache :: CacheData -> Action ()
 updateCache v = do
