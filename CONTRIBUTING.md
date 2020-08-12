@@ -42,8 +42,6 @@ ob thunk unpack dep/reflex-dom-pandoc
 cd dep/reflex-dom-pandoc
 ```
 
-For `nix-build` and `nix-shell` to still work while a dependency is unpacked, you need to change the source patch in `project.nix` to e.g. `reflex-dom-pandoc = ./dep/reflex-dom-pandoc`.
-
 Then you can try your changes with
 ```
 # Run ghcid (using neuron's nix config)
@@ -61,13 +59,11 @@ ob thunk pack dep/reflex-dom-pandoc
 git add dep/reflex-dom-pandoc
 ```
 
-Don‘t forget to revert the temporary changes to your `project.nix`.
-
 ## Guidelines when submitting a PR
 
 ### Autoformatting
 
-Run the `bin/format` script to auto-format your Haskell source changes using [ormolu](https://github.com/tweag/ormolu). 
+Run the `bin/format` script to auto-format your Haskell source changes using [ormolu](https://github.com/tweag/ormolu).
 
 ### Test your build
 
