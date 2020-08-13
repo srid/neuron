@@ -23,11 +23,15 @@ let
 
   inherit (import (gitignoreSrc) { inherit (pkgs) lib; }) gitignoreSource;
 
+  thunkOrPath = dep:
+    let p = ./dep + "/${dep}/thunk.nix";
+    in if builtins.pathExists p then import p else (./dep + "/${dep}");
+
   sources = {
     neuron = gitignoreSource ./neuron;
-    rib = import ./dep/rib/thunk.nix;
-    commonmark = import ./dep/commonmark-hs/thunk.nix;
-    reflex-dom-pandoc = import ./dep/reflex-dom-pandoc/thunk.nix;
+    rib = thunkOrPath "rib";
+    commonmark = thunkOrPath "commonmark-hs";
+    reflex-dom-pandoc = thunkOrPath "reflex-dom-pandoc";
   };
 
   searchBuilder = ''
