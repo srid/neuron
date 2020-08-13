@@ -121,7 +121,7 @@ renderZettelLink conn (fromMaybe def -> linkView) Zettel {..} = do
             else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
     elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
       neuronRouteLink (Some $ Route_Zettel zettelID) mempty $ text zettelTitle
-      el "sup" $ text "ᛦ"
+      el "sup" $ do elAttr "span" noSnippet $ text "ᛦ"
   where
     -- Prevent this element from appearing in Google search results
     -- https://developers.google.com/search/reference/robots_meta_tag#data-nosnippet-attr
