@@ -108,6 +108,7 @@ neuronSpec =
     [ wrappedLinkSpec angleBracketLinkP,
       wrappedLinkSpec wikiLinkP,
       gfmExtensionsSansEmoji,
+      CE.fancyListSpec,
       CE.footnoteSpec,
       CE.mathSpec,
       CE.smartPunctuationSpec,
