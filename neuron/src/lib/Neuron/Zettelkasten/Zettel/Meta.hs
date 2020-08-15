@@ -89,11 +89,8 @@ formatZettelLocalTime =
 
 parseZettelDate :: (MonadFail m, Alternative m) => Text -> m DateMayTime
 parseZettelDate t =
-  case (parseTimeM False defaultTimeLocale dateFormat (toString t)) of
-    Just day -> return (Left day)
-    _ -> case (parseTimeM False defaultTimeLocale dateTimeFormat (toString t)) of
-      Just localtime -> return (Right localtime)
-      _ -> fail "no valid date/time"
+  let s = toString t
+   in Left <$> parseTimeM False defaultTimeLocale dateFormat s <|> Right <$> parseTimeM False defaultTimeLocale dateTimeFormat s
 
 parseZettelDay :: MonadFail m => Text -> m Day
 parseZettelDay =
