@@ -34,6 +34,7 @@ import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Zettel.Meta (formatZettelDateAsDay)
 import Reflex.Dom.Core hiding (count, tag)
 import Relude
 
@@ -104,7 +105,7 @@ renderZettelLink conn (fromMaybe def -> linkView) Zettel {..} = do
           LinkView_Default ->
             Nothing
           LinkView_ShowDate ->
-            elTime <$> zettelDate
+            elTime . formatZettelDateAsDay <$> zettelDate
           LinkView_ShowID ->
             Just $ el "tt" $ text $ zettelIDText zettelID
       classes :: [Text] = catMaybes $ [Just "zettel-link-container"] <> [connClass, rawClass]

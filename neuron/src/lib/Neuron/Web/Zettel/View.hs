@@ -28,6 +28,7 @@ import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
 import qualified Neuron.Zettelkasten.Query.Eval as Q
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Zettel.Meta (formatZettelDate)
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc
 import Relude hiding ((&))
@@ -122,7 +123,7 @@ renderZettelContent handleLink Zettel {..} = do
     whenJust zettelDate $ \day ->
       elAttr "div" ("class" =: "date" <> "title" =: "Zettel creation date") $ do
         text "Created on: "
-        elTime day
+        elTime $ formatZettelDate day
 
 renderZettelRawContent :: (DomBuilder t m) => ZettelT Text -> m ()
 renderZettelRawContent Zettel {..} = do

@@ -5,16 +5,14 @@
 module Neuron.Web.Widget where
 
 import qualified Data.Text as T
-import Neuron.Zettelkasten.Zettel.Meta (DateMayTime, formatZettelDate)
 import Reflex.Dom.Core
 import Relude
 
 -- | <time> element
-elTime :: DomBuilder t m => DateMayTime -> m ()
+elTime :: DomBuilder t m => Text -> m ()
 elTime t = do
-  let s = formatZettelDate t
   -- cf. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time#Attributes
-  elAttr "time" ("datetime" =: s) $ text s
+  elAttr "time" ("datetime" =: t) $ text t
 
 semanticIcon :: DomBuilder t m => Text -> m ()
 semanticIcon name = elClass "i" (name <> " icon") blank

@@ -24,7 +24,7 @@ import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
-import Neuron.Zettelkasten.Zettel.Meta (formatZettelDay)
+import Neuron.Zettelkasten.Zettel.Meta
 import Options.Applicative
 import Relude
 import Rib.Shake (ribInputDir)
@@ -56,7 +56,7 @@ newZettelFile NewCommand {..} config = do
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-
           bool (pure showAction) mkEditActionFromEnv edit
-        writeFileText (notesDir </> zettelFile) $ defaultZettelContent zettelFormat day title
+        writeFileText (notesDir </> zettelFile) $ defaultZettelContent zettelFormat localtime title
         fileAction notesDir zettelFile
   where
     mkEditActionFromEnv :: IO (FilePath -> FilePath -> IO ())
@@ -83,8 +83,8 @@ newZettelFile NewCommand {..} config = do
           if null v then pure Nothing else pure (Just v)
 
 -- TODO use configurable template files?
-defaultZettelContent :: ZettelFormat -> Day -> Maybe Text -> Text
-defaultZettelContent format day mtitle = case format of
+defaultZettelContent :: ZettelFormat -> LocalTime -> Maybe Text -> Text
+defaultZettelContent format now mtitle = case format of
   ZettelFormat_Markdown ->
     T.intercalate
       "\n"
@@ -105,6 +105,6 @@ defaultZettelContent format day mtitle = case format of
         "\n"
       ]
   where
-    date = formatZettelDay day
+    date = formatZettelLocalTime now
     defaultTitleName = "Zettel created on " <> date
     title = maybe defaultTitleName T.strip mtitle
