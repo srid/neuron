@@ -32,7 +32,7 @@ import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Query.Graph as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
-import Neuron.Zettelkasten.Zettel.Meta (parseZettelDate)
+import Neuron.Zettelkasten.Zettel.Meta (parseZettelDay)
 import Options.Applicative
 import Relude
 import qualified Rib.Cli
@@ -228,4 +228,4 @@ commandParser defaultNotesDir today = do
           Left $ displayException e
     dayReader :: ReadM Day
     dayReader =
-      maybeReader (parseZettelDate . toText)
+      maybeReader (parseZettelDay . toText)

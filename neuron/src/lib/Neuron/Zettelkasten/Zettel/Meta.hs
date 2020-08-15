@@ -1,4 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
@@ -8,7 +10,10 @@
 module Neuron.Zettelkasten.Zettel.Meta
   ( Meta (..),
     formatZettelDate,
+    formatZettelDay,
     parseZettelDate,
+    parseZettelDay,
+    DateMayTime,
   )
 where
 
@@ -17,12 +22,14 @@ import Data.Time
 import Data.YAML
 import Relude
 
+type DateMayTime = Either Day LocalTime
+
 -- | YAML metadata in a zettel markdown file
 data Meta = Meta
   { title :: Maybe Text,
     tags :: Maybe [Tag],
     -- | Creation day
-    date :: Maybe Day,
+    date :: Maybe DateMayTime,
     -- | List in the z-index
     unlisted :: Maybe Bool
   }
@@ -48,22 +55,38 @@ instance FromYAML Meta where
 --         "date" .= date
 --       ]
 
-instance FromYAML Day where
+instance FromYAML (Either Day LocalTime) where
   parseYAML =
     parseZettelDate <=< parseYAML @Text
 
-instance ToYAML Day where
+instance ToYAML (Either Day LocalTime) where
   toYAML =
     toYAML . formatZettelDate
 
--- | The format in which we decode and encode zettel dates.
-zettelDateFormat :: String
-zettelDateFormat = "%Y-%m-%d"
-
-formatZettelDate :: Day -> Text
+formatZettelDate :: DateMayTime -> Text
 formatZettelDate =
-  toText . formatTime defaultTimeLocale zettelDateFormat
+  toText . \case
+    Left day -> formatTime defaultTimeLocale dateFormat day
+    Right localtime -> formatTime defaultTimeLocale dateTimeFormat localtime
 
-parseZettelDate :: MonadFail m => Text -> m Day
-parseZettelDate =
-  parseTimeM False defaultTimeLocale zettelDateFormat . toString
+formatZettelDay :: Day -> Text
+formatZettelDay =
+  toText . formatTime defaultTimeLocale dateFormat
+
+parseZettelDate :: MonadFail m => Text -> m DateMayTime
+parseZettelDate t =
+  case (parseTimeM False defaultTimeLocale dateFormat (toString t)) of
+    Just day -> return (Left day)
+    _ -> case (parseTimeM False defaultTimeLocale dateTimeFormat (toString t)) of
+      Just localtime -> return (Right localtime)
+      _ -> fail "no valid date/time"
+
+parseZettelDay :: MonadFail m => Text -> m Day
+parseZettelDay =
+  parseTimeM False defaultTimeLocale dateFormat . toString
+
+dateFormat :: String
+dateFormat = "%Y-%m-%d"
+
+dateTimeFormat :: String
+dateTimeFormat = "%Y-%m-%dT%H:%M"

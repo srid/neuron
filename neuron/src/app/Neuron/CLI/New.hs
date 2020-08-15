@@ -24,7 +24,7 @@ import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
-import Neuron.Zettelkasten.Zettel.Meta (formatZettelDate)
+import Neuron.Zettelkasten.Zettel.Meta (formatZettelDay)
 import Options.Applicative
 import Relude
 import Rib.Shake (ribInputDir)
@@ -105,6 +105,6 @@ defaultZettelContent format day mtitle = case format of
         "\n"
       ]
   where
-    date = formatZettelDate day
+    date = formatZettelDay day
     defaultTitleName = "Zettel created on " <> date
     title = maybe defaultTitleName T.strip mtitle

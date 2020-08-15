@@ -5,13 +5,12 @@
 module Neuron.Web.Widget where
 
 import qualified Data.Text as T
-import Data.Time
-import Neuron.Zettelkasten.Zettel.Meta (formatZettelDate)
+import Neuron.Zettelkasten.Zettel.Meta (DateMayTime, formatZettelDate)
 import Reflex.Dom.Core
 import Relude
 
 -- | <time> element
-elTime :: DomBuilder t m => Day -> m ()
+elTime :: DomBuilder t m => DateMayTime -> m ()
 elTime t = do
   let s = formatZettelDate t
   -- cf. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/time#Attributes
