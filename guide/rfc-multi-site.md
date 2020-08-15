@@ -11,12 +11,14 @@ For this, we add a new config parameter `filterZettels` with the same syntax as 
 To configure multiple sites, we modify the existing configuration format.
 
 - At the top level, we have the following fields:
+
 |Field name|Description|
 |---|---|
 |**`minVersion`**|The minimum neuron version your site must be generated with. (optional)|
 |**`sites`**|A mapping of site identifier and site config.|
 
 - Each site config can have these optional parameters:
+
 |Field name|Description|
 |---|---|
 |**`siteTitle`**|Your Neuron site's title|
