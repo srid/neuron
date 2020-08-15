@@ -30,8 +30,7 @@ import Text.URI.Util (getQueryParam, hasQueryFlag)
 -- | Parse a query from the given URI.
 --
 -- This function is used only in the CLI. For handling links in a Markdown file,
--- your want `queryFromMarkdownLink` which allows specifying the link text as
--- well.
+-- your want `queryFromURILink` which allows specifying the link text as well.
 queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Maybe (Some ZettelQuery))
 queryFromURI uri = do
   -- We are setting markdownLinkText to the URI to support the new short links
@@ -40,10 +39,12 @@ queryFromURI uri = do
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
 queryFromURILink (URILink linkText uri) =
   case fmap URI.unRText (URI.uriScheme uri) of
-    Just proto | not angleBracketLink && proto `elem` ["z", "zcf"] -> do
+    -- Legacy links
+    Just proto | not isAutoLink && proto `elem` ["z", "zcf"] -> do
       zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
       let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
       pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
+    -- Legacy links
     Just proto | proto `elem` ["zquery", "zcfquery"] ->
       case uriHost uri of
         Right "search" -> do
@@ -56,10 +57,10 @@ queryFromURILink (URILink linkText uri) =
           pure $ Just $ Some $ ZettelQuery_Tags (tagPatterns "filter")
         _ ->
           throwError $ QueryParseError_UnsupportedHost uri
+    -- Now we deal with short links (autolinks)
     _ -> pure $ do
-      -- Modern links:
-      -- First, we expect that this is inside <..> (so same link text as link)
-      guard angleBracketLink
+      -- First, we expect that this is an autolink (link text is same as URI)
+      guard isAutoLink
       -- Then, non-relevant parts of the URI should be empty
       guard $ URI.uriFragment uri == Nothing
       let mconn =
@@ -88,8 +89,10 @@ queryFromURILink (URILink linkText uri) =
               | noSlash -> do
                 pure $ Some $ ZettelQuery_Tags (tagPatterns "filter")
             _ -> Nothing
+        -- This would usually be http://; we ignore other protocols.
         Just _ -> do
           Nothing
+        -- The URI has no scheme. We expect this to be the link ID with params.
         Nothing -> do
           -- Alias to short links
           fmap snd (URI.uriPath uri) >>= \case
@@ -100,7 +103,7 @@ queryFromURILink (URILink linkText uri) =
               -- Multiple path elements, not supported
               Nothing
   where
-    angleBracketLink = URI.render uri == linkText
+    isAutoLink = URI.render uri == linkText
     tagPatterns k =
       mkTagPattern <$> getParamValues k uri
     queryView =
