@@ -31,7 +31,7 @@ To configure multiple sites, we modify the existing configuration format.
 For backwards compatability, in absence of the `sites` field, we conside a single site implictly named `default`. All fields that are allowed at the top level (in the new config format) as well as for individual site config can be used here.
 
 ## Example
-```json
+```dhall
 { minVersion = "0.4.0.0"
 , sites =
   { default =
