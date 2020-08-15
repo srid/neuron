@@ -45,7 +45,7 @@ queryFromURILink (URILink linkText uri) =
       let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
       pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
     -- Legacy links
-    Just proto | proto `elem` ["zquery", "zcfquery"] ->
+    Just proto | not isAutoLink && proto `elem` ["zquery", "zcfquery"] ->
       case uriHost uri of
         Right "search" -> do
           let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
