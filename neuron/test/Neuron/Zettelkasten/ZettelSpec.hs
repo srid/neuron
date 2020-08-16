@@ -8,8 +8,9 @@ module Neuron.Zettelkasten.ZettelSpec
 where
 
 import Data.TagTree
-import Data.Time (LocalTime (LocalTime), midnight)
+import Data.Time (LocalTime (LocalTime))
 import Data.Time.Calendar
+import Data.Time.LocalTime (TimeOfDay (TimeOfDay))
 import Neuron.Reader.Markdown
 import Neuron.Reader.Type
 import Neuron.Zettelkasten.ID
@@ -25,8 +26,12 @@ spec = do
       noContent = MetadataOnly ()
   describe "sortZettelsReverseChronological" $ do
     let mkDay = fromGregorian 2020 3
+        mkZettelDay = Just . Left . mkDay
+        mkZettelLocalTime day hh mm = (Just (Right $ (LocalTime (mkDay day) (TimeOfDay hh mm 0))))
+
         (_ :: Maybe Meta, _dummyContent) = either (error . show) id $ parseMarkdown "<spec>" "Dummy"
-        mkZettel day idx =
+
+        mkZettel day date idx =
           Zettel
             (ZettelDateID (mkDay day) idx)
             ZettelFormat_Markdown
@@ -34,12 +39,23 @@ spec = do
             "Some title"
             False
             [Tag "science", Tag "journal/class"]
-            (Just (Right $ (LocalTime (mkDay day) midnight)))
+            date
             False
             noQueries
             noError
             noContent
-    it "sorts correctly" $ do
-      let zs = [mkZettel 3 2, mkZettel 5 1]
+
+    it "sorts correctly with day" $ do
+      let zs = [mkZettel 3 (mkZettelDay 3) 2, mkZettel 5 (mkZettelDay 5) 1]
       sortZettelsReverseChronological zs
-        `shouldBe` [mkZettel 5 1, mkZettel 3 2]
+        `shouldBe` reverse zs
+
+    it "sorts correctly with localtime" $ do
+      let zs = [mkZettel 3 (mkZettelLocalTime 3 9 59) 2, mkZettel 3 (mkZettelLocalTime 3 10 0) 1]
+      sortZettelsReverseChronological zs
+        `shouldBe` reverse zs
+
+    it "sorts correctly with mixed dates" $ do
+      let zs = [mkZettel 3 (mkZettelDay 3) 2, mkZettel 3 (mkZettelLocalTime 3 0 0) 1]
+      sortZettelsReverseChronological zs
+        `shouldBe` reverse zs
