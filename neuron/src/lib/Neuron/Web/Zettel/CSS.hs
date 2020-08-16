@@ -46,9 +46,11 @@ zettelContentCss = do
       C.marginRight $ em 0.3
   ".zettel-content" ? do
     -- All of these apply to the zettel content card only.
-    "div.date" ? do
-      C.textAlign C.center
-      C.color C.gray
+    ".metadata" ? do
+      C.marginTop $ em 1
+      "div.date" ? do
+        C.textAlign C.center
+        C.color C.gray
     C.h1 ? do
       C.paddingTop $ em 0.2
       C.paddingBottom $ em 0.2
