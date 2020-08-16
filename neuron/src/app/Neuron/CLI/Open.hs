@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Neuron.CLI.Open
@@ -7,7 +8,7 @@ where
 
 import Data.Some
 import qualified Data.Text as T
-import Development.Shake (Action)
+import Development.Shake (Action, doesFileExist)
 import Neuron.CLI.Types (OpenCommand (..))
 import Neuron.Web.Generate.Route ()
 import Relude
@@ -19,7 +20,11 @@ import System.Posix.Process
 
 openLocallyGeneratedFile :: OpenCommand -> Action ()
 openLocallyGeneratedFile OpenCommand {..} = do
-  let htmlFile = T.unpack $ routeUrlRel `foldSome` route
-  indexHtmlPath <- fmap (</> htmlFile) ribOutputDir
-  let opener = if os == "darwin" then "open" else "xdg-open"
-  liftIO $ executeFile opener True [indexHtmlPath] Nothing
+  let relHtmlPath = T.unpack $ routeUrlRel `foldSome` route
+      opener = if os == "darwin" then "open" else "xdg-open"
+  htmlPath <- fmap (</> relHtmlPath) ribOutputDir
+  doesFileExist htmlPath >>= \case
+    False -> do
+      fail "No generated HTML found. Try runing `neuron rib` first."
+    True -> do
+      liftIO $ executeFile opener True [htmlPath] Nothing
