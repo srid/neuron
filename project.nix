@@ -1,7 +1,7 @@
-let 
+let
   nixpkgsSrc = builtins.fetchTarball {
-    url = "https://github.com/nixos/nixpkgs/archive/5e7fb7699c84.tar.gz";
-    sha256 = "12rqn4a88maggk1vhhfi2vn2j0vf543qnv2zby922mnnrij476gw";
+    url = "https://github.com/nixos/nixpkgs/archive/729e7295cf7b.tar.gz";
+    sha256 = "0mxhi0lc11aa3r7i7din1q2rjg5c4amq3alcr8ga2fcb64vn2zd3";
   };
   gitignoreSrc = builtins.fetchTarball {
     url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
@@ -30,7 +30,6 @@ let
   sources = {
     neuron = gitignoreSource ./neuron;
     rib = thunkOrPath "rib";
-    commonmark = thunkOrPath "commonmark-hs";
     reflex-dom-pandoc = thunkOrPath "reflex-dom-pandoc";
   };
 
@@ -50,18 +49,8 @@ let
   };
 
   haskellOverrides = self: super: {
-    # We include rib because it is quite tightly coupled with neuron development
     rib-core = self.callCabal2nix "rib-core" (sources.rib + "/rib-core") { };
 
-    # commonmark is not released on hackage yet
-    commonmark =
-      self.callCabal2nix "commonmark" (sources.commonmark + "/commonmark") { };
-    commonmark-extensions = self.callCabal2nix "commonmark-extensions"
-      (sources.commonmark + "/commonmark-extensions") { };
-    commonmark-pandoc = self.callCabal2nix "commonmark-pandoc"
-      (sources.commonmark + "/commonmark-pandoc") { };
-
-    # Also not released yet
     reflex-dom-pandoc =
       pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
 
@@ -77,7 +66,7 @@ let
       pkg = "skylighting-core";
       ver = "0.9";
       sha256 = "1fb3j5kmfdycxwr7vjdg1hrdz6s61ckp489qj3899klk18pcmpnh";
-    } {}; 
+    } {};
     # Jailbreak to allow newer skylighting. Next version of pandoc shouldn't
     # require this.
     pandoc = doJailbreak super.pandoc_2_10_1;
