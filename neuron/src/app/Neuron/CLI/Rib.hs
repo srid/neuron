@@ -33,7 +33,7 @@ runRib act notesDir ribCfg =
     mkRibCliConfig :: FilePath -> RibConfig -> IO Rib.Cli.CliConfig
     mkRibCliConfig inputDir cfg = do
       unlessM (doesDirectoryExist inputDir) $ do
-        fail $ "Zettelkasten directory " <> inputDir <> " does not exist."
+        fail $ "Zettelkasten directory (" <> inputDir <> ") does not exist. You may create it manually using `mkdir " <> inputDir <> "` before running neuron."
       let neuronDir = inputDir </> ".neuron"
           outputDir = fromMaybe (neuronDir </> "output") $ ribOutputDir cfg
           rebuildAll = False
