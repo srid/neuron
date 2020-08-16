@@ -9,10 +9,9 @@
 
 module Neuron.Zettelkasten.Zettel.Meta
   ( Meta (..),
+    dateTimeFormat,
     formatZettelDate,
     formatZettelDateAsDay,
-    formatZettelLocalTime,
-    formatZettelDay,
     parseZettelDate,
     parseZettelDay,
     DateMayTime,
@@ -78,14 +77,6 @@ formatZettelDateAsDay =
     Right localtime -> fmt (localDay localtime)
   where
     fmt = formatTime defaultTimeLocale dateFormat
-
-formatZettelDay :: Day -> Text
-formatZettelDay =
-  toText . formatTime defaultTimeLocale dateFormat
-
-formatZettelLocalTime :: LocalTime -> Text
-formatZettelLocalTime =
-  toText . formatTime defaultTimeLocale dateTimeFormat
 
 parseZettelDate :: (MonadFail m, Alternative m) => Text -> m DateMayTime
 parseZettelDate t =

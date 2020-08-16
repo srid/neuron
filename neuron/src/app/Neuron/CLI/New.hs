@@ -108,3 +108,7 @@ defaultZettelContent format now mtitle = case format of
     date = formatZettelLocalTime now
     defaultTitleName = "Zettel created on " <> date
     title = maybe defaultTitleName T.strip mtitle
+
+formatZettelLocalTime :: LocalTime -> Text
+formatZettelLocalTime =
+  toText . formatTime defaultTimeLocale dateTimeFormat
