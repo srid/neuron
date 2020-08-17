@@ -37,10 +37,9 @@ import Text.URI.Util (getQueryParam, hasQueryFlag)
 --
 -- This function is used only in the CLI. For handling links in a Markdown file,
 -- your want `queryFromURILink` which allows specifying the link text as well.
-queryFromURI :: MonadError QueryParseError m => URI.URI -> m (Maybe (Some ZettelQuery))
-queryFromURI uri = do
-  -- We are setting markdownLinkText to the URI to support the new short links
-  queryFromURILink $ URILink (URI.render uri) uri
+queryFromURI :: URI -> Maybe (Some ZettelQuery)
+queryFromURI =
+  parseAutoLinks
 
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
 queryFromURILink u@(URILink linkText uri) = do
@@ -49,6 +48,7 @@ queryFromURILink u@(URILink linkText uri) = do
     then pure $ parseAutoLinks uri
     else parseLegacy u
 
+-- | Parse legacy style links, eg: `[](zcf://2014533)`
 parseLegacy :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
 parseLegacy (URILink linkText uri) = do
   case fmap URI.unRText (URI.uriScheme uri) of
@@ -70,11 +70,11 @@ parseLegacy (URILink linkText uri) = do
           pure $ Just $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
         _ ->
           throwError $ QueryParseError_UnsupportedHost uri
-    -- Now we deal with short links (autolinks)
     _ ->
       pure Nothing
 
-parseAutoLinks :: URI.URI -> Maybe (Some ZettelQuery)
+-- | Parse commonmark autolink style links, eg: `<2014533>`
+parseAutoLinks :: URI -> Maybe (Some ZettelQuery)
 parseAutoLinks uri = do
   -- Non-relevant parts of the URI should be empty
   guard $ isNothing $ URI.uriFragment uri
