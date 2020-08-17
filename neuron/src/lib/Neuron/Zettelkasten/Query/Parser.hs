@@ -6,10 +6,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Neuron.Zettelkasten.Query.Parser
   ( queryFromURI,
@@ -42,15 +43,22 @@ queryFromURI uri = do
   queryFromURILink $ URILink (URI.render uri) uri
 
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
-queryFromURILink (URILink linkText uri) =
+queryFromURILink u@(URILink linkText uri) = do
+  let isAutoLink = URI.render uri == linkText
+  if isAutoLink
+    then pure $ parseAutoLinks uri
+    else parseLegacy u
+
+parseLegacy :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
+parseLegacy (URILink linkText uri) = do
   case fmap URI.unRText (URI.uriScheme uri) of
     -- Legacy links
-    Just proto | not isAutoLink && proto `elem` ["z", "zcf"] -> do
+    Just proto | proto `elem` ["z", "zcf"] -> do
       zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
       let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
       pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
     -- Legacy links
-    Just proto | not isAutoLink && proto `elem` ["zquery", "zcfquery"] ->
+    Just proto | proto `elem` ["zquery", "zcfquery"] ->
       case uriHost uri of
         Right "search" -> do
           let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
@@ -63,52 +71,52 @@ queryFromURILink (URILink linkText uri) =
         _ ->
           throwError $ QueryParseError_UnsupportedHost uri
     -- Now we deal with short links (autolinks)
-    _ -> pure $ do
-      -- First, we expect that this is an autolink (link text is same as URI)
-      guard isAutoLink
-      -- Then, non-relevant parts of the URI should be empty
-      guard $ URI.uriFragment uri == Nothing
-      let mconn =
-            if hasQueryFlag [queryKey|cf|] uri
-              then Just OrdinaryConnection
-              else Nothing
-          -- Found "z:" without a trailing slash
-          noSlash = URI.uriAuthority uri == Left False
-          -- Found "z:/" instead of "z:"
-          hasSlash = URI.uriAuthority uri == Left True
-      case fmap URI.unRText (URI.uriScheme uri) of
-        Just "z" -> do
-          fmap snd (URI.uriPath uri) >>= \case
-            (URI.unRText -> path) :| []
-              | hasSlash -> do
-                zid <- rightToMaybe $ parseZettelID' path
-                pure $ Some $ ZettelQuery_ZettelByID zid mconn
-            (URI.unRText -> "zettel") :| [URI.unRText -> path]
-              | noSlash -> do
-                zid <- rightToMaybe $ parseZettelID' path
-                pure $ Some $ ZettelQuery_ZettelByID zid mconn
-            (URI.unRText -> "zettels") :| []
-              | noSlash -> do
-                pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") mconn (queryView uri)
-            (URI.unRText -> "tags") :| []
-              | noSlash -> do
-                pure $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
-            _ -> Nothing
-        -- This would usually be http://; we ignore other protocols.
-        Just _ -> do
+    _ ->
+      pure Nothing
+
+parseAutoLinks :: URI.URI -> Maybe (Some ZettelQuery)
+parseAutoLinks uri = do
+  -- Non-relevant parts of the URI should be empty
+  guard $ isNothing $ URI.uriFragment uri
+  let mconn =
+        if hasQueryFlag [queryKey|cf|] uri
+          then Just OrdinaryConnection
+          else Nothing
+      -- Found "z:" without a trailing slash
+      noSlash = URI.uriAuthority uri == Left False
+      -- Found "z:/" instead of "z:"
+      hasSlash = URI.uriAuthority uri == Left True
+  case fmap URI.unRText (URI.uriScheme uri) of
+    Just "z" -> do
+      fmap snd (URI.uriPath uri) >>= \case
+        (URI.unRText -> path) :| []
+          | hasSlash -> do
+            zid <- rightToMaybe $ parseZettelID' path
+            pure $ Some $ ZettelQuery_ZettelByID zid mconn
+        (URI.unRText -> "zettel") :| [URI.unRText -> path]
+          | noSlash -> do
+            zid <- rightToMaybe $ parseZettelID' path
+            pure $ Some $ ZettelQuery_ZettelByID zid mconn
+        (URI.unRText -> "zettels") :| []
+          | noSlash -> do
+            pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") mconn (queryView uri)
+        (URI.unRText -> "tags") :| []
+          | noSlash -> do
+            pure $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
+        _ -> Nothing
+    -- This would usually be http://; we ignore other protocols.
+    Just _ -> do
+      Nothing
+    -- The URI has no scheme. We expect this to be the link ID with params.
+    Nothing -> do
+      -- Alias to short links
+      fmap snd (URI.uriPath uri) >>= \case
+        (URI.unRText -> path) :| [] -> do
+          zid <- rightToMaybe $ parseZettelID' path
+          pure $ Some $ ZettelQuery_ZettelByID zid mconn
+        _ ->
+          -- Multiple path elements, not supported
           Nothing
-        -- The URI has no scheme. We expect this to be the link ID with params.
-        Nothing -> do
-          -- Alias to short links
-          fmap snd (URI.uriPath uri) >>= \case
-            (URI.unRText -> path) :| [] -> do
-              zid <- rightToMaybe $ parseZettelID' path
-              pure $ Some $ ZettelQuery_ZettelByID zid mconn
-            _ ->
-              -- Multiple path elements, not supported
-              Nothing
-  where
-    isAutoLink = URI.render uri == linkText
 
 tagPatterns :: URI -> Text -> [TagPattern]
 tagPatterns uri k =
