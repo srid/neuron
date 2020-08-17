@@ -15,7 +15,6 @@ import qualified Data.Set as Set
 import Data.Some
 import Data.Text (strip)
 import qualified Data.Text as T
-import Data.Time
 import Development.Shake (Action)
 import Neuron.CLI.Types
 import Neuron.Config.Type (Config (..), getZettelFormats)
@@ -83,8 +82,8 @@ newZettelFile NewCommand {..} config = do
           if null v then pure Nothing else pure (Just v)
 
 -- TODO use configurable template files?
-defaultZettelContent :: ZettelFormat -> LocalTime -> Maybe Text -> Text
-defaultZettelContent format now mtitle = case format of
+defaultZettelContent :: ZettelFormat -> DateMayTime -> Maybe Text -> Text
+defaultZettelContent format dmt mtitle = case format of
   ZettelFormat_Markdown ->
     T.intercalate
       "\n"
@@ -105,10 +104,6 @@ defaultZettelContent format now mtitle = case format of
         "\n"
       ]
   where
-    date = formatZettelLocalTime now
+    date = formatZettelDate dmt
     defaultTitleName = "Zettel created on " <> date
     title = maybe defaultTitleName T.strip mtitle
-
-formatZettelLocalTime :: LocalTime -> Text
-formatZettelLocalTime =
-  toText . formatTime defaultTimeLocale dateTimeFormat
