@@ -11,11 +11,15 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Query.Parser where
+module Neuron.Zettelkasten.Query.Parser
+  ( queryFromURI,
+    queryFromURILink,
+  )
+where
 
 import Control.Monad.Except
 import Data.Some
-import Data.TagTree (mkTagPattern)
+import Data.TagTree (TagPattern, mkTagPattern)
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
@@ -23,6 +27,7 @@ import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
 import Reflex.Dom.Pandoc (URILink (..))
 import Relude
+import Text.URI (URI)
 import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam, hasQueryFlag)
@@ -52,9 +57,9 @@ queryFromURILink (URILink linkText uri) =
           pure $
             Just $
               Some $
-                ZettelQuery_ZettelsByTag (tagPatterns "tag") mconn queryView
+                ZettelQuery_ZettelsByTag (tagPatterns uri "tag") mconn (queryView uri)
         Right "tags" ->
-          pure $ Just $ Some $ ZettelQuery_Tags (tagPatterns "filter")
+          pure $ Just $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
         _ ->
           throwError $ QueryParseError_UnsupportedHost uri
     -- Now we deal with short links (autolinks)
@@ -84,10 +89,10 @@ queryFromURILink (URILink linkText uri) =
                 pure $ Some $ ZettelQuery_ZettelByID zid mconn
             (URI.unRText -> "zettels") :| []
               | noSlash -> do
-                pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns "tag") mconn queryView
+                pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") mconn (queryView uri)
             (URI.unRText -> "tags") :| []
               | noSlash -> do
-                pure $ Some $ ZettelQuery_Tags (tagPatterns "filter")
+                pure $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
             _ -> Nothing
         -- This would usually be http://; we ignore other protocols.
         Just _ -> do
@@ -104,28 +109,36 @@ queryFromURILink (URILink linkText uri) =
               Nothing
   where
     isAutoLink = URI.render uri == linkText
-    tagPatterns k =
-      mkTagPattern <$> getParamValues k uri
-    queryView =
-      let isTimeline =
-            -- linkTheme=withDate is legacy format; timeline is current standard.
-            getQueryParam [queryKey|linkTheme|] uri == Just "withDate"
-              || hasQueryFlag [queryKey|timeline|] uri
-          isGrouped = hasQueryFlag [queryKey|grouped|] uri
-          linkView =
-            if isTimeline
-              then LinkView_ShowDate
-              else
-                if hasQueryFlag [queryKey|showid|] uri
-                  then LinkView_ShowID
-                  else LinkView_Default
-       in ZettelsView linkView isGrouped
-    getParamValues k u =
-      flip mapMaybe (URI.uriQuery u) $ \case
-        URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-          if key == k
-            then Just val
-            else Nothing
-        _ -> Nothing
-    uriHost u =
-      fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
+
+tagPatterns :: URI -> Text -> [TagPattern]
+tagPatterns uri k =
+  mkTagPattern <$> getParamValues k uri
+
+queryView :: URI -> ZettelsView
+queryView uri =
+  let isTimeline =
+        -- linkTheme=withDate is legacy format; timeline is current standard.
+        getQueryParam [queryKey|linkTheme|] uri == Just "withDate"
+          || hasQueryFlag [queryKey|timeline|] uri
+      isGrouped = hasQueryFlag [queryKey|grouped|] uri
+      linkView =
+        if isTimeline
+          then LinkView_ShowDate
+          else
+            if hasQueryFlag [queryKey|showid|] uri
+              then LinkView_ShowID
+              else LinkView_Default
+   in ZettelsView linkView isGrouped
+
+getParamValues :: Text -> URI -> [Text]
+getParamValues k u =
+  flip mapMaybe (URI.uriQuery u) $ \case
+    URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
+      if key == k
+        then Just val
+        else Nothing
+    _ -> Nothing
+
+uriHost :: URI -> Either Bool Text
+uriHost u =
+  fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
