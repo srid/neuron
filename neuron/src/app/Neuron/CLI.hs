@@ -50,7 +50,7 @@ run act = do
       (</> "zettelkasten") <$> getHomeDirectory
     today = do
       tz <- getCurrentTimeZone
-      utcToLocalTime tz <$> liftIO getCurrentTime
+      localDay . utcToLocalTime tz <$> liftIO getCurrentTime
 
 runWith :: (Config -> Action ()) -> App -> IO ()
 runWith act App {..} =
