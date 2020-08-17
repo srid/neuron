@@ -46,7 +46,7 @@ data App = App
 data NewCommand = NewCommand
   { title :: Maybe Text,
     format :: Maybe ZettelFormat,
-    localtime :: LocalTime,
+    date :: LocalTime,
     idScheme :: Some IDScheme,
     edit :: Bool
   }
@@ -97,8 +97,8 @@ data RibConfig = RibConfig
   deriving (Eq, Show)
 
 -- | optparse-applicative parser for neuron CLI
-commandParser :: FilePath -> LocalTime -> Parser App
-commandParser defaultNotesDir now = do
+commandParser :: FilePath -> Day -> Parser App
+commandParser defaultNotesDir today = do
   notesDir <-
     option
       Rib.Cli.directoryReader
@@ -127,11 +127,11 @@ commandParser defaultNotesDir now = do
               <> long "format"
               <> help "The document format of the new zettel"
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
-      day <-
+      dayParam <-
         option dayReader $
           long "day"
             <> metavar "DAY"
-            <> value (localDay now)
+            <> value today
             <> showDefault
             <> help "Zettel creation date in UTC"
       -- NOTE: optparse-applicative picks the first option as the default.
@@ -145,7 +145,7 @@ commandParser defaultNotesDir now = do
           <|> fmap
             (const . Some . IDSchemeCustom)
             (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
-      pure $ New $ NewCommand title format now (idSchemeF day) edit
+      pure $ New $ NewCommand title format (LocalTime dayParam midday) (idSchemeF dayParam) edit
     openCommand = do
       fmap Open $
         fmap

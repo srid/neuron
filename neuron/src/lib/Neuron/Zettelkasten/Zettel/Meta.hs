@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -56,11 +57,11 @@ instance FromYAML Meta where
 --         "date" .= date
 --       ]
 
-instance FromYAML (Either Day LocalTime) where
+instance FromYAML DateMayTime where
   parseYAML =
     parseZettelDate <=< parseYAML @Text
 
-instance ToYAML (Either Day LocalTime) where
+instance ToYAML DateMayTime where
   toYAML =
     toYAML . formatZettelDate
 
@@ -72,16 +73,13 @@ formatZettelDate =
 
 formatZettelDateAsDay :: DateMayTime -> Text
 formatZettelDateAsDay =
-  toText . \case
-    Left day -> fmt day
-    Right localtime -> fmt (localDay localtime)
-  where
-    fmt = formatTime defaultTimeLocale dateFormat
+  toText . formatTime defaultTimeLocale dateFormat . \case
+    Left day -> day
+    Right localtime -> localDay localtime
 
 parseZettelDate :: (MonadFail m, Alternative m) => Text -> m DateMayTime
-parseZettelDate t =
-  let s = toString t
-   in Left <$> parseTimeM False defaultTimeLocale dateFormat s <|> Right <$> parseTimeM False defaultTimeLocale dateTimeFormat s
+parseZettelDate (toString -> s) =
+  Left <$> parseTimeM False defaultTimeLocale dateFormat s <|> Right <$> parseTimeM False defaultTimeLocale dateTimeFormat s
 
 parseZettelDay :: MonadFail m => Text -> m Day
 parseZettelDay =

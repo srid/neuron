@@ -56,7 +56,7 @@ newZettelFile NewCommand {..} config = do
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-
           bool (pure showAction) mkEditActionFromEnv edit
-        writeFileText (notesDir </> zettelFile) $ defaultZettelContent zettelFormat localtime title
+        writeFileText (notesDir </> zettelFile) $ defaultZettelContent zettelFormat date title
         fileAction notesDir zettelFile
   where
     mkEditActionFromEnv :: IO (FilePath -> FilePath -> IO ())

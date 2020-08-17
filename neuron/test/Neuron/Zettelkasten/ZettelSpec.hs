@@ -27,7 +27,7 @@ spec = do
   describe "sortZettelsReverseChronological" $ do
     let mkDay = fromGregorian 2020 3
         mkZettelDay = Just . Left . mkDay
-        mkZettelLocalTime day hh mm = (Just (Right $ (LocalTime (mkDay day) (TimeOfDay hh mm 0))))
+        mkZettelLocalTime day hh mm = Just $ Right $ LocalTime (mkDay day) $ TimeOfDay hh mm 0
 
         (_ :: Maybe Meta, _dummyContent) = either (error . show) id $ parseMarkdown "<spec>" "Dummy"
 
@@ -56,6 +56,6 @@ spec = do
         `shouldBe` reverse zs
 
     it "sorts correctly with mixed dates" $ do
-      let zs = [mkZettel 3 (mkZettelDay 3) 2, mkZettel 3 (mkZettelLocalTime 3 0 0) 1]
+      let zs = [mkZettel 3 (mkZettelDay 5) 2, mkZettel 3 (mkZettelLocalTime 3 0 0) 1]
       sortZettelsReverseChronological zs
         `shouldBe` reverse zs
