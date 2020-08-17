@@ -42,36 +42,13 @@ queryFromURI =
   parseAutoLinks
 
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
-queryFromURILink u@(URILink linkText uri) = do
-  let isAutoLink = URI.render uri == linkText
-  if isAutoLink
-    then pure $ parseAutoLinks uri
-    else parseLegacy u
-
--- | Parse legacy style links, eg: `[](zcf://2014533)`
-parseLegacy :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
-parseLegacy (URILink linkText uri) = do
-  case fmap URI.unRText (URI.uriScheme uri) of
-    -- Legacy links
-    Just proto | proto `elem` ["z", "zcf"] -> do
-      zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
-      let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
-      pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
-    -- Legacy links
-    Just proto | proto `elem` ["zquery", "zcfquery"] ->
-      case uriHost uri of
-        Right "search" -> do
-          let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
-          pure $
-            Just $
-              Some $
-                ZettelQuery_ZettelsByTag (tagPatterns uri "tag") mconn (queryView uri)
-        Right "tags" ->
-          pure $ Just $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
-        _ ->
-          throwError $ QueryParseError_UnsupportedHost uri
-    _ ->
-      pure Nothing
+queryFromURILink uriLink =
+  if isAutoLink uriLink
+    then pure $ parseAutoLinks (_uriLink_uri uriLink)
+    else parseLegacyLinks uriLink
+  where
+    isAutoLink (URILink linkText uri) =
+      linkText == URI.render uri
 
 -- | Parse commonmark autolink style links, eg: `<2014533>`
 parseAutoLinks :: URI -> Maybe (Some ZettelQuery)
@@ -118,9 +95,47 @@ parseAutoLinks uri = do
           -- Multiple path elements, not supported
           Nothing
 
+-- | Parse legacy style links, eg: `[](zcf://2014533)`
+parseLegacyLinks :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
+parseLegacyLinks (URILink linkText uri) = do
+  case fmap URI.unRText (URI.uriScheme uri) of
+    -- Legacy links
+    Just proto | proto `elem` ["z", "zcf"] -> do
+      zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
+      let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
+      pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
+    -- Legacy links
+    Just proto | proto `elem` ["zquery", "zcfquery"] ->
+      case uriHost uri of
+        Right "search" -> do
+          let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
+          pure $
+            Just $
+              Some $
+                ZettelQuery_ZettelsByTag (tagPatterns uri "tag") mconn (queryView uri)
+        Right "tags" ->
+          pure $ Just $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
+        _ ->
+          throwError $ QueryParseError_UnsupportedHost uri
+    _ ->
+      pure Nothing
+  where
+    uriHost :: URI -> Either Bool Text
+    uriHost u =
+      fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
+
 tagPatterns :: URI -> Text -> [TagPattern]
 tagPatterns uri k =
-  mkTagPattern <$> getParamValues k uri
+  mkTagPattern <$> getParamValues uri
+  where
+    getParamValues :: URI -> [Text]
+    getParamValues u =
+      flip mapMaybe (URI.uriQuery u) $ \case
+        URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
+          if key == k
+            then Just val
+            else Nothing
+        _ -> Nothing
 
 queryView :: URI -> ZettelsView
 queryView uri =
@@ -137,16 +152,3 @@ queryView uri =
               then LinkView_ShowID
               else LinkView_Default
    in ZettelsView linkView isGrouped
-
-getParamValues :: Text -> URI -> [Text]
-getParamValues k u =
-  flip mapMaybe (URI.uriQuery u) $ \case
-    URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-      if key == k
-        then Just val
-        else Nothing
-    _ -> Nothing
-
-uriHost :: URI -> Either Bool Text
-uriHost u =
-  fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
