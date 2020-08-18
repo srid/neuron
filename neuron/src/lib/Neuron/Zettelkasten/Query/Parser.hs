@@ -54,7 +54,7 @@ queryFromURILink uriLink =
 parseAutoLinks :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
 parseAutoLinks uri = do
   -- Non-relevant parts of the URI should be empty
-  if (not $ isNothing $ URI.uriFragment uri)
+  if (isJust $ URI.uriFragment uri)
     then pure Nothing
     else do
       let mconn =
@@ -68,17 +68,21 @@ parseAutoLinks uri = do
       case fmap URI.unRText (URI.uriScheme uri) of
         Just "z" -> do
           case fmap snd (URI.uriPath uri) of
+            -- Parse z:/<id>
             Just ((URI.unRText -> path) :| [])
               | hasSlash -> do
-                zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' path
+                zid <- parseQueryZettelID uri path
                 pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
+            -- Parse z:zettel/<id>
             Just ((URI.unRText -> "zettel") :| [URI.unRText -> path])
               | noSlash -> do
-                zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' path
+                zid <- parseQueryZettelID uri path
                 pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
+            -- Parse z:zettels?...
             Just ((URI.unRText -> "zettels") :| [])
               | noSlash -> pure $ do
                 pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") mconn (queryView uri)
+            -- Parse z:tags?...
             Just ((URI.unRText -> "tags") :| [])
               | noSlash -> pure $ do
                 pure $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
@@ -96,13 +100,13 @@ parseAutoLinks uri = do
               -- Multiple path elements, not supported
               Nothing
 
--- | Parse legacy style links, eg: `[](zcf://2014533)`
+-- | Parse legacy style links, eg: `[2014533](z:/)`
 parseLegacyLinks :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
 parseLegacyLinks (URILink linkText uri) = do
   case fmap URI.unRText (URI.uriScheme uri) of
     -- Legacy links
     Just proto | proto `elem` ["z", "zcf"] -> do
-      zid <- liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' linkText
+      zid <- parseQueryZettelID uri linkText
       let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
       pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
     -- Legacy links
@@ -124,6 +128,10 @@ parseLegacyLinks (URILink linkText uri) = do
     uriHost :: URI -> Either Bool Text
     uriHost u =
       fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
+
+parseQueryZettelID :: MonadError QueryParseError m => URI -> Text -> m ZettelID
+parseQueryZettelID uri s =
+  liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' s
 
 tagPatterns :: URI -> Text -> [TagPattern]
 tagPatterns uri k =
