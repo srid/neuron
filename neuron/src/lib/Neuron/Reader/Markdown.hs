@@ -127,7 +127,7 @@ neuronSpec =
 -- | Convert the given wrapped link to a `B.Link`.
 wrappedLinkSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
-  (P.ParsecT [CM.Tok] (CM.IPState m) (StateT Commonmark.Tag.Enders m) [CM.Tok]) ->
+  P.ParsecT [CM.Tok] (CM.IPState m) (StateT Commonmark.Tag.Enders m) [CM.Tok] ->
   CM.SyntaxSpec m il bl
 wrappedLinkSpec linkP =
   mempty
@@ -136,7 +136,7 @@ wrappedLinkSpec linkP =
   where
     pLink ::
       (Monad m, CM.IsInline il) =>
-      (P.ParsecT [CM.Tok] (CM.IPState m) (StateT Commonmark.Tag.Enders m) [CM.Tok]) ->
+      P.ParsecT [CM.Tok] (CM.IPState m) (StateT Commonmark.Tag.Enders m) [CM.Tok] ->
       CM.InlineParser m il
     pLink p = P.try $ do
       x <- p

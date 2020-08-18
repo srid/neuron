@@ -57,15 +57,15 @@ parseAutoLinks uri =
   liftEither . runMaybeT $ do
     -- Non-relevant parts of the URI should be empty
     guard $ isNothing $ URI.uriFragment uri
-    case fmap URI.unRText (URI.uriScheme uri) of
+    case URI.uriScheme uri of
       -- Look for short links, eg: `<foo-bar>`
       Nothing -> do
-        (URI.unRText -> path) :| [] <- MaybeT $ pure $ fmap snd (URI.uriPath uri)
-        zid <- MaybeT $ pure $ rightToMaybe $ parseZettelID' path
+        (URI.unRText -> path) :| [] <- hoistMaybe $ fmap snd (URI.uriPath uri)
+        zid <- hoistMaybe $ rightToMaybe $ parseZettelID' path
         pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
-      Just proto -> do
+      Just (URI.unRText -> proto) -> do
         guard $ proto == "z"
-        zPath <- MaybeT $ pure $ fmap snd (URI.uriPath uri)
+        zPath <- hoistMaybe $ fmap snd (URI.uriPath uri)
         let -- Found "z:" without a trailing slash
             noSlash = URI.uriAuthority uri == Left False
             -- Found "z:/" instead of "z:"

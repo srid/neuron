@@ -12,6 +12,7 @@
     - Use superscript for folgezettel link suffix (#346)
 - Zettel format
   - Add `unlisted` metadata property to hide a zettel from z-index (#318)
+  - Allow specifying time in the `date` metadata propery (#343)
   - Markdown: support for [fancy lists](https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/fancy_lists.md) (#335)
 - CLI
   - Faster querying: add `--cached` option to `neuron query`, to run faster using the cache. To keep the cache up to date, make sure that `neuron rib` is running.
