@@ -9,6 +9,7 @@
   - Styling fixes
     - Fix incorrect body font (esp. on Windows)
     - Fix task list checkbox styling (#233)
+    - Use superscript for folgezettel link suffix (#346)
 - Zettel format
   - Add `unlisted` metadata property to hide a zettel from z-index (#318)
   - Markdown: support for [fancy lists](https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/fancy_lists.md) (#335)

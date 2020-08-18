@@ -2,11 +2,9 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -111,7 +109,7 @@ renderZettelLink conn (fromMaybe def -> linkView) Zettel {..} = do
       classes :: [Text] = catMaybes $ [Just "zettel-link-container"] <> [connClass, rawClass]
   elClass "span" (T.intercalate " " classes) $ do
     forM_ mextra $ \extra ->
-      elAttr "span" ("class" =: "extra monoFont" <> noSnippet) $ do
+      elNoSnippetSpan ("class" =: "extra monoFont") $ do
         extra
         -- The extra space is so that double clicking on this extra text
         -- doesn't select the title next.
@@ -122,11 +120,15 @@ renderZettelLink conn (fromMaybe def -> linkView) Zettel {..} = do
             else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
     elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
       neuronRouteLink (Some $ Route_Zettel zettelID) mempty $ text zettelTitle
+      case conn of
+        Just Folgezettel -> elNoSnippetSpan mempty $ do
+          elAttr "sup" ("title" =: "Branching link (folgezettel)") $ text "ᛦ"
+        _ -> pure mempty
   where
     -- Prevent this element from appearing in Google search results
     -- https://developers.google.com/search/reference/robots_meta_tag#data-nosnippet-attr
-    noSnippet :: Map Text Text
-    noSnippet = "data-nosnippet" =: ""
+    elNoSnippetSpan :: DomBuilder t m => Map Text Text -> NeuronWebT t m a -> NeuronWebT t m a
+    elNoSnippetSpan attrs = elAttr "span" ("data-nosnippet" =: "" <> attrs)
     withTooltip :: Maybe Text -> Map Text Text
     withTooltip = \case
       Nothing -> mempty
@@ -193,9 +195,6 @@ zettelLinkCss = do
     C.textDecoration C.none
   "span.zettel-link-container span.extra" ? do
     C.color C.auto
-  "span.zettel-link-container.folgezettel::after" ? do
-    C.paddingLeft $ em 0.3
-    C.content $ C.stringContent "ᛦ"
   "span.zettel-link-container.raw" ? do
     C.border C.solid (C.px 1) C.red
   "[data-tooltip]:after" ? do
