@@ -9,7 +9,6 @@
 
 module Neuron.Reader.Org
   ( parseOrg,
-    parseDate,
   )
 where
 
@@ -44,8 +43,7 @@ extractMetadata doc
     pure $ Just Meta {..}
   | otherwise = pure Nothing
   where
+    parseDate :: Text -> Either ZettelParseError DateMayTime
+    parseDate date = maybeToRight (Tagged $ "Invalid date format: " <> date) $ parseZettelDate @Maybe date
     parseUnlisted :: Text -> Bool
     parseUnlisted a = toLower a == "true"
-
-parseDate :: Text -> Either ZettelParseError DateMayTime
-parseDate date = maybeToRight (Tagged $ "Invalid date format: " <> date) $ parseZettelDate @Maybe date
