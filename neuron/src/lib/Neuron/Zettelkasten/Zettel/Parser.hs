@@ -40,7 +40,7 @@ parseZettel format zreader fn zid s = do
           date = case zid of
             -- We ignore the "data" meta field on legacy Date IDs, which encode the
             -- creation date in the ID.
-            ZettelDateID v _ -> Just $ Left v
+            ZettelDateID v _ -> Just $ Meta.mkDateMayTime $ Left v
             ZettelCustomID _ -> Meta.date =<< meta
           unlisted = fromMaybe False $ Meta.unlisted =<< meta
           (queries, errors) = runWriter $ extractQueries doc

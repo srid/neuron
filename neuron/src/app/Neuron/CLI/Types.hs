@@ -32,7 +32,13 @@ import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Query.Graph as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
-import Neuron.Zettelkasten.Zettel.Meta (DateMayTime, formatZettelDate, parseZettelDate)
+import Neuron.Zettelkasten.Zettel.Meta
+  ( DateMayTime,
+    formatZettelDate,
+    getDay,
+    mkDateMayTime,
+    parseZettelDate,
+  )
 import Options.Applicative
 import Relude
 import qualified Rib.Cli
@@ -131,7 +137,7 @@ commandParser defaultNotesDir now = do
         option dateReader $
           long "date"
             <> metavar "DATE/TIME"
-            <> value (Right now)
+            <> value (mkDateMayTime $ Right now)
             <> showDefaultWith (toString . formatZettelDate)
             <> help "Zettel creation date/time"
       -- NOTE: optparse-applicative picks the first option as the default.
@@ -145,7 +151,7 @@ commandParser defaultNotesDir now = do
           <|> fmap
             (const . Some . IDSchemeCustom)
             (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
-      pure $ New $ NewCommand title format dateParam (idSchemeF $ extractDay dateParam) edit
+      pure $ New $ NewCommand title format dateParam (idSchemeF $ getDay dateParam) edit
     openCommand = do
       fmap Open $
         fmap
@@ -229,8 +235,3 @@ commandParser defaultNotesDir now = do
     dateReader :: ReadM DateMayTime
     dateReader =
       maybeReader (parseZettelDate . toText)
-    extractDay :: DateMayTime -> Day
-    extractDay dmt =
-      case dmt of
-        Left day -> day
-        Right lt -> localDay lt
