@@ -16,8 +16,9 @@ import qualified Data.Map as Map
 import Data.TagTree (Tag (Tag))
 import Data.Tagged
 import Data.Text (toLower)
+import Data.Time.DateMayTime (DateMayTime, parseDateMayTime)
 import Neuron.Reader.Type (ZettelParseError, ZettelReader)
-import Neuron.Zettelkasten.Zettel.Meta (DateMayTime, Meta (..), parseDateMayTime)
+import Neuron.Zettelkasten.Zettel.Meta (Meta (..))
 import Relude
 import Relude.Extra.Map (lookup)
 import Text.Pandoc (def, runPure)

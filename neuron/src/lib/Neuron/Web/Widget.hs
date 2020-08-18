@@ -6,7 +6,7 @@
 module Neuron.Web.Widget where
 
 import qualified Data.Text as T
-import Neuron.Zettelkasten.Zettel.Meta (DateMayTime, formatDateMayTime, formatDay, getDay)
+import Data.Time.DateMayTime (DateMayTime, formatDateMayTime, formatDay, getDay)
 import Reflex.Dom.Core
 import Relude
 

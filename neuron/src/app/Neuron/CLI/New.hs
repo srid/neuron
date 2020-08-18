@@ -15,6 +15,7 @@ import qualified Data.Set as Set
 import Data.Some
 import Data.Text (strip)
 import qualified Data.Text as T
+import Data.Time.DateMayTime (DateMayTime, formatDateMayTime)
 import Development.Shake (Action)
 import Neuron.CLI.Types
 import Neuron.Config.Type (Config (..), getZettelFormats)
@@ -23,7 +24,6 @@ import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
-import Neuron.Zettelkasten.Zettel.Meta (DateMayTime, formatDateMayTime)
 import Options.Applicative
 import Relude
 import Rib.Shake (ribInputDir)

@@ -107,6 +107,7 @@ library
     Data.Graph.Labelled.Type
     Data.Graph.Labelled.Algorithm
     Data.Graph.Labelled.Build
+    Data.Time.DateMayTime
 
 -- A trick to make ghcid reload if library dependencies change
 -- https://haskell.zettel.page/2012605.html

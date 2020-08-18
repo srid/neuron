@@ -23,6 +23,13 @@ import Data.Default (def)
 import Data.Some
 import Data.TagTree (mkTagPattern)
 import Data.Time
+import Data.Time.DateMayTime
+  ( DateMayTime,
+    formatDateMayTime,
+    getDay,
+    mkDateMayTime,
+    parseDateMayTime,
+  )
 import Neuron.Reader.Type (ZettelFormat)
 import qualified Neuron.Web.Route as R
 import qualified Neuron.Zettelkasten.Connection as C
@@ -32,13 +39,6 @@ import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Query.Graph as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
-import Neuron.Zettelkasten.Zettel.Meta
-  ( DateMayTime,
-    formatDateMayTime,
-    getDay,
-    mkDateMayTime,
-    parseDateMayTime,
-  )
 import Options.Applicative
 import Relude
 import qualified Rib.Cli

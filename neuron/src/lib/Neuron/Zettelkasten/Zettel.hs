@@ -26,12 +26,12 @@ import Data.GADT.Show.TH
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some
 import Data.TagTree (Tag, TagPattern (..))
+import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Reader.Type
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
-import Neuron.Zettelkasten.Zettel.Meta (DateMayTime)
 import Relude hiding (show)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
