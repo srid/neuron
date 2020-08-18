@@ -32,7 +32,7 @@ import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Query.Graph as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
-import Neuron.Zettelkasten.Zettel.Meta (parseZettelDay)
+import Neuron.Zettelkasten.Zettel.Meta (DateMayTime, formatZettelDate, parseZettelDate)
 import Options.Applicative
 import Relude
 import qualified Rib.Cli
@@ -46,7 +46,7 @@ data App = App
 data NewCommand = NewCommand
   { title :: Maybe Text,
     format :: Maybe ZettelFormat,
-    date :: LocalTime,
+    date :: DateMayTime,
     idScheme :: Some IDScheme,
     edit :: Bool
   }
@@ -127,13 +127,13 @@ commandParser defaultNotesDir today = do
               <> long "format"
               <> help "The document format of the new zettel"
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
-      dayParam <-
-        option dayReader $
-          long "day"
-            <> metavar "DAY"
-            <> value today
-            <> showDefault
-            <> help "Zettel creation date in UTC"
+      dateParam <-
+        option dateReader $
+          long "date"
+            <> metavar "DATE"
+            <> value (Left today)
+            <> showDefaultWith (toString . formatZettelDate)
+            <> help "Zettel creation date/time"
       -- NOTE: optparse-applicative picks the first option as the default.
       idSchemeF <-
         fmap
@@ -145,7 +145,7 @@ commandParser defaultNotesDir today = do
           <|> fmap
             (const . Some . IDSchemeCustom)
             (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
-      pure $ New $ NewCommand title format (LocalTime dayParam midday) (idSchemeF dayParam) edit
+      pure $ New $ NewCommand title format dateParam (idSchemeF $ extractDay dateParam) edit
     openCommand = do
       fmap Open $
         fmap
@@ -226,6 +226,11 @@ commandParser defaultNotesDir today = do
           either (Left . toString . Q.showQueryParseError) (maybe (Left "Unsupported query") Right) $ Q.queryFromURI uri
         Left e ->
           Left $ displayException e
-    dayReader :: ReadM Day
-    dayReader =
-      maybeReader (parseZettelDay . toText)
+    dateReader :: ReadM DateMayTime
+    dateReader =
+      maybeReader (parseZettelDate . toText)
+    extractDay :: DateMayTime -> Day
+    extractDay dmt =
+      case dmt of
+        Left day -> day
+        Right lt -> localDay lt
