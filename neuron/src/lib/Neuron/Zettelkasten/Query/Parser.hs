@@ -45,7 +45,7 @@ queryFromURI =
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
 queryFromURILink uriLink =
   if isAutoLink uriLink
-    then parseAutoLinks (_uriLink_uri uriLink)
+    then parseAutoLinks $ _uriLink_uri uriLink
     else parseLegacyLinks uriLink
   where
     isAutoLink (URILink linkText uri) =
@@ -53,11 +53,16 @@ queryFromURILink uriLink =
 
 -- | Parse commonmark autolink style links, eg: `<2014533>`
 parseAutoLinks :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
-parseAutoLinks uri = liftEither $
-  runMaybeT $ do
+parseAutoLinks uri =
+  liftEither . runMaybeT $ do
     -- Non-relevant parts of the URI should be empty
     guard $ isNothing $ URI.uriFragment uri
     case fmap URI.unRText (URI.uriScheme uri) of
+      -- Look for short links, eg: `<foo-bar>`
+      Nothing -> do
+        (URI.unRText -> path) :| [] <- MaybeT $ pure $ fmap snd (URI.uriPath uri)
+        zid <- MaybeT $ pure $ rightToMaybe $ parseZettelID' path
+        pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
       Just proto -> do
         guard $ proto == "z"
         zPath <- MaybeT $ pure $ fmap snd (URI.uriPath uri)
@@ -85,12 +90,6 @@ parseAutoLinks uri = liftEither $
             | noSlash -> do
               pure $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
           _ -> empty
-      -- The URI has no scheme. We expect this to be the link ID with params.
-      Nothing -> do
-        -- Alias to short links
-        (URI.unRText -> path) :| [] <- MaybeT $ pure $ fmap snd (URI.uriPath uri)
-        zid <- MaybeT $ pure $ rightToMaybe $ parseZettelID' path
-        pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
 
 -- | Parse legacy style links, eg: `[2014533](z:/)`
 parseLegacyLinks :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
@@ -140,19 +139,20 @@ tagPatterns uri k =
 
 queryView :: URI -> ZettelsView
 queryView uri =
-  let isTimeline =
-        -- linkTheme=withDate is legacy format; timeline is current standard.
-        getQueryParam [queryKey|linkTheme|] uri == Just "withDate"
-          || hasQueryFlag [queryKey|timeline|] uri
-      isGrouped = hasQueryFlag [queryKey|grouped|] uri
-      linkView =
-        if isTimeline
-          then LinkView_ShowDate
-          else
-            if hasQueryFlag [queryKey|showid|] uri
-              then LinkView_ShowID
-              else LinkView_Default
-   in ZettelsView linkView isGrouped
+  ZettelsView linkView isGrouped
+  where
+    isTimeline =
+      -- linkTheme=withDate is legacy format; timeline is current standard.
+      getQueryParam [queryKey|linkTheme|] uri == Just "withDate"
+        || hasQueryFlag [queryKey|timeline|] uri
+    isGrouped = hasQueryFlag [queryKey|grouped|] uri
+    linkView =
+      if isTimeline
+        then LinkView_ShowDate
+        else
+          if hasQueryFlag [queryKey|showid|] uri
+            then LinkView_ShowID
+            else LinkView_Default
 
 queryConn :: URI -> Maybe Connection
 queryConn uri =
