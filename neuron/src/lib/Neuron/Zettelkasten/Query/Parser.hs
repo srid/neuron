@@ -54,37 +54,32 @@ queryFromURILink uriLink =
 -- | Parse commonmark autolink style links, eg: `<2014533>`
 parseAutoLinks :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
 parseAutoLinks uri = liftEither $
-  runMaybeT @(Either QueryParseError) $ do
+  runMaybeT $ do
     -- Non-relevant parts of the URI should be empty
     guard $ isNothing $ URI.uriFragment uri
-    -- TODO: Move mconn to a function
-    let mconn =
-          if hasQueryFlag [queryKey|cf|] uri
-            then Just OrdinaryConnection
-            else Nothing
-        -- Found "z:" without a trailing slash
-        noSlash = URI.uriAuthority uri == Left False
-        -- Found "z:/" instead of "z:"
-        hasSlash = URI.uriAuthority uri == Left True
     case fmap URI.unRText (URI.uriScheme uri) of
       Just proto -> do
         guard $ proto == "z"
         zPath <- MaybeT $ pure $ fmap snd (URI.uriPath uri)
+        let -- Found "z:" without a trailing slash
+            noSlash = URI.uriAuthority uri == Left False
+            -- Found "z:/" instead of "z:"
+            hasSlash = URI.uriAuthority uri == Left True
         case zPath of
           -- Parse z:/<id>
           (URI.unRText -> path) :| []
             | hasSlash -> do
               zid <- parseQueryZettelID uri path
-              pure $ Some $ ZettelQuery_ZettelByID zid mconn
+              pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
           -- Parse z:zettel/<id>
           (URI.unRText -> "zettel") :| [URI.unRText -> path]
             | noSlash -> do
               zid <- parseQueryZettelID uri path
-              pure $ Some $ ZettelQuery_ZettelByID zid mconn
+              pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
           -- Parse z:zettels?...
           (URI.unRText -> "zettels") :| []
             | noSlash -> do
-              pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") mconn (queryView uri)
+              pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") (queryConn uri) (queryView uri)
           -- Parse z:tags?...
           (URI.unRText -> "tags") :| []
             | noSlash -> do
@@ -95,7 +90,7 @@ parseAutoLinks uri = liftEither $
         -- Alias to short links
         (URI.unRText -> path) :| [] <- MaybeT $ pure $ fmap snd (URI.uriPath uri)
         zid <- MaybeT $ pure $ rightToMaybe $ parseZettelID' path
-        pure $ Some $ ZettelQuery_ZettelByID zid mconn
+        pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
 
 -- | Parse legacy style links, eg: `[2014533](z:/)`
 parseLegacyLinks :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
@@ -158,3 +153,9 @@ queryView uri =
               then LinkView_ShowID
               else LinkView_Default
    in ZettelsView linkView isGrouped
+
+queryConn :: URI -> Maybe Connection
+queryConn uri =
+  if hasQueryFlag [queryKey|cf|] uri
+    then Just OrdinaryConnection
+    else Nothing
