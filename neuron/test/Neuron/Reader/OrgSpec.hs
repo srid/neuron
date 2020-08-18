@@ -17,17 +17,10 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  let itParsesDay name s =
-        it name $ do
-          parseDate s `shouldBe` Right (Left (ModifiedJulianDay 59077))
-      itParsesDate name s =
-        it name $ do
-          parseDate s `shouldBe` Right (Right (LocalTime (ModifiedJulianDay 59077) (TimeOfDay 9 42 0)))
-      itParsesInvalid name s =
-        it name $ do
-          parseDate s `shouldBe` Left (Tagged $ "Invalid date format: " <> s)
-
   describe "date-tag parsing" $ do
-    itParsesDay "with day" "2020-08-16"
-    itParsesDate "with localtime" "2020-08-16T09:42"
-    itParsesInvalid "with invalid" "2020-08-16 09:42"
+    it "with day" $ do
+      parseDate "2020-08-16" `shouldBe` Right (Left (ModifiedJulianDay 59077))
+    it "with localtime" $ do
+      parseDate "2020-08-16T09:42" `shouldBe` Right (Right (LocalTime (ModifiedJulianDay 59077) (TimeOfDay 9 42 0)))
+    it "with invalid" $ do
+      parseDate "2020-08-16 09:42" `shouldBe` Left (Tagged $ "Invalid date format: " <> "2020-08-16 09:42")

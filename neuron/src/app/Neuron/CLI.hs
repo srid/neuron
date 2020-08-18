@@ -34,7 +34,7 @@ import System.FilePath
 
 run :: (Config -> Action ()) -> IO ()
 run act = do
-  cliParser <- commandParser <$> defaultNotesDir <*> today
+  cliParser <- commandParser <$> defaultNotesDir <*> now
   app <-
     execParser $
       info
@@ -48,9 +48,9 @@ run act = do
         (long "version" <> help "Show version")
     defaultNotesDir =
       (</> "zettelkasten") <$> getHomeDirectory
-    today = do
+    now = do
       tz <- getCurrentTimeZone
-      localDay . utcToLocalTime tz <$> liftIO getCurrentTime
+      utcToLocalTime tz <$> liftIO getCurrentTime
 
 runWith :: (Config -> Action ()) -> App -> IO ()
 runWith act App {..} =

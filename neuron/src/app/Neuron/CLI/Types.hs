@@ -97,8 +97,8 @@ data RibConfig = RibConfig
   deriving (Eq, Show)
 
 -- | optparse-applicative parser for neuron CLI
-commandParser :: FilePath -> Day -> Parser App
-commandParser defaultNotesDir today = do
+commandParser :: FilePath -> LocalTime -> Parser App
+commandParser defaultNotesDir now = do
   notesDir <-
     option
       Rib.Cli.directoryReader
@@ -131,7 +131,7 @@ commandParser defaultNotesDir today = do
         option dateReader $
           long "date"
             <> metavar "DATE"
-            <> value (Left today)
+            <> value (Right now)
             <> showDefaultWith (toString . formatZettelDate)
             <> help "Zettel creation date/time"
       -- NOTE: optparse-applicative picks the first option as the default.
