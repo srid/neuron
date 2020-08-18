@@ -153,7 +153,7 @@ renderSearch graph script = do
       [ "id" .= toJSON zettelID,
         "title" .= zettelTitle,
         "tags" .= zettelTags,
-        "day" .= zettelDay
+        "day" .= zettelDate
       ]
 
 renderBrandFooter :: DomBuilder t m => Maybe Text -> m ()

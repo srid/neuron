@@ -26,7 +26,7 @@ import Data.GADT.Show.TH
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some
 import Data.TagTree (Tag, TagPattern (..))
-import Data.Time.Calendar
+import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Reader.Type
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
@@ -55,7 +55,7 @@ data ZettelT content = Zettel
     zettelTitle :: Text,
     zettelTitleInBody :: Bool,
     zettelTags :: [Tag],
-    zettelDay :: Maybe Day,
+    zettelDate :: Maybe DateMayTime,
     zettelUnlisted :: Bool,
     zettelQueries :: [Some ZettelQuery],
     zettelError :: ContentError content,
@@ -118,7 +118,7 @@ instance Vertex (ZettelT c) where
 
 sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
-  sortOn (Down . zettelDay)
+  sortOn (Down . zettelDate)
 
 deriveJSONGADT ''ZettelQuery
 

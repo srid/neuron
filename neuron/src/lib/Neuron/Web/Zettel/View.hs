@@ -119,10 +119,10 @@ renderZettelContent handleLink Zettel {..} = do
     unless zettelTitleInBody $ do
       el "h1" $ text zettelTitle
     void $ elPandoc (Config handleLink) zettelContent
-    whenJust zettelDay $ \day ->
+    whenJust zettelDate $ \date ->
       divClass "metadata" $ do
         elAttr "div" ("class" =: "date" <> "title" =: "Zettel date") $ do
-          elTime day
+          elTime date
 
 renderZettelRawContent :: (DomBuilder t m) => ZettelT Text -> m ()
 renderZettelRawContent Zettel {..} = do
