@@ -15,10 +15,9 @@ module Neuron.Zettelkasten.Zettel.Meta
     formatZettelDate,
     formatDay,
     parseZettelDate,
-    parseZettelDay,
     DateMayTime,
     mkDateMayTime,
-    getDay
+    getDay,
   )
 where
 
@@ -63,6 +62,14 @@ instance FromYAML Meta where
 newtype DateMayTime = DateMayTime {unDateMayTime :: (Day, Maybe TimeOfDay)}
   deriving (Eq, Show, Generic, Ord, ToJSON, FromJSON)
 
+instance FromYAML DateMayTime where
+  parseYAML =
+    parseZettelDate <=< parseYAML @Text
+
+instance ToYAML DateMayTime where
+  toYAML =
+    toYAML . formatZettelDate
+
 mkDateMayTime :: Either Day LocalTime -> DateMayTime
 mkDateMayTime =
   DateMayTime . \case
@@ -74,25 +81,12 @@ mkDateMayTime =
 getDay :: DateMayTime -> Day
 getDay = fst . unDateMayTime
 
-instance FromYAML DateMayTime where
-  parseYAML =
-    parseZettelDate <=< parseYAML @Text
-
-instance ToYAML DateMayTime where
-  toYAML =
-    toYAML . formatZettelDate
-
 formatZettelDate :: DateMayTime -> Text
 formatZettelDate (DateMayTime (day, mtime)) =
   maybe (formatDay day) (formatTime' dateTimeFormat) mtime
-  where
 
 formatDay :: Day -> Text
 formatDay = formatTime' dateFormat
-
--- | Like `formatTime` but with default time locale and returning Text
-formatTime' :: FormatTime t => String -> t -> Text
-formatTime' s = toText . formatTime defaultTimeLocale s
 
 parseZettelDate :: (MonadFail m, Alternative m) => Text -> m DateMayTime
 parseZettelDate (toString -> s) = do
@@ -100,12 +94,12 @@ parseZettelDate (toString -> s) = do
     fmap Left (parseTimeM False defaultTimeLocale dateFormat s)
       <|> fmap Right (parseTimeM False defaultTimeLocale dateTimeFormat s)
 
-parseZettelDay :: MonadFail m => Text -> m Day
-parseZettelDay =
-  parseTimeM False defaultTimeLocale dateFormat . toString
-
 dateFormat :: String
 dateFormat = "%Y-%m-%d"
 
 dateTimeFormat :: String
 dateTimeFormat = "%Y-%m-%dT%H:%M"
+
+-- | Like `formatTime` but with default time locale and returning Text
+formatTime' :: FormatTime t => String -> t -> Text
+formatTime' s = toText . formatTime defaultTimeLocale s
