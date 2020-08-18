@@ -130,7 +130,7 @@ commandParser defaultNotesDir now = do
       dateParam <-
         option dateReader $
           long "date"
-            <> metavar "DATE"
+            <> metavar "DATE/TIME"
             <> value (Right now)
             <> showDefaultWith (toString . formatZettelDate)
             <> help "Zettel creation date/time"
