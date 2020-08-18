@@ -34,10 +34,10 @@ import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
 import Neuron.Zettelkasten.Zettel.Meta
   ( DateMayTime,
-    formatZettelDate,
+    formatDateMayTime,
     getDay,
     mkDateMayTime,
-    parseZettelDate,
+    parseDateMayTime,
   )
 import Options.Applicative
 import Relude
@@ -138,7 +138,7 @@ commandParser defaultNotesDir now = do
           long "date"
             <> metavar "DATE/TIME"
             <> value (mkDateMayTime $ Right now)
-            <> showDefaultWith (toString . formatZettelDate)
+            <> showDefaultWith (toString . formatDateMayTime)
             <> help "Zettel creation date/time"
       -- NOTE: optparse-applicative picks the first option as the default.
       idSchemeF <-
@@ -234,4 +234,4 @@ commandParser defaultNotesDir now = do
           Left $ displayException e
     dateReader :: ReadM DateMayTime
     dateReader =
-      maybeReader (parseZettelDate . toText)
+      maybeReader (parseDateMayTime . toText)

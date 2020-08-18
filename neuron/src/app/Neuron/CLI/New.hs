@@ -23,7 +23,7 @@ import Neuron.Web.Generate as Gen
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
-import Neuron.Zettelkasten.Zettel.Meta
+import Neuron.Zettelkasten.Zettel.Meta (DateMayTime, formatDateMayTime)
 import Options.Applicative
 import Relude
 import Rib.Shake (ribInputDir)
@@ -83,7 +83,7 @@ newZettelFile NewCommand {..} config = do
 
 -- TODO use configurable template files?
 defaultZettelContent :: ZettelFormat -> DateMayTime -> Maybe Text -> Text
-defaultZettelContent format dmt mtitle = case format of
+defaultZettelContent format (formatDateMayTime -> date) mtitle = case format of
   ZettelFormat_Markdown ->
     T.intercalate
       "\n"
@@ -104,6 +104,5 @@ defaultZettelContent format dmt mtitle = case format of
         "\n"
       ]
   where
-    date = formatZettelDate dmt
     defaultTitleName = "Zettel created on " <> date
     title = maybe defaultTitleName T.strip mtitle

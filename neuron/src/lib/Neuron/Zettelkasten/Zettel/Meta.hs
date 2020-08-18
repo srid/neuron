@@ -12,15 +12,17 @@
 
 module Neuron.Zettelkasten.Zettel.Meta
   ( Meta (..),
-    dateTimeFormat,
-    formatZettelDate,
-    formatDay,
-    formatLocalTime,
-    formatDateMayTime,
-    parseZettelDate,
+    -- Date type
     DateMayTime,
     mkDateMayTime,
     getDay,
+    -- Date formatting
+    dateTimeFormat,
+    formatDay,
+    formatLocalTime,
+    formatDateMayTime,
+    -- Date parsing
+    parseDateMayTime
   )
 where
 
@@ -67,11 +69,11 @@ newtype DateMayTime = DateMayTime {unDateMayTime :: (Day, Maybe TimeOfDay)}
 
 instance FromYAML DateMayTime where
   parseYAML =
-    parseZettelDate <=< parseYAML @Text
+    parseDateMayTime <=< parseYAML @Text
 
 instance ToYAML DateMayTime where
   toYAML =
-    toYAML . formatZettelDate
+    toYAML . formatDateMayTime
 
 mkDateMayTime :: Either Day LocalTime -> DateMayTime
 mkDateMayTime =
@@ -88,18 +90,14 @@ formatDateMayTime :: DateMayTime -> Text
 formatDateMayTime (DateMayTime (day, mtime)) =
   maybe (formatDay day) (formatLocalTime . LocalTime day) mtime
 
-formatZettelDate :: DateMayTime -> Text
-formatZettelDate (DateMayTime (day, mtime)) =
-  maybe (formatDay day) (formatLocalTime . LocalTime day) mtime
-
 formatDay :: Day -> Text
 formatDay = formatTime' dateFormat
 
 formatLocalTime :: LocalTime -> Text
 formatLocalTime = formatTime' dateTimeFormat
 
-parseZettelDate :: (MonadFail m, Alternative m) => Text -> m DateMayTime
-parseZettelDate (toString -> s) = do
+parseDateMayTime :: (MonadFail m, Alternative m) => Text -> m DateMayTime
+parseDateMayTime (toString -> s) = do
   fmap mkDateMayTime $
     fmap Left (parseTimeM False defaultTimeLocale dateFormat s)
       <|> fmap Right (parseTimeM False defaultTimeLocale dateTimeFormat s)
