@@ -3,6 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -14,6 +15,8 @@ module Neuron.Zettelkasten.Zettel.Meta
     dateTimeFormat,
     formatZettelDate,
     formatDay,
+    formatLocalTime,
+    formatDateMayTime,
     parseZettelDate,
     DateMayTime,
     mkDateMayTime,
@@ -81,12 +84,19 @@ mkDateMayTime =
 getDay :: DateMayTime -> Day
 getDay = fst . unDateMayTime
 
+formatDateMayTime :: DateMayTime -> Text
+formatDateMayTime (DateMayTime (day, mtime)) =
+  maybe (formatDay day) (formatLocalTime . LocalTime day) mtime
+
 formatZettelDate :: DateMayTime -> Text
 formatZettelDate (DateMayTime (day, mtime)) =
-  maybe (formatDay day) (formatTime' dateTimeFormat) mtime
+  maybe (formatDay day) (formatLocalTime . LocalTime day) mtime
 
 formatDay :: Day -> Text
 formatDay = formatTime' dateFormat
+
+formatLocalTime :: LocalTime -> Text
+formatLocalTime = formatTime' dateTimeFormat
 
 parseZettelDate :: (MonadFail m, Alternative m) => Text -> m DateMayTime
 parseZettelDate (toString -> s) = do
