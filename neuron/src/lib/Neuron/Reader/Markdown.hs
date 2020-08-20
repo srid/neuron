@@ -21,6 +21,7 @@ import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
 import Control.Monad.Except
 import Data.Tagged (Tagged (..))
+import qualified Data.Text as T
 import qualified Data.YAML as YAML
 import Neuron.Orphans ()
 import Neuron.Reader.Type (ZettelParseError, ZettelReader)
@@ -104,7 +105,7 @@ neuronSpec ::
 neuronSpec =
   mconcat
     [ wrappedLinkSpec angleBracketLinkP,
-      wrappedLinkSpec wikiLinkP,
+      wikiLinkNewP,
       gfmExtensionsSansEmoji,
       CE.fancyListSpec,
       CE.footnoteSpec,
@@ -154,11 +155,33 @@ angleBracketLinkP = do
   void $ symbol '>'
   pure x
 
-wikiLinkP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
-wikiLinkP = do
-  void $ symbol '[' >> symbol '['
+wikiLinkNewP ::
+  (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
+  CM.SyntaxSpec m il bl
+wikiLinkNewP =
+  mempty
+    { CM.syntaxInlineParsers = [pLink]
+    }
+  where
+    pLink ::
+      (Monad m, CM.IsInline il) =>
+      CM.InlineParser m il
+    pLink = P.try $ do
+      -- [[[foo]]] is folgezettel; [[foo]] is cf.
+      url <-
+        P.try (CM.untokenize <$> wikiLinkP 3)
+          -- TODO: refactor and add test coverage
+          -- hackish way to patch the URI with a new flag (without really parsing and re-rendering it).
+          <|> (\s -> if isJust (T.find (== '?') s) then s <> "&cf" else s <> "?cf") . CM.untokenize <$> wikiLinkP 2
+      -- NOTE: Still have to inject final URI into Link node (think org parser, doing the same)
+      let title = ""
+      pure $! CM.link url title $ CM.str url
+
+wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m [CM.Tok]
+wikiLinkP n = do
+  void $ M.count n $ symbol '['
   x <- some (noneOfToks [Symbol ']', Spaces, UnicodeSpace, LineEnd])
-  void $ symbol ']' >> symbol ']'
+  void $ M.count n $ symbol ']'
   pure x
 
 -- rawHtmlSpec eats angle bracket links as html tags
