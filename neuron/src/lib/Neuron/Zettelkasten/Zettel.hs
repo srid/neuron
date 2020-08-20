@@ -50,13 +50,16 @@ data ZettelQuery r where
 data ZettelT content = Zettel
   { zettelID :: ZettelID,
     zettelFormat :: ZettelFormat,
-    -- Relative path to this zettel in the zettelkasten directory
+    -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
     zettelTitle :: Text,
+    -- | Whether the title was infered from the body
     zettelTitleInBody :: Bool,
     zettelTags :: [Tag],
+    -- | Date associated with the zettel if any
     zettelDate :: Maybe DateMayTime,
     zettelUnlisted :: Bool,
+    -- | List of all queries in the zettel
     zettelQueries :: [Some ZettelQuery],
     zettelError :: ContentError content,
     zettelContent :: content

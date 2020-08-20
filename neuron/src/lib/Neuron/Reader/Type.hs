@@ -22,6 +22,7 @@ import Text.Pandoc.Definition (Pandoc)
 import Text.Read
 import Prelude (show)
 
+-- | A function that parses the zettel into a Pandoc AST
 type ZettelReader = FilePath -> Text -> Either ZettelParseError (Maybe Meta, Pandoc)
 
 type ZettelParseError = Tagged "ZettelParserError" Text

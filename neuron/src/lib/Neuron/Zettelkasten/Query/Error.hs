@@ -20,8 +20,11 @@ data QueryParseError
   | QueryParseError_UnsupportedHost URI
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
--- | This error is only thrown when *using* (eg: in HTML) the query results.
-data QueryResultError = QueryResultError_NoSuchZettel ZettelID
+-- | Error in evaluating a query
+--
+-- This error is only thrown when *using* (eg: in HTML) the query results.
+data QueryResultError
+  = QueryResultError_NoSuchZettel ZettelID
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 queryParseErrorUri :: QueryParseError -> URI

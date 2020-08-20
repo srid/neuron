@@ -30,7 +30,9 @@ import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple
 
--- | Tag metadata field in Zettel notes
+-- | A hierarchical tag
+--
+-- Tag nodes are separated by @/@
 newtype Tag = Tag {unTag :: Text}
   deriving (Eq, Ord, Show, ToJSON, FromJSON, FromYAML, ToYAML)
 
@@ -38,9 +40,16 @@ newtype Tag = Tag {unTag :: Text}
 -- Tag Pattern
 ---------------
 
--- | Glob-based pattern matching of tags
+-- | A glob-based pattern to match hierarchical tags
 --
--- Eg.: "foo/**" matches both "foo/bar/baz" and "foo/baz"
+-- For example, the pattern
+--
+-- > foo/**
+--
+-- matches both the following
+--
+-- > foo/bar/baz
+-- > foo/baz
 newtype TagPattern = TagPattern {unTagPattern :: FilePattern}
   deriving (Eq, Show, ToJSON, FromJSON)
 
@@ -62,7 +71,13 @@ tagMatchAny pats tag =
 -- Tag Tree
 -----------
 
--- | A tag like "foo/bar/baz" is split into three nodes "foo", "bar" and "baz."
+-- | An individual component of a hierarchical tag
+--
+-- The following hierarchical tag,
+--
+-- > foo/bar/baz
+--
+-- has three tag nodes: @foo@, @bar@ and @baz@
 newtype TagNode = TagNode {unTagNode :: Text}
   deriving (Eq, Show, Ord, ToJSON)
 
@@ -81,7 +96,7 @@ constructTag :: NonEmpty TagNode -> Tag
 constructTag (fmap unTagNode . toList -> nodes) =
   Tag $ T.intercalate "/" nodes
 
--- | Construct a tree from a list of tags
+-- | Construct the tree from a list of hierarchical tags
 tagTree :: ann ~ Natural => Map Tag ann -> Forest (TagNode, ann)
 tagTree tags =
   fmap (annotatePathsWith $ countFor tags) $
