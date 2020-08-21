@@ -12,7 +12,7 @@ neuron query
 neuron query -t science
 ```
 
-You may also pass the same URI you use in <2011506>:
+You may also pass the same URI you use in [[[2011506]]]:
 
 ```bash
 # Search using link URI
