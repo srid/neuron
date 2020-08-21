@@ -11,9 +11,12 @@
     - Fix task list checkbox styling (#233)
     - Use superscript for folgezettel link suffix (#346)
 - Zettel format
-  - Add `unlisted` metadata property to hide a zettel from z-index (#318)
+  - Wiki-style links: instead of `<foo>` you can now use `[[[foo]]]`; and instead of `<foo?cf>`, you can use `[[foo]]`. (#351)
   - Allow specifying time in the `date` metadata propery (#343)
-  - Markdown: support for [fancy lists](https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/fancy_lists.md) (#335)
+  - Add `unlisted` metadata property to hide a zettel from z-index (#318)
+  - Markdown: 
+    - support for [fancy lists](https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/fancy_lists.md) (#335)
+    - Fix hard line breaks to actually work (#354)
 - CLI
   - Faster querying: add `--cached` option to `neuron query`, to run faster using the cache. To keep the cache up to date, make sure that `neuron rib` is running.
   - Add `--id` and `--search` options to `open` command to open given zettel ID or search page respectively  (#317)
