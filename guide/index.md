@@ -2,14 +2,14 @@
 
 ![Neuron logo](https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg){.ui .tiny .right .floated .image}
 
-[Neuron](https://github.com/srid/neuron) is a future-proof open-source app[^web] for managing your plain-text notes in <2011401> style, as well as for publishing them on the web. Read its <6f0f0bcc>.
+[Neuron](https://github.com/srid/neuron) is a future-proof open-source app[^web] for managing your plain-text notes in [[[2011401]]] style, as well as for publishing them on the web. Read its [[[6f0f0bcc]]].
 
 ## Getting started
 
-* <2011501>
-* <2011502>
-* <2011402>
-* <2013101>
+* [[[2011501]]]
+* [[[2011502]]]
+* [[[2011402]]]
+* [[[2013101]]]
 
 ## External links
 
@@ -18,4 +18,4 @@
 * [Project Discussion Chat](https://github.com/srid/neuron#discussion)
 * [Sponsor the project](https://github.com/sponsors/srid)
 
-[^web]: For a web interface to your neuron notes, see <041726b3>
+[^web]: For a web interface to your neuron notes, see [[[041726b3]]]
