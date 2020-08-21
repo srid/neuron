@@ -15,7 +15,6 @@ import qualified Commonmark.Blocks as CM
 import qualified Commonmark.Extensions as CE
 import qualified Commonmark.Inlines as CM
 import qualified Commonmark.Pandoc as CP
-import qualified Commonmark.Tag
 import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
@@ -104,8 +103,8 @@ neuronSpec ::
   CM.SyntaxSpec m il bl
 neuronSpec =
   mconcat
-    [ wrappedLinkSpec angleBracketLinkP,
-      wikiLinkNewP,
+    [ autoLinkSpec,
+      wikiLinkSpec,
       gfmExtensionsSansEmoji,
       CE.fancyListSpec,
       CE.footnoteSpec,
@@ -126,39 +125,10 @@ neuronSpec =
         <> CE.taskListSpec
 
 -- | Convert the given wrapped link to a `B.Link`.
-wrappedLinkSpec ::
-  (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
-  P.ParsecT [CM.Tok] (CM.IPState m) (StateT Commonmark.Tag.Enders m) [CM.Tok] ->
-  CM.SyntaxSpec m il bl
-wrappedLinkSpec linkP =
-  mempty
-    { CM.syntaxInlineParsers = [pLink linkP]
-    }
-  where
-    pLink ::
-      (Monad m, CM.IsInline il) =>
-      P.ParsecT [CM.Tok] (CM.IPState m) (StateT Commonmark.Tag.Enders m) [CM.Tok] ->
-      CM.InlineParser m il
-    pLink p = P.try $ do
-      x <- p
-      let url = CM.untokenize x
-          title = ""
-      pure $! CM.link url title $ CM.str url
-
-angleBracketLinkP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
-angleBracketLinkP = do
-  void $ symbol '<'
-  -- NOTE: Intentionally be lenient to support `<z:zettels?t...>` style
-  -- queries. FIXME: Should fail on `</foo>` though (HTML end tags). TODO:
-  -- Add unit tests before modifying this matching any further.
-  x <- some (noneOfToks [Symbol '>', Spaces, UnicodeSpace, LineEnd])
-  void $ symbol '>'
-  pure x
-
-wikiLinkNewP ::
+autoLinkSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
   CM.SyntaxSpec m il bl
-wikiLinkNewP =
+autoLinkSpec =
   mempty
     { CM.syntaxInlineParsers = [pLink]
     }
@@ -167,22 +137,45 @@ wikiLinkNewP =
       (Monad m, CM.IsInline il) =>
       CM.InlineParser m il
     pLink = P.try $ do
-      -- [[[foo]]] is folgezettel; [[foo]] is cf.
-      url <-
-        P.try (CM.untokenize <$> wikiLinkP 3)
-          -- TODO: refactor and add test coverage
-          -- hackish way to patch the URI with a new flag (without really parsing and re-rendering it).
-          <|> (\s -> if isJust (T.find (== '?') s) then s <> "&cf" else s <> "?cf") . CM.untokenize <$> wikiLinkP 2
-      -- NOTE: Still have to inject final URI into Link node (think org parser, doing the same)
-      let title = ""
+      x <- angleBracketLinkP
+      let url = CM.untokenize x
+          title = ""
       pure $! CM.link url title $ CM.str url
 
-wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m [CM.Tok]
-wikiLinkP n = do
-  void $ M.count n $ symbol '['
-  x <- some (noneOfToks [Symbol ']', Spaces, UnicodeSpace, LineEnd])
-  void $ M.count n $ symbol ']'
-  pure x
+wikiLinkSpec ::
+  (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
+  CM.SyntaxSpec m il bl
+wikiLinkSpec =
+  mempty
+    { CM.syntaxInlineParsers = [pLink]
+    }
+  where
+    pLink ::
+      (Monad m, CM.IsInline il) =>
+      CM.InlineParser m il
+    pLink = P.try $ do
+      url <-
+        P.choice
+          [ -- Folgezettel link: [[[...]]]
+            P.try (CM.untokenize <$> wikiLinkP 3),
+            -- Cf link: [[...]]
+            addCfToURI . CM.untokenize <$> wikiLinkP 2
+          ]
+      let title = ""
+      pure $! CM.link url title $ CM.str url
+    -- Add "cf" flag to the URI, without parsing and re-rendering it.
+    addCfToURI :: Text -> Text
+    addCfToURI s =
+      -- This is kind of a HACK, but it works.
+      if isJust (T.find (== '?') s)
+        then s <> "&cf"
+        else s <> "?cf"
+    wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m [CM.Tok]
+    wikiLinkP n = do
+      void $ M.count n $ symbol '['
+      x <- some (noneOfToks [Symbol ']', Spaces, UnicodeSpace, LineEnd])
+      void $ M.count n $ symbol ']'
+      pure x
 
 -- rawHtmlSpec eats angle bracket links as html tags
 defaultBlockSpecsSansRawHtml :: (Monad m, CM.IsBlock il bl) => [CM.BlockSpec m il bl]
@@ -205,4 +198,16 @@ myRawHtmlSpec ::
 myRawHtmlSpec =
   -- TODO: Ideally we should use a more restrictive parsers; one that allows known safe HTML tags
   -- Although, this prevents the user from naming their zettels say "div.md"
-  CM.rawHtmlSpec {CM.blockStart = P.notFollowedBy angleBracketLinkP >> CM.blockStart CM.rawHtmlSpec}
+  CM.rawHtmlSpec
+    { CM.blockStart = P.notFollowedBy angleBracketLinkP >> CM.blockStart CM.rawHtmlSpec
+    }
+
+angleBracketLinkP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
+angleBracketLinkP = do
+  void $ symbol '<'
+  -- NOTE: Intentionally be lenient to support `<z:zettels?t...>` style
+  -- queries. FIXME: Should fail on `</foo>` though (HTML end tags). TODO:
+  -- Add unit tests before modifying this matching any further.
+  x <- some (noneOfToks [Symbol '>', Spaces, UnicodeSpace, LineEnd])
+  void $ symbol '>'
+  pure x
