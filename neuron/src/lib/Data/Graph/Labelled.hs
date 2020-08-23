@@ -21,12 +21,14 @@ module Data.Graph.Labelled
     preSetWithEdgeLabelMany,
     topSort,
     clusters,
+    dfsForest,
     dfsForestFrom,
     dfsForestBackwards,
     bfsForestFrom,
     bfsForestBackwards,
     obviateRootUnlessForest,
     induceOnEdge,
+    induce,
   )
 where
 

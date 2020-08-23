@@ -27,6 +27,7 @@ import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Data.Default
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
+import qualified Data.Set as Set
 import Data.Tree
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph.Type
@@ -71,19 +72,25 @@ backlinksMulti conn zs g =
 
 categoryClusters :: ZettelGraph -> [Forest Zettel]
 categoryClusters (G.induceOnEdge (== Just Folgezettel) -> g) =
-  let cs :: [[Zettel]] = sortMothers clusters
-   in flip G.bfsForestFrom g <$> cs
+  let cs :: [[Zettel]] = sortMothers $ G.clusters g
+      cleanClusters = flip G.bfsForestFrom g <$> cs
+      clusteredZettels :: [Zettel] =
+        (flatten `concatMap`) `concatMap` cleanClusters
+      unclustered =
+        Set.map zettelID $
+          Set.fromList (getZettels g)
+            `Set.difference` Set.fromList clusteredZettels
+      uncleanCluster =
+        G.dfsForest $
+          G.induce (flip Set.member unclustered) g
+   in cleanClusters
+        <> if null uncleanCluster
+          then mempty
+          else pure uncleanCluster
   where
     -- Sort clusters with newer mother zettels appearing first.
     sortMothers :: [NonEmpty Zettel] -> [[Zettel]]
     sortMothers = sortOn (Down . maximum) . fmap (sortOn Down . toList)
-    clusters :: [NonEmpty Zettel]
-    clusters =
-      case (G.clusters g) of
-        [] ->
-          maybe [] pure $ nonEmpty $ G.getVertices g
-        cs ->
-          cs
 
 getZettels :: ZettelGraph -> [Zettel]
 getZettels = G.getVertices

@@ -83,9 +83,16 @@ topSort g =
 -- | Returns the clusters in an ayclic graph.
 --
 -- If the graph is one cluster and that is acyclic, this will return an empty list.
+--
+-- If any of the cluster is cyclic, that cluster will not be included.
 clusters :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> [NonEmpty v]
 clusters g =
   fmap (fmap $ getVertex g) $ mothers $ LAM.skeleton $ graph g
+
+-- | Compute the dfsForest from the given vertices.
+dfsForest :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> Forest v
+dfsForest g =
+  fmap (fmap $ getVertex g) $ Algo.dfsForest $ LAM.skeleton $ graph g
 
 -- | Compute the dfsForest from the given vertices.
 dfsForestFrom :: (Vertex v, Ord (VertexID v)) => [v] -> LabelledGraph v e -> Forest v
@@ -110,6 +117,12 @@ bfsForestFrom (fmap vertexID -> vs) g =
 --------------------------
 --- More general utilities
 --------------------------
+
+induce :: Ord (VertexID v) => (VertexID v -> Bool) -> LabelledGraph v e -> LabelledGraph v e
+induce f (LabelledGraph g v) =
+  LabelledGraph g' v
+  where
+    g' = LAM.induce f g
 
 -- | Like `induce` but operates on edges instead of vertices
 induceOnEdge :: Ord (VertexID v) => (e -> Bool) -> LabelledGraph v e -> LabelledGraph v e
