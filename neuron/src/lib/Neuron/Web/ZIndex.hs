@@ -56,6 +56,7 @@ buildZIndex :: ZettelGraph -> Map ZettelID ZettelError -> ZIndex
 buildZIndex graph errors =
   let clusters = G.categoryClusters graph
       clusters' :: [Forest (Zettel, [Zettel])] =
+        -- Compute backlinks for each node in the tree.
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)

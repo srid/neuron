@@ -14,12 +14,10 @@ module Neuron.Zettelkasten.Graph
     getZettels,
     getZettel,
     getConnection,
-    topSort,
     frontlinkForest,
     backlinkForest,
     backlinks,
     backlinksMulti,
-    clusters,
     categoryClusters,
     connectionCount,
   )
@@ -29,6 +27,7 @@ import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Data.Default
 import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
+import qualified Data.Set as Set
 import Data.Tree
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph.Type
@@ -72,27 +71,26 @@ backlinksMulti conn zs g =
           (y, f y)
 
 categoryClusters :: ZettelGraph -> [Forest Zettel]
-categoryClusters (categoryGraph -> g) =
-  let cs :: [[Zettel]] = sortMothers $ clusters g
-   in flip fmap cs $ \zs -> G.bfsForestFrom zs g
+categoryClusters (G.induceOnEdge (== Just Folgezettel) -> g) =
+  let cs :: [[Zettel]] = sortMothers $ G.clusters g
+      cleanClusters = flip G.bfsForestFrom g <$> cs
+      clusteredZettels :: [Zettel] =
+        (flatten `concatMap`) `concatMap` cleanClusters
+      unclustered =
+        Set.map zettelID $
+          Set.fromList (getZettels g)
+            `Set.difference` Set.fromList clusteredZettels
+      uncleanCluster =
+        G.dfsForest $
+          G.induce (flip Set.member unclustered) g
+   in cleanClusters
+        <> if null uncleanCluster
+          then mempty
+          else pure uncleanCluster
   where
     -- Sort clusters with newer mother zettels appearing first.
     sortMothers :: [NonEmpty Zettel] -> [[Zettel]]
     sortMothers = sortOn (Down . maximum) . fmap (sortOn Down . toList)
-
-clusters :: ZettelGraph -> [NonEmpty Zettel]
-clusters g =
-  case (G.clusters $ categoryGraph g) of
-    [] ->
-      maybe [] pure $ nonEmpty $ G.getVertices g
-    cs ->
-      cs
-
-topSort :: ZettelGraph -> Either (NonEmpty Zettel) [Zettel]
-topSort = G.topSort . categoryGraph
-
-categoryGraph :: ZettelGraph -> ZettelGraph
-categoryGraph = G.induceOnEdge (== Just Folgezettel)
 
 getZettels :: ZettelGraph -> [Zettel]
 getZettels = G.getVertices
