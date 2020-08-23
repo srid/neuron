@@ -10,6 +10,7 @@
     - Fix incorrect body font (esp. on Windows)
     - Fix task list checkbox styling (#233)
     - Use superscript for folgezettel link suffix (#346)
+  - Fix missing clusters in z-index on some cyclic graphs (#357)
 - Zettel format
   - Wiki-style links: instead of `<foo>` you can now use `[[[foo]]]`; and instead of `<foo?cf>`, you can use `[[foo]]`. (#351)
   - Allow specifying time in the `date` metadata propery (#343)
