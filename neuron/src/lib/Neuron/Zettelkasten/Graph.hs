@@ -14,7 +14,6 @@ module Neuron.Zettelkasten.Graph
     getZettels,
     getZettel,
     getConnection,
-    topSort,
     frontlinkForest,
     backlinkForest,
     backlinks,
@@ -71,26 +70,20 @@ backlinksMulti conn zs g =
           (y, f y)
 
 categoryClusters :: ZettelGraph -> [Forest Zettel]
-categoryClusters (categoryGraph -> g) =
+categoryClusters (G.induceOnEdge (== Just Folgezettel) -> g) =
   let cs :: [[Zettel]] = sortMothers clusters
-   in flip fmap cs $ \zs -> G.bfsForestFrom zs g
+   in flip G.bfsForestFrom g <$> cs
   where
     -- Sort clusters with newer mother zettels appearing first.
     sortMothers :: [NonEmpty Zettel] -> [[Zettel]]
     sortMothers = sortOn (Down . maximum) . fmap (sortOn Down . toList)
     clusters :: [NonEmpty Zettel]
     clusters =
-      case (G.clusters $ categoryGraph g) of
+      case (G.clusters g) of
         [] ->
           maybe [] pure $ nonEmpty $ G.getVertices g
         cs ->
           cs
-
-topSort :: ZettelGraph -> Either (NonEmpty Zettel) [Zettel]
-topSort = G.topSort . categoryGraph
-
-categoryGraph :: ZettelGraph -> ZettelGraph
-categoryGraph = G.induceOnEdge (== Just Folgezettel)
 
 getZettels :: ZettelGraph -> [Zettel]
 getZettels = G.getVertices
