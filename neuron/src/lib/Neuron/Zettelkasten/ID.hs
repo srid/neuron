@@ -123,7 +123,8 @@ customIDParser = do
   fmap toText $ M.some $ M.alphaNumChar <|> M.char '_' <|> M.char '-'
 
 -- | Parse the ZettelID if the given filepath is a zettel.
-getZettelID :: FilePath -> Maybe ZettelID
-getZettelID fp =
-  let (name, _) = splitExtension $ takeFileName fp
-   in rightToMaybe $ parseZettelID' $ toText name
+getZettelID :: ZettelFormat -> FilePath -> Maybe ZettelID
+getZettelID fmt fp = do
+  let (name, ext) = splitExtension $ takeFileName fp
+  guard $ zettelFormatToExtension fmt == toText ext
+  rightToMaybe $ parseZettelID' $ toText name

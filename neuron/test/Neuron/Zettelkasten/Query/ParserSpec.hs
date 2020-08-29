@@ -62,6 +62,9 @@ spec = do
     it "Default connection type should be cf" $ do
       queryFromURILink (normalLink "foo-bar")
         `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelCustomID "foo-bar") OrdinaryConnection)
+    it "Supports full filename instead of zettel ID" $ do
+      queryFromURILink (normalLink "foo-bar.md")
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelCustomID "foo-bar") OrdinaryConnection)
 
 mkURILink :: Text -> Text -> URILink
 mkURILink linkText s =

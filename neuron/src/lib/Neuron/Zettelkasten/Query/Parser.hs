@@ -22,6 +22,7 @@ where
 import Control.Monad.Except
 import Data.Some
 import Data.TagTree (TagPattern, mkTagPattern)
+import Neuron.Reader.Type (ZettelFormat (..))
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
@@ -62,7 +63,7 @@ parseLinkURI isAutoLink uri = do
       -- Look for short links, eg: `<foo-bar>`
       Nothing -> do
         (URI.unRText -> path) :| [] <- hoistMaybe $ fmap snd (URI.uriPath uri)
-        zid <- hoistMaybe $ rightToMaybe $ parseZettelID' path
+        zid <- hoistMaybe $ rightToMaybe (parseZettelID' path) <|> getZettelID ZettelFormat_Markdown (toString path)
         pure $ Some $ ZettelQuery_ZettelByID zid conn
       Just (URI.unRText -> proto) -> do
         guard $ proto == "z"

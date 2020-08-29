@@ -22,14 +22,14 @@ spec = do
       it "parses a zettel ID" $ do
         Z.parseZettelID' "2011401" `shouldBe` Right zid
       it "parses a zettel ID from zettel filename" $ do
-        Z.getZettelID "2011401.md" `shouldBe` Just zid
+        Z.getZettelID Z.ZettelFormat_Markdown "2011401.md" `shouldBe` Just zid
         Z.zettelIDSourceFileName zid Z.ZettelFormat_Markdown `shouldBe` "2011401.md"
     context "custom id parsing" $ do
       let zid = Z.ZettelCustomID "20abcde"
       it "parses a custom zettel ID" $ do
         Z.parseZettelID' "20abcde" `shouldBe` Right zid
       it "parses a custom zettel ID from zettel filename" $ do
-        Z.getZettelID "20abcde.md" `shouldBe` Just zid
+        Z.getZettelID Z.ZettelFormat_Markdown "20abcde.md" `shouldBe` Just zid
         Z.zettelIDSourceFileName zid Z.ZettelFormat_Markdown `shouldBe` "20abcde.md"
       let deceptiveZid = Z.ZettelCustomID "2136537e"
       it "parses a custom zettel ID that looks like date ID" $ do
