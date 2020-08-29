@@ -33,7 +33,7 @@ import Data.Time.DateMayTime
 import Neuron.Reader.Type (ZettelFormat)
 import qualified Neuron.Web.Route as R
 import qualified Neuron.Zettelkasten.Connection as C
-import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
+import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Query.Graph as Q
@@ -224,7 +224,7 @@ commandParser defaultNotesDir now = do
       pure RibConfig {..}
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
-      eitherReader $ first show . parseZettelID' . toText
+      eitherReader $ first show . parseZettelID . toText
     queryReader :: ReadM (Some Q.ZettelQuery)
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
