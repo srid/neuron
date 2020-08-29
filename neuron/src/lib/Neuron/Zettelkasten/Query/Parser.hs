@@ -36,22 +36,21 @@ import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam, hasQueryFlag)
 
+-- | Parse a query if any from a Markdown link
+queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
+queryFromURILink l@URILink {..} =
+  queryFromURI' (defaultConnection l) _uriLink_uri
+
 -- | Parse a query from the given URI.
 --
 -- This function is used only in the CLI. For handling links in a Markdown file,
 -- your want `queryFromURILink` which allows specifying the link text as well.
 queryFromURI :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
 queryFromURI =
-  parseLinkURI def
+  queryFromURI' def
 
-queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
-queryFromURILink l@URILink {..} =
-  parseLinkURI (defaultConnection l) _uriLink_uri
-
--- | Parse commonmark autolink style links, eg: `<2014533>`
--- TODO: update doc
-parseLinkURI :: MonadError QueryParseError m => Connection -> URI -> m (Maybe (Some ZettelQuery))
-parseLinkURI defConn uri = do
+queryFromURI' :: MonadError QueryParseError m => Connection -> URI -> m (Maybe (Some ZettelQuery))
+queryFromURI' defConn uri = do
   let conn = fromMaybe defConn (queryConn uri)
   liftEither . runMaybeT $ do
     -- Non-relevant parts of the URI should be empty

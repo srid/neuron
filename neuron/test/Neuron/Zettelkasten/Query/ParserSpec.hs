@@ -70,5 +70,5 @@ mkURILink :: Text -> Text -> URILink
 mkURILink linkText s =
   -- TODO: Do this in reflex-dom-pandoc
   let uri = either (error . toText . displayException) id $ mkURI s
-      isAutoLink = linkText == s
-   in URILink [Str linkText] uri isAutoLink
+      inner = if linkText == s then Nothing else Just [Str linkText]
+   in URILink inner uri
