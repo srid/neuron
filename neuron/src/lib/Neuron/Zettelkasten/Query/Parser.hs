@@ -58,11 +58,16 @@ queryFromURI' defConn uri = do
     case URI.uriScheme uri of
       -- Look for short links, eg: `<foo-bar>`
       Nothing -> do
-        (URI.unRText -> path) :| [] <- hoistMaybe $ fmap snd (URI.uriPath uri)
+        -- Detect <foo> but not </foo> or <foo/> or </foo/>
+        let shortLinkPath = do
+              guard $ URI.uriAuthority uri == Left False
+              (False, path) <- URI.uriPath uri
+              pure path
+        (URI.unRText -> path) :| [] <- hoistMaybe shortLinkPath
         zid <-
           hoistMaybe $
             -- Allow direct use of ID
-            rightToMaybe (parseZettelID' path)
+            rightToMaybe (parseZettelID path)
               -- Also, allow raw filename (ending with ".md"). HACK: hardcoding
               -- format, but we shouldn't.
               <|> getZettelID ZettelFormat_Markdown (toString path)
@@ -96,8 +101,8 @@ queryFromURI' defConn uri = do
           _ -> empty
 
 parseQueryZettelID :: MonadError QueryParseError m => URI -> Text -> m ZettelID
-parseQueryZettelID uri s =
-  liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' s
+parseQueryZettelID uri =
+  liftEither . first (QueryParseError_InvalidID uri) . parseZettelID
 
 tagPatterns :: URI -> Text -> [TagPattern]
 tagPatterns uri k =

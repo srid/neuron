@@ -19,7 +19,7 @@ spec = do
     let zettels =
           Set.fromList $
             fmap
-              (either (error . show) id . parseZettelID')
+              (either (error . show) id . parseZettelID)
               [ "ribeye-steak",
                 "2015403"
               ]

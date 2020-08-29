@@ -11,7 +11,7 @@ module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     InvalidID (..),
     zettelIDText,
-    parseZettelID',
+    parseZettelID,
     idParser,
     getZettelID,
     zettelIDSourceFileName,
@@ -46,7 +46,7 @@ instance Show InvalidID where
 instance FromJSON ZettelID where
   parseJSON x = do
     s <- parseJSON x
-    case parseZettelID' s of
+    case parseZettelID s of
       Left e -> fail $ show e
       Right zid -> pure zid
 
@@ -55,7 +55,7 @@ instance ToJSONKey ZettelID where
 
 instance FromJSONKey ZettelID where
   fromJSONKey = FromJSONKeyTextParser $ \s ->
-    case parseZettelID' s of
+    case parseZettelID s of
       Right v -> pure v
       Left e -> fail $ show e
 
@@ -91,8 +91,8 @@ zettelIDSourceFileName zid fmt = toString $ zettelIDText zid <> zettelFormatToEx
 data InvalidID = InvalidIDParseError Text
   deriving (Eq, Generic, ToJSON, FromJSON)
 
-parseZettelID' :: Text -> Either InvalidID ZettelID
-parseZettelID' =
+parseZettelID :: Text -> Either InvalidID ZettelID
+parseZettelID =
   first InvalidIDParseError . parse idParser "parseZettelID"
 
 idParser :: Parser ZettelID
@@ -127,4 +127,4 @@ getZettelID :: ZettelFormat -> FilePath -> Maybe ZettelID
 getZettelID fmt fp = do
   let (name, ext) = splitExtension $ takeFileName fp
   guard $ zettelFormatToExtension fmt == toText ext
-  rightToMaybe $ parseZettelID' $ toText name
+  rightToMaybe $ parseZettelID $ toText name

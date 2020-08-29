@@ -57,14 +57,24 @@ spec = do
     it "z:tags?filter=foo" $ do
       queryFromURILink (shortLink "z:tags?filter=foo")
         `shouldBe` Right (Just $ Some $ ZettelQuery_Tags [mkTagPattern "foo"])
+  let normalLink = mkURILink "some link text"
   describe "flexible links (regular markdown)" $ do
-    let normalLink = mkURILink "some link text"
     it "Default connection type should be cf" $ do
       queryFromURILink (normalLink "foo-bar")
         `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelCustomID "foo-bar") OrdinaryConnection)
     it "Supports full filename instead of zettel ID" $ do
       queryFromURILink (normalLink "foo-bar.md")
         `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelCustomID "foo-bar") OrdinaryConnection)
+  describe "non-connection links" $ do
+    it "pass through normal links" $ do
+      queryFromURILink (normalLink "https://www.srid.ca")
+        `shouldBe` Right Nothing
+      queryFromURILink (normalLink "/static/resume.pdf")
+        `shouldBe` Right Nothing
+      queryFromURILink (normalLink "/static/")
+        `shouldBe` Right Nothing
+      queryFromURILink (normalLink "/static")
+        `shouldBe` Right Nothing
 
 mkURILink :: Text -> Text -> URILink
 mkURILink linkText s =
