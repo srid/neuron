@@ -40,15 +40,21 @@ import Text.URI.Util (getQueryParam, hasQueryFlag)
 -- your want `queryFromURILink` which allows specifying the link text as well.
 queryFromURI :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
 queryFromURI =
-  parseAutoLinks
+  parseLinkURI True
 
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
-queryFromURILink uriLink =
-  parseAutoLinks $ _uriLink_uri uriLink
+queryFromURILink URILink {..} =
+  parseLinkURI _uriLink_autolink _uriLink_uri
 
 -- | Parse commonmark autolink style links, eg: `<2014533>`
-parseAutoLinks :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
-parseAutoLinks uri =
+-- TODO: update doc
+parseLinkURI :: MonadError QueryParseError m => Bool -> URI -> m (Maybe (Some ZettelQuery))
+parseLinkURI isAutoLink uri = do
+  let conn =
+        if isAutoLink
+          then fromMaybe Folgezettel (queryConn uri)
+          else -- [](..) should be cf by default. TODO: this will break other link types.
+            fromMaybe OrdinaryConnection (queryConn uri)
   liftEither . runMaybeT $ do
     -- Non-relevant parts of the URI should be empty
     guard $ isNothing $ URI.uriFragment uri
@@ -57,7 +63,7 @@ parseAutoLinks uri =
       Nothing -> do
         (URI.unRText -> path) :| [] <- hoistMaybe $ fmap snd (URI.uriPath uri)
         zid <- hoistMaybe $ rightToMaybe $ parseZettelID' path
-        pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
+        pure $ Some $ ZettelQuery_ZettelByID zid conn
       Just (URI.unRText -> proto) -> do
         guard $ proto == "z"
         zPath <- hoistMaybe $ fmap snd (URI.uriPath uri)
@@ -70,16 +76,16 @@ parseAutoLinks uri =
           (URI.unRText -> path) :| []
             | hasSlash -> do
               zid <- parseQueryZettelID uri path
-              pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
+              pure $ Some $ ZettelQuery_ZettelByID zid conn
           -- Parse z:zettel/<id>
           (URI.unRText -> "zettel") :| [URI.unRText -> path]
             | noSlash -> do
               zid <- parseQueryZettelID uri path
-              pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
+              pure $ Some $ ZettelQuery_ZettelByID zid conn
           -- Parse z:zettels?...
           (URI.unRText -> "zettels") :| []
             | noSlash -> do
-              pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") (queryConn uri) (queryView uri)
+              pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") conn (queryView uri)
           -- Parse z:tags?...
           (URI.unRText -> "tags") :| []
             | noSlash -> do

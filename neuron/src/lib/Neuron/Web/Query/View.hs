@@ -41,9 +41,9 @@ import Text.Pandoc.Definition (Inline)
 renderQueryResult ::
   PandocBuilder t m => Maybe [Inline] -> DSum ZettelQuery Identity -> NeuronWebT t m ()
 renderQueryResult minner = \case
-  ZettelQuery_ZettelByID _zid (fromMaybe def -> conn) :=> Identity target -> do
+  ZettelQuery_ZettelByID _zid conn :=> Identity target -> do
     renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
-  q@(ZettelQuery_ZettelsByTag pats (fromMaybe def -> conn) view) :=> Identity res -> do
+  q@(ZettelQuery_ZettelsByTag pats conn view) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
       case zettelsViewGroupByTag view of

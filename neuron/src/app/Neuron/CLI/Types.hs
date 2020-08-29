@@ -169,10 +169,10 @@ commandParser defaultNotesDir now = do
         fmap
           Left
           ( fmap
-              (Some . flip Q.ZettelQuery_ZettelByID Nothing)
+              (Some . flip Q.ZettelQuery_ZettelByID def)
               (option zettelIDReader (long "id"))
               <|> fmap
-                (\x -> Some $ Q.ZettelQuery_ZettelsByTag x Nothing def)
+                (\x -> Some $ Q.ZettelQuery_ZettelsByTag x def def)
                 (many (mkTagPattern <$> option str (long "tag" <> short 't')))
               <|> option queryReader (long "uri" <> short 'u')
           )
