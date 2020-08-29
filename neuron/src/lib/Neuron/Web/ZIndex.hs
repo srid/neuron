@@ -94,7 +94,7 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
       divClass "ui message pinned raised segment" $ do
         el "ul" $
           forM_ zs $ \z ->
-            el "li" $ QueryView.renderZettelLink Nothing def z
+            el "li" $ QueryView.renderZettelLink Nothing Nothing def z
     forM_ zIndexClusters $ \forest ->
       divClass ("ui " <> themeColor <> " segment") $ do
         el "ul" $ renderForest forest
@@ -146,7 +146,7 @@ renderForest ::
 renderForest trees = do
   forM_ trees $ \(Node (zettel, uplinks) subtrees) ->
     el "li" $ do
-      QueryView.renderZettelLink Nothing def zettel
+      QueryView.renderZettelLink Nothing Nothing def zettel
       when (length uplinks >= 2) $ do
         elClass "span" "uplinks" $ do
           forM_ uplinks $ \z2 -> do

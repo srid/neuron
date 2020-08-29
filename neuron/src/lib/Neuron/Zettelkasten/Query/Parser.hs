@@ -44,12 +44,7 @@ queryFromURI =
 
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
 queryFromURILink uriLink =
-  if isAutoLink uriLink
-    then parseAutoLinks $ _uriLink_uri uriLink
-    else parseLegacyLinks uriLink
-  where
-    isAutoLink (URILink linkText uri) =
-      linkText == URI.render uri
+  parseAutoLinks $ _uriLink_uri uriLink
 
 -- | Parse commonmark autolink style links, eg: `<2014533>`
 parseAutoLinks :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
@@ -90,35 +85,6 @@ parseAutoLinks uri =
             | noSlash -> do
               pure $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
           _ -> empty
-
--- | Parse legacy style links, eg: `[2014533](z:/)`
-parseLegacyLinks :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
-parseLegacyLinks (URILink linkText uri) = do
-  case fmap URI.unRText (URI.uriScheme uri) of
-    -- Legacy links
-    Just proto | proto `elem` ["z", "zcf"] -> do
-      zid <- parseQueryZettelID uri linkText
-      let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
-      pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
-    -- Legacy links
-    Just proto | proto `elem` ["zquery", "zcfquery"] ->
-      case uriHost uri of
-        Right "search" -> do
-          let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
-          pure $
-            Just $
-              Some $
-                ZettelQuery_ZettelsByTag (tagPatterns uri "tag") mconn (queryView uri)
-        Right "tags" ->
-          pure $ Just $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
-        _ ->
-          throwError $ QueryParseError_UnsupportedHost uri
-    _ ->
-      pure Nothing
-  where
-    uriHost :: URI -> Either Bool Text
-    uriHost u =
-      fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
 
 parseQueryZettelID :: MonadError QueryParseError m => URI -> Text -> m ZettelID
 parseQueryZettelID uri s =

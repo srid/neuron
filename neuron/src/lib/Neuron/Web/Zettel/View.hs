@@ -41,7 +41,7 @@ renderZettel (graph, zc@(sansContent -> z)) = do
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
-      Q.renderZettelLink (G.getConnection z z2 graph) def z2
+      Q.renderZettelLink Nothing (G.getConnection z z2 graph) def z2
   -- Main content
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     whenStaticallyGenerated $ do
@@ -82,7 +82,7 @@ renderZettelBottomPane graph z@Zettel {..} = do
                 text "More backlinks"
               el "ul" $ do
                 forM_ links $ \zl ->
-                  el "li" $ Q.renderZettelLink Nothing def zl
+                  el "li" $ Q.renderZettelLink Nothing Nothing def zl
           whenJust tags $
             divClass "column" . renderTags
 
@@ -92,7 +92,7 @@ evalAndRenderZettelQuery ::
   NeuronWebT t m [QueryError] ->
   URILink ->
   NeuronWebT t m [QueryError]
-evalAndRenderZettelQuery graph oldRender uriLink = do
+evalAndRenderZettelQuery graph oldRender uriLink@(URILink inner _uri isAutoLink) = do
   case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uriLink) of
     Left e -> do
       -- Error parsing or running the query.
@@ -101,7 +101,9 @@ evalAndRenderZettelQuery graph oldRender uriLink = do
       -- This is not a query link; pass through.
       oldRender
     Right (Just res) -> do
-      Q.renderQueryResult res
+      -- Discard link inner only if it is an autolink
+      let mLinkInner = if isAutoLink then Nothing else Just inner
+      Q.renderQueryResult mLinkInner res
       pure mempty
   where
     elInlineError e =

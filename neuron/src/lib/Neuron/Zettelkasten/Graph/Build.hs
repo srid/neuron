@@ -67,6 +67,7 @@ runQueryConnections zettels z =
 
 edgeFromConnection :: Zettel -> (Maybe Connection, Zettel) -> (Maybe Connection, Zettel, Zettel)
 edgeFromConnection z (c, z2) =
+  -- hardcoded deffault, wtf
   (connectionMonoid $ fromMaybe Folgezettel c, z, z2)
   where
     -- Our connection monoid will never be Nothing (mempty); see the note in

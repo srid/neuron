@@ -33,14 +33,16 @@ import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (count, tag)
+import Reflex.Dom.Pandoc (PandocBuilder, elPandocInlines)
 import Relude
+import Text.Pandoc.Definition (Inline)
 
 -- | Render the query results.
 renderQueryResult ::
-  DomBuilder t m => DSum ZettelQuery Identity -> NeuronWebT t m ()
-renderQueryResult = \case
+  PandocBuilder t m => Maybe [Inline] -> DSum ZettelQuery Identity -> NeuronWebT t m ()
+renderQueryResult minner = \case
   ZettelQuery_ZettelByID _zid (fromMaybe def -> conn) :=> Identity target -> do
-    renderZettelLink (Just conn) Nothing target
+    renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
   q@(ZettelQuery_ZettelsByTag pats (fromMaybe def -> conn) view) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
@@ -49,7 +51,7 @@ renderQueryResult = \case
           el "ul" $
             forM_ res $ \z -> do
               el "li" $
-                renderZettelLink (Just conn) (Just $ zettelsViewLinkView view) z
+                renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
         True ->
           forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
             el "section" $ do
@@ -59,7 +61,7 @@ renderQueryResult = \case
               el "ul" $
                 forM_ zettelGrp $ \z ->
                   el "li" $
-                    renderZettelLink (Just conn) (Just $ zettelsViewLinkView view) z
+                    renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
   q@(ZettelQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
@@ -93,8 +95,14 @@ renderQuery someQ =
         text $ "Tags matching '" <> qs <> "'"
 
 -- | Render a link to an individual zettel.
-renderZettelLink :: DomBuilder t m => Maybe Connection -> Maybe LinkView -> Zettel -> NeuronWebT t m ()
-renderZettelLink conn (fromMaybe def -> linkView) Zettel {..} = do
+renderZettelLink ::
+  DomBuilder t m =>
+  Maybe (m ()) ->
+  Maybe Connection ->
+  Maybe LinkView ->
+  Zettel ->
+  NeuronWebT t m ()
+renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
   let connClass = show <$> conn
       rawClass = either (const $ Just "raw") (const Nothing) zettelError
       mextra =
@@ -118,7 +126,8 @@ renderZettelLink conn (fromMaybe def -> linkView) Zettel {..} = do
             then Nothing
             else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
     elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
-      neuronRouteLink (Some $ Route_Zettel zettelID) mempty $ text zettelTitle
+      let linkInnerHtml = fromMaybe (text zettelTitle) mInner
+      neuronRouteLink (Some $ Route_Zettel zettelID) mempty linkInnerHtml
       case conn of
         Just Folgezettel -> elNoSnippetSpan mempty $ do
           elAttr "sup" ("title" =: "Branching link (folgezettel)") $ text "ᛦ"
