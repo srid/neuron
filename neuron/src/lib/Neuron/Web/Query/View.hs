@@ -121,10 +121,6 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
         -- The extra space is so that double clicking on this extra text
         -- doesn't select the title next.
         text " "
-    let linkTooltip =
-          if null zettelTags
-            then Nothing
-            else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
     elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
       let linkInnerHtml = fromMaybe (text zettelTitle) mInner
       neuronRouteLink (Some $ Route_Zettel zettelID) mempty linkInnerHtml
@@ -133,6 +129,15 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
           elAttr "sup" ("title" =: "Branching link (folgezettel)") $ text "ᛦ"
         _ -> pure mempty
   where
+    linkTooltip =
+      -- If there is custom inner text, put zettel title in tooltip.
+      -- Otherwise put tags if any.
+      if isJust mInner
+        then Just $ "Zettel: " <> zettelTitle
+        else
+          if null zettelTags
+            then Nothing
+            else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
     -- Prevent this element from appearing in Google search results
     -- https://developers.google.com/search/reference/robots_meta_tag#data-nosnippet-attr
     elNoSnippetSpan :: DomBuilder t m => Map Text Text -> NeuronWebT t m a -> NeuronWebT t m a
