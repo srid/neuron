@@ -32,7 +32,7 @@ getAliases Config {..} graph = do
       pure v
   where
     hasIndexZettel =
-      isJust . G.getZettel (parseZettelID "index")
+      isJust . G.getZettel (ZettelCustomID "index")
 
 mkAliases :: [Text] -> ZettelGraph -> Either Text [Alias]
 mkAliases aliasSpecs graph =

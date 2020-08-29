@@ -11,7 +11,6 @@ module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     InvalidID (..),
     zettelIDText,
-    parseZettelID,
     parseZettelID',
     idParser,
     getZettelID,
@@ -91,10 +90,6 @@ zettelIDSourceFileName zid fmt = toString $ zettelIDText zid <> zettelFormatToEx
 
 data InvalidID = InvalidIDParseError Text
   deriving (Eq, Generic, ToJSON, FromJSON)
-
-parseZettelID :: HasCallStack => Text -> ZettelID
-parseZettelID =
-  either (error . show) id . parseZettelID'
 
 parseZettelID' :: Text -> Either InvalidID ZettelID
 parseZettelID' =

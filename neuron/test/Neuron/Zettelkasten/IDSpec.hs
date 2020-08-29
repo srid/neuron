@@ -20,7 +20,7 @@ spec = do
     context "date id parsing" $ do
       let zid = Z.ZettelDateID day 1
       it "parses a zettel ID" $ do
-        Z.parseZettelID "2011401" `shouldBe` zid
+        Z.parseZettelID' "2011401" `shouldBe` Right zid
       it "parses a zettel ID from zettel filename" $ do
         Z.getZettelID "2011401.md" `shouldBe` Just zid
         Z.zettelIDSourceFileName zid Z.ZettelFormat_Markdown `shouldBe` "2011401.md"
