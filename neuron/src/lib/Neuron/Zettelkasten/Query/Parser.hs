@@ -20,6 +20,7 @@ module Neuron.Zettelkasten.Query.Parser
 where
 
 import Control.Monad.Except
+import Data.Default (def)
 import Data.Some
 import Data.TagTree (TagPattern, mkTagPattern)
 import Neuron.Reader.Type (ZettelFormat (..))
@@ -41,21 +42,17 @@ import Text.URI.Util (getQueryParam, hasQueryFlag)
 -- your want `queryFromURILink` which allows specifying the link text as well.
 queryFromURI :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
 queryFromURI =
-  parseLinkURI True
+  parseLinkURI def
 
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
-queryFromURILink URILink {..} =
-  parseLinkURI _uriLink_autolink _uriLink_uri
+queryFromURILink l@URILink {..} =
+  parseLinkURI (defaultConnection l) _uriLink_uri
 
 -- | Parse commonmark autolink style links, eg: `<2014533>`
 -- TODO: update doc
-parseLinkURI :: MonadError QueryParseError m => Bool -> URI -> m (Maybe (Some ZettelQuery))
-parseLinkURI isAutoLink uri = do
-  let conn =
-        if isAutoLink
-          then fromMaybe Folgezettel (queryConn uri)
-          else -- [](..) should be cf by default. TODO: this will break other link types.
-            fromMaybe OrdinaryConnection (queryConn uri)
+parseLinkURI :: MonadError QueryParseError m => Connection -> URI -> m (Maybe (Some ZettelQuery))
+parseLinkURI defConn uri = do
+  let conn = fromMaybe defConn (queryConn uri)
   liftEither . runMaybeT $ do
     -- Non-relevant parts of the URI should be empty
     guard $ isNothing $ URI.uriFragment uri
@@ -63,7 +60,13 @@ parseLinkURI isAutoLink uri = do
       -- Look for short links, eg: `<foo-bar>`
       Nothing -> do
         (URI.unRText -> path) :| [] <- hoistMaybe $ fmap snd (URI.uriPath uri)
-        zid <- hoistMaybe $ rightToMaybe (parseZettelID' path) <|> getZettelID ZettelFormat_Markdown (toString path)
+        zid <-
+          hoistMaybe $
+            -- Allow direct use of ID
+            rightToMaybe (parseZettelID' path)
+              -- Also, allow raw filename (ending with ".md"). HACK: hardcoding
+              -- format, but we shouldn't.
+              <|> getZettelID ZettelFormat_Markdown (toString path)
         pure $ Some $ ZettelQuery_ZettelByID zid conn
       Just (URI.unRText -> proto) -> do
         guard $ proto == "z"

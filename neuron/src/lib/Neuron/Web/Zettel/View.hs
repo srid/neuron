@@ -92,7 +92,7 @@ evalAndRenderZettelQuery ::
   NeuronWebT t m [QueryError] ->
   URILink ->
   NeuronWebT t m [QueryError]
-evalAndRenderZettelQuery graph oldRender uriLink@(URILink inner _uri isAutoLink) = do
+evalAndRenderZettelQuery graph oldRender uriLink@(URILink inner _uri) = do
   case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uriLink) of
     Left e -> do
       -- Error parsing or running the query.
@@ -101,9 +101,7 @@ evalAndRenderZettelQuery graph oldRender uriLink@(URILink inner _uri isAutoLink)
       -- This is not a query link; pass through.
       oldRender
     Right (Just res) -> do
-      -- Discard link inner only if it is an autolink
-      let mLinkInner = if isAutoLink then Nothing else Just inner
-      Q.renderQueryResult mLinkInner res
+      Q.renderQueryResult inner res
       pure mempty
   where
     elInlineError e =

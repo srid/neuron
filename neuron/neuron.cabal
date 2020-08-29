@@ -61,7 +61,7 @@ common library-common
     data-default,
     reflex,
     reflex-dom-core,
-    reflex-dom-pandoc >= 0.2.4.0,
+    reflex-dom-pandoc >= 0.2.5.0,
     clay,
     tagged
 

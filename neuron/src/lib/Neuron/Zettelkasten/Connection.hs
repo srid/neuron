@@ -1,12 +1,14 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Connection where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Default
+import Reflex.Dom.Pandoc (URILink (..))
 import Relude hiding (show)
 import Text.Show
 
@@ -32,3 +34,10 @@ instance Show Connection where
   show = \case
     Folgezettel -> "folgezettel"
     OrdinaryConnection -> "cf"
+
+defaultConnection :: URILink -> Connection
+defaultConnection URILink {..} =
+  if isNothing _uriLink_inner
+    then Folgezettel -- Autolinks
+    -- NOTE: This will need to be changed when we implement `[[foo | some text]]`
+    else OrdinaryConnection
