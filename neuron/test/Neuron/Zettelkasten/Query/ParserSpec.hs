@@ -22,10 +22,6 @@ import Text.URI
 
 spec :: Spec
 spec = do
-  shortLinks
-
-shortLinks :: Spec
-shortLinks = do
   describe "short links" $ do
     let shortLink s = mkURILink s s
     it "parses date ID" $ do
@@ -58,8 +54,15 @@ shortLinks = do
     it "z:tags?filter=foo" $ do
       queryFromURILink (shortLink "z:tags?filter=foo")
         `shouldBe` Right (Just $ Some $ ZettelQuery_Tags [mkTagPattern "foo"])
+  describe "flexible links (regular markdown)" $ do
+    let normalLink = mkURILink "some link text"
+    it "Default connection type should be cf" $ do
+      queryFromURILink (normalLink "foo-bar")
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (parseZettelID "foo-bar") OrdinaryConnection)
 
 mkURILink :: Text -> Text -> URILink
 mkURILink linkText s =
+  -- TODO: Do this in reflex-dom-pandoc
   let uri = either (error . toText . displayException) id $ mkURI s
-   in URILink [Str linkText] uri True
+      isAutoLink = linkText == s
+   in URILink [Str linkText] uri isAutoLink
