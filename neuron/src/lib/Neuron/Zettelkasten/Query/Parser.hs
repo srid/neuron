@@ -20,7 +20,6 @@ module Neuron.Zettelkasten.Query.Parser
 where
 
 import Control.Monad.Except
-import Data.Default (def)
 import Data.Some
 import Data.TagTree (TagPattern, mkTagPattern)
 import Neuron.Reader.Type (ZettelFormat (..))
@@ -40,6 +39,15 @@ import Text.URI.Util (getQueryParam, hasQueryFlag)
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
 queryFromURILink l@URILink {..} =
   queryFromURI' (defaultConnection l) _uriLink_uri
+  where
+    -- The default connection to use if the user has not explicitly specified
+    -- one in the query URI.
+    defaultConnection :: URILink -> Connection
+    defaultConnection URILink {..} =
+      if isNothing _uriLink_inner
+        then Folgezettel -- Autolinks
+        -- NOTE: This will need to be changed when we implement `[[foo | some text]]`
+        else OrdinaryConnection
 
 -- | Parse a query from the given URI.
 --
@@ -47,7 +55,10 @@ queryFromURILink l@URILink {..} =
 -- your want `queryFromURILink` which allows specifying the link text as well.
 queryFromURI :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
 queryFromURI =
-  queryFromURI' def
+  queryFromURI' conn
+  where
+    -- The value of this doesn't matter
+    conn = OrdinaryConnection
 
 queryFromURI' :: MonadError QueryParseError m => Connection -> URI -> m (Maybe (Some ZettelQuery))
 queryFromURI' defConn uri = do

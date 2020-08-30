@@ -164,15 +164,16 @@ commandParser defaultNotesDir now = do
             (OpenCommand . Some . R.Route_Zettel)
             (option zettelIDReader (long "id" <> help "Open the zettel HTML page" <> metavar "ID"))
     queryCommand = do
+      let connDontCare = C.OrdinaryConnection -- Don't care about connections in CLI
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
       query <-
         fmap
           Left
           ( fmap
-              (Some . flip Q.ZettelQuery_ZettelByID def)
+              (Some . flip Q.ZettelQuery_ZettelByID connDontCare)
               (option zettelIDReader (long "id"))
               <|> fmap
-                (\x -> Some $ Q.ZettelQuery_ZettelsByTag x def def)
+                (\x -> Some $ Q.ZettelQuery_ZettelsByTag x connDontCare def)
                 (many (mkTagPattern <$> option str (long "tag" <> short 't')))
               <|> option queryReader (long "uri" <> short 'u')
           )
