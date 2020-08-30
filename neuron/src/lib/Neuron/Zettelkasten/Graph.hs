@@ -97,9 +97,14 @@ getZettels = G.getVertices
 getZettel :: ZettelID -> ZettelGraph -> Maybe Zettel
 getZettel = G.findVertex
 
--- | If no connection exists, this returns Nothing.
+-- | Return the connection if any between two zettels
+--
+-- If no connection exists, this returns Nothing.
 getConnection :: Zettel -> Zettel -> ZettelGraph -> Maybe Connection
-getConnection z1 z2 g = join $ G.edgeLabel g z1 z2
+getConnection z1 z2 g =
+  -- Use `join` so that empty edge monoid is treated as an abscence of edge
+  -- (connection)
+  join $ G.edgeLabel g z1 z2
 
 connectionCount :: ZettelGraph -> Int
 connectionCount = LAM.edgeCount . G.getGraph
