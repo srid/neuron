@@ -13,6 +13,8 @@
   - Fix missing clusters in z-index on some cyclic graphs (#357)
 - Zettel format
   - Wiki-style links: instead of `<foo>` you can now use `[[[foo]]]`; and instead of `<foo?cf>`, you can use `[[foo]]`. (#351)
+  - Support regular markdown links (#366)
+  - Drop support for legacy links (#366)
   - Allow specifying time in the `date` metadata propery (#343)
   - Add `unlisted` metadata property to hide a zettel from z-index (#318)
   - Markdown: 
