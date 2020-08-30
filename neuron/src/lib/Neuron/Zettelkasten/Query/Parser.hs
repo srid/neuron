@@ -22,6 +22,7 @@ where
 import Control.Monad.Except
 import Data.Some
 import Data.TagTree (TagPattern, mkTagPattern)
+import Neuron.Reader.Type (ZettelFormat (..))
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
@@ -34,35 +35,44 @@ import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam, hasQueryFlag)
 
--- | Parse a query from the given URI.
---
--- This function is used only in the CLI. For handling links in a Markdown file,
--- your want `queryFromURILink` which allows specifying the link text as well.
-queryFromURI :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
-queryFromURI =
-  parseAutoLinks
-
+-- | Parse a query if any from a Markdown link
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
-queryFromURILink uriLink =
-  if isAutoLink uriLink
-    then parseAutoLinks $ _uriLink_uri uriLink
-    else parseLegacyLinks uriLink
+queryFromURILink l@URILink {..} =
+  queryFromURI (defaultConnection l) _uriLink_uri
   where
-    isAutoLink (URILink linkText uri) =
-      linkText == URI.render uri
+    -- The default connection to use if the user has not explicitly specified
+    -- one in the query URI.
+    defaultConnection :: URILink -> Connection
+    defaultConnection URILink {..} =
+      if isNothing _uriLink_inner
+        then Folgezettel -- Autolinks
+        -- NOTE: This will need to be changed when we implement `[[foo | some text]]`
+        else OrdinaryConnection
 
--- | Parse commonmark autolink style links, eg: `<2014533>`
-parseAutoLinks :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
-parseAutoLinks uri =
+-- | Parse a query from the given URI.
+queryFromURI :: MonadError QueryParseError m => Connection -> URI -> m (Maybe (Some ZettelQuery))
+queryFromURI defConn uri = do
+  let conn = fromMaybe defConn (queryConn uri)
   liftEither . runMaybeT $ do
     -- Non-relevant parts of the URI should be empty
     guard $ isNothing $ URI.uriFragment uri
     case URI.uriScheme uri of
       -- Look for short links, eg: `<foo-bar>`
       Nothing -> do
-        (URI.unRText -> path) :| [] <- hoistMaybe $ fmap snd (URI.uriPath uri)
-        zid <- hoistMaybe $ rightToMaybe $ parseZettelID' path
-        pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
+        -- Detect <foo> but not </foo> or <foo/> or </foo/>
+        let shortLinkPath = do
+              guard $ URI.uriAuthority uri == Left False
+              (False, path) <- URI.uriPath uri
+              pure path
+        (URI.unRText -> path) :| [] <- hoistMaybe shortLinkPath
+        zid <-
+          hoistMaybe $
+            -- Allow direct use of ID
+            rightToMaybe (parseZettelID path)
+              -- Also, allow raw filename (ending with ".md"). HACK: hardcoding
+              -- format, but we shouldn't.
+              <|> getZettelID ZettelFormat_Markdown (toString path)
+        pure $ Some $ ZettelQuery_ZettelByID zid conn
       Just (URI.unRText -> proto) -> do
         guard $ proto == "z"
         zPath <- hoistMaybe $ fmap snd (URI.uriPath uri)
@@ -75,54 +85,25 @@ parseAutoLinks uri =
           (URI.unRText -> path) :| []
             | hasSlash -> do
               zid <- parseQueryZettelID uri path
-              pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
+              pure $ Some $ ZettelQuery_ZettelByID zid conn
           -- Parse z:zettel/<id>
           (URI.unRText -> "zettel") :| [URI.unRText -> path]
             | noSlash -> do
               zid <- parseQueryZettelID uri path
-              pure $ Some $ ZettelQuery_ZettelByID zid $ queryConn uri
+              pure $ Some $ ZettelQuery_ZettelByID zid conn
           -- Parse z:zettels?...
           (URI.unRText -> "zettels") :| []
             | noSlash -> do
-              pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") (queryConn uri) (queryView uri)
+              pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") conn (queryView uri)
           -- Parse z:tags?...
           (URI.unRText -> "tags") :| []
             | noSlash -> do
               pure $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
           _ -> empty
 
--- | Parse legacy style links, eg: `[2014533](z:/)`
-parseLegacyLinks :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
-parseLegacyLinks (URILink linkText uri) = do
-  case fmap URI.unRText (URI.uriScheme uri) of
-    -- Legacy links
-    Just proto | proto `elem` ["z", "zcf"] -> do
-      zid <- parseQueryZettelID uri linkText
-      let mconn = if proto == "zcf" then Just OrdinaryConnection else Nothing
-      pure $ Just $ Some $ ZettelQuery_ZettelByID zid mconn
-    -- Legacy links
-    Just proto | proto `elem` ["zquery", "zcfquery"] ->
-      case uriHost uri of
-        Right "search" -> do
-          let mconn = if proto == "zcfquery" then Just OrdinaryConnection else Nothing
-          pure $
-            Just $
-              Some $
-                ZettelQuery_ZettelsByTag (tagPatterns uri "tag") mconn (queryView uri)
-        Right "tags" ->
-          pure $ Just $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
-        _ ->
-          throwError $ QueryParseError_UnsupportedHost uri
-    _ ->
-      pure Nothing
-  where
-    uriHost :: URI -> Either Bool Text
-    uriHost u =
-      fmap (URI.unRText . URI.authHost) (URI.uriAuthority u)
-
 parseQueryZettelID :: MonadError QueryParseError m => URI -> Text -> m ZettelID
-parseQueryZettelID uri s =
-  liftEither $ first (QueryParseError_InvalidID uri) $ parseZettelID' s
+parseQueryZettelID uri =
+  liftEither . first (QueryParseError_InvalidID uri) . parseZettelID
 
 tagPatterns :: URI -> Text -> [TagPattern]
 tagPatterns uri k =

@@ -53,7 +53,7 @@ queryConnections ::
     MonadReader [Zettel] m
   ) =>
   Zettel ->
-  m [(Maybe Connection, Zettel)]
+  m [(Connection, Zettel)]
 queryConnections Zettel {..} = do
   -- Report any query parse errors
   case zettelError of
@@ -70,12 +70,12 @@ queryConnections Zettel {..} = do
         Right res ->
           pure $ getConnections res
   where
-    getConnections :: DSum ZettelQuery Identity -> [(Maybe Connection, Zettel)]
+    getConnections :: DSum ZettelQuery Identity -> [(Connection, Zettel)]
     getConnections = \case
-      ZettelQuery_ZettelByID _ mconn :=> Identity res ->
-        [(mconn, res)]
-      ZettelQuery_ZettelsByTag _ mconn _mview :=> Identity res ->
-        (mconn,) <$> res
+      ZettelQuery_ZettelByID _ conn :=> Identity res ->
+        [(conn, res)]
+      ZettelQuery_ZettelsByTag _ conn _mview :=> Identity res ->
+        (conn,) <$> res
       ZettelQuery_Tags _ :=> _ ->
         mempty
 

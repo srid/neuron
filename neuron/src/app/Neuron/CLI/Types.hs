@@ -33,7 +33,7 @@ import Data.Time.DateMayTime
 import Neuron.Reader.Type (ZettelFormat)
 import qualified Neuron.Web.Route as R
 import qualified Neuron.Zettelkasten.Connection as C
-import Neuron.Zettelkasten.ID (ZettelID, parseZettelID')
+import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Query.Graph as Q
@@ -169,10 +169,10 @@ commandParser defaultNotesDir now = do
         fmap
           Left
           ( fmap
-              (Some . flip Q.ZettelQuery_ZettelByID Nothing)
+              (Some . flip Q.ZettelQuery_ZettelByID connDummy)
               (option zettelIDReader (long "id"))
               <|> fmap
-                (\x -> Some $ Q.ZettelQuery_ZettelsByTag x Nothing def)
+                (\x -> Some $ Q.ZettelQuery_ZettelsByTag x connDummy def)
                 (many (mkTagPattern <$> option str (long "tag" <> short 't')))
               <|> option queryReader (long "uri" <> short 'u')
           )
@@ -224,14 +224,20 @@ commandParser defaultNotesDir now = do
       pure RibConfig {..}
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
-      eitherReader $ first show . parseZettelID' . toText
+      eitherReader $ first show . parseZettelID . toText
     queryReader :: ReadM (Some Q.ZettelQuery)
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
-          either (Left . toString . Q.showQueryParseError) (maybe (Left "Unsupported query") Right) $ Q.queryFromURI uri
+          either
+            (Left . toString . Q.showQueryParseError)
+            (maybe (Left "Unsupported query") Right)
+            $ Q.queryFromURI connDummy uri
         Left e ->
           Left $ displayException e
     dateReader :: ReadM DateMayTime
     dateReader =
       maybeReader (parseDateMayTime . toText)
+    -- We don't care about connections in the CLI, but the query requires one -
+    -- so pass a dummy value.
+    connDummy = C.OrdinaryConnection

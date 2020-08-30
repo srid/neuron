@@ -151,7 +151,7 @@ loadZettelkastenFrom fs = do
       flip runStateT Map.empty $ do
         forM_ fs $ \(format, files) -> do
           forM_ files $ \relPath -> do
-            case getZettelID relPath of
+            case getZettelID format relPath of
               Nothing ->
                 pure ()
               Just zid -> do

@@ -49,7 +49,7 @@ mkZettelGraph ::
     Map ZettelID (NonEmpty QueryError)
   )
 mkZettelGraph zettels =
-  let res :: [(Zettel, ([(Maybe Connection, Zettel)], [QueryError]))] =
+  let res :: [(Zettel, ([(Connection, Zettel)], [QueryError]))] =
         flip fmap zettels $ \z ->
           (z, runQueryConnections zettels z)
       g :: ZettelGraph = G.mkGraphFrom zettels $
@@ -60,14 +60,14 @@ mkZettelGraph zettels =
           (zettelID z,) <$> merrs
    in (g, errors)
 
-runQueryConnections :: [Zettel] -> Zettel -> ([(Maybe Connection, Zettel)], [QueryError])
+runQueryConnections :: [Zettel] -> Zettel -> ([(Connection, Zettel)], [QueryError])
 runQueryConnections zettels z =
   flip runReader zettels $ do
     runWriterT $ queryConnections z
 
-edgeFromConnection :: Zettel -> (Maybe Connection, Zettel) -> (Maybe Connection, Zettel, Zettel)
+edgeFromConnection :: Zettel -> (Connection, Zettel) -> (Maybe Connection, Zettel, Zettel)
 edgeFromConnection z (c, z2) =
-  (connectionMonoid $ fromMaybe Folgezettel c, z, z2)
+  (connectionMonoid c, z, z2)
   where
     -- Our connection monoid will never be Nothing (mempty); see the note in
     -- type `ZettelGraph`.

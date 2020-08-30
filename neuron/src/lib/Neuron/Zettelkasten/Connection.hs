@@ -6,7 +6,6 @@
 module Neuron.Zettelkasten.Connection where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Default
 import Relude hiding (show)
 import Text.Show
 
@@ -24,9 +23,6 @@ instance Semigroup Connection where
   Folgezettel <> _ = Folgezettel
   _ <> Folgezettel = Folgezettel
   OrdinaryConnection <> OrdinaryConnection = OrdinaryConnection
-
-instance Default Connection where
-  def = Folgezettel
 
 instance Show Connection where
   show = \case
