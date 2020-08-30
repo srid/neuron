@@ -38,7 +38,7 @@ import Text.URI.Util (getQueryParam, hasQueryFlag)
 -- | Parse a query if any from a Markdown link
 queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
 queryFromURILink l@URILink {..} =
-  queryFromURI' (defaultConnection l) _uriLink_uri
+  queryFromURI (defaultConnection l) _uriLink_uri
   where
     -- The default connection to use if the user has not explicitly specified
     -- one in the query URI.
@@ -50,18 +50,8 @@ queryFromURILink l@URILink {..} =
         else OrdinaryConnection
 
 -- | Parse a query from the given URI.
---
--- This function is used only in the CLI. For handling links in a Markdown file,
--- your want `queryFromURILink` which allows specifying the link text as well.
-queryFromURI :: MonadError QueryParseError m => URI -> m (Maybe (Some ZettelQuery))
-queryFromURI =
-  queryFromURI' conn
-  where
-    -- The value of this doesn't matter
-    conn = OrdinaryConnection
-
-queryFromURI' :: MonadError QueryParseError m => Connection -> URI -> m (Maybe (Some ZettelQuery))
-queryFromURI' defConn uri = do
+queryFromURI :: MonadError QueryParseError m => Connection -> URI -> m (Maybe (Some ZettelQuery))
+queryFromURI defConn uri = do
   let conn = fromMaybe defConn (queryConn uri)
   liftEither . runMaybeT $ do
     -- Non-relevant parts of the URI should be empty

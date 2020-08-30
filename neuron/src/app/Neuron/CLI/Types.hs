@@ -164,16 +164,15 @@ commandParser defaultNotesDir now = do
             (OpenCommand . Some . R.Route_Zettel)
             (option zettelIDReader (long "id" <> help "Open the zettel HTML page" <> metavar "ID"))
     queryCommand = do
-      let connDontCare = C.OrdinaryConnection -- Don't care about connections in CLI
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
       query <-
         fmap
           Left
           ( fmap
-              (Some . flip Q.ZettelQuery_ZettelByID connDontCare)
+              (Some . flip Q.ZettelQuery_ZettelByID connDummy)
               (option zettelIDReader (long "id"))
               <|> fmap
-                (\x -> Some $ Q.ZettelQuery_ZettelsByTag x connDontCare def)
+                (\x -> Some $ Q.ZettelQuery_ZettelsByTag x connDummy def)
                 (many (mkTagPattern <$> option str (long "tag" <> short 't')))
               <|> option queryReader (long "uri" <> short 'u')
           )
@@ -230,9 +229,15 @@ commandParser defaultNotesDir now = do
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
-          either (Left . toString . Q.showQueryParseError) (maybe (Left "Unsupported query") Right) $ Q.queryFromURI uri
+          either
+            (Left . toString . Q.showQueryParseError)
+            (maybe (Left "Unsupported query") Right)
+            $ Q.queryFromURI connDummy uri
         Left e ->
           Left $ displayException e
     dateReader :: ReadM DateMayTime
     dateReader =
       maybeReader (parseDateMayTime . toText)
+    -- We don't care about connections in the CLI, but the query requires one -
+    -- so pass a dummy value.
+    connDummy = C.OrdinaryConnection
