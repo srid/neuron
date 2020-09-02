@@ -80,6 +80,14 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
   elClass "h1" "header" $ text "Zettel Index"
   renderErrors zIndexErrors
   divClass "z-index" $ do
+    forM_ (nonEmpty zPinned) $ \zs ->
+      divClass "ui message pinned raised segment" $ do
+        el "ul" $
+          forM_ zs $ \z ->
+            el "li" $ QueryView.renderZettelLink Nothing Nothing def z
+    forM_ zIndexClusters $ \forest ->
+      divClass ("ui " <> themeColor <> " segment") $ do
+        el "ul" $ renderForest forest
     el "p" $ do
       text $
         "The zettelkasten has "
@@ -90,14 +98,6 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
       text "Each cluster's "
       elAttr "a" ("href" =: "https://neuron.zettel.page/2017401.html") $ text "folgezettel heterarchy"
       text " is rendered as a forest."
-    forM_ (nonEmpty zPinned) $ \zs ->
-      divClass "ui message pinned raised segment" $ do
-        el "ul" $
-          forM_ zs $ \z ->
-            el "li" $ QueryView.renderZettelLink Nothing Nothing def z
-    forM_ zIndexClusters $ \forest ->
-      divClass ("ui " <> themeColor <> " segment") $ do
-        el "ul" $ renderForest forest
   where
     countNounBe noun nounPlural = \case
       1 -> "1 " <> noun
