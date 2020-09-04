@@ -1,7 +1,8 @@
 let
+  nixpkgsRev = "7bc3a08d3a4c";
   nixpkgsSrc = builtins.fetchTarball {
-    url = "https://github.com/nixos/nixpkgs/archive/729e7295cf7b.tar.gz";
-    sha256 = "0mxhi0lc11aa3r7i7din1q2rjg5c4amq3alcr8ga2fcb64vn2zd3";
+    url = "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz";
+    sha256 = "1kiz37052zsgvw7a378zg08mpbi1wk8dkgm5j6dy0x4mxvcg8ws3";
   };
   gitignoreSrc = builtins.fetchTarball {
     url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
@@ -57,18 +58,10 @@ let
     # Override pandoc-types and dependencies because stack-lts versions are to old
     pandoc-types = self.pandoc-types_1_21;
 
-    skylighting = self.callHackageDirect {
-      pkg = "skylighting";
-      ver = "0.9";
-      sha256 = "1zk8flzfafnmpb7wy7sf3q0biaqfh7svxz2da7wlc3am3n9fpxbr";
-    } {};
-    skylighting-core = self.callHackageDirect {
-      pkg = "skylighting-core";
-      ver = "0.9";
-      sha256 = "1fb3j5kmfdycxwr7vjdg1hrdz6s61ckp489qj3899klk18pcmpnh";
-    } {};
     # Jailbreak to allow newer skylighting. Next version of pandoc shouldn't
     # require this.
+    skylighting = super.skylighting_0_9;
+    skylighting-core = super.skylighting-core_0_9;
     pandoc = doJailbreak super.pandoc_2_10_1;
 
     neuron = (justStaticExecutables
