@@ -105,6 +105,7 @@ neuronSpec =
   mconcat
     [ autoLinkSpec,
       wikiLinkSpec,
+      inlineTagSpec,
       gfmExtensionsSansEmoji,
       CE.fancyListSpec,
       CE.footnoteSpec,
@@ -124,6 +125,23 @@ neuronSpec =
         <> CE.autoIdentifiersSpec
         <> CE.taskListSpec
 
+inlineTagSpec ::
+  (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
+  CM.SyntaxSpec m il bl
+inlineTagSpec =
+  mempty
+    { CM.syntaxInlineParsers = [pInlineTag]
+    }
+  where
+    pInlineTag ::
+      (Monad m, CM.IsInline il) =>
+      CM.InlineParser m il
+    pInlineTag = P.try $ do
+      _ <- symbol '#'
+      tag <- CM.untokenize <$> idP
+      let tagQuery = "z:tag/" <> tag
+      pure $! cmAutoLink tagQuery
+
 -- | Convert the given wrapped link to a `B.Link`.
 autoLinkSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
@@ -139,8 +157,13 @@ autoLinkSpec =
     pLink = P.try $ do
       x <- angleBracketLinkP
       let url = CM.untokenize x
-          title = ""
-      pure $! CM.link url title $ CM.str url
+      pure $! cmAutoLink url
+
+cmAutoLink :: CM.IsInline a => Text -> a
+cmAutoLink url =
+  CM.link url title $ CM.str url
+  where
+    title = ""
 
 wikiLinkSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
@@ -173,9 +196,14 @@ wikiLinkSpec =
     wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m [CM.Tok]
     wikiLinkP n = do
       void $ M.count n $ symbol '['
-      x <- some (noneOfToks [Symbol ']', Spaces, UnicodeSpace, LineEnd])
+      x <- idP
       void $ M.count n $ symbol ']'
       pure x
+
+-- TODO: Unify this with the megaparsec parser from ID.hs
+idP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
+idP =
+  some (noneOfToks [Symbol ']', Spaces, UnicodeSpace, LineEnd])
 
 -- rawHtmlSpec eats angle bracket links as html tags
 defaultBlockSpecsSansRawHtml :: (Monad m, CM.IsBlock il bl) => [CM.BlockSpec m il bl]
