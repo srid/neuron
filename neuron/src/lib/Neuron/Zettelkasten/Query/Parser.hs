@@ -21,7 +21,7 @@ where
 
 import Control.Monad.Except
 import Data.Some
-import Data.TagTree (Tag (..), TagPattern, mkTagPattern)
+import Data.TagTree (TagNode (..), TagPattern, constructTag, mkTagPattern)
 import Neuron.Reader.Type (ZettelFormat (..))
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
@@ -100,9 +100,9 @@ queryFromURI defConn uri = do
             | noSlash -> do
               pure $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
           -- Parse z:tag/foo
-          (URI.unRText -> "tag") :| [URI.unRText -> tag]
+          (URI.unRText -> "tag") :| (nonEmpty . fmap (TagNode . URI.unRText) -> Just tagNodes)
             | noSlash -> do
-              pure $ Some $ ZettelQuery_TagZettel (Tag tag)
+              pure $ Some $ ZettelQuery_TagZettel (constructTag tagNodes)
           _ -> empty
 
 parseQueryZettelID :: MonadError QueryParseError m => URI -> Text -> m ZettelID
