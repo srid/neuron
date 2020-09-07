@@ -1,12 +1,17 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Zettel.Parser where
 
 import Control.Monad.Writer
+import Data.List (nub)
 import Data.Some
+import Data.TagTree (Tag)
 import qualified Data.Text as T
 import Data.Time.DateMayTime (mkDateMayTime)
 import Neuron.Reader.Type
@@ -37,7 +42,7 @@ parseZettel format zreader fn zid s = do
             Nothing -> fromMaybe ("Untitled", False) $ do
               ((,True) . plainify . snd <$> getH1 doc)
                 <|> ((,False) . takeInitial . plainify <$> getFirstParagraphText doc)
-          tags = fromMaybe [] $ Meta.tags =<< meta
+          metaTags = fromMaybe [] $ Meta.tags =<< meta
           date = case zid of
             -- We ignore the "data" meta field on legacy Date IDs, which encode the
             -- creation date in the ID.
@@ -45,6 +50,8 @@ parseZettel format zreader fn zid s = do
             ZettelCustomID _ -> Meta.date =<< meta
           unlisted = fromMaybe False $ Meta.unlisted =<< meta
           (queries, errors) = runWriter $ extractQueries doc
+          queryTags = getInlineTag `mapMaybe` queries
+          tags = nub $ metaTags <> queryTags
        in Right $ Zettel zid format fn title titleInBody tags date unlisted queries errors doc
   where
     -- Extract all (valid) queries from the Pandoc document
@@ -58,6 +65,10 @@ parseZettel format zreader fn zid s = do
               pure Nothing
             Right v ->
               pure v
+    getInlineTag :: Some ZettelQuery -> Maybe Tag
+    getInlineTag = \case
+      Some (ZettelQuery_TagZettel tag) -> Just tag
+      _ -> Nothing
     takeInitial =
       (<> " ...") . T.take 18
 

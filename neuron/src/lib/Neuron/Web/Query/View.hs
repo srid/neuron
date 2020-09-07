@@ -66,6 +66,10 @@ renderQueryResult minner = \case
     el "section" $ do
       renderQuery $ Some q
       renderTagTree $ foldTagTree $ tagTree res
+  ZettelQuery_TagZettel tag :=> Identity () ->
+    renderInlineTag tag mempty $ do
+      text "#"
+      text $ unTag tag
   where
     -- TODO: Instead of doing this here, group the results in runQuery itself.
     groupZettelsByTagsMatching pats matches =
@@ -93,6 +97,8 @@ renderQuery someQ =
       Some (ZettelQuery_Tags (fmap unTagPattern -> pats)) -> do
         let qs = toText $ intercalate ", " pats
         text $ "Tags matching '" <> qs <> "'"
+      Some (ZettelQuery_TagZettel _tag) -> do
+        blank
 
 -- | Render a link to an individual zettel.
 renderZettelLink ::
@@ -178,11 +184,8 @@ renderTagTree t =
           tit = show count <> " zettels tagged"
           cls = bool "" "inactive" $ count == 0
       divClass "node" $ do
-        neuronRouteLink
-          (Some $ Route_Search $ Just tag)
-          ("class" =: cls <> "title" =: tit)
-          $ do
-            text $ renderTagNode tagNode
+        renderInlineTag tag ("class" =: cls <> "title" =: tit) $
+          text $ renderTagNode tagNode
     renderTagNode :: NonEmpty TagNode -> Text
     renderTagNode = \case
       n :| (nonEmpty -> mrest) ->
@@ -191,6 +194,10 @@ renderTagTree t =
             unTagNode n
           Just rest ->
             unTagNode n <> "/" <> renderTagNode rest
+
+renderInlineTag :: DomBuilder t m => Tag -> Map Text Text -> m () -> NeuronWebT t m ()
+renderInlineTag tag attr body =
+  neuronRouteLink (Some $ Route_Search $ Just tag) attr body
 
 style :: Css
 style = do
