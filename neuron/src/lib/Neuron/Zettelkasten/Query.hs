@@ -45,6 +45,8 @@ runZettelQuery zs = \case
     Right allTags
   ZettelQuery_Tags pats ->
     Right $ Map.filterWithKey (const . tagMatchAny pats) allTags
+  ZettelQuery_TagZettel _tag ->
+    Right ()
   where
     allTags :: Map.Map Tag Natural
     allTags =
@@ -96,6 +98,8 @@ zettelQueryResultJson q er skippedZettels =
         toJSON r
       ZettelQuery_Tags _ ->
         toJSON $ fmap treeToJson . tagTree $ r
+      ZettelQuery_TagZettel _ ->
+        toJSON r
     treeToJson (Node (tag, count) children) =
       object
         [ "name" .= tag,

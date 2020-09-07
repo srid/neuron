@@ -57,6 +57,9 @@ spec = do
     it "z:tags?filter=foo" $ do
       queryFromURILink (shortLink "z:tags?filter=foo")
         `shouldBe` Right (Just $ Some $ ZettelQuery_Tags [mkTagPattern "foo"])
+    it "z:tag/foo" $ do
+      queryFromURILink (shortLink "z:tag/foo")
+        `shouldBe` Right (Just $ Some $ ZettelQuery_TagZettel (Tag "foo"))
   let normalLink = mkURILink "some link text"
   describe "flexible links (regular markdown)" $ do
     it "Default connection type should be cf" $ do

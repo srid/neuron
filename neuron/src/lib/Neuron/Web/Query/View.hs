@@ -66,6 +66,8 @@ renderQueryResult minner = \case
     el "section" $ do
       renderQuery $ Some q
       renderTagTree $ foldTagTree $ tagTree res
+  ZettelQuery_TagZettel tag :=> Identity () -> do
+    elClass "span" "ui label" $ text $ unTag tag
   where
     -- TODO: Instead of doing this here, group the results in runQuery itself.
     groupZettelsByTagsMatching pats matches =
@@ -93,6 +95,8 @@ renderQuery someQ =
       Some (ZettelQuery_Tags (fmap unTagPattern -> pats)) -> do
         let qs = toText $ intercalate ", " pats
         text $ "Tags matching '" <> qs <> "'"
+      Some (ZettelQuery_TagZettel _tag) -> do
+        blank
 
 -- | Render a link to an individual zettel.
 renderZettelLink ::

@@ -43,6 +43,7 @@ data ZettelQuery r where
   ZettelQuery_ZettelByID :: ZettelID -> Connection -> ZettelQuery Zettel
   ZettelQuery_ZettelsByTag :: [TagPattern] -> Connection -> ZettelsView -> ZettelQuery [Zettel]
   ZettelQuery_Tags :: [TagPattern] -> ZettelQuery (Map Tag Natural)
+  ZettelQuery_TagZettel :: Tag -> ZettelQuery ()
 
 -- | A zettel note
 --

@@ -1,5 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -37,7 +40,7 @@ parseZettel format zreader fn zid s = do
             Nothing -> fromMaybe ("Untitled", False) $ do
               ((,True) . plainify . snd <$> getH1 doc)
                 <|> ((,False) . takeInitial . plainify <$> getFirstParagraphText doc)
-          tags = fromMaybe [] $ Meta.tags =<< meta
+          metaTags = fromMaybe [] $ Meta.tags =<< meta
           date = case zid of
             -- We ignore the "data" meta field on legacy Date IDs, which encode the
             -- creation date in the ID.
@@ -45,6 +48,10 @@ parseZettel format zreader fn zid s = do
             ZettelCustomID _ -> Meta.date =<< meta
           unlisted = fromMaybe False $ Meta.unlisted =<< meta
           (queries, errors) = runWriter $ extractQueries doc
+          queryTags = flip mapMaybe queries $ \case
+            Some (ZettelQuery_TagZettel tag) -> Just tag
+            _ -> Nothing
+          tags = metaTags <> queryTags -- TODO: Use Set
        in Right $ Zettel zid format fn title titleInBody tags date unlisted queries errors doc
   where
     -- Extract all (valid) queries from the Pandoc document

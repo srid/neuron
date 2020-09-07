@@ -78,6 +78,8 @@ queryConnections Zettel {..} = do
         (conn,) <$> res
       ZettelQuery_Tags _ :=> _ ->
         mempty
+      ZettelQuery_TagZettel _ :=> _ ->
+        mempty
 
 runSomeZettelQuery ::
   ( MonadError QueryResultError m,
