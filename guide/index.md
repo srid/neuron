@@ -1,10 +1,12 @@
 # Neuron Zettelkasten
 
-![Neuron logo](https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg){.ui .tiny .right .floated .image}
-
 [Neuron](https://github.com/srid/neuron) is a future-proof open-source app[^web] for managing your plain-text notes in [[[2011401]]] style, as well as for publishing them on the web. Read its [[[6f0f0bcc]]].
 
+![Neuron logo](https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg){.ui .small .centered .image}
+
+
 ## Getting started
+
 
 * [[[2011501]]]
 * [[[2011502]]]
