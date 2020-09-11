@@ -10,7 +10,8 @@
 module Neuron.Config.Type
   ( Config (..),
     configFile,
-    defaultConfig,
+    headHtmlFile,
+    emptyConfig,
     mergeWithDefault,
     getZettelFormats,
   )
@@ -23,6 +24,9 @@ import Text.Read (readEither)
 
 configFile :: FilePath
 configFile = "neuron.dhall"
+
+headHtmlFile :: FilePath
+headHtmlFile = "head.html"
 
 -- | Config type for @neuron.dhall@
 --
@@ -39,7 +43,8 @@ data Config = Config
     minVersion :: Text,
     siteBaseUrl :: Maybe Text,
     siteTitle :: Text,
-    theme :: Text
+    theme :: Text,
+    headHtml :: Maybe Text
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
@@ -47,6 +52,9 @@ getZettelFormats :: MonadFail m => Config -> m (NonEmpty ZettelFormat)
 getZettelFormats Config {..} = do
   formats' <- maybe (fail "Empty formats") pure $ nonEmpty formats
   traverse (either (fail . toString) pure . readEither . toString) formats'
+
+emptyConfig :: Text
+emptyConfig = "{}"
 
 defaultConfig :: Text
 defaultConfig =
@@ -68,6 +76,8 @@ defaultConfig =
   \   True\
   \, minVersion =\
   \   \"0.5\" \
+  \, headHtml =\
+  \   None Text\
   \}"
 
 -- Dhall's combine operator (`//`) allows us to merge two records,
