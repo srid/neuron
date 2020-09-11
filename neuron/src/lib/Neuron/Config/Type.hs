@@ -33,7 +33,6 @@ data Config = Config
   { aliases :: [Text],
     author :: Maybe Text,
     editUrl :: Maybe Text,
-    mathJaxSupport :: Bool,
     -- TODO: This should use `NonEmpty`.
     formats :: [Text],
     minVersion :: Text,
@@ -67,8 +66,6 @@ defaultConfig =
   \   [] : List Text\
   \, formats =\
   \   [ \"markdown\" ]\
-  \, mathJaxSupport =\
-  \   True\
   \, minVersion =\
   \   \"0.5\" \
   \}"

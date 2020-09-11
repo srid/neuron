@@ -87,7 +87,8 @@ renderRouteHead headHtml config manifest route val = do
       elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.5/dist/semantic.min.css") blank
       elAttr "style" ("type" =: "text/css") $ text neuronCss
       elLinkGoogleFonts neuronFonts
-      renderHeadHtmlOr headHtml . when (mathJaxSupport config) $
+      -- Include the MathJax script unless a custom head.html is provided.
+      renderHeadHtmlOr headHtml $
         elAttr "script" ("id" =: "MathJax-script" <> "src" =: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" <> "async" =: "") blank
     routeTitle :: Config -> a -> Route a -> Text
     routeTitle Config {..} v =
