@@ -10,6 +10,7 @@
 module Neuron.Config.Type
   ( Config (..),
     configFile,
+    configKeys,
     emptyConfig,
     mergeWithDefault,
     getZettelFormats,
@@ -49,6 +50,18 @@ getZettelFormats Config {..} = do
 
 emptyConfig :: Text
 emptyConfig = "{}"
+
+configKeys :: Set Text
+configKeys = fromList
+  [ "aliases",
+    "author",
+    "editUrl",
+    "formats",
+    "minVersion",
+    "siteBaseUrl",
+    "siteTitle",
+    "theme"
+  ]
 
 defaultConfig :: Text
 defaultConfig =
