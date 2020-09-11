@@ -28,6 +28,7 @@ import Data.Some
 import Data.TagTree (Tag (..))
 import Neuron.Config.Type (Config (..))
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
+import Neuron.Web.HeadHtml (HeadHtml, renderHeadHtmlOr)
 import Neuron.Web.Manifest (Manifest, renderManifest)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
@@ -44,24 +45,22 @@ import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
-import Reflex.Dom.Pandoc.PandocRaw (PandocRaw (..))
 import Relude hiding ((&))
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
-import Text.Pandoc.Definition (Format (..))
 
 -- | Render the given route
-renderRoutePage :: PandocBuilder t m => Text -> Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
-renderRoutePage neuronVersion config manifest r val = do
+renderRoutePage :: PandocBuilder t m => Text -> HeadHtml -> Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
+renderRoutePage neuronVersion headHtml config manifest r val = do
   el "!DOCTYPE html" $ pure ()
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
-      renderRouteHead config manifest r val
+      renderRouteHead headHtml config manifest r val
     el "body" $ do
       renderRouteBody neuronVersion config r val
 
-renderRouteHead :: PandocBuilder t m => Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
-renderRouteHead config manifest route val = do
+renderRouteHead :: PandocBuilder t m => HeadHtml -> Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
+renderRouteHead headHtml config manifest route val = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
   el "title" $ text $ routeTitle config (snd val) route
@@ -69,7 +68,8 @@ renderRouteHead config manifest route val = do
   case route of
     Route_Redirect _ ->
       blank
-    Route_Search {} -> renderCommon $ do
+    Route_Search {} -> do
+      renderCommon
       forM_
         [ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js",
           "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js",
@@ -77,22 +77,18 @@ renderRouteHead config manifest route val = do
         ]
         $ \scrpt -> do
           elAttr "script" ("src" =: scrpt) blank
-    _ -> renderCommon $ do
+    _ -> do
+      renderCommon
       renderStructuredData config route val
       elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
   where
-    renderCommon renderMiddle = do
-      -- Common prologue
+    renderCommon = do
       let neuronCss = toText $ C.renderWith C.compact [] style
       elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.5/dist/semantic.min.css") blank
       elAttr "style" ("type" =: "text/css") $ text neuronCss
       elLinkGoogleFonts neuronFonts
-      when (mathJaxSupport config) $
+      renderHeadHtmlOr headHtml . when (mathJaxSupport config) $
         elAttr "script" ("id" =: "MathJax-script" <> "src" =: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" <> "async" =: "") blank
-      -- Head content
-      renderMiddle
-      -- Common epilogue
-      forM_ (headHtml config) $ elPandocRaw (Format "html")
     routeTitle :: Config -> a -> Route a -> Text
     routeTitle Config {..} v =
       withSuffix siteTitle . routeTitle' v

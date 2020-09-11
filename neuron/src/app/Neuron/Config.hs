@@ -25,7 +25,7 @@ import qualified Dhall.Core
 import qualified Dhall.Parser
 import qualified Dhall.TypeCheck
 import Neuron.Config.Orphans ()
-import Neuron.Config.Type (Config (..), configFile, headHtmlFile, emptyConfig, mergeWithDefault)
+import Neuron.Config.Type (Config (..), configFile, emptyConfig, mergeWithDefault)
 import Relude
 import Rib.Shake (ribInputDir)
 import System.Directory
@@ -41,21 +41,7 @@ getConfig = do
         toText <$> readFile' configPath
       False ->
         pure emptyConfig
-  headHtmlPath <- ribInputDir <&> (</> headHtmlFile)
-  headHtmlVal <-
-    liftIO (doesFileExist headHtmlPath) >>= \case
-      True ->
-        Just . toText <$> readFile' headHtmlPath
-      False ->
-        pure Nothing
-  config <- either fail pure $ parsePure configFile $ mergeWithDefault configVal
-  case (headHtml config, headHtmlVal) of
-    (Just _, Just _) ->
-      fail "Can either include `head.html` file, or set `headHtml` to a `Some` value in `neuron.dhall`, but not both."
-    (Nothing, Just _) ->
-      pure config{headHtml = headHtmlVal}
-    _ ->
-      pure config
+  either fail pure $ parsePure configFile $ mergeWithDefault configVal
 
 -- | Pure version of `Dhall.input Dhall.auto`
 --
