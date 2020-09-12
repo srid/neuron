@@ -11,7 +11,6 @@ module Neuron.Config.Type
   ( Config (..),
     configFile,
     configKeys,
-    emptyConfig,
     mergeWithDefault,
     getZettelFormats,
   )
@@ -48,9 +47,6 @@ getZettelFormats Config {..} = do
   formats' <- maybe (fail "Empty formats") pure $ nonEmpty formats
   traverse (either (fail . toString) pure . readEither . toString) formats'
 
-emptyConfig :: Text
-emptyConfig = "{}"
-
 configKeys :: Set Text
 configKeys = fromList
   [ "aliases",
@@ -85,6 +81,7 @@ defaultConfig =
 
 -- Dhall's combine operator (`//`) allows us to merge two records,
 -- effectively merging the record with defaults with the user record.
-mergeWithDefault :: Text -> Text
-mergeWithDefault userConfig =
-  defaultConfig <> " // " <> userConfig
+mergeWithDefault :: Maybe Text -> Text
+mergeWithDefault = \case
+  Nothing -> defaultConfig
+  Just userConfig -> defaultConfig <> " // " <> userConfig
