@@ -5,12 +5,13 @@
 module Neuron.Web.HeadHtml
   ( HeadHtml,
     getHeadHtml,
-    renderHeadHtmlOr,
+    renderHeadHtml,
   )
 where
 
 import Development.Shake
 import Relude
+import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Pandoc.PandocRaw (PandocRaw (..))
 import Rib.Shake (ribInputDir)
@@ -28,7 +29,10 @@ getHeadHtml = do
     False ->
       pure $ HeadHtml Nothing
 
-renderHeadHtmlOr :: PandocBuilder t m => HeadHtml -> m () -> m ()
-renderHeadHtmlOr (HeadHtml headHtml) other = case headHtml of
-  Nothing -> other
-  Just html -> elPandocRaw (Format "html") html
+renderHeadHtml :: PandocBuilder t m => HeadHtml -> m ()
+renderHeadHtml (HeadHtml headHtml) = case headHtml of
+  Nothing ->
+    -- Include the MathJax script if no custom head.html is provided.
+    elAttr "script" ("id" =: "MathJax-script" <> "src" =: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" <> "async" =: "") blank
+  Just html ->
+    elPandocRaw (Format "html") html

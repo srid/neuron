@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -41,7 +40,7 @@ generateMainSite config = do
           fmap snd $
             renderStatic $ do
               runNeuronWeb staticRouteConfig $
-                renderRoutePage neuronVersion headHtml config manifest r x
+                renderRoutePage neuronVersion config headHtml manifest r x
         -- FIXME: Make rib take bytestrings
         writeRoute r $ decodeUtf8 @Text html
   void $ generateSite config writeHtmlRoute
