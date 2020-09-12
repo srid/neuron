@@ -70,7 +70,7 @@ renderRouteHead config manifest route val = do
       renderCommon
       forM_
         [ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js",
-          "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.js",
+          "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.js",
           "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"
         ]
         $ \scrpt -> do
@@ -82,7 +82,7 @@ renderRouteHead config manifest route val = do
   where
     renderCommon = do
       let neuronCss = toText $ C.renderWith C.compact [] style
-      elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.5/dist/semantic.min.css") blank
+      elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.css") blank
       elAttr "style" ("type" =: "text/css") $ text neuronCss
       elLinkGoogleFonts neuronFonts
       when (mathJaxSupport config) $
