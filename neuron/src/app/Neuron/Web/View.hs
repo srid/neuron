@@ -52,7 +52,8 @@ import qualified Skylighting.Styles as Skylighting
 -- | Render the given route
 renderRoutePage :: PandocBuilder t m => Text -> Config -> HeadHtml -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
 renderRoutePage neuronVersion config headHtml manifest r val = do
-  el "!DOCTYPE html" $ pure ()
+  -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
+  el "!DOCTYPE html" $ blank
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
       renderRouteHead config headHtml manifest r val
