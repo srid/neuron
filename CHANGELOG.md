@@ -12,6 +12,7 @@
     - Use superscript for folgezettel link suffix (#346)
   - Fix missing clusters in z-index on some cyclic graphs (#357)
   - Update Fomantic UI to 2.8.7
+  - Allow custom HTML snippet in `<head>` (#385)
 - Zettel format
   - Wiki-style links: instead of `<foo>` you can now use `[[[foo]]]`; and instead of `<foo?cf>`, you can use `[[foo]]`. (#351)
   - Support regular markdown links (#366)
