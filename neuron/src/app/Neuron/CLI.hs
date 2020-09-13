@@ -30,24 +30,22 @@ import qualified Neuron.Zettelkasten.Query as Q
 import Options.Applicative
 import Relude
 import System.Directory
-import System.FilePath
 
 run :: (Config -> Action ()) -> IO ()
 run act = do
-  cliParser <- commandParser <$> defaultNotesDir <*> now
+  defaultNotesDir <- getCurrentDirectory
+  cliParser <- commandParser defaultNotesDir <$> now
   app <-
     execParser $
       info
         (versionOption <*> cliParser <**> helper)
-        (fullDesc <> progDesc "Neuron, a Zettelkasten CLI <https://neuron.zettel.page/>")
+        (fullDesc <> progDesc "Neuron, future-proof Zettelkasten app <https://neuron.zettel.page/>")
   runWith act app
   where
     versionOption =
       infoOption
         (toString Version.neuronVersion)
         (long "version" <> help "Show version")
-    defaultNotesDir =
-      (</> "zettelkasten") <$> getHomeDirectory
     now = do
       tz <- getCurrentTimeZone
       utcToLocalTime tz <$> liftIO getCurrentTime

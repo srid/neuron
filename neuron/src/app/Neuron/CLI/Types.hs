@@ -108,8 +108,8 @@ commandParser defaultNotesDir now = do
   notesDir <-
     option
       Rib.Cli.directoryReader
-      ( long "zettelkasten-dir" <> short 'd' <> metavar "NOTESDIR" <> value defaultNotesDir <> showDefault
-          <> help "Your zettelkasten directory containing the zettel files"
+      ( short 'd' <> metavar "PATH" <> value defaultNotesDir
+          <> help "Run as if neuron was started in PATH instead of the current working directory"
       )
   cmd <- cmdParser
   pure $ App {..}
