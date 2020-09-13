@@ -44,6 +44,7 @@ zettelContentCss = do
     -- GitHub task list
     ".ui.disabled.fitted.checkbox" ? do
       C.marginRight $ em 0.3
+      C.verticalAlign C.middle
   ".zettel-content" ? do
     -- All of these apply to the zettel content card only.
     ".metadata" ? do
