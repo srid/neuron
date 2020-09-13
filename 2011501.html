@@ -66,15 +66,13 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } /* Warni
 <span class="co"># Use the cache to fetch binaries instead of compiling most packages.</span>
 <span class="ex">cachix</span><span class=""> use srid</span>
 </code></pre></div><p>If you skip this step, your machine may compile several software for hours.</p><h2 id="install-neuron">Install neuron</h2><p>To install the latest development version of neuron, run:</p><div class="pandoc-code highlighted"><pre><code class="bash"><span class="ex">nix-env</span><span class=""> -if https://github.com/srid/neuron/archive/master.tar.gz</span>
-</code></pre></div><p>Note that this command can also <em>upgrade</em> your existing install of neuron.</p><p>For alternative mechanisms, see <span class="zettel-link-container folgezettel"><span class="zettel-link"><a href="2012401.html">Declarative Install</a><span data-nosnippet=""><sup title="Branching link (folgezettel)">ᛦ</sup></span></span></span>.</p><h2 id="test-your-install">Test your install</h2><p>Make sure that you can execute the <code>neuron</code> executable. You should expect the following:</p><div class="pandoc-code highlighted"><pre><code class="bash"><span class="">$ </span><span class="ex">neuron</span><span class=""> --help</span>
-<span class="ex">Usage</span><span class="">: neuron [--version] [-d</span><span class="kw">|</span><span class="ex">--zettelkasten-dir</span><span class=""> NOTESDIR] COMMAND</span>
-<span class="">  </span><span class="ex">Neuron</span><span class="">, a Zettelkasten CLI </span><span class="op">&lt;</span><span class="">https://neuron.zettel.page/</span><span class="op">&gt;</span>
+</code></pre></div><p>Note that this command can also <em>upgrade</em> your existing install of neuron.</p><p>For alternative mechanisms, see <span class="zettel-link-container folgezettel"><span class="zettel-link"><a href="2012401.html">Declarative Install</a><span data-nosnippet=""><sup title="Branching link (folgezettel)">ᛦ</sup></span></span></span>.</p><h2 id="test-your-install">Test your install</h2><p>Make sure that you can execute the <code>neuron</code> executable. You should expect the following:</p><div class="pandoc-code highlighted"><pre><code class="bash"><span class="ex">Usage</span><span class="">: neuron [--version] [-d PATH] COMMAND</span>
+<span class="">  </span><span class="ex">Neuron</span><span class="">, future-proof Zettelkasten app </span><span class="op">&lt;</span><span class="">https://neuron.zettel.page/</span><span class="op">&gt;</span>
 
 <span class="ex">Available</span><span class=""> options:</span>
 <span class="">  </span><span class="ex">--version</span><span class="">                Show version</span>
-<span class="">  </span><span class="ex">-d</span><span class="">,--zettelkasten-dir NOTESDIR</span>
-<span class="">                           </span><span class="ex">Your</span><span class=""> zettelkasten directory containing the zettel</span>
-<span class="">                           </span><span class="ex">files</span><span class=""> (default: /home/srid/zettelkasten)</span>
+<span class="">  </span><span class="ex">-d</span><span class=""> PATH                  Run as if neuron was started in PATH instead of the</span>
+<span class="">                           </span><span class="ex">current</span><span class=""> working directory</span>
 <span class="">  </span><span class="ex">-h</span><span class="">,--help                Show this help text</span>
 
 <span class="ex">Available</span><span class=""> commands:</span>
