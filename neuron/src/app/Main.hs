@@ -15,6 +15,7 @@ import Neuron.Config.Type (Config)
 import Neuron.Version (neuronVersion)
 import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Generate.Route (staticRouteConfig)
+import Neuron.Web.HeadHtml (getHeadHtml)
 import qualified Neuron.Web.Manifest as Manifest
 import Neuron.Web.Route (Route (..), runNeuronWeb)
 import Neuron.Web.View (renderRoutePage)
@@ -32,13 +33,14 @@ generateMainSite config = do
   notesDir <- ribInputDir
   buildStaticFiles ["static/**", ".nojekyll"]
   manifest <- fmap Manifest.mkManifest $ getDirectoryFiles notesDir Manifest.manifestPatterns
+  headHtml <- getHeadHtml
   let writeHtmlRoute :: Route a -> (ZettelGraph, a) -> Action ()
       writeHtmlRoute r x = do
         html <- liftIO $
           fmap snd $
             renderStatic $ do
               runNeuronWeb staticRouteConfig $
-                renderRoutePage neuronVersion config manifest r x
+                renderRoutePage neuronVersion config headHtml manifest r x
         -- FIXME: Make rib take bytestrings
         writeRoute r $ decodeUtf8 @Text html
   void $ generateSite config writeHtmlRoute

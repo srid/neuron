@@ -28,6 +28,7 @@ import Data.Some
 import Data.TagTree (Tag (..))
 import Neuron.Config.Type (Config (..))
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
+import Neuron.Web.HeadHtml (HeadHtml, renderHeadHtml)
 import Neuron.Web.Manifest (Manifest, renderManifest)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
@@ -49,16 +50,18 @@ import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
 
 -- | Render the given route
-renderRoutePage :: PandocBuilder t m => Text -> Config -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
-renderRoutePage neuronVersion config manifest r val =
+renderRoutePage :: PandocBuilder t m => Text -> Config -> HeadHtml -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
+renderRoutePage neuronVersion config headHtml manifest r val = do
+  -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
+  el "!DOCTYPE html" $ blank
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
-      renderRouteHead config manifest r val
+      renderRouteHead config headHtml manifest r val
     el "body" $ do
       renderRouteBody neuronVersion config r val
 
-renderRouteHead :: DomBuilder t m => Config -> Manifest -> Route a -> (ZettelGraph, a) -> m ()
-renderRouteHead config manifest route val = do
+renderRouteHead :: PandocBuilder t m => Config -> HeadHtml -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
+renderRouteHead config headHtml manifest route val = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
   el "title" $ text $ routeTitle config (snd val) route
@@ -85,8 +88,7 @@ renderRouteHead config manifest route val = do
       elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.css") blank
       elAttr "style" ("type" =: "text/css") $ text neuronCss
       elLinkGoogleFonts neuronFonts
-      when (mathJaxSupport config) $
-        elAttr "script" ("id" =: "MathJax-script" <> "src" =: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" <> "async" =: "") blank
+      renderHeadHtml headHtml
     routeTitle :: Config -> a -> Route a -> Text
     routeTitle Config {..} v =
       withSuffix siteTitle . routeTitle' v
