@@ -171,6 +171,7 @@ common app-common
       Neuron.Config.Alias
       Neuron.Config.Orphans
       Neuron.Version
+      Neuron.Web.HeadHtml
       Neuron.Web.Generate
       Neuron.Web.Generate.Route
       Neuron.Web.View
