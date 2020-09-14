@@ -86,7 +86,6 @@ library
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
     Neuron.Zettelkasten.Graph.Build
-    Neuron.Web.HeadHtml
     Neuron.Web.Route
     Neuron.Web.Manifest
     Neuron.Web.Common
