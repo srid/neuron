@@ -164,6 +164,7 @@ common app-common
       Data.TagTree
       Neuron.CLI
       Neuron.CLI.New
+      Neuron.CLI.Open
       Neuron.CLI.Rib
       Neuron.CLI.Search
       Neuron.CLI.Types
@@ -171,6 +172,7 @@ common app-common
       Neuron.Config.Alias
       Neuron.Config.Orphans
       Neuron.Version
+      Neuron.Web.Cache
       Neuron.Web.HeadHtml
       Neuron.Web.Generate
       Neuron.Web.Generate.Route
