@@ -23,6 +23,7 @@
     - Inline tags (#189)
     - support for [fancy lists](https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/fancy_lists.md) (#335)
     - Fix hard line breaks to actually work (#354)
+  - Allow dot in Zettel ID (#369)
 - CLI
   - Faster querying: add `--cached` option to `neuron query`, to run faster using the cache. To keep the cache up to date, make sure that `neuron rib` is running.
   - Add `--id` and `--search` options to `open` command to open given zettel ID or search page respectively  (#317)

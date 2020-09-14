@@ -67,11 +67,11 @@ queryFromURI defConn uri = do
         (URI.unRText -> path) :| [] <- hoistMaybe shortLinkPath
         zid <-
           hoistMaybe $
-            -- Allow direct use of ID
-            rightToMaybe (parseZettelID path)
-              -- Also, allow raw filename (ending with ".md"). HACK: hardcoding
-              -- format, but we shouldn't.
-              <|> getZettelID ZettelFormat_Markdown (toString path)
+            -- Allow raw filename (ending with ".md"). HACK: hardcoding
+            -- format, but we shouldn't.
+            getZettelID ZettelFormat_Markdown (toString path)
+              -- Before checking for direct use of ID
+              <|> rightToMaybe (parseZettelID path)
         pure $ Some $ ZettelQuery_ZettelByID zid conn
       Just (URI.unRText -> proto) -> do
         guard $ proto == "z"

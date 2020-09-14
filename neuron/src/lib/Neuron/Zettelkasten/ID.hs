@@ -120,7 +120,7 @@ dayParser = do
 
 customIDParser :: Parser Text
 customIDParser = do
-  fmap toText $ M.some $ M.alphaNumChar <|> M.char '_' <|> M.char '-'
+  fmap toText $ M.some $ M.alphaNumChar <|> M.char '_' <|> M.char '-' <|> M.char '.'
 
 -- | Parse the ZettelID if the given filepath is a zettel.
 getZettelID :: ZettelFormat -> FilePath -> Maybe ZettelID

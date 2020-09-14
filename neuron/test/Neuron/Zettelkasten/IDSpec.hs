@@ -34,10 +34,14 @@ spec = do
       let deceptiveZid = Z.ZettelCustomID "2136537e"
       it "parses a custom zettel ID that looks like date ID" $ do
         Z.parseZettelID "2136537e" `shouldBe` Right deceptiveZid
+      it "parses a custom zettel ID with dot" $ do
+        Z.parseZettelID "foo.bar" `shouldBe` Right (Z.ZettelCustomID "foo.bar")
+        -- Even if there is a ".md" (not a file extension)
+        Z.parseZettelID "foo.md" `shouldBe` Right (Z.ZettelCustomID "foo.md")
     context "failures" $ do
       it "fails to parse ID with disallowed characters" $ do
         Z.parseZettelID "/foo" `shouldSatisfy` isLeft
-        Z.parseZettelID "foo." `shouldSatisfy` isLeft
+        Z.parseZettelID "foo$" `shouldSatisfy` isLeft
         Z.parseZettelID "foo bar" `shouldSatisfy` isLeft
   describe "ID converstion" $ do
     context "JSON encoding" $ do
