@@ -141,7 +141,7 @@ common app-common
     which,
     unix,
     megaparsec >= 8.0,
-    dependent-sum,
+    dependent-sum >= 0.7,
     dependent-sum-template,
     data-default,
     uuid,
