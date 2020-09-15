@@ -18,7 +18,6 @@ import qualified Commonmark.Pandoc as CP
 import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
-import Control.Monad.Except
 import Data.Tagged (Tagged (..))
 import qualified Data.Text as T
 import qualified Data.YAML as YAML
@@ -28,11 +27,11 @@ import Neuron.Zettelkasten.Zettel.Meta (Meta)
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
-import Text.Megaparsec.Simple
+import Text.Megaparsec.Simple (Parser, parse)
 import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
-import Text.Show
+import Text.Show (Show (show))
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --

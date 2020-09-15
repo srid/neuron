@@ -206,6 +206,7 @@ test-suite neuron-test
       Neuron.Zettelkasten.IDSpec
       Neuron.Zettelkasten.Query.ParserSpec
       Neuron.Zettelkasten.ZettelSpec
+      Neuron.Zettelkasten.Zettel.ParserSpec
 
 -- The executable stanza should always be at the end. The other project will
 -- strip it to avoid non-core dependencies.
