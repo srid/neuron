@@ -75,8 +75,8 @@ renderZettelBottomPane graph z@Zettel {..} = do
   when (isJust cfBacklinks || isJust tags) $
     elClass "nav" "ui bottom attached segment deemphasized" $
       do
-        divClass "ui two column grid" $ do
-          divClass "column" $ do
+        divClass "ui grid" $ do
+          divClass "fourteen wide column" $ do
             whenJust cfBacklinks $ \links -> do
               elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here, but without branching") $
                 text "More backlinks"
@@ -84,7 +84,7 @@ renderZettelBottomPane graph z@Zettel {..} = do
                 forM_ links $ \zl ->
                   el "li" $ Q.renderZettelLink Nothing Nothing def zl
           whenJust tags $
-            divClass "column" . renderTags
+            divClass "two wide column" . renderTags
 
 evalAndRenderZettelQuery ::
   PandocBuilder t m =>
