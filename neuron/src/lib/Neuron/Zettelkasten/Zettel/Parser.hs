@@ -13,7 +13,6 @@ import Data.List (nub)
 import Data.Some
 import Data.TagTree (Tag)
 import qualified Data.Text as T
-import Data.Time.DateMayTime (mkDateMayTime)
 import Neuron.Reader.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
@@ -43,11 +42,7 @@ parseZettel format zreader fn zid s = do
               ((,True) . plainify . snd <$> getH1 doc)
                 <|> ((,False) . takeInitial . plainify <$> getFirstParagraphText doc)
           metaTags = fromMaybe [] $ Meta.tags =<< meta
-          date = case zid of
-            -- We ignore the "data" meta field on legacy Date IDs, which encode the
-            -- creation date in the ID.
-            ZettelDateID v _ -> Just $ mkDateMayTime $ Left v
-            ZettelCustomID _ -> Meta.date =<< meta
+          date = Meta.date =<< meta
           unlisted = fromMaybe False $ Meta.unlisted =<< meta
           (queries, errors) = runWriter $ extractQueries doc
           queryTags = getInlineTag `mapMaybe` queries

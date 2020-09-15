@@ -7,7 +7,6 @@ module Neuron.Zettelkasten.ID.SchemeSpec
 where
 
 import qualified Data.Set as Set
-import Data.Time
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.ID.Scheme
 import Relude
@@ -23,7 +22,6 @@ spec = do
               [ "ribeye-steak",
                 "2015403"
               ]
-        day = fromGregorian 2020 4 16
         nextAvail scheme = do
           v <- genVal scheme
           pure $ nextAvailableZettelID zettels v scheme
@@ -33,15 +31,7 @@ spec = do
           `shouldReturn` Left IDConflict_AlreadyExists
       it "succeeds" $ do
         nextAvail (IDSchemeCustom "sunny-side-eggs")
-          `shouldReturn` Right (ZettelCustomID "sunny-side-eggs")
-    context "date ID" $ do
-      it "should return index 0" $ do
-        let otherDay = fromGregorian 2020 5 16
-        nextAvail (IDSchemeDate otherDay)
-          `shouldReturn` Right (ZettelDateID otherDay 1)
-      it "should return correct index" $
-        nextAvail (IDSchemeDate day)
-          `shouldReturn` Right (ZettelDateID day 4)
+          `shouldReturn` Right (ZettelID "sunny-side-eggs")
     context "hash ID" $ do
       it "should succeed" $
         nextAvail IDSchemeHash

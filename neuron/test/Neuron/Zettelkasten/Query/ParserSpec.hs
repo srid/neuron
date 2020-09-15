@@ -10,7 +10,6 @@ where
 import Data.Default (def)
 import Data.Some
 import Data.TagTree
-import Data.Time.Calendar
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Parser
@@ -25,23 +24,18 @@ spec :: Spec
 spec = do
   describe "short links" $ do
     let shortLink s = mkURILink s s
-    it "parses date ID" $ do
-      let day = fromGregorian 2020 3 19
-          zid = ZettelDateID day 1
-      queryFromURILink (shortLink "2011401")
-        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID zid Folgezettel)
     it "parses custom/hash ID" $ do
       queryFromURILink (shortLink "foo-bar")
-        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelCustomID "foo-bar") Folgezettel)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelID "foo-bar") Folgezettel)
     it "even with ?cf" $ do
       queryFromURILink (shortLink "foo-bar?cf")
-        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelCustomID "foo-bar") OrdinaryConnection)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelID "foo-bar") OrdinaryConnection)
     it "parses prefixed short link" $ do
       queryFromURILink (shortLink "z:/foo-bar")
-        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelCustomID "foo-bar") Folgezettel)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelID "foo-bar") Folgezettel)
     it "resolves ambiguity using absolute URI" $ do
       queryFromURILink (shortLink "z:/tags")
-        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelCustomID "tags") Folgezettel)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelID "tags") Folgezettel)
     it "z:zettels" $ do
       queryFromURILink (shortLink "z:zettels")
         `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelsByTag [] Folgezettel def)
@@ -67,10 +61,10 @@ spec = do
   describe "flexible links (regular markdown)" $ do
     it "Default connection type should be cf" $ do
       queryFromURILink (normalLink "foo-bar")
-        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelCustomID "foo-bar") OrdinaryConnection)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelID "foo-bar") OrdinaryConnection)
     it "Supports full filename instead of zettel ID" $ do
       queryFromURILink (normalLink "foo-bar.md")
-        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelCustomID "foo-bar") OrdinaryConnection)
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (ZettelID "foo-bar") OrdinaryConnection)
   describe "non-connection links" $ do
     it "pass through normal links" $ do
       queryFromURILink (normalLink "https://www.srid.ca")

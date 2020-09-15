@@ -31,7 +31,7 @@ instance IsRoute Route where
       pure "z-index.html"
     Route_Search _mtag ->
       pure "search.html"
-    Route_Zettel (zettelIDText -> s) ->
+    Route_Zettel (unZettelID -> s) ->
       pure $ toString s <> ".html"
 
 staticRouteConfig :: RouteConfig t m

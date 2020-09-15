@@ -8,7 +8,7 @@ module Neuron.Zettelkasten.Query.Error where
 
 import Data.Aeson
 import Neuron.Orphans ()
-import Neuron.Zettelkasten.ID (InvalidID, ZettelID, zettelIDText)
+import Neuron.Zettelkasten.ID (InvalidID, ZettelID (..))
 import Relude
 import Text.URI (URI)
 import qualified Text.URI as URI
@@ -50,4 +50,4 @@ showQueryParseError qe =
 
 showQueryResultError :: QueryResultError -> Text
 showQueryResultError (QueryResultError_NoSuchZettel zid) =
-  "links to non-existant zettel: " <> zettelIDText zid
+  "links to non-existant zettel: " <> unZettelID zid

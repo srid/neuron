@@ -9,13 +9,13 @@ where
 
 import Data.TagTree
 import Data.Time.Calendar
+import Data.Time.DateMayTime
 import Data.Time.LocalTime
 import Neuron.Reader.Markdown
 import Neuron.Reader.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Meta
-import Data.Time.DateMayTime
 import Relude
 import Test.Hspec
 
@@ -35,7 +35,7 @@ spec = do
 
         mkZettel zid datetime =
           Zettel
-            (ZettelCustomID zid)
+            (ZettelID zid)
             ZettelFormat_Markdown
             "<spec>.md"
             "Some title"

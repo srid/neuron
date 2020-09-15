@@ -32,7 +32,7 @@ getAliases Config {..} graph = do
       pure v
   where
     hasIndexZettel =
-      isJust . G.getZettel (ZettelCustomID "index")
+      isJust . G.getZettel (ZettelID "index")
 
 mkAliases :: [Text] -> ZettelGraph -> Either Text [Alias]
 mkAliases aliasSpecs graph =
@@ -41,10 +41,10 @@ mkAliases aliasSpecs graph =
       alias@Alias {..} <- liftEither $ parse aliasParser configFile aliasSpec
       when (isJust $ G.getZettel aliasZettel graph) $ do
         throwError $
-          "Cannot create redirect from '" <> zettelIDText aliasZettel <> "', because a zettel with that ID already exists"
-      when (zettelIDText targetZettel /= "z-index" && isNothing (G.getZettel targetZettel graph)) $ do
+          "Cannot create redirect from '" <> unZettelID aliasZettel <> "', because a zettel with that ID already exists"
+      when (unZettelID targetZettel /= "z-index" && isNothing (G.getZettel targetZettel graph)) $ do
         throwError $
-          "Target zettel '" <> zettelIDText targetZettel <> "' does not exist"
+          "Target zettel '" <> unZettelID targetZettel <> "' does not exist"
       pure alias
 
 aliasParser :: Parser Alias

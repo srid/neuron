@@ -102,7 +102,7 @@ renderRouteBody :: PandocBuilder t m => Text -> Config -> Route a -> (ZettelGrap
 renderRouteBody neuronVersion Config {..} r (g, x) = do
   let neuronTheme = Theme.mkTheme theme
       themeSelector = toText $ Theme.themeIdentifier neuronTheme
-      indexZettel = G.getZettel (ZettelCustomID "index") g
+      indexZettel = G.getZettel (ZettelID "index") g
   elAttr "div" ("class" =: "ui fluid container" <> "id" =: themeSelector) $ do
     case r of
       Route_ZIndex -> do

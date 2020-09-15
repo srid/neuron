@@ -5,6 +5,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- TODO: Simplify or eliminate this module, now that date IDs are gone.
 module Neuron.Zettelkasten.ID.Scheme
   ( nextAvailableZettelID,
     genVal,
@@ -18,7 +19,6 @@ import Data.GADT.Compare.TH
 import Data.GADT.Show.TH
 import qualified Data.Set as Set
 import qualified Data.Text as T
-import Data.Time
 import Data.UUID (UUID)
 import qualified Data.UUID as UUID
 import Data.UUID.V4 (nextRandom)
@@ -29,8 +29,6 @@ import Text.Show
 
 -- | The scheme to use when generating new IDs
 data IDScheme a where
-  -- | Legacy date IDs (deprecated)
-  IDSchemeDate :: Day -> IDScheme ()
   -- | Random IDs (default)
   IDSchemeHash :: IDScheme UUID
   -- | Custom ID (specified by the user)
@@ -38,7 +36,6 @@ data IDScheme a where
 
 data IDConflict
   = IDConflict_AlreadyExists
-  | IDConflict_DateIDExhausted
   | IDConflict_HashConflict Text
   | IDConflict_BadCustomID Text Text
   deriving (Eq)
@@ -47,8 +44,6 @@ instance Show IDConflict where
   show = \case
     IDConflict_AlreadyExists ->
       "A zettel with that ID already exists"
-    IDConflict_DateIDExhausted ->
-      "Ran out of date ID indices for this day"
     IDConflict_HashConflict s ->
       "Hash conflict on " <> toString s <> "; try again"
     IDConflict_BadCustomID s e ->
@@ -59,8 +54,6 @@ genVal :: forall a. IDScheme a -> IO a
 genVal = \case
   IDSchemeHash ->
     nextRandom
-  IDSchemeDate _ ->
-    pure ()
   IDSchemeCustom _ ->
     pure ()
 
@@ -79,27 +72,16 @@ nextAvailableZettelID ::
   IDScheme a ->
   Either IDConflict ZettelID
 nextAvailableZettelID zs val = \case
-  IDSchemeDate day -> do
-    let dayIndices = nonEmpty $
-          sort $
-            flip mapMaybe (Set.toList zs) $ \case
-              ZettelDateID d x
-                | d == day -> Just x
-              _ -> Nothing
-    case last <$> dayIndices of
-      Nothing -> pure $ ZettelDateID day 1
-      Just 99 -> throwError IDConflict_DateIDExhausted
-      Just idx -> pure $ ZettelDateID day (idx + 1)
   IDSchemeHash -> do
     let s = T.take 8 $ UUID.toText val
-    if s `Set.member` (zettelIDText `Set.map` zs)
+    if s `Set.member` (unZettelID `Set.map` zs)
       then throwError $ IDConflict_HashConflict s
       else
-        either (error . toText) (pure . ZettelCustomID) $
+        either (error . toText) (pure . ZettelID) $
           parse customIDParser "<random-hash>" s
   IDSchemeCustom s -> runExcept $ do
     zid <-
-      either (throwError . IDConflict_BadCustomID s) (pure . ZettelCustomID) $
+      either (throwError . IDConflict_BadCustomID s) (pure . ZettelID) $
         parse customIDParser "<next-id>" s
     if zid `Set.member` zs
       then throwError IDConflict_AlreadyExists

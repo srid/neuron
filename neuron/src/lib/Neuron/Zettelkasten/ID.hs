@@ -10,7 +10,6 @@
 module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     InvalidID (..),
-    zettelIDText,
     parseZettelID,
     idParser,
     getZettelID,
@@ -21,22 +20,15 @@ where
 
 import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
-import qualified Data.Text as T
-import Data.Time
 import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Relude
 import System.FilePath
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple
-import Text.Printf
 import qualified Text.Show
 
-data ZettelID
-  = -- | Short Zettel ID encoding `Day` and a numeric index (on that day).
-    ZettelDateID Day Int
-  | -- | Arbitrary alphanumeric ID.
-    ZettelCustomID Text
+newtype ZettelID = ZettelID {unZettelID :: Text}
   deriving (Eq, Show, Ord, Generic)
 
 instance Show InvalidID where
@@ -51,7 +43,7 @@ instance FromJSON ZettelID where
       Right zid -> pure zid
 
 instance ToJSONKey ZettelID where
-  toJSONKey = toJSONKeyText zettelIDText
+  toJSONKey = toJSONKeyText unZettelID
 
 instance FromJSONKey ZettelID where
   fromJSONKey = FromJSONKeyTextParser $ \s ->
@@ -60,29 +52,10 @@ instance FromJSONKey ZettelID where
       Left e -> fail $ show e
 
 instance ToJSON ZettelID where
-  toJSON = toJSON . zettelIDText
-
-zettelIDText :: ZettelID -> Text
-zettelIDText = \case
-  ZettelDateID day idx ->
-    formatDay day <> toText @String (printf "%02d" idx)
-  ZettelCustomID s -> s
-
-formatDay :: Day -> Text
-formatDay day =
-  subDay $ toText $ formatTime defaultTimeLocale "%y%W%a" day
-  where
-    subDay =
-      T.replace "Mon" "1"
-        . T.replace "Tue" "2"
-        . T.replace "Wed" "3"
-        . T.replace "Thu" "4"
-        . T.replace "Fri" "5"
-        . T.replace "Sat" "6"
-        . T.replace "Sun" "7"
+  toJSON = toJSON . unZettelID
 
 zettelIDSourceFileName :: ZettelID -> ZettelFormat -> FilePath
-zettelIDSourceFileName zid fmt = toString $ zettelIDText zid <> zettelFormatToExtension fmt
+zettelIDSourceFileName zid fmt = toString $ unZettelID zid <> zettelFormatToExtension fmt
 
 ---------
 -- Parser
@@ -97,26 +70,7 @@ parseZettelID =
 
 idParser :: Parser ZettelID
 idParser =
-  M.try (fmap (uncurry ZettelDateID) $ dayParser <* M.eof)
-    <|> fmap ZettelCustomID customIDParser
-
-dayParser :: Parser (Day, Int)
-dayParser = do
-  year <- parseNum 2
-  week <- parseNum 2
-  dayName <- dayFromIdx =<< parseNum 1
-  idx <- parseNum 2
-  day <-
-    parseTimeM False defaultTimeLocale "%y%W%a" $
-      printf "%02d" year <> printf "%02d" week <> dayName
-  pure (day, idx)
-  where
-    parseNum n = readNum =<< M.count n M.digitChar
-    readNum = maybe (fail "Not a number") pure . readMaybe
-    dayFromIdx :: MonadFail m => Int -> m String
-    dayFromIdx idx =
-      maybe (fail "Day should be a value from 1 to 7") pure $
-        ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] !!? (idx - 1)
+  fmap ZettelID customIDParser
 
 customIDParser :: Parser Text
 customIDParser = do
