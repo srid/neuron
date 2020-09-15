@@ -26,11 +26,11 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Query (zettelsByTag)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Core hiding ((&))
+import Reflex.Dom.Core hiding (mapMaybe, (&))
 import Relude hiding ((&))
 
 -- | The value needed to render the z-index
@@ -40,6 +40,7 @@ import Relude hiding ((&))
 data ZIndex = ZIndex
   { -- | Clusters on the folgezettel graph.
     zIndexClusters :: [Forest (Zettel, [Zettel])],
+    zIndexOrphans :: [Zettel],
     -- | All zettel errors
     zIndexErrors :: Map ZettelID ZettelError,
     zIndexStats :: Stats,
@@ -54,14 +55,17 @@ data Stats = Stats
 
 buildZIndex :: ZettelGraph -> Map ZettelID ZettelError -> ZIndex
 buildZIndex graph errors =
-  let clusters = G.categoryClusters graph
-      clusters' :: [Forest (Zettel, [Zettel])] =
+  let (orphans, clusters) = partitionEithers $
+        flip fmap (G.categoryClusters graph) $ \case
+          [Node z []] -> Left z -- Orphans (cluster of exactly one)
+          x -> Right x
+      clustersWithBacklinks :: [Forest (Zettel, [Zettel])] =
         -- Compute backlinks for each node in the tree.
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
       pinnedZettels = zettelsByTag (G.getZettels graph) [mkTagPattern "pinned"]
-   in ZIndex (fmap sortCluster clusters') errors stats pinnedZettels
+   in ZIndex (fmap sortCluster clustersWithBacklinks) orphans errors stats pinnedZettels
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortCluster fs =
@@ -85,6 +89,14 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
         el "ul" $
           forM_ zs $ \z ->
             el "li" $ QueryView.renderZettelLink Nothing Nothing def z
+    whenNotNull zIndexOrphans $ \(toList -> zs) ->
+      divClass ("ui piled segment") $ do
+        elClass "h3" "ui header" $ text "Orphans"
+        el "p" $ text "These notes are not connected to any other notes."
+        el "ul" $
+          forM_ zs $ \z ->
+            el "li" $ do
+              QueryView.renderZettelLink Nothing Nothing def z
     forM_ zIndexClusters $ \forest ->
       divClass ("ui " <> themeColor <> " segment") $ do
         el "ul" $ renderForest forest
