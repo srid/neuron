@@ -8,5 +8,6 @@
   , "2011402:guide"
   , "2013101:examples"
   , "041726b3:cerveau"
+  , "c6176636:docker"
   ]
 }

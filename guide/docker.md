@@ -9,11 +9,8 @@ In order to quickly get started, try:
 ```bash
 mkdir ~/zettelkasten
 echo "hello world" > ~/zettelkasten/hello.md 
-docker run --rm -i \
-  -p 8080:8080 \
-  -v ~/zettelkasten:/zettelkasten \
-  sridca/neuron \
-  neuron rib -ws 0.0.0.0:8080
+cd ~/zettelkasten
+docker run --rm -i -p 8080:8080 -v $(pwd):/notes sridca/neuron:dev neuron rib -ws 0.0.0.0:8080
 ```
 
-This will run the neuron rib server on `~/zettelkasten` which can be accessed at <http://localhost:8080>. 
+This will run the neuron rib server on the current directory which can be accessed at <http://localhost:8080>. The docker image operates on `/notes` as the current working directory, which is where you are expected to mount your notes directory.

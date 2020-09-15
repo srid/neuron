@@ -72,4 +72,4 @@ Available commands:
 
 Proceed to the [[tutorial]].
 
-[^nix]: Nix is a general package manager that you can use to manage other software and services as well. [See here](https://github.com/srid/neuron/issues/193#issuecomment-629557917). If you do not wish to install Nix, try the [[[c6176636]]].
+[^nix]: Nix is a general package manager that you can use to manage other software and services as well. [See here](https://github.com/srid/neuron/issues/193#issuecomment-629557917). If you do not wish to install Nix, try the [[[docker]]].

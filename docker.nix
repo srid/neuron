@@ -22,4 +22,11 @@ in {
     pkgs.coreutils 
     pkgs.bash_5 
   ];
+
+  config = {
+    WorkingDir = "/notes";
+    Volumes = {
+      "/notes" = {};
+    };
+  };
 }
