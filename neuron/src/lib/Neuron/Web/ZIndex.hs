@@ -85,14 +85,15 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
   renderErrors zIndexErrors
   divClass "z-index" $ do
     forM_ (nonEmpty zPinned) $ \zs ->
-      divClass "ui message pinned raised segment" $ do
+      divClass "ui pinned raised segment" $ do
+        elClass "h3" "ui header" $ text "Pinned"
         el "ul" $
           forM_ zs $ \z ->
             el "li" $ QueryView.renderZettelLink Nothing Nothing def z
     whenNotNull zIndexOrphans $ \(toList -> zs) ->
       divClass ("ui piled segment") $ do
         elClass "h3" "ui header" $ text "Folgezettel Orphans"
-        el "p" $ do
+        elClass "p" "info" $ do
           text "These notes are not "
           elAttr "a" ("href" =: "https://neuron.zettel.page/2011504.html") $ text "folgezettel-connected"
           text " to any other notes."
@@ -173,6 +174,8 @@ renderForest trees = do
 style :: Css
 style = do
   "div.z-index" ? do
+    "p.info" ? do
+      C.color C.gray
     C.ul ? do
       C.listStyleType C.square
       C.paddingLeft $ em 1.5
