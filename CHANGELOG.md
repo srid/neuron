@@ -14,6 +14,8 @@
   - Update Fomantic UI to 2.8.7
   - Allow custom HTML snippet in `<head>` (#385)
   - Group orphan zettels in z-index (#380)
+  - Backlinks improvements
+    - Backlinks panel now displays all kinds of backlinks (includig uplinks) for sake of completion.
 - Zettel format
   - Wiki-style links: instead of `<foo>` you can now use `[[[foo]]]`; and instead of `<foo?cf>`, you can use `[[foo]]`. (#351)
   - Support regular markdown links (#366)

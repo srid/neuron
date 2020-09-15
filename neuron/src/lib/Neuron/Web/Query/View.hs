@@ -103,8 +103,11 @@ renderQuery someQ =
 -- | Render a link to an individual zettel.
 renderZettelLink ::
   DomBuilder t m =>
+  -- | Link inner text
   Maybe (m ()) ->
+  -- | Connection type to display
   Maybe Connection ->
+  -- | Link theme
   Maybe LinkView ->
   Zettel ->
   NeuronWebT t m ()
