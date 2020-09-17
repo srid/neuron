@@ -14,7 +14,6 @@ module Neuron.Zettelkasten.ID
     idParser,
     getZettelID,
     zettelIDSourceFileName,
-    customIDParser,
   )
 where
 
@@ -69,12 +68,9 @@ parseZettelID =
   first InvalidIDParseError . parse idParser "parseZettelID"
 
 idParser :: Parser ZettelID
-idParser =
-  fmap ZettelID customIDParser
-
-customIDParser :: Parser Text
-customIDParser = do
-  fmap toText $ M.some $ M.alphaNumChar <|> M.char '_' <|> M.char '-' <|> M.char '.'
+idParser = do
+  s <- M.some $ M.alphaNumChar <|> M.char '_' <|> M.char '-' <|> M.char '.'
+  pure $ ZettelID (toText s)
 
 -- | Parse the ZettelID if the given filepath is a zettel.
 getZettelID :: ZettelFormat -> FilePath -> Maybe ZettelID

@@ -77,12 +77,12 @@ nextAvailableZettelID zs val = \case
     if s `Set.member` (unZettelID `Set.map` zs)
       then throwError $ IDConflict_HashConflict s
       else
-        either (error . toText) (pure . ZettelID) $
-          parse customIDParser "<random-hash>" s
+        either (error . toText) pure $
+          parse idParser "<random-hash>" s
   IDSchemeCustom s -> runExcept $ do
     zid <-
-      either (throwError . IDConflict_BadCustomID s) (pure . ZettelID) $
-        parse customIDParser "<next-id>" s
+      either (throwError . IDConflict_BadCustomID s) pure $
+        parse idParser "<next-id>" s
     if zid `Set.member` zs
       then throwError IDConflict_AlreadyExists
       else pure zid
