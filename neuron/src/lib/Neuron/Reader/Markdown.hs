@@ -137,7 +137,7 @@ inlineTagSpec =
       CM.InlineParser m il
     pInlineTag = P.try $ do
       _ <- symbol '#'
-      tag <- CM.untokenize <$> idP
+      tag <- CM.untokenize <$> inlineTagP
       let tagQuery = "z:tag/" <> tag
       pure $! cmAutoLink tagQuery
 
@@ -158,6 +158,7 @@ autoLinkSpec =
       let url = CM.untokenize x
       pure $! cmAutoLink url
 
+-- | Create a commonmark link element
 cmAutoLink :: CM.IsInline a => Text -> a
 cmAutoLink url =
   CM.link url title $ CM.str url
@@ -202,6 +203,10 @@ wikiLinkSpec =
 -- TODO: Unify this with the megaparsec parser from ID.hs
 idP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
 idP =
+  some (noneOfToks [Symbol ']', Spaces, UnicodeSpace, LineEnd])
+
+inlineTagP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
+inlineTagP =
   some (noneOfToks [Symbol ']', Spaces, UnicodeSpace, LineEnd])
 
 -- rawHtmlSpec eats angle bracket links as html tags
