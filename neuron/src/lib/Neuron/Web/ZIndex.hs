@@ -137,7 +137,7 @@ renderErrors errors = do
         ZettelError_AmbiguousFiles _ -> do
           text $
             "More than one file define the same zettel ID ("
-              <> unZettelID zid
+              <> show zid
               <> "):"
   forM_ (Map.toList errors) $ \(zid, zError) ->
     divClass ("ui tiny message " <> severity zError) $ do

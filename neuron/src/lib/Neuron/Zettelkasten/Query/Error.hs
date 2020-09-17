@@ -50,4 +50,4 @@ showQueryParseError qe =
 
 showQueryResultError :: QueryResultError -> Text
 showQueryResultError (QueryResultError_NoSuchZettel zid) =
-  "links to non-existant zettel: " <> unZettelID zid
+  "links to non-existant zettel: " <> show zid

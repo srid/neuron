@@ -121,7 +121,7 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
           LinkView_ShowDate ->
             elTime <$> zettelDate
           LinkView_ShowID ->
-            Just $ el "tt" $ text $ unZettelID zettelID
+            Just $ el "tt" $ text $ zettelIDRaw zettelID
       classes :: [Text] = catMaybes $ [Just "zettel-link-container"] <> [connClass, rawClass]
   elClass "span" (T.intercalate " " classes) $ do
     forM_ mextra $ \extra ->
@@ -165,7 +165,7 @@ renderZettelLinkIDOnly :: DomBuilder t m => ZettelID -> NeuronWebT t m ()
 renderZettelLinkIDOnly zid =
   elClass "span" "zettel-link-container" $ do
     elClass "span" "zettel-link" $ do
-      neuronRouteLink (Some $ Route_Zettel zid) mempty $ text $ unZettelID zid
+      neuronRouteLink (Some $ Route_Zettel zid) mempty $ text $ zettelIDRaw zid
 
 renderTagTree :: forall t m. DomBuilder t m => Forest (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
 renderTagTree t =

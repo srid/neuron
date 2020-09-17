@@ -10,6 +10,7 @@
 module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     InvalidID (..),
+    mkZettelID,
     parseZettelID,
     idParser,
     getZettelID,
@@ -19,6 +20,7 @@ where
 
 import Data.Aeson
 import Data.Aeson.Types (toJSONKeyText)
+import qualified Data.Text as T
 import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Relude
 import System.FilePath
@@ -27,22 +29,26 @@ import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple
 import qualified Text.Show
 
-newtype ZettelID = ZettelID {unZettelID :: Text}
-  deriving (Eq, Show, Ord, Generic)
+data ZettelID = ZettelID
+  { zettelIDID :: Text,
+    zettelIDRaw :: Text
+  }
+  deriving (Show, Ord, Generic, ToJSON, FromJSON)
+
+mkZettelID :: Text -> ZettelID
+mkZettelID s =
+  let slug = T.intercalate "_" $ T.splitOn " " s
+   in ZettelID slug s
+
+instance Eq ZettelID where
+  (==) (ZettelID a _) (ZettelID b _) = a == b
 
 instance Show InvalidID where
   show (InvalidIDParseError s) =
     "Invalid Zettel ID: " <> toString s
 
-instance FromJSON ZettelID where
-  parseJSON x = do
-    s <- parseJSON x
-    case parseZettelID s of
-      Left e -> fail $ show e
-      Right zid -> pure zid
-
 instance ToJSONKey ZettelID where
-  toJSONKey = toJSONKeyText unZettelID
+  toJSONKey = toJSONKeyText zettelIDID
 
 instance FromJSONKey ZettelID where
   fromJSONKey = FromJSONKeyTextParser $ \s ->
@@ -50,11 +56,8 @@ instance FromJSONKey ZettelID where
       Right v -> pure v
       Left e -> fail $ show e
 
-instance ToJSON ZettelID where
-  toJSON = toJSON . unZettelID
-
 zettelIDSourceFileName :: ZettelID -> ZettelFormat -> FilePath
-zettelIDSourceFileName zid fmt = toString $ unZettelID zid <> zettelFormatToExtension fmt
+zettelIDSourceFileName zid fmt = toString $ zettelIDRaw zid <> zettelFormatToExtension fmt
 
 ---------
 -- Parser
@@ -69,8 +72,14 @@ parseZettelID =
 
 idParser :: Parser ZettelID
 idParser = do
-  s <- M.some $ M.alphaNumChar <|> M.char '_' <|> M.char '-' <|> M.char '.'
-  pure $ ZettelID (toText s)
+  s <-
+    M.some $
+      M.alphaNumChar
+        <|> M.char '_'
+        <|> M.char '-'
+        <|> M.char '.'
+        <|> M.char ' '
+  pure $ mkZettelID (toText s)
 
 -- | Parse the ZettelID if the given filepath is a zettel.
 getZettelID :: ZettelFormat -> FilePath -> Maybe ZettelID
