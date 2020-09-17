@@ -30,7 +30,9 @@ import Text.Megaparsec.Simple
 import qualified Text.Show
 
 data ZettelID = ZettelID
-  { zettelIDID :: Text,
+  { -- | Slug must be unique
+    zettelIDSlug :: Text,
+    -- | Actual ID used by the user, inside `[[..]]`
     zettelIDRaw :: Text
   }
   deriving (Show, Ord, Generic, ToJSON, FromJSON)
@@ -48,7 +50,7 @@ instance Show InvalidID where
     "Invalid Zettel ID: " <> toString s
 
 instance ToJSONKey ZettelID where
-  toJSONKey = toJSONKeyText zettelIDID
+  toJSONKey = toJSONKeyText zettelIDSlug
 
 instance FromJSONKey ZettelID where
   fromJSONKey = FromJSONKeyTextParser $ \s ->

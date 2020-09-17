@@ -42,7 +42,7 @@ mkAliases aliasSpecs graph =
       when (isJust $ G.getZettel aliasZettel graph) $ do
         throwError $
           "Cannot create redirect from '" <> show aliasZettel <> "', because a zettel with that ID already exists"
-      when (zettelIDID targetZettel /= "z-index" && isNothing (G.getZettel targetZettel graph)) $ do
+      when (zettelIDSlug targetZettel /= "z-index" && isNothing (G.getZettel targetZettel graph)) $ do
         throwError $
           "Target zettel '" <> show targetZettel <> "' does not exist"
       pure alias

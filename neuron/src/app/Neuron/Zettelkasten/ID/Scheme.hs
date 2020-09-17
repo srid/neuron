@@ -74,7 +74,7 @@ nextAvailableZettelID ::
 nextAvailableZettelID zs val = \case
   IDSchemeHash -> do
     let s = T.take 8 $ UUID.toText val
-    if s `Set.member` (zettelIDID `Set.map` zs)
+    if s `Set.member` (zettelIDSlug `Set.map` zs)
       then throwError $ IDConflict_HashConflict s
       else
         either (error . toText) pure $
