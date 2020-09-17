@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -32,6 +33,13 @@ import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
 import Text.Show (Show (show))
 import Text.URI
+  ( QueryParam (QueryFlag),
+    URI (URI, uriQuery),
+    mkPathPiece,
+    mkURI,
+    render,
+  )
+import Text.URI.QQ (queryKey, scheme)
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --
@@ -177,36 +185,39 @@ wikiLinkSpec =
       (Monad m, CM.IsInline il) =>
       CM.InlineParser m il
     pLink = P.try $ do
-      url <-
+      fmap cmAutoLink $
         P.choice
           [ -- Folgezettel link: [[[...]]]
-            P.try (CM.untokenize <$> wikiLinkP 3),
+            P.try (wikiLinkP 3),
             -- Cf link: [[...]]
-            render . mkIdURI (Just "cf") . CM.untokenize <$> wikiLinkP 2
+            P.try (wikiLinkP 2)
           ]
-      let title = ""
-      pure $! CM.link url title $ CM.str url
-    wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m [CM.Tok]
+    wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m Text
     wikiLinkP n = do
       void $ M.count n $ symbol '['
-      x <- idP
-      void $ M.count n $ symbol ']'
-      pure x
-    mkIdURI :: Maybe Text -> Text -> URI
-    mkIdURI queryFlag s = do
-      let qk = either (error . toText . show) id . mkQueryKey <$> maybeToList queryFlag
+      s <- fmap CM.untokenize $ some $ noneOfToks [Symbol ']', LineEnd]
+      -- Parse as URI, add cf flag, and then render back. If parse fails, we
+      -- just ignore this inline.
+      case parseNeuronUri s of
+        Just uri -> do
+          void $ M.count n $ symbol ']'
+          pure $
+            render $ case n of
+              2 ->
+                -- [[..]] adds "cf" flag in URI
+                uri {uriQuery = [QueryFlag [queryKey|cf|]]}
+              _ -> uri
+        Nothing ->
+          fail "Not a neuron URI; ignoring"
+    parseNeuronUri :: Text -> Maybe URI
+    parseNeuronUri s =
       case toString s of
         ('z' : ':' : _) ->
-          either (error . toText . show) id $ mkURI s
+          mkURI s
         _ -> do
-          let path = either (error . toText . show) id $ mkPathPiece s
-              scheme = either (error . toText . show) id $ mkScheme "z"
-          URI (Just scheme) (Left True) (Just (False, path :| [])) (QueryFlag <$> qk) Nothing
-
--- TODO: Unify this with the megaparsec parser from ID.hs
-idP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
-idP =
-  some (noneOfToks [Symbol ']', LineEnd])
+          -- Treat it as plain ID
+          path <- mkPathPiece s
+          pure $ URI (Just [scheme|z|]) (Left True) (Just (False, path :| [])) [] Nothing
 
 inlineTagP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
 inlineTagP =
