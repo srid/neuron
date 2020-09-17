@@ -14,6 +14,7 @@
   - Update Fomantic UI to 2.8.7
   - Allow custom HTML snippet in `<head>` (#385)
   - Group orphan zettels in z-index (#380)
+  - Fix footnote alignment on Firefox (#398)
   - Backlinks improvements
     - Backlinks panel now displays all kinds of backlinks (includig uplinks) for sake of completion.
 - Zettel format
