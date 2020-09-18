@@ -63,7 +63,7 @@ instance FromJSON ZettelID where
   parseJSON = fmap unsafeMkZettelID . parseJSON
 
 instance ToJSONKey ZettelID where
-  toJSONKey = toJSONKeyText zettelIDSlug
+  toJSONKey = toJSONKeyText zettelIDRaw
 
 instance FromJSONKey ZettelID where
   fromJSONKey = FromJSONKeyTextParser $ \s ->
@@ -72,7 +72,11 @@ instance FromJSONKey ZettelID where
       Left e -> fail $ show e
 
 zettelIDSourceFileName :: ZettelID -> ZettelFormat -> FilePath
-zettelIDSourceFileName zid fmt = toString $ zettelIDRaw zid <> zettelFormatToExtension fmt
+zettelIDSourceFileName zid fmt =
+  toString (fn <> ext)
+  where
+    fn = zettelIDRaw zid
+    ext = zettelFormatToExtension fmt
 
 ---------
 -- Parser
