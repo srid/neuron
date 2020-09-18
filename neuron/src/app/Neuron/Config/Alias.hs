@@ -5,6 +5,7 @@
 module Neuron.Config.Alias where
 
 import Control.Monad.Except (liftEither, runExcept, throwError)
+import Data.List (delete)
 import Neuron.Config.Type
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
@@ -49,4 +50,7 @@ mkAliases aliasSpecs graph =
 
 aliasParser :: Parser Alias
 aliasParser =
-  Alias <$> (idParser <* M.char ':') <*> idParser
+  -- Disallow ':' in IDs, because we use colon as a separator in alias spec.
+  -- TODO: Do proper parsing so colon is allowed in both IDs.
+  let idParserSansColon = idParser' $ delete ':' allowedSpecialChars
+   in Alias <$> (idParserSansColon <* M.char ':') <*> idParser

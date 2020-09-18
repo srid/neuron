@@ -13,7 +13,9 @@ module Neuron.Zettelkasten.ID
     unsafeMkZettelID,
     indexZid,
     parseZettelID,
+    allowedSpecialChars,
     idParser,
+    idParser',
     getZettelID,
     zettelIDSourceFileName,
   )
@@ -89,15 +91,29 @@ parseZettelID :: Text -> Either InvalidID ZettelID
 parseZettelID =
   first InvalidIDParseError . parse idParser "parseZettelID"
 
+-- | Characters, aside from alpha numeric characters, to allow in IDs
+allowedSpecialChars :: [Char]
+allowedSpecialChars =
+  [ '_',
+    '-',
+    '.',
+    -- Whitespace is essential for title IDs
+    ' ',
+    -- Allow some puctuation letters that are common in note titles
+    ',',
+    ';',
+    '(',
+    ')',
+    ':',
+    '"'
+  ]
+
 idParser :: Parser ZettelID
-idParser = do
-  s <-
-    M.some $
-      M.alphaNumChar
-        <|> M.char '_'
-        <|> M.char '-'
-        <|> M.char '.'
-        <|> M.char ' '
+idParser = idParser' allowedSpecialChars
+
+idParser' :: String -> Parser ZettelID
+idParser' cs = do
+  s <- M.some $ M.alphaNumChar <|> M.choice (M.char <$> cs)
   pure $ unsafeMkZettelID (toText s)
 
 -- | Parse the ZettelID if the given filepath is a zettel.
