@@ -144,10 +144,10 @@ commandParser defaultNotesDir now = do
       idSchemeF <-
         fmap
           (const $ const $ Some IDSchemeHash)
-          (switch (long "id-hash" <> help "Use random hash ID (default)"))
+          (switch (long "--random-id" <> help "Generate a random ID (default)"))
           <|> fmap
             (const . Some . IDSchemeCustom)
-            (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
+            (option str (long "id" <> help "Use an arbitrary title ID" <> metavar "IDNAME"))
       pure $ New $ NewCommand title format dateParam (idSchemeF $ getDay dateParam) edit
     openCommand = do
       fmap Open $
