@@ -20,6 +20,7 @@
 - Zettel format
   - Wiki-style links: instead of `<foo>` you can now use `[[[foo]]]`; and instead of `<foo?cf>`, you can use `[[foo]]`. (#351)
   - Support regular markdown links (#366)
+  - Allow title as Zettel IDs (#399)
   - Drop support for legacy links (#366)
   - Allow specifying time in the `date` metadata propery (#343)
   - Add `unlisted` metadata property to hide a zettel from z-index (#318)
