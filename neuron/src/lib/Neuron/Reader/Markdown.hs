@@ -205,7 +205,7 @@ wikiLinkSpec =
             render $ case n of
               2 ->
                 -- [[..]] adds "cf" flag in URI
-                uri {uriQuery = [QueryFlag [queryKey|cf|]]}
+                uri {uriQuery = uriQuery uri <> [QueryFlag [queryKey|cf|]]}
               _ -> uri
         Nothing ->
           fail "Not a neuron URI; ignoring"
