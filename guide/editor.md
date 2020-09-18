@@ -6,13 +6,13 @@ While you may use any text editor with neuron, the following extensions enable c
 
 Emacs support is available via [neuron-mode](https://github.com/felko/neuron-mode), which supports nifty editor features like opening a zettel by title, linking to other zettels by title, as well as displaying the title of the zettel next to the link (see screenshot below).
 
-![screenshot](https://user-images.githubusercontent.com/3998/80873287-6fa75e00-8c85-11ea-9cf7-6e03db001d00.png)
+![screenshot](https://user-images.githubusercontent.com/3998/80873287-6fa75e00-8c85-11ea-9cf7-6e03db001d00.png){.ui .centered .large .image}
 
 ## Vim
 
 See [this fork of neuron.vim](https://github.com/fiatjaf/neuron.vim).
 
-![screenshot](https://camo.githubusercontent.com/f2d5cc522b96bc92f31699e2fda589b37b1316f0/68747470733a2f2f6c68332e676f6f676c6575736572636f6e74656e742e636f6d2f70772f414374432d3366357562374f4457726e4359682d5a484461426b38345a7a426a4c5a35305733325365344e527179306b61424f4a4c47797347384859597168706f3368676f63387241424f4f727856714f6c413375743679422d4b474d50755a4f4935585137442d316e6c6c714348356f527832387762586d734f6d4f32724964614a46557054514e5469502d672d76742d69334941666277586a433d77313437322d68313030352d6e6f3f61757468757365723d30)
+![screenshot](https://github.com/fiatjaf/neuron.vim/raw/master/screenshot.png){.ui .centered .large .image}
 
 ## VSCode
 
@@ -22,3 +22,5 @@ These two extensions are useful when editing your Neuron notes in [Visual Studio
 * [markdown-links](https://github.com/tchayen/markdown-links) - supports only `[[..]]` style link, [but not folgezettel](https://github.com/tchayen/markdown-links/issues/59) (`[[[...]]]`).
 
 Note that advanced features of neuron like [[2011506]] will not be supported by either of these extensions. [LSP support](https://github.com/srid/neuron/issues/213) is ideal, but it has not been implemented by anyone yet.
+
+![demo](./static/vscode-title-id.gif){.ui .centered .large .image}

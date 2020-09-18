@@ -10,4 +10,4 @@ Use title IDs when you want truly future-proof link IDs that work on any text ed
 
 ## When to prefer *random IDs*
 
-The advantage to using random IDs (which neuron uses by default) is that you do not have to rename links across your Zettelkasten when changing the title IDs. This makes the links less future-proof, because you will want to use an editor (see [[4a6b25f1]]) that supports expanding them with the title from the note text. 
+The advantage to using random IDs (which neuron uses by default) is that you do not have to rename links across your Zettelkasten when changing the title IDs. This makes the links less future-proof, because you will want to use an editor (see [[editor]]) that supports expanding them with the title from the note text. 

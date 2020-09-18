@@ -80,7 +80,7 @@ Access it at [localhost:8080](http://localhost:8080) (or use `neuron open`). You
 
 ## Growing your Zettelkasten
 
-Congratulations, you have created your first Zettelkasten using neuron! From this moment onwards, simply use the `new` command to create new zettels, `search` command to open existing zettels (or see [[4a6b25f1]] for editor support). As your Zettelkasten grows over time, more value will be derived from it.
+Congratulations, you have created your first Zettelkasten using neuron! From this moment onwards, simply use the `new` command to create new zettels, `search` command to open existing zettels (or see [[editor]] for editor support). As your Zettelkasten grows over time, more value will be derived from it.
 
 ## What's next?
 
