@@ -3,8 +3,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -16,8 +16,8 @@ module Neuron.Zettelkasten.Zettel.Meta
 where
 
 import Data.TagTree (Tag)
-import Data.YAML
 import Data.Time.DateMayTime (DateMayTime)
+import Data.YAML
 import Relude
 
 -- | YAML metadata in a zettel markdown file
