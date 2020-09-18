@@ -18,20 +18,35 @@ where
 
 import Clay (Css, em, (?))
 import qualified Clay as C
-import Control.Monad.Except
-import Data.Default
-import Data.Dependent.Sum
+import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
-import Data.Some
-import Data.TagTree (Tag (..), TagNode (..), TagPattern (..), constructTag, foldTagTree, tagMatchAny, tagTree)
+import Data.Some (Some (..))
+import Data.TagTree
+  ( Tag (..),
+    TagNode (..),
+    TagPattern (..),
+    constructTag,
+    foldTagTree,
+    tagMatchAny,
+    tagTree,
+  )
 import qualified Data.Text as T
-import Data.Tree
+import Data.Tree (Forest, Tree (Node))
 import Neuron.Web.Route
-import Neuron.Web.Widget
-import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.ID
+  ( NeuronWebT,
+    Route (..),
+    neuronRouteLink,
+  )
+import Neuron.Web.Widget (elTime, semanticIcon)
+import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
+import Neuron.Zettelkasten.ID (ZettelID (zettelIDRaw))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
+  ( Zettel,
+    ZettelQuery (..),
+    ZettelT (..),
+    sortZettelsReverseChronological,
+  )
 import Reflex.Dom.Core hiding (count, tag)
 import Reflex.Dom.Pandoc (PandocBuilder, elPandocInlines)
 import Relude

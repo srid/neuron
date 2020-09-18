@@ -35,7 +35,7 @@ data ZettelID = ZettelID
     -- | Actual ID used by the user, inside `[[..]]`
     zettelIDRaw :: Text
   }
-  deriving (Show, Ord, Generic, ToJSON, FromJSON)
+  deriving (Show, Ord, Generic)
 
 mkZettelID :: Text -> ZettelID
 mkZettelID s =
@@ -48,6 +48,12 @@ instance Eq ZettelID where
 instance Show InvalidID where
   show (InvalidIDParseError s) =
     "Invalid Zettel ID: " <> toString s
+
+instance ToJSON ZettelID where
+  toJSON = toJSON . zettelIDRaw
+
+instance FromJSON ZettelID where
+  parseJSON = fmap mkZettelID . parseJSON
 
 instance ToJSONKey ZettelID where
   toJSONKey = toJSONKeyText zettelIDSlug

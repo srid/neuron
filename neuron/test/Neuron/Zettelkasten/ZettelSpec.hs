@@ -35,7 +35,7 @@ spec = do
 
         mkZettel zid datetime =
           Zettel
-            (ZettelID zid)
+            (mkZettelID zid)
             ZettelFormat_Markdown
             "<spec>.md"
             "Some title"
