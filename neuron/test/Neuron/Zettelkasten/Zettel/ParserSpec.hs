@@ -10,7 +10,7 @@ where
 import Data.TagTree (Tag (Tag))
 import Neuron.Reader.Markdown (parseMarkdown)
 import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Markdown))
-import Neuron.Zettelkasten.ID (mkZettelID)
+import Neuron.Zettelkasten.ID (unsafeMkZettelID)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelT (zettelTags),
@@ -24,7 +24,7 @@ spec :: Spec
 spec = do
   describe "inline tags" $ do
     let parseSomeZettel =
-          sansContent . parseZettel ZettelFormat_Markdown parseMarkdown "<test>" (mkZettelID "note.md")
+          sansContent . parseZettel ZettelFormat_Markdown parseMarkdown "<test>" (unsafeMkZettelID "note.md")
     it "simple" $ do
       let z :: Zettel = parseSomeZettel "An #inline tag"
       zettelTags z `shouldBe` [Tag "inline"]

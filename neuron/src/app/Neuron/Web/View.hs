@@ -41,7 +41,7 @@ import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID (mkZettelID)
+import Neuron.Zettelkasten.ID (indexZid)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc (PandocBuilder)
@@ -102,7 +102,7 @@ renderRouteBody :: PandocBuilder t m => Text -> Config -> Route a -> (ZettelGrap
 renderRouteBody neuronVersion Config {..} r (g, x) = do
   let neuronTheme = Theme.mkTheme theme
       themeSelector = toText $ Theme.themeIdentifier neuronTheme
-      indexZettel = G.getZettel (mkZettelID "index") g
+      indexZettel = G.getZettel indexZid g
   elAttr "div" ("class" =: "ui fluid container" <> "id" =: themeSelector) $ do
     case r of
       Route_ZIndex -> do

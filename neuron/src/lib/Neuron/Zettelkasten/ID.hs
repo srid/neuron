@@ -10,7 +10,8 @@
 module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     InvalidID (..),
-    mkZettelID,
+    unsafeMkZettelID,
+    indexZid,
     parseZettelID,
     idParser,
     getZettelID,
@@ -37,10 +38,16 @@ data ZettelID = ZettelID
   }
   deriving (Show, Ord, Generic)
 
-mkZettelID :: Text -> ZettelID
-mkZettelID s =
+-- | Make ZettelID from raw text.
+--
+-- Assumes that input text is already validated for allowed characters.
+unsafeMkZettelID :: Text -> ZettelID
+unsafeMkZettelID s =
   let slug = T.intercalate "_" $ T.splitOn " " s
    in ZettelID slug s
+
+indexZid :: ZettelID
+indexZid = unsafeMkZettelID "index"
 
 instance Eq ZettelID where
   (==) (ZettelID a _) (ZettelID b _) = a == b
@@ -53,7 +60,7 @@ instance ToJSON ZettelID where
   toJSON = toJSON . zettelIDRaw
 
 instance FromJSON ZettelID where
-  parseJSON = fmap mkZettelID . parseJSON
+  parseJSON = fmap unsafeMkZettelID . parseJSON
 
 instance ToJSONKey ZettelID where
   toJSONKey = toJSONKeyText zettelIDSlug
@@ -87,7 +94,7 @@ idParser = do
         <|> M.char '-'
         <|> M.char '.'
         <|> M.char ' '
-  pure $ mkZettelID (toText s)
+  pure $ unsafeMkZettelID (toText s)
 
 -- | Parse the ZettelID if the given filepath is a zettel.
 getZettelID :: ZettelFormat -> FilePath -> Maybe ZettelID

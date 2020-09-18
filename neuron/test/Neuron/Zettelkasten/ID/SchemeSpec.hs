@@ -31,7 +31,7 @@ spec = do
           `shouldReturn` Left IDConflict_AlreadyExists
       it "succeeds" $ do
         nextAvail (IDSchemeCustom "sunny-side-eggs")
-          `shouldReturn` Right (mkZettelID "sunny-side-eggs")
+          `shouldReturn` Right (unsafeMkZettelID "sunny-side-eggs")
     context "hash ID" $ do
       it "should succeed" $
         nextAvail IDSchemeHash
