@@ -1,6 +1,6 @@
 # Neuron Zettelkasten
 
-[Neuron](https://github.com/srid/neuron) is a future-proof open-source app[^web] for managing your [plain-text notes]{.ui .red .text} in [[[zettelkasten]]] style, as well as for publishing them on the web. Read its [[[6f0f0bcc]]].
+[Neuron](https://github.com/srid/neuron) is a future-proof open-source app[^web] for managing your plain-text notes in [[[zettelkasten]]] style, as well as for publishing them on the web. Read its [[[6f0f0bcc]]].
 
 ![Neuron logo](https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg){.ui .small .centered .image}
 
