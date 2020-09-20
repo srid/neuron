@@ -24,3 +24,9 @@ These two extensions are useful when editing your Neuron notes in [Visual Studio
 Note that advanced features of neuron like [[2011506]] will not be supported by either of these extensions. [LSP support](https://github.com/srid/neuron/issues/213) is ideal, but it has not been implemented by anyone yet.
 
 ![demo](./static/vscode-title-id.gif){.ui .centered .large .image}
+
+## Online
+
+[[cerveau]] can be used to edit your notes online using a web browser. Here's a small demo of the Cerveau editor in action, demonstrating the link autocomplete feature.
+
+![demo](./static/cerveau-autocompl.gif)
