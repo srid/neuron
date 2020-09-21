@@ -23,15 +23,15 @@ spec = do
         isLesserOrEqual = shouldNotSatisfy
     it "simple versions" $ do
       -- If the user requires 0.4, and we are "older than" than that, fail (aka. isGreater)
-      "0.7" `isGreater` olderThan
-      "0.6" `isLesserOrEqual` olderThan -- This is current version
+      "0.8" `isGreater` olderThan
+      "0.7" `isLesserOrEqual` olderThan -- This is current version
       "0.4" `isLesserOrEqual` olderThan
     it "full versions" $ do
-      "0.7.1.2" `isGreater` olderThan
-      "0.6.15" `isGreater` olderThan
-      "0.6.12.8" `isGreater` olderThan
-      "0.6.12.0" `isLesserOrEqual` olderThan -- This is current version
-      "0.3.1.0" `isLesserOrEqual` olderThan
+      "0.8.1.2" `isGreater` olderThan
+      "0.7.15" `isGreater` olderThan
+      "0.7.12.8" `isGreater` olderThan
+      "0.7.0.0" `isLesserOrEqual` olderThan -- This is current version
+      "0.6.1.0" `isLesserOrEqual` olderThan
     it "within same major version" $ do
-      "0.6.12.8" `isGreater` olderThan
-      "0.6.0.0" `isLesserOrEqual` olderThan -- This is current version
+      "0.7.12.8" `isGreater` olderThan
+      "0.7.0.0" `isLesserOrEqual` olderThan -- This is current version
