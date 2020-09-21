@@ -12,7 +12,7 @@ jobs:
       MAINLINE: refs/heads/master
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v10
+    - uses: cachix/install-nix-action@v11
     # This also runs nix-build.
     - uses: cachix/cachix-action@v6
       with:
