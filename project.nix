@@ -1,16 +1,11 @@
 let
-  nixpkgsRev = "6d4b93323e7f";
-  nixpkgsSrc = builtins.fetchTarball {
-    url = "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz";
-    sha256 = "0g2j41cx2w2an5d9kkqvgmada7ssdxqz1zvjd7hi5vif8ag0v5la";
-  };
   gitignoreSrc = builtins.fetchTarball {
     url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
     sha256 = "1npnx0h6bd0d7ql93ka7azhj40zgjp815fw2r6smg8ch9p7mzdlx";
   };
 in {
   system ? builtins.currentSystem,
-  pkgs ? import nixpkgsSrc { inherit system; },
+  pkgs ? import (import ./nixpkgs.nix) { inherit system; },
   # Cabal project name
   name ? "neuron",
   compiler ? pkgs.haskellPackages,
