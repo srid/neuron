@@ -24,7 +24,7 @@
   - Drop support for legacy links (#366)
   - Allow specifying time in the `date` metadata propery (#343)
   - Add `unlisted` metadata property to hide a zettel from z-index (#318)
-  - Markdown: 
+  - Markdown:
     - Inline tags (#189)
     - support for [fancy lists](https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/fancy_lists.md) (#335)
     - Fix hard line breaks to actually work (#354)
@@ -35,6 +35,7 @@
   - Faster querying: add `--cached` option to `neuron query`, to run faster using the cache. To keep the cache up to date, make sure that `neuron rib` is running.
   - Add `--id` and `--search` options to `open` command to open given zettel ID or search page respectively  (#317)
   - Use current directory as the default value for `-d` (a la. git) (#389)
+  - Adapt `neuron new` for title IDs (#408)
 
 ## 0.6.0.0
 
