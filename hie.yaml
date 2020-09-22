@@ -3,6 +3,8 @@ cradle:
     - path: "./neuron/src/lib"
       component: "lib:neuron"
     - path: "./neuron/src/app"
+      component: "lib:neuron-app-lib"
+    - path: "./neuron/src/exe"
       component: "exe:neuron"
     - path: "./neuron/test"
       component: "test:neuron-test"
