@@ -94,9 +94,9 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
       divClass ("ui piled segment") $ do
         elClass "h3" "ui header" $ text "Folgezettel Orphans"
         elClass "p" "info" $ do
-          text "These notes are not "
-          elAttr "a" ("href" =: "https://neuron.zettel.page/2011504.html") $ text "folgezettel-connected"
-          text " to any other notes."
+          text "Notes without any "
+          elAttr "a" ("href" =: "https://neuron.zettel.page/2011504.html") $ text "folgezettel"
+          text " relationships"
         el "ul" $
           forM_ zs $ \z ->
             el "li" $ do
