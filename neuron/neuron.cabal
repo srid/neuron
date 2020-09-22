@@ -109,11 +109,8 @@ library
     Data.Graph.Labelled.Build
     Data.Time.DateMayTime
 
--- A trick to make ghcid reload if library dependencies change
--- https://www.srid.ca/2012605.html
 common app-common
   import: library-common
-  hs-source-dirs: src/app src/lib
   default-language: Haskell2010
   build-depends:
     base >=4.12 && < 4.14,
@@ -149,40 +146,49 @@ common app-common
     with-utf8,
     shower,
     either
-  if (!flag(ghcid))
-    autogen-modules:
-      Paths_neuron
-    other-modules:
-      Data.Graph.Labelled
-      Data.Graph.Labelled.Algorithm
-      Data.Graph.Labelled.Build
-      Data.Graph.Labelled.Type
-      Data.PathTree
-      Data.Structured.Breadcrumb
-      Data.Structured.OpenGraph
-      Data.Structured.OpenGraph.Render
-      Data.TagTree
-      Neuron.CLI
-      Neuron.CLI.New
-      Neuron.CLI.Open
-      Neuron.CLI.Rib
-      Neuron.CLI.Search
-      Neuron.CLI.Types
-      Neuron.Config
-      Neuron.Config.Alias
-      Neuron.Config.Orphans
-      Neuron.Version
-      Neuron.Web.Cache
-      Neuron.Web.HeadHtml
-      Neuron.Web.Generate
-      Neuron.Web.Generate.Route
-      Neuron.Web.View
-      Neuron.Web.StructuredData
-      Neuron.Reader
-      Neuron.Reader.Org
-      Neuron.Zettelkasten.ID.Scheme
-      Paths_neuron
-      Text.Megaparsec.Simple
+
+-- Everything below will have to be stripped away, if whoever uses this repo
+-- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
+-- to selectively dependent on a library without pulling in every stanza defined
+-- here.
+-- cf. https://www.srid.ca/2012605.html
+
+library neuron-app-lib
+  import: app-common
+  hs-source-dirs: src/app
+  exposed-modules:
+    Data.Structured.Breadcrumb
+    Data.Structured.OpenGraph
+    Data.Structured.OpenGraph.Render
+    Neuron.CLI
+    Neuron.CLI.New
+    Neuron.CLI.Open
+    Neuron.CLI.Rib
+    Neuron.CLI.Search
+    Neuron.CLI.Types
+    Neuron.Config
+    Neuron.Config.Alias
+    Neuron.Config.Orphans
+    Neuron.Version
+    Neuron.Web.Cache
+    Neuron.Web.HeadHtml
+    Neuron.Web.Generate
+    Neuron.Web.Generate.Route
+    Neuron.Web.View
+    Neuron.Web.StructuredData
+    Neuron.Reader
+    Neuron.Reader.Org
+    Neuron.Zettelkasten.ID.Scheme
+  autogen-modules:
+    Paths_neuron
+  other-modules:
+    Paths_neuron
+  -- A trick to make ghcid reload if library dependencies change
+  -- https://www.srid.ca/2012605.html
+  if flag(ghcid)
+    hs-source-dirs: src/lib
+  else
+    build-depends: neuron
 
 test-suite neuron-test
   import: app-common
@@ -190,16 +196,19 @@ test-suite neuron-test
   hs-source-dirs: test
   main-is: Spec.hs
   build-depends:
-    base >=4.12 && < 4.14,
     relude,
     hspec,
     QuickCheck,
     time
   default-language:    Haskell2010
-  if (!flag(ghcid))
+  if (flag(ghcid))
+    hs-source-dirs: src/lib src/app
+  else
+    build-depends: neuron, neuron-app-lib
     other-modules:
       Data.PathTreeSpec
       Data.TagTreeSpec
+      Data.Graph.Labelled.AlgorithmSpec
       Neuron.Config.AliasSpec
       Neuron.VersionSpec
       Neuron.Zettelkasten.ID.SchemeSpec
@@ -208,10 +217,13 @@ test-suite neuron-test
       Neuron.Zettelkasten.ZettelSpec
       Neuron.Zettelkasten.Zettel.ParserSpec
 
--- The executable stanza should always be at the end. The other project will
--- strip it to avoid non-core dependencies.
 -- To profile: ghc-options: -fexternal-interpreter -prof -fprof-auto -rtsopts
 executable neuron
   import: app-common
+  hs-source-dirs: src/exe
   main-is: Main.hs
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  if (flag(ghcid))
+    hs-source-dirs: src/lib src/app
+  else
+    build-depends: neuron, neuron-app-lib
