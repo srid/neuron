@@ -81,7 +81,6 @@ newZettelFile NewCommand {..} config = do
         Just (toString . strip . toText -> v) ->
           if null v then pure Nothing else pure (Just v)
 
--- TODO use configurable template files?
 defaultZettelContent :: ZettelFormat -> DateMayTime -> Text
 defaultZettelContent format (formatDateMayTime -> date) = case format of
   ZettelFormat_Markdown ->
@@ -90,14 +89,12 @@ defaultZettelContent format (formatDateMayTime -> date) = case format of
       [ "---",
         "date: " <> date,
         "---",
-        "",
-        "# " <> "Untitled",
-        "\n"
+        ""
       ]
   ZettelFormat_Org ->
     T.intercalate
       "\n"
-      [ "* " <> "Untitled",
+      [ "* " <> "Untitled", -- Leaving a title here, only because org seems to require one
         "    :PROPERTIES:",
         "    :Date: " <> date,
         "    :END:",
