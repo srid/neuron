@@ -147,6 +147,38 @@ library
     Data.Graph.Labelled.Build
     Data.Time.DateMayTime
 
+-- Everything below will have to be stripped away, if whoever uses this repo
+-- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
+-- to selectively dependent on a library without pulling in every stanza defined
+-- here.
+
+test-suite neuron-test
+  import: app-common
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Spec.hs
+  build-depends:
+    relude,
+    hspec,
+    QuickCheck,
+    time
+  default-language:    Haskell2010
+  if (flag(ghcid))
+    hs-source-dirs: src/lib src/app
+  else
+    build-depends: neuron, neuron-app-lib
+    other-modules:
+      Data.PathTreeSpec
+      Data.TagTreeSpec
+      Data.Graph.Labelled.AlgorithmSpec
+      Neuron.Config.AliasSpec
+      Neuron.VersionSpec
+      Neuron.Zettelkasten.ID.SchemeSpec
+      Neuron.Zettelkasten.IDSpec
+      Neuron.Zettelkasten.Query.ParserSpec
+      Neuron.Zettelkasten.ZettelSpec
+      Neuron.Zettelkasten.Zettel.ParserSpec
+
 library neuron-app-lib
   import: app-common
   hs-source-dirs: src/app
@@ -184,35 +216,6 @@ library neuron-app-lib
   else
     build-depends: neuron
 
-test-suite neuron-test
-  import: app-common
-  type: exitcode-stdio-1.0
-  hs-source-dirs: test
-  main-is: Spec.hs
-  build-depends:
-    relude,
-    hspec,
-    QuickCheck,
-    time
-  default-language:    Haskell2010
-  if (flag(ghcid))
-    hs-source-dirs: src/lib src/app
-  else
-    build-depends: neuron, neuron-app-lib
-    other-modules:
-      Data.PathTreeSpec
-      Data.TagTreeSpec
-      Data.Graph.Labelled.AlgorithmSpec
-      Neuron.Config.AliasSpec
-      Neuron.VersionSpec
-      Neuron.Zettelkasten.ID.SchemeSpec
-      Neuron.Zettelkasten.IDSpec
-      Neuron.Zettelkasten.Query.ParserSpec
-      Neuron.Zettelkasten.ZettelSpec
-      Neuron.Zettelkasten.Zettel.ParserSpec
-
--- The executable stanza should always be at the end. The other project will
--- strip it to avoid non-core dependencies.
 -- To profile: ghc-options: -fexternal-interpreter -prof -fprof-auto -rtsopts
 executable neuron
   import: app-common
