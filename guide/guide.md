@@ -4,7 +4,7 @@ Neuron includes a web interface for your notes that update automatically. This v
 
 Neuron also generates a complete index (at [z-index](./z-index.html)) of *all* Zettels visualized as a [[2017401]].
 
-- [[[2011403]]]
+- [[[id]]]
 - [[[2011404]]]
 - [[[2011405]]]
 - [[[2011406]]]

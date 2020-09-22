@@ -22,7 +22,7 @@ import Neuron.Zettelkasten.Zettel.Meta (Meta (..))
 import Relude
 import Relude.Extra.Map (lookup)
 import Text.Pandoc (def, runPure)
-import Text.Pandoc.Definition hiding (Meta (..))
+import Text.Pandoc.Definition (Pandoc)
 import Text.Pandoc.Readers.Org (readOrg)
 import Text.Pandoc.Util (getH1)
 

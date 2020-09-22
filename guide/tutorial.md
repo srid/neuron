@@ -48,22 +48,25 @@ touch neuron.dhall
 Now create (see [[2011406]]) your first zettel file:
 
 ```bash
-neuron new "My first zettel" -e
+neuron new -e
 ```
 
-This will open your text editor[^editor] with the newly created file (neuron uses a random filename; let's assume it is `6479cd5e.md`) and its title already filled in. Enter some text, and exit the editor.
+This will open your text editor[^editor] with the newly created file (neuron uses a random filename by default; let's assume it is `6479cd5e.md`) and its title already filled in. Enter some text, and exit the editor.
 
 [^editor]: Your `$EDITOR` environment variable must be set pointing to the text editor for this to work.
 
-Next, create an "overview" zettel called `index.md` --- it would be the welcoming page of our Zettelkasten web interface --- and link it (see [[2011504]]) to your first zettel in it:
+Next, create an "overview" zettel called `index.md` --- it would be the welcoming page of our Zettelkasten web interface. This time we explicitly tell neuron the ID to use, instead of having it generate a random one:
 
 ```bash
-$ cat > index.md
-# Overview
+neuron new -e index
+```
 
-* [[6479cd5e]]
-^D
-$
+In the text editor, link it (see [[2011504]]) to your first zettel. It should look like this:
+
+```
+# My Zettelkasten
+
+From here, you can visit: [[6479cd5e]]
 ```
 
 Your Zettelkasten directory should now contain two zettels--named `6479cd5e.md` and `index.md`.  Now it is time to run the neuron [[2011405]]:
@@ -80,7 +83,7 @@ Access it at [localhost:8080](http://localhost:8080) (or use `neuron open`). You
 
 ## Growing your Zettelkasten
 
-Congratulations, you have created your first Zettelkasten using neuron! From this moment onwards, simply use the `new` command to create new zettels, `search` command to open existing zettels (or see [[4a6b25f1]] for editor support). As your Zettelkasten grows over time, more value will be derived from it.
+Congratulations, you have created your first Zettelkasten using neuron! From this moment onwards, simply use the `new` command to create new zettels, `search` command to open existing zettels (or see [[editor]] for editor support). As your Zettelkasten grows over time, more value will be derived from it.
 
 ## What's next?
 

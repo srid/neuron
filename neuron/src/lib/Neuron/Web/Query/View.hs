@@ -18,20 +18,35 @@ where
 
 import Clay (Css, em, (?))
 import qualified Clay as C
-import Control.Monad.Except
-import Data.Default
-import Data.Dependent.Sum
+import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
-import Data.Some
-import Data.TagTree (Tag (..), TagNode (..), TagPattern (..), constructTag, foldTagTree, tagMatchAny, tagTree)
+import Data.Some (Some (..))
+import Data.TagTree
+  ( Tag (..),
+    TagNode (..),
+    TagPattern (..),
+    constructTag,
+    foldTagTree,
+    tagMatchAny,
+    tagTree,
+  )
 import qualified Data.Text as T
-import Data.Tree
+import Data.Tree (Forest, Tree (Node))
 import Neuron.Web.Route
-import Neuron.Web.Widget
-import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.ID
+  ( NeuronWebT,
+    Route (..),
+    neuronRouteLink,
+  )
+import Neuron.Web.Widget (elTime, semanticIcon)
+import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
+import Neuron.Zettelkasten.ID (ZettelID (zettelIDRaw))
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
+  ( Zettel,
+    ZettelQuery (..),
+    ZettelT (..),
+    sortZettelsReverseChronological,
+  )
 import Reflex.Dom.Core hiding (count, tag)
 import Reflex.Dom.Pandoc (PandocBuilder, elPandocInlines)
 import Relude
@@ -103,8 +118,11 @@ renderQuery someQ =
 -- | Render a link to an individual zettel.
 renderZettelLink ::
   DomBuilder t m =>
+  -- | Link inner text
   Maybe (m ()) ->
+  -- | Connection type to display
   Maybe Connection ->
+  -- | Link theme
   Maybe LinkView ->
   Zettel ->
   NeuronWebT t m ()
@@ -118,7 +136,7 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
           LinkView_ShowDate ->
             elTime <$> zettelDate
           LinkView_ShowID ->
-            Just $ el "tt" $ text $ unZettelID zettelID
+            Just $ el "tt" $ text $ zettelIDRaw zettelID
       classes :: [Text] = catMaybes $ [Just "zettel-link-container"] <> [connClass, rawClass]
   elClass "span" (T.intercalate " " classes) $ do
     forM_ mextra $ \extra ->
@@ -162,7 +180,7 @@ renderZettelLinkIDOnly :: DomBuilder t m => ZettelID -> NeuronWebT t m ()
 renderZettelLinkIDOnly zid =
   elClass "span" "zettel-link-container" $ do
     elClass "span" "zettel-link" $ do
-      neuronRouteLink (Some $ Route_Zettel zid) mempty $ text $ unZettelID zid
+      neuronRouteLink (Some $ Route_Zettel zid) mempty $ text $ zettelIDRaw zid
 
 renderTagTree :: forall t m. DomBuilder t m => Forest (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
 renderTagTree t =

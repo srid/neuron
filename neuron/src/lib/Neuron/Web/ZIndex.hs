@@ -26,11 +26,11 @@ import qualified Neuron.Web.Theme as Theme
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Query (zettelsByTag)
 import Neuron.Zettelkasten.Query.Error (showQueryError)
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Core hiding ((&))
+import Reflex.Dom.Core hiding (mapMaybe, (&))
 import Relude hiding ((&))
 
 -- | The value needed to render the z-index
@@ -40,6 +40,7 @@ import Relude hiding ((&))
 data ZIndex = ZIndex
   { -- | Clusters on the folgezettel graph.
     zIndexClusters :: [Forest (Zettel, [Zettel])],
+    zIndexOrphans :: [Zettel],
     -- | All zettel errors
     zIndexErrors :: Map ZettelID ZettelError,
     zIndexStats :: Stats,
@@ -54,14 +55,17 @@ data Stats = Stats
 
 buildZIndex :: ZettelGraph -> Map ZettelID ZettelError -> ZIndex
 buildZIndex graph errors =
-  let clusters = G.categoryClusters graph
-      clusters' :: [Forest (Zettel, [Zettel])] =
+  let (orphans, clusters) = partitionEithers $
+        flip fmap (G.categoryClusters graph) $ \case
+          [Node z []] -> Left z -- Orphans (cluster of exactly one)
+          x -> Right x
+      clustersWithBacklinks :: [Forest (Zettel, [Zettel])] =
         -- Compute backlinks for each node in the tree.
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
       pinnedZettels = zettelsByTag (G.getZettels graph) [mkTagPattern "pinned"]
-   in ZIndex (fmap sortCluster clusters') errors stats pinnedZettels
+   in ZIndex (fmap sortCluster clustersWithBacklinks) orphans errors stats pinnedZettels
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortCluster fs =
@@ -81,10 +85,22 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
   renderErrors zIndexErrors
   divClass "z-index" $ do
     forM_ (nonEmpty zPinned) $ \zs ->
-      divClass "ui message pinned raised segment" $ do
+      divClass "ui pinned raised segment" $ do
+        elClass "h3" "ui header" $ text "Pinned"
         el "ul" $
           forM_ zs $ \z ->
             el "li" $ QueryView.renderZettelLink Nothing Nothing def z
+    whenNotNull zIndexOrphans $ \(toList -> zs) ->
+      divClass ("ui piled segment") $ do
+        elClass "h3" "ui header" $ text "Folgezettel Orphans"
+        elClass "p" "info" $ do
+          text "Notes without any "
+          elAttr "a" ("href" =: "https://neuron.zettel.page/2011504.html") $ text "folgezettel"
+          text " relationships"
+        el "ul" $
+          forM_ zs $ \z ->
+            el "li" $ do
+              QueryView.renderZettelLink Nothing Nothing def z
     forM_ zIndexClusters $ \forest ->
       divClass ("ui " <> themeColor <> " segment") $ do
         el "ul" $ renderForest forest
@@ -120,8 +136,8 @@ renderErrors errors = do
           text " has malformed queries"
         ZettelError_AmbiguousFiles _ -> do
           text $
-            "More than one file define the same zettel ID ("
-              <> unZettelID zid
+            "More than one file define the same zettel ID slug ("
+              <> zettelIDSlug zid
               <> "):"
   forM_ (Map.toList errors) $ \(zid, zError) ->
     divClass ("ui tiny message " <> severity zError) $ do
@@ -158,6 +174,8 @@ renderForest trees = do
 style :: Css
 style = do
   "div.z-index" ? do
+    "p.info" ? do
+      C.color C.gray
     C.ul ? do
       C.listStyleType C.square
       C.paddingLeft $ em 1.5

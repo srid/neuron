@@ -12,7 +12,6 @@ import Control.Monad.Writer
 import Data.List (nub)
 import Data.Some
 import Data.TagTree (Tag)
-import qualified Data.Text as T
 import Neuron.Reader.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error
@@ -36,17 +35,20 @@ parseZettel format zreader fn zid s = do
     Left parseErr ->
       Left $ Zettel zid format fn "Unknown" False [] Nothing False [] parseErr s
     Right (meta, doc) ->
-      let (title, titleInBody) = case Meta.title =<< meta of
+      let -- Determine zettel title
+          (title, titleInBody) = case Meta.title =<< meta of
             Just tit -> (tit, False)
-            Nothing -> fromMaybe ("Untitled", False) $ do
+            Nothing -> fromMaybe (zettelIDRaw zid, False) $ do
               ((,True) . plainify . snd <$> getH1 doc)
-                <|> ((,False) . takeInitial . plainify <$> getFirstParagraphText doc)
-          metaTags = fromMaybe [] $ Meta.tags =<< meta
-          date = Meta.date =<< meta
-          unlisted = fromMaybe False $ Meta.unlisted =<< meta
+          -- Accumulate queries
           (queries, errors) = runWriter $ extractQueries doc
+          -- Determine zettel tags
+          metaTags = fromMaybe [] $ Meta.tags =<< meta
           queryTags = getInlineTag `mapMaybe` queries
           tags = nub $ metaTags <> queryTags
+          -- Determine other metadata
+          date = Meta.date =<< meta
+          unlisted = fromMaybe False $ Meta.unlisted =<< meta
        in Right $ Zettel zid format fn title titleInBody tags date unlisted queries errors doc
   where
     -- Extract all (valid) queries from the Pandoc document
@@ -64,8 +66,6 @@ parseZettel format zreader fn zid s = do
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag
       _ -> Nothing
-    takeInitial =
-      (<> " ...") . T.take 18
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::

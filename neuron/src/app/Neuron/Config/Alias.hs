@@ -5,6 +5,7 @@
 module Neuron.Config.Alias where
 
 import Control.Monad.Except (liftEither, runExcept, throwError)
+import Data.List (delete)
 import Neuron.Config.Type
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
@@ -32,7 +33,7 @@ getAliases Config {..} graph = do
       pure v
   where
     hasIndexZettel =
-      isJust . G.getZettel (ZettelID "index")
+      isJust . G.getZettel indexZid
 
 mkAliases :: [Text] -> ZettelGraph -> Either Text [Alias]
 mkAliases aliasSpecs graph =
@@ -41,12 +42,15 @@ mkAliases aliasSpecs graph =
       alias@Alias {..} <- liftEither $ parse aliasParser configFile aliasSpec
       when (isJust $ G.getZettel aliasZettel graph) $ do
         throwError $
-          "Cannot create redirect from '" <> unZettelID aliasZettel <> "', because a zettel with that ID already exists"
-      when (unZettelID targetZettel /= "z-index" && isNothing (G.getZettel targetZettel graph)) $ do
+          "Cannot create redirect from '" <> zettelIDRaw aliasZettel <> "', because a zettel with that ID already exists"
+      when (zettelIDSlug targetZettel /= "z-index" && isNothing (G.getZettel targetZettel graph)) $ do
         throwError $
-          "Target zettel '" <> unZettelID targetZettel <> "' does not exist"
+          "Target zettel '" <> zettelIDRaw targetZettel <> "' does not exist"
       pure alias
 
 aliasParser :: Parser Alias
 aliasParser =
-  Alias <$> (idParser <* M.char ':') <*> idParser
+  -- Disallow ':' in IDs, because we use colon as a separator in alias spec.
+  -- TODO: Do proper parsing so colon is allowed in both IDs.
+  let idParserSansColon = idParser' $ delete ':' allowedSpecialChars
+   in Alias <$> (idParserSansColon <* M.char ':') <*> idParser

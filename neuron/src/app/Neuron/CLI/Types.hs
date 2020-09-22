@@ -26,7 +26,6 @@ import Data.Time
 import Data.Time.DateMayTime
   ( DateMayTime,
     formatDateMayTime,
-    getDay,
     mkDateMayTime,
     parseDateMayTime,
   )
@@ -50,8 +49,7 @@ data App = App
   }
 
 data NewCommand = NewCommand
-  { title :: Maybe Text,
-    format :: Maybe ZettelFormat,
+  { format :: Maybe ZettelFormat,
     date :: DateMayTime,
     idScheme :: Some IDScheme,
     edit :: Bool
@@ -124,7 +122,10 @@ commandParser defaultNotesDir now = do
             command "rib" $ info ribCommand $ progDesc "Generate static site via rib"
           ]
     newCommand = do
-      title <- optional $ strArgument (metavar "TITLE" <> help "Title of the new Zettel")
+      idScheme <-
+        fmap (maybe (Some IDSchemeHash) (Some . IDSchemeCustom)) $
+          optional $
+            strArgument (metavar "TITLEID" <> help "Custom (title) ID to use; otherwise random ID will be generated")
       format <-
         optional $
           option auto $
@@ -139,16 +140,8 @@ commandParser defaultNotesDir now = do
             <> metavar "DATE/TIME"
             <> value (mkDateMayTime $ Right now)
             <> showDefaultWith (toString . formatDateMayTime)
-            <> help "Zettel creation date/time"
-      -- NOTE: optparse-applicative picks the first option as the default.
-      idSchemeF <-
-        fmap
-          (const $ const $ Some IDSchemeHash)
-          (switch (long "id-hash" <> help "Use random hash ID (default)"))
-          <|> fmap
-            (const . Some . IDSchemeCustom)
-            (option str (long "id" <> help "Use a custom ID" <> metavar "IDNAME"))
-      pure $ New $ NewCommand title format dateParam (idSchemeF $ getDay dateParam) edit
+            <> help "Zettel date/time"
+      pure $ New $ NewCommand format dateParam idScheme edit
     openCommand = do
       fmap Open $
         fmap

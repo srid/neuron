@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Web.HeadHtml
   ( HeadHtml,
@@ -10,10 +10,10 @@ module Neuron.Web.HeadHtml
 where
 
 import Development.Shake
-import Relude
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Pandoc.PandocRaw (PandocRaw (..))
+import Relude
 import Rib.Shake (ribInputDir)
 import System.FilePath ((</>))
 import Text.Pandoc.Definition (Format (..))

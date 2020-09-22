@@ -1,16 +1,11 @@
 let
-  nixpkgsRev = "7bc3a08d3a4c";
-  nixpkgsSrc = builtins.fetchTarball {
-    url = "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz";
-    sha256 = "1kiz37052zsgvw7a378zg08mpbi1wk8dkgm5j6dy0x4mxvcg8ws3";
-  };
   gitignoreSrc = builtins.fetchTarball {
     url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
     sha256 = "1npnx0h6bd0d7ql93ka7azhj40zgjp815fw2r6smg8ch9p7mzdlx";
   };
 in {
   system ? builtins.currentSystem,
-  pkgs ? import nixpkgsSrc { inherit system; },
+  pkgs ? import (import ./nixpkgs.nix) { inherit system; },
   # Cabal project name
   name ? "neuron",
   compiler ? pkgs.haskellPackages,
@@ -20,7 +15,7 @@ in {
 
 let
   inherit (pkgs.haskell.lib)
-    overrideCabal markUnbroken doJailbreak appendPatch justStaticExecutables;
+    overrideCabal doJailbreak dontCheck justStaticExecutables;
 
   inherit (import (gitignoreSrc) { inherit (pkgs) lib; }) gitignoreSource;
 
@@ -55,14 +50,11 @@ let
     reflex-dom-pandoc =
       pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
 
-    # Override pandoc-types and dependencies because stack-lts versions are to old
+    # Override pandoc packages because stack-lts versions are too old
     pandoc-types = self.pandoc-types_1_21;
-
-    # Jailbreak to allow newer skylighting. Next version of pandoc shouldn't
-    # require this.
-    skylighting = super.skylighting_0_9;
-    skylighting-core = super.skylighting-core_0_9;
-    pandoc = doJailbreak super.pandoc_2_10_1;
+    pandoc = doJailbreak (dontCheck super.pandoc);  # For skylighting
+    skylighting = super.skylighting_0_10;
+    skylighting-core = super.skylighting-core_0_10;
 
     neuron = (justStaticExecutables
       (overrideCabal (self.callCabal2nix "neuron" sources.neuron { })

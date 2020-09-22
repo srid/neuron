@@ -9,7 +9,7 @@
 let
   # TODO: Use the same nixpkgs used in project.nix (create a shared
   # nixpkgs.nix?)
-  pkgs = import <nixpkgs> {};
+  pkgs = import (import ./nixpkgs.nix) {};
   neuron = import ./. {};
 in {
   name ? "sridca/neuron"
@@ -22,4 +22,11 @@ in {
     pkgs.coreutils 
     pkgs.bash_5 
   ];
+
+  config = {
+    WorkingDir = "/notes";
+    Volumes = {
+      "/notes" = {};
+    };
+  };
 }

@@ -26,4 +26,4 @@ itParsesAlias name s =
     fmap renderAlias (parse aliasParser "<hspec>" s) `shouldBe` Right s
   where
     renderAlias Alias {..} =
-      unZettelID aliasZettel <> ":" <> unZettelID targetZettel
+      zettelIDSlug aliasZettel <> ":" <> zettelIDSlug targetZettel
