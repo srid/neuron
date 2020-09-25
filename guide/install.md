@@ -2,11 +2,15 @@
 
 Neuron can be installed on Windows, Linux or macOS.
 
+:::{.ui .inverted .large .blue .message}
+If you want to give neuron a try before installing it, checkout [[cerveau]].
+:::
+
 ## Prerequisites
 
 ### Nix
 
-Neuron can be installed via the Nix[^nix] package maager. Install [Nix](https://nixos.org/nix/) as follows:
+Neuron can be installed via the Nix[^nix] package maager. Install [Nix](https://nixos.org/) as follows:
 
 ``` bash
 curl -L https://nixos.org/nix/install | sh
@@ -16,9 +20,10 @@ curl -L https://nixos.org/nix/install | sh
 :::{.header}
 OS-specific notes
 :::
+
 * If you are on **Windows**, you should begin by [installing Ubuntu on
-WSL 2](https://docs.microsoft.com/en-us/windows/wsl/install-win10), before installing Nix on it.
-* If you are on **macOS Catalina**, carefully read the [macOS Installation](https://nixos.org/nix/manual/#sect-macos-installation) section of the Nix manual before installing Nix.
+WSL 2](https://docs.microsoft.com/en-us/windows/wsl/install-win10) (not WSL 1), before installing Nix on it.
+* If you are on **macOS Catalina or later**, refer to the [macOS Installation](https://nixos.org/manual/nix/stable/#sect-macos-installation) section of the Nix manual on how to install Nix.
 :::
  
 ### Enable cache
