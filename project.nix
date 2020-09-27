@@ -50,11 +50,11 @@ let
     reflex-dom-pandoc =
       pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
 
-    # Override pandoc packages because stack-lts versions are too old
-    pandoc-types = self.pandoc-types_1_21;
-    pandoc = doJailbreak (dontCheck super.pandoc);  # For skylighting
-    skylighting = super.skylighting_0_10;
-    skylighting-core = super.skylighting-core_0_10;
+    # This version is not the default in nixpkgs, yet.
+    skylighting = super.skylighting_0_10_0_2;
+    skylighting-core = super.skylighting-core_0_10_0_2;
+    # Jailbreak pandoc to work with newer skylighting
+    pandoc = doJailbreak (dontCheck super.pandoc);
 
     neuron = (justStaticExecutables
       (overrideCabal (self.callCabal2nix "neuron" sources.neuron { })
