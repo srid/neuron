@@ -85,4 +85,3 @@ Sponsors get full access to [Cerveau](https://www.cerveau.app/).
 [<img src="https://github-sponsors.srid.ca/sponsor/avatar/48" width="35">](https://github-sponsors.srid.ca/sponsor/profile/48)
 [<img src="https://github-sponsors.srid.ca/sponsor/avatar/49" width="35">](https://github-sponsors.srid.ca/sponsor/profile/49)
 [<img src="https://github-sponsors.srid.ca/sponsor/avatar/50" width="35">](https://github-sponsors.srid.ca/sponsor/profile/50)
-
