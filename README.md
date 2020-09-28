@@ -32,6 +32,8 @@ Development documentation is available in [CONTRIBUTING.md](https://github.com/s
 
 ## Sponsors
 
+Sponsors get full access to [Cerveau](https://www.cerveau.app/).
+
 [<img src="https://github-sponsors.srid.ca/sponsor/avatar/0" width="35">](https://github-sponsors.srid.ca/sponsor/profile/0)
 [<img src="https://github-sponsors.srid.ca/sponsor/avatar/1" width="35">](https://github-sponsors.srid.ca/sponsor/profile/1)
 [<img src="https://github-sponsors.srid.ca/sponsor/avatar/2" width="35">](https://github-sponsors.srid.ca/sponsor/profile/2)
