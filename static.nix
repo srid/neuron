@@ -8,7 +8,7 @@ in
     inherit pkgs;
     disableHsLuaTests = true; 
     neuronFlags = [
-      # "--ghc-option=-optl=-static"
+      "--ghc-option=-optl=-static"
       # Disabling shared as workaround. But - https://github.com/nh2/static-haskell-nix/issues/99#issuecomment-665400600
       # TODO: Patch ghc bootstrap binary to use ncurses6, which might also obviate the nixpkgs revert.
       "--disable-shared"
