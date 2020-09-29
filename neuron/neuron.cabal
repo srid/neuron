@@ -222,7 +222,9 @@ executable neuron
   import: app-common
   hs-source-dirs: src/exe
   main-is: Main.hs
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -optl=-static
+  -- -optl=-static
+  -- ^^ Adding this breaks normal build
   if (flag(ghcid))
     hs-source-dirs: src/lib src/app
   else

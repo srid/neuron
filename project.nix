@@ -7,6 +7,7 @@ let
   nixpkgs = import sources.nixpkgs {};
 in {
   pkgs ? nixpkgs,
+  neuronFlags ? [],
   disableHsLuaTests ? false,
   withHoogle ? false,
   ...
@@ -14,8 +15,7 @@ in {
 
 let
   inherit (pkgs.haskell.lib)
-  overrideCabal doJailbreak dontCheck justStaticExecutables
-  appendConfigureFlags;
+    overrideCabal doJailbreak dontCheck justStaticExecutables appendConfigureFlags;
 
   inherit (import (gitignoreSrc) { inherit (pkgs) lib; }) gitignoreSource;
 
@@ -90,18 +90,7 @@ let
             remove-references-to -t ${self.js-dgtable} $out/bin/neuron
             remove-references-to -t ${self.js-flot} $out/bin/neuron
           '';
-        })) 
-    [
-          "--ghc-option=-optl=-static"
-          # Disabling shared as workaround. But - https://github.com/nh2/static-haskell-nix/issues/99#issuecomment-665400600
-          # TODO: Patch ghc bootstrap binary to use ncurses6, which might also obviate the nixpkgs revert.
-          "--disable-shared"
-          "--extra-lib-dirs=${pkgs.gmp6.override { withStatic = true; }}/lib"
-          "--extra-lib-dirs=${pkgs.zlib.static}/lib"
-          "--extra-lib-dirs=${pkgs.libffi.overrideAttrs (old: { dontDisableStatic = true; })}/lib"
-          "--extra-lib-dirs=${pkgs.ncurses.override { enableStatic = true; }}/lib"
-        ]
-        ;
+        })) neuronFlags;
   };
 
   haskellPackages = pkgs.haskellPackages.override { overrides = haskellOverrides; };
