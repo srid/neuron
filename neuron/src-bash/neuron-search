@@ -4,9 +4,10 @@ set -euo pipefail
 NOTESDIR=${1}
 FILTERBY=${2}
 SEARCHFROMFIELD=${3}
-OPENCMD=$(envsubst -no-unset -no-empty <<<${4})
+EXTENSIONS=${4}
+OPENCMD=$(envsubst -no-unset -no-empty <<<${5})
 cd ${NOTESDIR}
-rg --no-heading --no-line-number --with-filename --sort path "${FILTERBY}" *.md \
+rg --no-heading --no-line-number --with-filename --sort path "${FILTERBY}" -g "${EXTENSIONS}" \
   | fzf --tac --no-sort -d ':' -n ${SEARCHFROMFIELD}.. \
     --preview 'bat --style=plain --color=always {1}' \
   | awk -F: "{printf \"${NOTESDIR}/%s\", \$1}" \
