@@ -42,7 +42,7 @@ interactiveSearch notesDir searchCmd config =
   do
     zettelFormats <- getZettelFormats config
     if searchBy searchCmd == SearchByTitle && ZettelFormat_Org `elem` toList zettelFormats
-      then fail "search is not supported for .org files."
+      then fail "search is not supported for .org files"
       else liftIO $ execScript neuronSearchScript $ notesDir : searchScriptArgs zettelFormats searchCmd
   where
     execScript scriptPath args =
