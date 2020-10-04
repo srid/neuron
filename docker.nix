@@ -7,9 +7,8 @@
 #       --argstr tag <image-tag>
 #   )
 let
-  # TODO: Use the same nixpkgs used in project.nix (create a shared
-  # nixpkgs.nix?)
-  pkgs = import (import ./nixpkgs.nix) {};
+  sources = import nix/sources.nix {};
+  pkgs = import sources.nixpkgs {};
   neuron = import ./. {};
 in {
   name ? "sridca/neuron"

@@ -37,6 +37,7 @@
   - Use current directory as the default value for `-d` (a la. git) (#389)
   - Adapt `neuron new` for title IDs (#408)
   - `neuron search`: fail if org is enabled, unless --full-text is used. (#420)
+- Static binaries
 
 ## 0.6.0.0
 

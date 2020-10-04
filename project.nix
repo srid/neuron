@@ -3,19 +3,19 @@ let
     url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
     sha256 = "1npnx0h6bd0d7ql93ka7azhj40zgjp815fw2r6smg8ch9p7mzdlx";
   };
+  sources = import nix/sources.nix {};
+  nixpkgs = import sources.nixpkgs {};
 in {
-  system ? builtins.currentSystem,
-  pkgs ? import (import ./nixpkgs.nix) { inherit system; },
-  # Cabal project name
-  name ? "neuron",
-  compiler ? pkgs.haskellPackages,
+  pkgs ? nixpkgs,
+  neuronFlags ? [],
+  disableHsLuaTests ? false,
   withHoogle ? false,
   ...
 }:
 
 let
   inherit (pkgs.haskell.lib)
-    overrideCabal doJailbreak dontCheck justStaticExecutables;
+    overrideCabal doJailbreak dontCheck justStaticExecutables appendConfigureFlags;
 
   inherit (import (gitignoreSrc) { inherit (pkgs) lib; }) gitignoreSource;
 
@@ -25,6 +25,7 @@ let
 
   sources = {
     neuron = gitignoreSource ./neuron;
+    # TODO: Switch to using `niv` exclusively.
     rib = thunkOrPath "rib";
     reflex-dom-pandoc = thunkOrPath "reflex-dom-pandoc";
   };
@@ -34,7 +35,7 @@ let
     cp $src/src-bash/neuron-search $out/bin/neuron-search
     chmod +x $out/bin/neuron-search
     wrapProgram $out/bin/neuron-search --prefix 'PATH' ':' ${
-      with pkgs;
+      with nixpkgs;
       lib.makeBinPath [ fzf ripgrep gawk bat findutils envsubst ]
     }
     PATH=$PATH:$out/bin
@@ -56,7 +57,11 @@ let
     # Jailbreak pandoc to work with newer skylighting
     pandoc = doJailbreak (dontCheck super.pandoc);
 
-    neuron = (justStaticExecutables
+    # Test fails on pkgsMusl
+    # https://github.com/hslua/hslua/issues/67
+    hslua = if disableHsLuaTests then (dontCheck super.hslua) else super.hslua;
+
+    neuron = appendConfigureFlags ((justStaticExecutables
       (overrideCabal (self.callCabal2nix "neuron" sources.neuron { })
         wrapSearchScript)).overrideDerivation (drv: {
           # Avoid transitive runtime dependency on the whole GHC distribution due to
@@ -85,10 +90,10 @@ let
             remove-references-to -t ${self.js-dgtable} $out/bin/neuron
             remove-references-to -t ${self.js-flot} $out/bin/neuron
           '';
-        });
+        })) neuronFlags;
   };
 
-  haskellPackages = compiler.override { overrides = haskellOverrides; };
+  haskellPackages = pkgs.haskellPackages.override { overrides = haskellOverrides; };
 
   nixShellSearchScript = pkgs.stdenv.mkDerivation {
     name = "neuron-search";

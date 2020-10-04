@@ -14,7 +14,7 @@
 ## External links
 
 * [Neuron source code](https://github.com/srid/neuron)
-* [Neuron blog posts](https://www.srid.ca/b6df4059.html)
+* [Neuron blog posts](https://www.srid.ca/neuron.html)
 * [Project Discussion Chat](https://github.com/srid/neuron#discussion)
 * [Sponsor the project](https://github.com/sponsors/srid)
 
