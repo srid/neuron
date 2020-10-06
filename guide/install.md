@@ -10,7 +10,7 @@ If you want to give neuron a try before installing it, checkout [[cerveau]].
 
 ### Nix
 
-Neuron can be installed via the Nix[^nix] package maager. Install [Nix](https://nixos.org/) as follows:
+Neuron can be installed via the Nix[^nix] package manager. Install [Nix](https://nixos.org/) as follows:
 
 ``` bash
 curl -L https://nixos.org/nix/install | sh
