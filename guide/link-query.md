@@ -1,7 +1,6 @@
-# Automatic links using queries
+# Link Queries
 
-Neuron supports special link syntax that will query the Zettelkasten (eg: by
-tag) and create links based on the query results.
+Neuron supports special *link queries* to create links dynamically based on a query.
 
 ## Linking to multiple zettels by tag
 

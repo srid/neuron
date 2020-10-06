@@ -36,7 +36,7 @@ zettel is displayed.
 
 ## Advanced linking
 
-* [[[2011506]]]
+* [[[link-query]]]
 
 [^autolink]:
     Neuron used to use "autolink" style linking. `<ef3dke98>` is the

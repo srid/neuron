@@ -21,7 +21,7 @@ These two extensions are useful when editing your Neuron notes in [Visual Studio
 * [vscode-memo](https://github.com/svsool/vscode-memo#memo) - supports both kinds of wikilinks
 * [markdown-links](https://github.com/tchayen/markdown-links) - supports only `[[..]]` style link, [but not folgezettel](https://github.com/tchayen/markdown-links/issues/59) (`[[[...]]]`).
 
-Note that advanced features of neuron like [[2011506]] will not be supported by either of these extensions. [LSP support](https://github.com/srid/neuron/issues/213) is ideal, but it has not been implemented by anyone yet.
+Note that advanced features of neuron like [[link-query]] will not be supported by either of these extensions. [LSP support](https://github.com/srid/neuron/issues/213) is ideal, but it has not been implemented by anyone yet.
 
 ![demo](./static/vscode-title-id.gif){.ui .centered .large .image}
 

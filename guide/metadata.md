@@ -12,7 +12,7 @@ date: 2020-08-21T13:06
 ---
 ```
 
-This date can be made to display in a query result by using the `timeline` flag (see [[2011506]]).
+This date can be made to display in a query result by using the `timeline` flag (see [[link-query]]).
 
 ## Pinning
 

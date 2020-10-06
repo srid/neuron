@@ -22,5 +22,6 @@
   , "2017401:folgezettel-heterarchy"
   , "2013701:math"
   , "2011701:configuration"
+  , "2011506:link-query"
   ]
 }
