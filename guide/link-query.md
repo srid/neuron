@@ -30,6 +30,10 @@ Queries can also link to zettels whose [[tags]] match a glob pattern. Two kinds 
 
 2. **Recursive globs**: Recursive globs (`**`) are like simple globs, but they operate recursively, matching tags at *all* levels in the hierarchy.  For instance, `[[z:zettels?tag=science/**]]` will also match "science/physics/kinematics". This will also include zettels that are tagged "science" only, though this behavior can be avoided by querying "science/\*/\*\*" instead.
 
+:::{.ui .message}
+For a real-world example of link queries and hierarchical tags, see [Alien Psychology](https://alien-psychology.zettel.page/) ([source](https://github.com/srid/alien-psychology)).
+:::
+
 ## Control flags
 
 Link queries support a few query flags to control the link listing UI:
