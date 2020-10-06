@@ -18,7 +18,7 @@ git clone https://github.com/srid/neuron.git
 cd neuron
 ```
 
-Now run the neuron [[2011405]] on the `./guide` Zettelkasten:
+Now run the neuron [[web]] on the `./guide` Zettelkasten:
 
 ```bash
 cd ./guide
@@ -37,7 +37,7 @@ There a few ways to do this.
 
 For this tutorial, we choose the last option.
 
-Neuron expects the Zettelkasten directory to contain a `neuron.dhall`, as well as a list of [[2011404]] notes. By default, the current working directory will be used as your Zettelkasten directory (which you can override using the `-d` option). Create this directory first, and add a basic `neuron.dhall` (see [[2011701]]):
+Neuron expects the Zettelkasten directory to contain a `neuron.dhall`, as well as a list of [[markdown]] notes. By default, the current working directory will be used as your Zettelkasten directory (which you can override using the `-d` option). Create this directory first, and add a basic `neuron.dhall` (see [[configuration]]):
 
 ```bash
 mkdir ~/zettelkasten
@@ -45,7 +45,7 @@ cd ~/zettelkasten
 touch neuron.dhall
 ```
 
-Now create (see [[2011406]]) your first zettel file:
+Now create (see [[create]]) your first zettel file:
 
 ```bash
 neuron new -e
@@ -61,7 +61,7 @@ Next, create an "overview" zettel called `index.md` --- it would be the welcomin
 neuron new -e index
 ```
 
-In the text editor, link it (see [[2011504]]) to your first zettel. It should look like this:
+In the text editor, link it (see [[linking]]) to your first zettel. It should look like this:
 
 ```
 # My Zettelkasten
@@ -69,7 +69,7 @@ In the text editor, link it (see [[2011504]]) to your first zettel. It should lo
 From here, you can visit: [[6479cd5e]]
 ```
 
-Your Zettelkasten directory should now contain two zettels--named `6479cd5e.md` and `index.md`.  Now it is time to run the neuron [[2011405]]:
+Your Zettelkasten directory should now contain two zettels--named `6479cd5e.md` and `index.md`.  Now it is time to run the neuron [[web]]:
 
 ```bash
 neuron rib -wS

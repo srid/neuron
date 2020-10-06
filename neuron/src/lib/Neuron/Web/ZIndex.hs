@@ -95,7 +95,7 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
         elClass "h3" "ui header" $ text "Folgezettel Orphans"
         elClass "p" "info" $ do
           text "Notes without any "
-          elAttr "a" ("href" =: "https://neuron.zettel.page/2011504.html") $ text "folgezettel"
+          elAttr "a" ("href" =: "https://neuron.zettel.page/linking.html") $ text "folgezettel"
           text " relationships"
         el "ul" $
           forM_ zs $ \z ->
@@ -112,7 +112,7 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
           <> countNounBe "link" "links" (statsZettelConnectionCount zIndexStats)
       text $ ". It has " <> countNounBe "cluster" "clusters" (length zIndexClusters) <> " in its folgezettel graph. "
       text "Each cluster's "
-      elAttr "a" ("href" =: "https://neuron.zettel.page/2017401.html") $ text "folgezettel heterarchy"
+      elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"
       text " is rendered as a forest."
   where
     countNounBe noun nounPlural = \case

@@ -26,7 +26,7 @@ configFile = "neuron.dhall"
 
 -- | Config type for @neuron.dhall@
 --
--- See <https://neuron.zettel.page/2011701.html guide> for description of the fields.
+-- See <https://neuron.zettel.page/configuration.html guide> for description of the fields.
 --
 -- TODO: Implement custom `FromDhall` instance, while using original field types
 data Config = Config

@@ -1,7 +1,7 @@
 # Folgezettel Heterarchy
 
 Neuron allows you to organically build a [[2011407]] out of your Zettelkasten
-over time. When a zettel links (see [[2011504]]) to another, it "branches
+over time. When a zettel links (see [[linking]]) to another, it "branches
 off"[^1] to that zettel ... using `[[[...]]]` (i.e, three brackets, instead
 of two).
 

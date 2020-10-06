@@ -1,20 +1,19 @@
-# Automatic links using queries
+# Link Queries
 
-Neuron supports special link syntax that will query the Zettelkasten (eg: by
-tag) and create links based on the query results.
+Neuron supports special *link queries* to create links dynamically based on a query.
 
 ## Linking to multiple zettels by tag
 
 You may create a query that will link to (and display) the matching zettels automatically. For
 example, to link to a list of a zettels with the "science" tag (from the example
-at [[2011505]]):
+at [[metadata]]):
 
 ```
 [[z:zettels?tag=science&timeline]]
 ```
 
 You can use the CLI to see which zettels will be included in a given query; see
-[[2013501]].
+[[searching]].
 
 ### Example
 
@@ -24,13 +23,13 @@ Zettelkasten:
 [[z:zettels?tag=walkthrough]]
 
 It was created by `[[z:zettels?tag=walkthrough]]`. Note that here we
-use `[[..]]` to not affect the [[2017401]] of the graph; whereas if we had used
+use `[[..]]` to not affect the [[folgezettel-heterarchy]] of the graph; whereas if we had used
 `[[[...]]]`, it will form the appropriate folgezettel connections to the listed
 notes.
 
 ### Hierarchical tags
 
-Queries can also link to zettels whose [[535407ad]] match a glob pattern. For
+Queries can also link to zettels whose [[tags]] match a glob pattern. For
 instance, `[[z:zettels?tag=science/*]]` will link to all zettels tagged
 "science/physics" and "science/biology".
 

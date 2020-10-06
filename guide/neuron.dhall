@@ -11,5 +11,17 @@
   , "c6176636:docker"
   , "2011403:id"
   , "4a6b25f1:editor"
+  , "2011404:markdown"
+  , "535407ad:tags"
+  , "2011505:metadata"
+  , "2011405:web"
+  , "2011406:create"
+  , "2013501:searching"
+  , "cc1f7ecf:query"
+  , "2011504:linking"
+  , "2017401:folgezettel-heterarchy"
+  , "2013701:math"
+  , "2011701:configuration"
+  , "2011506:link-query"
   ]
 }
