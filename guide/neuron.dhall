@@ -23,5 +23,8 @@
   , "2013701:math"
   , "2011701:configuration"
   , "2011506:link-query"
+  , "6f0f0bcc:philosophy"
+  , "2012101:atomic"
+  , "2011407:heterarchy"
   ]
 }

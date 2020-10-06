@@ -15,5 +15,5 @@ Use title IDs when you want truly future-proof[^futureproof] link IDs that work 
 The advantage to using random IDs (which neuron uses by default) is that you do not have to rename links across your Zettelkasten when changing the title of a note. This makes the links slightly less future-proof, however, because for most convenient editing experience you now have to rely on using a text editor (see [[editor]]) that supports expanding them with the title from the note text.
 
 [^new]: See [[create]]
-[^futureproof]: See [[6f0f0bcc]]
+[^futureproof]: See [[philosophy]]
 [^rename]: Use `sed` or [sd](https://github.com/chmln/sd) in a script to rename title IDs across your Zettelkasten. Some text editors, like VSCode, may have built renaming support; see [[editor]].
