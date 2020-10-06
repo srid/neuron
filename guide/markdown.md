@@ -5,9 +5,9 @@ Zettel files are written in Markdown[^other], per the [CommonMark](https://commo
 * [[[linking]]]
 * [[[tags]]]
 * [[[metadata]]]
-* [[[2013702]]] 
-* [[[math]]] 
+* [[[2013702]]]
+* [[[math]]]
 * [[[2016401]]]
 * Styling elements using Semantic UI ([\#176](https://github.com/srid/neuron/issues/176))
 
-[^other]: Neuron is designed to be extended with other markup formats as well. Org-mode is currently supported (see the `formats` setting in [[configuration]]) but is [experimental](https://github.com/srid/neuron/issues/275). Neuron recommends Markdown, which is supported everywhere including [[cerveau]].  
+[^other]: Neuron is designed to be extended with other markup formats as well. Org-mode is currently supported (see the `formats` setting in [[configuration]]) but not all features work with it. Neuron recommends Markdown, which is supported everywhere including [[cerveau]].  
