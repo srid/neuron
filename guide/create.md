@@ -17,11 +17,11 @@ This command will print the path to the file created. Use `-e` to also open the 
 neuron new -e
 ```
 
-Do not forget to link your new zettel to the rest of your Zettelkasten. See [[2011504]].
+Do not forget to link your new zettel to the rest of your Zettelkasten. See [[linking]].
 
 ## Opening a Zettel by title
 
-See [[2013501]].
+See [[searching]].
 
 ## Using a text editor
 

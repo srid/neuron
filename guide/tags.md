@@ -9,7 +9,7 @@ victimizer is rendered powerless to influence their victim.
 
 In the above example, the note is tagged with `#cognitive-distortion` which also links to the tag page.
 
-Tags can also be specified in the [[2011505]] block. The above tag can be specified alternatively as follows:
+Tags can also be specified in the [[metadata]] block. The above tag can be specified alternatively as follows:
 
 ```markdown
 ---

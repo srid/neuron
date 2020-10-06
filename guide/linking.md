@@ -13,7 +13,7 @@ You can also use regular Markdown links:
 * [My zettel](ef3dke98.md)
 ```
 
-In [[2011405]], neuron will automatically display the title of the
+In [[web]], neuron will automatically display the title of the
 linked zettel when using the wiki-link syntax.
 
 ## Branching links
@@ -29,7 +29,7 @@ This is a zettel file, which links (branches of) to another zettel:
 The 3-bracket syntax creates a special link (called a folgezettel) to the
 specified zettel. When a zettel has a folgezettel relationship to another
 zettel, it is said to "branch of" to the other zettel. Folgezetel relationships
-define the [[2017401]] of your zettel graph. 
+define the [[folgezettel-heterarchy]] of your zettel graph. 
 
 Branching links affect the linked zettel's [[5e41fd32]] where the linking
 zettel is displayed.

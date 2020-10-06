@@ -16,7 +16,7 @@ This date can be made to display in a query result by using the `timeline` flag 
 
 ## Pinning
 
-Zettels can be pinned in the z-index so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[535407ad]]) to it.
+Zettels can be pinned in the z-index so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[tags]]) to it.
 
 ```markdown
 ---
@@ -39,5 +39,5 @@ unlisted: true
 
 You can explicitly specify a title using the `title` metadata; otherwise, Neuron will infer it from the Markdown heading or [[id]].
 
-The metadata key `tags` or `keywords` can be used to specify tags, although neuron supports inline tags as well (see [[[535407ad]]]).
+The metadata key `tags` or `keywords` can be used to specify tags, although neuron supports inline tags as well (see [[[tags]]]).
 
