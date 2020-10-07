@@ -12,6 +12,7 @@ import Control.Monad.Catch (MonadThrow)
 import Data.Default (def)
 import Data.Some (Some (Some))
 import Data.TagTree (Tag (Tag), mkTagPattern)
+import qualified Network.URI.Encode as E
 import Neuron.Zettelkasten.Connection (Connection (..))
 import Neuron.Zettelkasten.ID (unsafeMkZettelID)
 import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
@@ -21,7 +22,6 @@ import Relude
 import Test.Hspec
 import Text.Pandoc.Definition (Inline (Str))
 import Text.URI (URI, mkURI)
-import Text.URI.Util (mkURILenient)
 
 spec :: Spec
 spec = do
@@ -61,7 +61,8 @@ spec = do
       queryFromURILink (shortLink "z:tag/foo/bar/baz")
         `shouldBe` Right (Just $ Some $ ZettelQuery_TagZettel (Tag "foo/bar/baz"))
     it "i18n" $ do
-      let shortLinkUnicode s = mkURILink' mkURILenient s s
+      let encodeUriPath = toText . E.encode . toString
+          shortLinkUnicode s = mkURILink' (mkURI . encodeUriPath) s s
       queryFromURILink (shortLinkUnicode "计算机")
         `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (unsafeMkZettelID "计算机") Folgezettel)
   let normalLink = mkURILink "some link text"

@@ -16,14 +16,14 @@ module Neuron.Web.Generate.Route where
 import Control.Monad.Except
 import Data.Some
 import Data.TagTree (unTag)
+import qualified Network.URI.Encode as E
 import Neuron.Web.Route (Route (..), RouteConfig (..))
 import Neuron.Zettelkasten.ID
 import Reflex.Dom.Core
 import Relude
-import Rib.Route (IsRoute (..), routeUrl, routeUrlRel)
-import Text.URI (URI)
+import Rib.Route (IsRoute (..), routeUrlRel)
+import Text.URI (URI, mkURI)
 import qualified Text.URI as URI
-import Text.URI.Util (mkURILenient)
 
 instance IsRoute Route where
   routeFile = \case
@@ -64,7 +64,9 @@ instance Exception BaseUrlError
 routeUri :: (HasCallStack, IsRoute r) => URI -> r a -> URI
 routeUri baseUrl r = either (error . toText . displayException) id $
   runExcept $ do
-    uri <- liftEither $ mkURILenient $ routeUrl r
+    let relUrlUnicode = routeUrlRel r
+        relUrl = toText . E.encode . toString $ relUrlUnicode
+    uri <- liftEither $ mkURI relUrl
     case URI.relativeTo uri baseUrl of
       Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
       Just x -> pure x

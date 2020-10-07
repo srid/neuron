@@ -8,14 +8,8 @@
 
 module Text.URI.Util where
 
-import Control.Monad.Catch (MonadThrow)
-import qualified Network.URI.Encode as E
 import Relude
 import qualified Text.URI as URI
-
-mkURILenient :: MonadThrow m => Text -> m URI.URI
-mkURILenient =
-  URI.mkURI . toText . E.encode . toString
 
 getQueryParam :: URI.RText 'URI.QueryKey -> URI.URI -> Maybe Text
 getQueryParam k uri =
