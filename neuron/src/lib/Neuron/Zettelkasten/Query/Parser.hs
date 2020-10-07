@@ -22,6 +22,7 @@ where
 import Control.Monad.Except
 import Data.Some
 import Data.TagTree (TagNode (..), TagPattern, constructTag, mkTagPattern)
+import qualified Network.URI.Encode as E
 import Neuron.Reader.Type (ZettelFormat (..))
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
@@ -64,7 +65,7 @@ queryFromURI defConn uri = do
               guard $ URI.uriAuthority uri == Left False
               (False, path) <- URI.uriPath uri
               pure path
-        (URI.unRText -> path) :| [] <- hoistMaybe shortLinkPath
+        (toText . E.decode . toString . URI.unRText -> path) :| [] <- hoistMaybe shortLinkPath
         zid <-
           hoistMaybe $
             -- Allow raw filename (ending with ".md"). HACK: hardcoding

@@ -16,6 +16,7 @@ module Neuron.Web.Generate.Route where
 import Control.Monad.Except
 import Data.Some
 import Data.TagTree (unTag)
+import qualified Network.URI.Encode as E
 import Neuron.Web.Route (Route (..), RouteConfig (..))
 import Neuron.Zettelkasten.ID
 import Reflex.Dom.Core
@@ -63,7 +64,7 @@ routeUri :: (HasCallStack, IsRoute r) => Text -> r a -> URI.URI
 routeUri siteBaseUrl r = either (error . toText . displayException) id $
   runExcept $ do
     baseUrl <- liftEither $ URI.mkURI siteBaseUrl
-    uri <- liftEither $ URI.mkURI $ routeUrl r
+    uri <- liftEither $ URI.mkURI $ toText $ E.encode $ toString $ routeUrl r
     case URI.relativeTo uri baseUrl of
       Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
       Just x -> pure x

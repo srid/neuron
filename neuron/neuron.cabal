@@ -63,7 +63,8 @@ common library-common
     reflex-dom-core,
     reflex-dom-pandoc >= 0.4.0.0,
     clay,
-    tagged
+    tagged,
+    uri-encode
 
 library
   import: library-common
