@@ -63,8 +63,7 @@ common library-common
     reflex-dom-core,
     reflex-dom-pandoc >= 0.4.0.0,
     clay,
-    tagged,
-    uri-encode
+    tagged
 
 library
   import: library-common
@@ -146,7 +145,8 @@ common app-common
     shake,
     with-utf8,
     shower,
-    either
+    either,
+    uri-encode
 
 -- Everything below will have to be stripped away, if whoever uses this repo
 -- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
