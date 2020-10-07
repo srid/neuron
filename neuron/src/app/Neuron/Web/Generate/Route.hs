@@ -64,6 +64,8 @@ instance Exception BaseUrlError
 routeUri :: (HasCallStack, IsRoute r) => URI -> r a -> URI
 routeUri baseUrl r = either (error . toText . displayException) id $
   runExcept $ do
+    -- We use routeUrlRel, rather than routeUrl, to avoid the leading '/' which
+    -- will get encoded by `E.encode`, creating incorrect URL encoding.
     let relUrlUnicode = routeUrlRel r
         relUrl = toText . E.encode . toString $ relUrlUnicode
     uri <- liftEither $ mkURI relUrl

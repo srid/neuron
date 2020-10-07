@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -38,19 +39,18 @@ renderStructuredData config route val = do
 routeStructuredData :: Config -> (ZettelGraph, a) -> Route a -> [Breadcrumb]
 routeStructuredData cfg (graph, v) = \case
   Route_Zettel _ ->
-    let mBaseUrl = either fail id $ getSiteBaseUrl cfg
-     in case mBaseUrl of
-          Nothing -> []
-          Just baseUrl ->
-            let mkCrumb :: Zettel -> Breadcrumb.Item
-                mkCrumb Zettel {..} =
-                  Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
-             in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (sansContent v) graph
+    case (either fail id $ getSiteBaseUrl cfg) of
+      Nothing -> []
+      Just baseUrl ->
+        let mkCrumb :: Zettel -> Breadcrumb.Item
+            mkCrumb Zettel {..} =
+              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
+         in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (sansContent v) graph
   _ ->
     []
 
 routeOpenGraph :: Config -> a -> Route a -> OpenGraph
-routeOpenGraph cfg@Config {..} v r =
+routeOpenGraph cfg@Config {siteTitle, author} v r =
   OpenGraph
     { _openGraph_title = routeTitle' v r,
       _openGraph_siteName = siteTitle,
@@ -71,7 +71,7 @@ routeOpenGraph cfg@Config {..} v r =
         Route_Zettel _ -> do
           doc <- getPandocDoc v
           image <- URI.mkURI =<< getFirstImg doc
-          baseUrl <- URI.mkURI =<< siteBaseUrl
+          baseUrl <- either fail id $ getSiteBaseUrl cfg
           URI.relativeTo image baseUrl
         _ -> Nothing,
       _openGraph_url = do
