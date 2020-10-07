@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -7,18 +8,20 @@ module Neuron.Zettelkasten.Query.ParserSpec
   )
 where
 
+import Control.Monad.Catch (MonadThrow)
 import Data.Default (def)
-import Data.Some
-import Data.TagTree
-import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Parser
-import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Pandoc.URILink
+import Data.Some (Some (Some))
+import Data.TagTree (Tag (Tag), mkTagPattern)
+import Neuron.Zettelkasten.Connection (Connection (..))
+import Neuron.Zettelkasten.ID (unsafeMkZettelID)
+import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
+import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
+import Reflex.Dom.Pandoc.URILink (URILink (URILink))
 import Relude
 import Test.Hspec
-import Text.Pandoc.Definition
-import Text.URI
+import Text.Pandoc.Definition (Inline (Str))
+import Text.URI (URI, mkURI)
+import Text.URI.Util (mkURILenient)
 
 spec :: Spec
 spec = do
@@ -57,6 +60,10 @@ spec = do
     it "z:tag/foo/bar/baz" $ do
       queryFromURILink (shortLink "z:tag/foo/bar/baz")
         `shouldBe` Right (Just $ Some $ ZettelQuery_TagZettel (Tag "foo/bar/baz"))
+    it "i18n" $ do
+      let shortLinkUnicode s = mkURILink' mkURILenient s s
+      queryFromURILink (shortLinkUnicode "计算机")
+        `shouldBe` Right (Just $ Some $ ZettelQuery_ZettelByID (unsafeMkZettelID "计算机") Folgezettel)
   let normalLink = mkURILink "some link text"
   describe "flexible links (regular markdown)" $ do
     it "Default connection type should be cf" $ do
@@ -77,8 +84,16 @@ spec = do
         `shouldBe` Right Nothing
 
 mkURILink :: Text -> Text -> URILink
-mkURILink linkText s =
+mkURILink =
+  mkURILink' mkURI
+
+mkURILink' ::
+  (forall m. MonadThrow m => Text -> m URI) ->
+  Text ->
+  Text ->
+  URILink
+mkURILink' mk linkText s =
   -- TODO: Do this in reflex-dom-pandoc
-  let uri = either (error . toText . displayException) id $ mkURI s
+  let uri = either (error . toText . displayException) id $ mk s
       inner = if linkText == s then Nothing else Just [Str linkText]
    in URILink inner uri

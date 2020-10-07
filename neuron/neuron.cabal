@@ -41,6 +41,7 @@ common library-common
     text,
     time,
     relude,
+    exceptions,
     filepath,
     algebraic-graphs >= 0.5,
     parser-combinators,
