@@ -15,7 +15,7 @@ import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.Structured.OpenGraph
 import Data.Structured.OpenGraph.Render (renderOpenGraph)
 import qualified Data.Text as T
-import Neuron.Config.Type
+import Neuron.Config.Type (Config (..), getSiteBaseUrl)
 import Neuron.Web.Generate.Route (routeUri)
 import Neuron.Web.Route
 import Neuron.Zettelkasten.Connection
@@ -36,20 +36,21 @@ renderStructuredData config route val = do
   Breadcrumb.renderBreadcrumbs $ routeStructuredData config val route
 
 routeStructuredData :: Config -> (ZettelGraph, a) -> Route a -> [Breadcrumb]
-routeStructuredData Config {..} (graph, v) = \case
+routeStructuredData cfg (graph, v) = \case
   Route_Zettel _ ->
-    case siteBaseUrl of
-      Nothing -> []
-      Just baseUrl ->
-        let mkCrumb :: Zettel -> Breadcrumb.Item
-            mkCrumb Zettel {..} =
-              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
-         in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (sansContent v) graph
+    let mBaseUrl = either fail id $ getSiteBaseUrl cfg
+     in case mBaseUrl of
+          Nothing -> []
+          Just baseUrl ->
+            let mkCrumb :: Zettel -> Breadcrumb.Item
+                mkCrumb Zettel {..} =
+                  Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
+             in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (sansContent v) graph
   _ ->
     []
 
 routeOpenGraph :: Config -> a -> Route a -> OpenGraph
-routeOpenGraph Config {..} v r =
+routeOpenGraph cfg@Config {..} v r =
   OpenGraph
     { _openGraph_title = routeTitle' v r,
       _openGraph_siteName = siteTitle,
@@ -74,7 +75,7 @@ routeOpenGraph Config {..} v r =
           URI.relativeTo image baseUrl
         _ -> Nothing,
       _openGraph_url = do
-        baseUrl <- siteBaseUrl
+        baseUrl <- either fail id $ getSiteBaseUrl cfg
         pure $ routeUri baseUrl r
     }
   where

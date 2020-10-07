@@ -21,6 +21,7 @@ import Neuron.Zettelkasten.ID
 import Reflex.Dom.Core
 import Relude
 import Rib.Route (IsRoute (..), routeUrl, routeUrlRel)
+import Text.URI (URI)
 import qualified Text.URI as URI
 import Text.URI.Util (mkURILenient)
 
@@ -60,10 +61,9 @@ data BaseUrlError
 instance Exception BaseUrlError
 
 -- | Make an absolute URI for a route, given a base URL.
-routeUri :: (HasCallStack, IsRoute r) => Text -> r a -> URI.URI
-routeUri siteBaseUrl r = either (error . toText . displayException) id $
+routeUri :: (HasCallStack, IsRoute r) => URI -> r a -> URI
+routeUri baseUrl r = either (error . toText . displayException) id $
   runExcept $ do
-    baseUrl <- liftEither $ URI.mkURI siteBaseUrl
     uri <- liftEither $ mkURILenient $ routeUrl r
     case URI.relativeTo uri baseUrl of
       Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute

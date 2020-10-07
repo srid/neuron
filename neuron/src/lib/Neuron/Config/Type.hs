@@ -13,6 +13,7 @@ module Neuron.Config.Type
     defaultConfig,
     mergeWithDefault,
     getZettelFormats,
+    getSiteBaseUrl,
   )
 where
 
@@ -20,6 +21,7 @@ import Data.Aeson
 import Neuron.Reader.Type (ZettelFormat)
 import Relude hiding (readEither)
 import Text.Read (readEither)
+import Text.URI (URI, mkURI)
 
 configFile :: FilePath
 configFile = "neuron.dhall"
@@ -46,6 +48,16 @@ getZettelFormats :: MonadFail m => Config -> m (NonEmpty ZettelFormat)
 getZettelFormats Config {..} = do
   formats' <- maybe (fail "Empty formats") pure $ nonEmpty formats
   traverse (either (fail . toString) pure . readEither . toString) formats'
+
+getSiteBaseUrl :: MonadFail m => Config -> m (Maybe URI)
+getSiteBaseUrl Config {..} =
+  runMaybeT $ do
+    s <- MaybeT $ pure siteBaseUrl
+    case mkURI s of
+      Left e ->
+        fail $ displayException e
+      Right uri ->
+        pure uri
 
 defaultConfig :: Text
 defaultConfig =
