@@ -31,6 +31,9 @@ spec = do
         Z.parseZettelID "foo.md" `shouldBe` Right (Z.ZettelID "foo.md" "foo.bar")
       it "parses full-phrase IDs" $ do
         Z.parseZettelID "foo bar" `shouldBe` Right (Z.ZettelID "foo_bar" "foo bar")
+    context "i18n" $ do
+      it "deals with unicode chars" $ do
+        Z.parseZettelID "计算机" `shouldBe` Right (Z.ZettelID "计算机" "计算机")
     context "failures" $ do
       it "fails to parse ID with disallowed characters" $ do
         Z.parseZettelID "/foo" `shouldSatisfy` isLeft

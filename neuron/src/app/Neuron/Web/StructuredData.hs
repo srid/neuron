@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -15,7 +16,7 @@ import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.Structured.OpenGraph
 import Data.Structured.OpenGraph.Render (renderOpenGraph)
 import qualified Data.Text as T
-import Neuron.Config.Type
+import Neuron.Config.Type (Config (..), getSiteBaseUrl)
 import Neuron.Web.Generate.Route (routeUri)
 import Neuron.Web.Route
 import Neuron.Zettelkasten.Connection
@@ -36,9 +37,9 @@ renderStructuredData config route val = do
   Breadcrumb.renderBreadcrumbs $ routeStructuredData config val route
 
 routeStructuredData :: Config -> (ZettelGraph, a) -> Route a -> [Breadcrumb]
-routeStructuredData Config {..} (graph, v) = \case
+routeStructuredData cfg (graph, v) = \case
   Route_Zettel _ ->
-    case siteBaseUrl of
+    case (either fail id $ getSiteBaseUrl cfg) of
       Nothing -> []
       Just baseUrl ->
         let mkCrumb :: Zettel -> Breadcrumb.Item
@@ -49,7 +50,7 @@ routeStructuredData Config {..} (graph, v) = \case
     []
 
 routeOpenGraph :: Config -> a -> Route a -> OpenGraph
-routeOpenGraph Config {..} v r =
+routeOpenGraph cfg@Config {siteTitle, author} v r =
   OpenGraph
     { _openGraph_title = routeTitle' v r,
       _openGraph_siteName = siteTitle,
@@ -70,11 +71,11 @@ routeOpenGraph Config {..} v r =
         Route_Zettel _ -> do
           doc <- getPandocDoc v
           image <- URI.mkURI =<< getFirstImg doc
-          baseUrl <- URI.mkURI =<< siteBaseUrl
+          baseUrl <- either fail id $ getSiteBaseUrl cfg
           URI.relativeTo image baseUrl
         _ -> Nothing,
       _openGraph_url = do
-        baseUrl <- siteBaseUrl
+        baseUrl <- either fail id $ getSiteBaseUrl cfg
         pure $ routeUri baseUrl r
     }
   where

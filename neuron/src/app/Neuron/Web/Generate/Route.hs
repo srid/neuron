@@ -16,11 +16,13 @@ module Neuron.Web.Generate.Route where
 import Control.Monad.Except
 import Data.Some
 import Data.TagTree (unTag)
+import qualified Network.URI.Encode as E
 import Neuron.Web.Route (Route (..), RouteConfig (..))
 import Neuron.Zettelkasten.ID
 import Reflex.Dom.Core
 import Relude
-import Rib.Route (IsRoute (..), routeUrl, routeUrlRel)
+import Rib.Route (IsRoute (..), routeUrlRel)
+import Text.URI (URI, mkURI)
 import qualified Text.URI as URI
 
 instance IsRoute Route where
@@ -59,11 +61,16 @@ data BaseUrlError
 instance Exception BaseUrlError
 
 -- | Make an absolute URI for a route, given a base URL.
-routeUri :: (HasCallStack, IsRoute r) => Text -> r a -> URI.URI
-routeUri siteBaseUrl r = either (error . toText . displayException) id $
+routeUri :: (HasCallStack, IsRoute r) => URI -> r a -> URI
+routeUri baseUrl r = either (error . toText . displayException) id $
   runExcept $ do
-    baseUrl <- liftEither $ URI.mkURI siteBaseUrl
-    uri <- liftEither $ URI.mkURI $ routeUrl r
+    let -- We use routeUrlRel, rather than routeUrl, to avoid the leading '/' which
+        -- will get encoded by `E.encode`, creating incorrect URL encoding.
+        relUrlUnicode = routeUrlRel r
+        -- Use `E.encode` to deal with unicode code points, as mkURI will fail on them.
+        -- This is necessary to support non-ascii characters in filenames
+        relUrl = toText . E.encode . toString $ relUrlUnicode
+    uri <- liftEither $ mkURI relUrl
     case URI.relativeTo uri baseUrl of
       Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
       Just x -> pure x

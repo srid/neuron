@@ -38,6 +38,7 @@
   - Adapt `neuron new` for title IDs (#408)
   - `neuron search`: fail if org is enabled, unless --full-text is used. (#420)
 - Static binaries
+- Unicode-aware in filenames and links (#424)
 
 ## 0.6.0.0
 
