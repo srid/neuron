@@ -64,9 +64,11 @@ instance Exception BaseUrlError
 routeUri :: (HasCallStack, IsRoute r) => URI -> r a -> URI
 routeUri baseUrl r = either (error . toText . displayException) id $
   runExcept $ do
-    -- We use routeUrlRel, rather than routeUrl, to avoid the leading '/' which
-    -- will get encoded by `E.encode`, creating incorrect URL encoding.
-    let relUrlUnicode = routeUrlRel r
+    let -- We use routeUrlRel, rather than routeUrl, to avoid the leading '/' which
+        -- will get encoded by `E.encode`, creating incorrect URL encoding.
+        relUrlUnicode = routeUrlRel r
+        -- Use `E.encode` to deal with unicode code points, as mkURI will fail on them.
+        -- This is necessary to support non-ascii characters in filenames
         relUrl = toText . E.encode . toString $ relUrlUnicode
     uri <- liftEither $ mkURI relUrl
     case URI.relativeTo uri baseUrl of
