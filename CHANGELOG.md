@@ -1,6 +1,6 @@
 # Change Log for neuron
 
-## Unreleased
+## 1.0.0.0
 
 - Updates
   - Bump commonmark, commonmark-extensions (0.2)
