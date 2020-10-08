@@ -21,10 +21,13 @@ curl -L https://nixos.org/nix/install | sh
 OS-specific notes
 :::
 
-* If you are on **Windows**, you should begin by [installing Ubuntu on
-WSL 2](https://docs.microsoft.com/en-us/windows/wsl/install-win10) (not WSL 1), before installing Nix on it.
+* If you are on **Windows**, you should begin by [installing Ubuntu on WSL 2](https://docs.microsoft.com/en-us/windows/wsl/install-win10) (not WSL 1), before installing Nix on it.
+  * Alternatively, you can simply download the static binary of the last stable release [here][staticbin].
 * If you are on **macOS Catalina or later**, refer to the [macOS Installation](https://nixos.org/manual/nix/stable/#sect-macos-installation) section of the Nix manual on how to install Nix.
+* If you are on **Linux**, and do not wish to install Nix, you may download the Linux static binary [here][staticbin]. Note that the static binary corresponds to the last stable release, which generally lags behind the development version (which the Nix install method uses).
 :::
+
+[staticbin]: https://github.com/srid/neuron/releases/download/1.0.0.0/neuron-1.0-linux.tar.gz
  
 ### Enable cache
 
