@@ -11,9 +11,7 @@ module Neuron.CLI.Search
   )
 where
 
-import Data.FileEmbed (embedOneStringFileOf)
 import qualified Data.Text as Text
-import Data.Text.IO (hPutStr)
 import Development.Shake (Action)
 import Neuron.CLI.Rib
   ( SearchBy (SearchByContent, SearchByTitle),
@@ -22,13 +20,11 @@ import Neuron.CLI.Rib
 import Neuron.Config.Type (Config, getZettelFormats)
 import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Org), zettelFormatToExtension)
 import Relude
-import System.IO (hClose)
-import System.IO.Temp (withSystemTempFile)
-import System.Posix.Files (setFileMode)
-import System.Posix.Process (executeFile)
+import System.Posix.Process
+import System.Which
 
-searchScript :: Text
-searchScript = $(embedOneStringFileOf ["./src-bash/neuron-search", "./neuron/src-bash/neuron-search"])
+neuronSearchScript :: FilePath
+neuronSearchScript = $(staticWhich "neuron-search")
 
 searchScriptArgs :: (NonEmpty ZettelFormat) -> SearchCommand -> [String]
 searchScriptArgs formats SearchCommand {..} =
@@ -47,16 +43,8 @@ interactiveSearch notesDir searchCmd config =
     zettelFormats <- getZettelFormats config
     if searchBy searchCmd == SearchByTitle && ZettelFormat_Org `elem` toList zettelFormats
       then fail "search is not supported for .org files"
-      else liftIO $ do
-        asExecutableScript "neuron-search" searchScript $ \scriptFile -> do
-          execScript scriptFile $ notesDir : searchScriptArgs zettelFormats searchCmd
+      else liftIO $ execScript neuronSearchScript $ notesDir : searchScriptArgs zettelFormats searchCmd
   where
-    asExecutableScript k s f =
-      withSystemTempFile k $ \fp hdl -> do
-        hPutStr hdl s
-        hClose hdl
-        setFileMode fp 0o700
-        f fp
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)
       -- here, such that the new process replaces the current one. fzf won't work
