@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 1.0.0.0
+version: 1.0.1.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -135,7 +135,6 @@ common app-common
     foldl,
     filepath,
     dhall >= 1.30,
-    which,
     unix,
     megaparsec >= 8.0,
     dependent-sum >= 0.7,
@@ -146,7 +145,8 @@ common app-common
     with-utf8,
     shower,
     either,
-    uri-encode
+    uri-encode,
+    temporary
 
 -- Everything below will have to be stripped away, if whoever uses this repo
 -- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
