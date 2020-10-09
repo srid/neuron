@@ -27,7 +27,7 @@ OS-specific notes
 * If you are on **Linux**, and do not wish to install Nix, you may download the Linux static binary [here][staticbin]. Note that the static binary corresponds to the last stable release, which generally lags behind the development version (which the Nix install method uses).
 :::
 
-[staticbin]: https://github.com/srid/neuron/releases/download/1.0.0.0/neuron-1.0-linux.tar.gz
+[staticbin]: https://public.srid.ca/list/neuron-1.0.1.0-linux.tar.gz
  
 ### Enable cache
 
