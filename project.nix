@@ -7,6 +7,7 @@ let
   nixpkgs = import sources.nixpkgs {};
 in {
   pkgs ? nixpkgs,
+  pkgsForBins ? nixpkgs,
   neuronFlags ? [],
   disableHsLuaTests ? false,
   withHoogle ? false,
@@ -35,7 +36,7 @@ let
     cp $src/src-bash/neuron-search $out/bin/neuron-search
     chmod +x $out/bin/neuron-search
     wrapProgram $out/bin/neuron-search --prefix 'PATH' ':' ${
-      with pkgs;
+      with pkgsForBins;
       lib.makeBinPath [ fzf ripgrep gawk bat findutils envsubst ]
     }
     PATH=$PATH:$out/bin

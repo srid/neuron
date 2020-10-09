@@ -6,6 +6,9 @@ let
 in 
   (import ./project.nix { 
     inherit pkgs;
+    # We have to use original nixpkgs for fzf, etc. otherwise this will give
+    #   error: missing bootstrap url for platform x86_64-unknown-linux-musl
+    pkgsForBins = import sources.nixpkgs {};
     disableHsLuaTests = true; 
     neuronFlags = [
       "--ghc-option=-optl=-static"
