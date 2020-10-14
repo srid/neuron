@@ -4,10 +4,10 @@ This document describes how to develop neuron, as well as some guidelines when i
 
 ## Developing
 
-`nix-shell` is your friend when developing on neuron. The scripts under ./bin make use of nix-shell as well as `ghcid` to make development experience smoother (see below). IDE support is builtin via [haskell-language-server](https://github.com/haskell/haskell-language-server); just start your text editor from within a nix-shell.
+We recommend [VSCode] for developing Neuron, but any text editor supporting [haskell-language-server] will do. When opening the project in VSCode, install the two extensions ([Haskell](https://marketplace.visualstudio.com/items?itemName=haskell.haskell) and [Nix Environment Selector](https://marketplace.visualstudio.com/items?itemName=arrterian.nix-env-selector)) it recommends.
 
-- For neovim, install and setup [coc.vim](https://github.com/neoclide/coc.nvim) and add [this configuration](https://github.com/haskell/haskell-language-server#coc)
-- For VSCode, install these two extensions: [Haskell](https://marketplace.visualstudio.com/items?itemName=haskell.haskell) and [Nix Environment Selector](https://marketplace.visualstudio.com/items?itemName=arrterian.nix-env-selector).
+[VSCode]: https://code.visualstudio.com/
+[haskell-language-server]: https://github.com/haskell/haskell-language-server#editor-integration
 
 ### Instant reload
 
