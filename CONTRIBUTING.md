@@ -62,7 +62,7 @@ git add dep/reflex-dom-pandoc
 
 ### Autoformatting
 
-Run the `bin/format` script to auto-format your Haskell source changes using [ormolu](https://github.com/tweag/ormolu).
+Run the `bin/format` script to auto-format your Haskell source changes using [ormolu](https://github.com/tweag/ormolu). You don't need to do this when using VSCode which is configured to auto-format on save.
 
 ### Test your build
 
