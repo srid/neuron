@@ -23,12 +23,12 @@ See [neuron.zettel.page](https://neuron.zettel.page/) for the full guide to inst
 
 To chat about neuron with the project owners and interested users, join one of the following:
 
-* [Matrix room Neuron](https://app.element.io/#/room/#neuron:matrix.org)
-* [Zulip stream Neuron](https://funprog.zulipchat.com/#narrow/stream/231929-Neuron)
+- [Matrix room Neuron](https://app.element.io/#/room/#neuron:matrix.org)
+- [Zulip stream Neuron](https://funprog.zulipchat.com/#narrow/stream/231929-Neuron)
 
 ## Developing
 
-Development documentation is available in [CONTRIBUTING.md](https://github.com/srid/neuron/blob/master/CONTRIBUTING.md).
+Development documentation, including instructions to install from source, is available in [CONTRIBUTING.md](https://github.com/srid/neuron/blob/master/CONTRIBUTING.md).
 
 ## Sponsors
 

@@ -67,3 +67,7 @@ Run the `bin/format` script to auto-format your Haskell source changes using [or
 ### Test your build
 
 Run `nix-build` with your changes to make sure that everything compiles, and the tests succeed.
+
+#### Installing from source
+
+`nix-build` will produce a binary under `./result/bin/neuron`. You can also install directly from source using `nix-env -if .`.
