@@ -3,8 +3,9 @@
 ## Unreleased
 
 - Revert #429 for neuron-search regression
+- Fix search.html to handle zettels with title IDs (with whitespace) (#438)
 
-## 1.0.1.0	
+## 1.0.1.0
 
 - Fix broken `neuron search` in static binary (#429)	
 
