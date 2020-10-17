@@ -8,8 +8,9 @@ In order to quickly get started, try:
 
 ```bash
 mkdir ~/zettelkasten
-echo "hello world" > ~/zettelkasten/hello.md 
 cd ~/zettelkasten
+echo "hello world" > hello.md
+touch neuron.dhall  # Mark this a neuron directory
 docker run --rm -t -i -p 8080:8080 -v $(pwd):/notes sridca/neuron neuron rib -ws 0.0.0.0:8080
 ```
 
