@@ -7,7 +7,7 @@
 
 ## 1.0.1.0
 
-- Fix broken `neuron search` in static binary (#429)	
+- Fix broken `neuron search` in static binary (#429)
 
 ## 1.0.0.0
 
