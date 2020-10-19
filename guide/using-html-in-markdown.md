@@ -65,3 +65,19 @@ results in the following generated HTML:
 <p>Here is a video:</p>
 <video class="force-html"><source src='static/video.mp4 /></video>
 
+````````````````````````````````
+
+If you have a deeply nested HTML structure, the attribute is only required at the top/root level:
+
+```````````````````````````````` example
+## Some markdown interspersed with HTML
+
+Here comes some nested HTML:
+
+<div class="force-html">
+  <p>
+    Some HTML content, <em>now with emphasis.</em> And <strong>now, very strong.</strong>
+  </p>
+</div>
+
+````````````````````````````````
