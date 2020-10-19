@@ -223,7 +223,7 @@ wikiLinkSpec =
 
 inlineTagP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
 inlineTagP =
-  some (noneOfToks [Symbol ']', Spaces, UnicodeSpace, LineEnd])
+  some (noneOfToks [Symbol ']', Symbol ',', Symbol '.', Spaces, UnicodeSpace, LineEnd])
 
 -- rawHtmlSpec eats angle bracket links as html tags
 defaultBlockSpecsSansRawHtml :: (Monad m, CM.IsBlock il bl) => [CM.BlockSpec m il bl]
