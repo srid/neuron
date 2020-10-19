@@ -2,6 +2,7 @@
 
 Zettel files are written in Markdown[^other], per the [CommonMark](https://commonmark.org/) specification. Neuron uses [commonmark-hs](https://github.com/jgm/commonmark-hs) to parse them into the [Pandoc AST](https://pandoc.org/using-the-pandoc-api.html), as well as provides an extention on top to handle zettel links.
 
+* [[[using-html-in-markdown]]]
 * [[[linking]]]
 * [[[tags]]]
 * [[[metadata]]]
