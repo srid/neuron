@@ -20,7 +20,7 @@ From the docs:
 
 > If attached to a fenced code block, it causes the block to be interpreted as raw block content with the specified format.
 
-For HTML, this just requires adding `{=html}` after the opening ``` codeblock fence.
+For HTML, this just requires adding `{=html}` after the opening ` ``` ` codeblock fence.
 
 So, the following markdown content:
 
