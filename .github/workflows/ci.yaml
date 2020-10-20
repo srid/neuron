@@ -51,6 +51,7 @@ jobs:
       if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        tag: nightly
         name: Neuron nightly
         body: >
           Current build of Neuron from `${{ env.MAINLINE }}` branch -
