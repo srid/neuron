@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Advance nixpkgs
 - Revert #429 for neuron-search regression
 - Fix search.html to handle zettels with title IDs (with whitespace) (#438)
 
