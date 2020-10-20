@@ -47,7 +47,7 @@ results in the following generated HTML:
 If the top-level HTML element has one or more attributes, neuron will never
 parse it as a link.
 
-This will likely happen without notice for elements like `iframe` (say, a Youtube embed), since they depend heavily attribute values. For simpler elements, something as small as adding an id works:
+This will likely happen without notice for elements like `iframe` (say, a Youtube embed), since they depend heavily attribute values. For simpler elements, something as small as adding an `id` works:
 
 
 ```````````````````````````````` example
