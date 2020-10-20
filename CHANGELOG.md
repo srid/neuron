@@ -5,6 +5,7 @@
 - Advance nixpkgs
 - Revert #429 for neuron-search regression
 - Fix search.html to handle zettels with title IDs (with whitespace) (#438)
+- Ignore punctuation in inline tags (#443)
 
 ## 1.0.1.0
 
