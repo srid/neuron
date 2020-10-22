@@ -7,8 +7,11 @@ SEARCHFROMFIELD=${3}
 EXTENSIONS=${4}
 OPENCMD=$(envsubst -no-unset -no-empty <<<${5})
 cd ${NOTESDIR}
-rg --no-heading --no-line-number --with-filename --sort path "${FILTERBY}" -g "${EXTENSIONS}" \
+
+{ ls *.md | awk '{ printf "%s:!title: %s\n", $0, $0}' && rg --no-heading --no-line-number --with-filename "${FILTERBY}" -g "${EXTENSIONS}"; } | sort -t: -k1,2 -r | sort -t: -k1,1 -u \
   | fzf --tac --no-sort -d ':' -n ${SEARCHFROMFIELD}.. \
     --preview 'bat --style=plain --color=always {1}' \
   | awk -F: "{printf \"${NOTESDIR}/%s\", \$1}" \
-  | xargs -r ${OPENCMD}
+  | xargs -I % ${OPENCMD} %
+
+#  rg --no-heading --no-line-number --with-filename --sort path "${FILTERBY}" -g "${EXTENSIONS}" \
