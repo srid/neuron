@@ -22,9 +22,9 @@ OS-specific notes
 :::
 
 * If you are on **Windows**, you should begin by [installing Ubuntu on WSL 2](https://docs.microsoft.com/en-us/windows/wsl/install-win10) (not WSL 1), before installing Nix on it.
-  * Alternatively, you can simply download the static binary of the last stable release [here][staticbin].
 * If you are on **macOS Catalina or later**, refer to the [macOS Installation](https://nixos.org/manual/nix/stable/#sect-macos-installation) section of the Nix manual on how to install Nix.
-* If you are on **Linux**, and do not wish to install Nix, you may download the Linux static binary [here][staticbin]. Note that the static binary corresponds to the last stable release, which generally lags behind the development version (which the Nix install method uses).
+
+If you do not wish to install Nix, try the [[[docker]]] or, if you are on Linux or WSL, use the [[[install-static]]].
 :::
 
 [staticbin]: https://github.com/srid/neuron/releases/download/1.0.1.0/neuron-1.0.1.0-linux.tar.gz
@@ -80,4 +80,4 @@ Available commands:
 
 Proceed to the [[tutorial]].
 
-[^nix]: Nix is a general package manager that you can use to manage other software and services as well. [See here](https://github.com/srid/neuron/issues/193#issuecomment-629557917). If you do not wish to install Nix, try the [[[docker]]].
+[^nix]: Nix is a general package manager that you can use to manage other software and services as well. [See here](https://github.com/srid/neuron/issues/193#issuecomment-629557917).

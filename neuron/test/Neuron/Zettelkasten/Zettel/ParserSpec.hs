@@ -31,6 +31,12 @@ spec = do
     it "hierarchical" $ do
       let z :: Zettel = parseSomeZettel "An #foo/bar/baz tag"
       zettelTags z `shouldBe` [Tag "foo/bar/baz"]
+    it "followed by punctuation" $ do
+      let z :: Zettel = parseSomeZettel "A #tag; with content"
+      zettelTags z `shouldBe` [Tag "tag"]
+    it "followed by different punctuation" $ do
+      let z :: Zettel = parseSomeZettel "A #tag? With content"
+      zettelTags z `shouldBe` [Tag "tag"]
     it "allows URLs with a hash" $ do
       pendingWith "#397"
       let z :: Zettel = parseSomeZettel "Some http://www.google.com/#foo url"
