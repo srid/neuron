@@ -28,7 +28,7 @@ import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Query (zettelsByTag)
-import Neuron.Zettelkasten.Query.Error (showQueryError)
+import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (mapMaybe, (&))
 import Relude hiding ((&))
@@ -123,14 +123,14 @@ renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
 renderErrors errors = do
   let severity = \case
         ZettelError_ParseError _ -> "negative"
-        ZettelError_QueryErrors _ -> "warning"
+        ZettelError_QueryResultErrors _ -> "warning"
         ZettelError_AmbiguousFiles _ -> "negative"
       errorMessageHeader zid = \case
         ZettelError_ParseError _ -> do
           text "Zettel "
           QueryView.renderZettelLinkIDOnly zid
           text " failed to parse"
-        ZettelError_QueryErrors _ -> do
+        ZettelError_QueryResultErrors _ -> do
           text "Zettel "
           QueryView.renderZettelLinkIDOnly zid
           text " has malformed queries"
@@ -146,10 +146,10 @@ renderErrors errors = do
         case zError of
           ZettelError_ParseError parseError ->
             el "pre" $ text $ show parseError
-          ZettelError_QueryErrors queryErrors ->
+          ZettelError_QueryResultErrors queryErrors ->
             el "ol" $ do
               forM_ queryErrors $ \qe ->
-                el "li" $ el "pre" $ text $ showQueryError qe
+                el "li" $ el "pre" $ text $ showQueryResultError qe
           ZettelError_AmbiguousFiles filePaths ->
             el "ul" $ do
               forM_ filePaths $ \fp ->

@@ -34,7 +34,6 @@ import qualified Neuron.Web.Route as R
 import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
-import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Query.Graph as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
@@ -219,10 +218,8 @@ commandParser defaultNotesDir now = do
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
-          either
-            (Left . toString . Q.showQueryParseError)
-            (maybe (Left "Unsupported query") Right)
-            $ Q.queryFromURI connDummy uri
+          maybe (Left "Not a valid query") Right $
+            Q.queryFromURI connDummy uri
         Left e ->
           Left $ displayException e
     dateReader :: ReadM DateMayTime

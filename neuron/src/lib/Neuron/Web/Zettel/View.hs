@@ -25,7 +25,7 @@ import qualified Neuron.Web.Widget.InvertedTree as IT
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.Query.Error (QueryError, showQueryError)
+import Neuron.Zettelkasten.Query.Error (QueryResultError, showQueryResultError)
 import qualified Neuron.Zettelkasten.Query.Eval as Q
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
@@ -89,9 +89,9 @@ renderZettelBottomPane graph z@Zettel {..} = do
 evalAndRenderZettelQuery ::
   PandocBuilder t m =>
   ZettelGraph ->
-  NeuronWebT t m [QueryError] ->
+  NeuronWebT t m [QueryResultError] ->
   URILink ->
-  NeuronWebT t m [QueryError]
+  NeuronWebT t m [QueryResultError]
 evalAndRenderZettelQuery graph oldRender uriLink@(URILink inner _uri) = do
   case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uriLink) of
     Left e -> do
@@ -106,7 +106,7 @@ evalAndRenderZettelQuery graph oldRender uriLink@(URILink inner _uri) = do
   where
     elInlineError e =
       elClass "span" "ui left pointing red basic label" $ do
-        text $ showQueryError e
+        text $ showQueryResultError e
 
 renderZettelContent ::
   forall t m a.

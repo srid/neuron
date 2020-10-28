@@ -14,7 +14,6 @@ import Data.Some
 import Data.TagTree (Tag)
 import Neuron.Reader.Type
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
@@ -41,7 +40,7 @@ parseZettel format zreader fn zid s = do
             Nothing -> fromMaybe (zettelIDRaw zid, False) $ do
               ((,True) . plainify . snd <$> getH1 doc)
           -- Accumulate queries
-          (queries, errors) = runWriter $ extractQueries doc
+          queries = extractQueries doc
           -- Determine zettel tags
           metaTags = fromMaybe [] $ Meta.tags =<< meta
           queryTags = getInlineTag `mapMaybe` queries
@@ -49,19 +48,15 @@ parseZettel format zreader fn zid s = do
           -- Determine other metadata
           date = Meta.date =<< meta
           unlisted = fromMaybe False $ Meta.unlisted =<< meta
-       in Right $ Zettel zid format fn title titleInBody tags date unlisted queries errors doc
+       in -- TODO: Eliminate errors field
+          Right $ Zettel zid format fn title titleInBody tags date unlisted queries () doc
   where
     -- Extract all (valid) queries from the Pandoc document
-    extractQueries :: MonadWriter [QueryParseError] m => Pandoc -> m [Some ZettelQuery]
+    extractQueries :: Pandoc -> [Some ZettelQuery]
     extractQueries doc =
-      fmap catMaybes $
-        forM (queryURILinks doc) $ \ul ->
-          case queryFromURILink ul of
-            Left e -> do
-              tell [e]
-              pure Nothing
-            Right v ->
-              pure v
+      catMaybes $
+        flip fmap (queryURILinks doc) $ \ul ->
+          queryFromURILink ul
     getInlineTag :: Some ZettelQuery -> Maybe Tag
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag
