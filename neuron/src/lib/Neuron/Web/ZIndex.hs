@@ -139,7 +139,7 @@ renderErrors errors = do
         ZettelError_QueryResultErrors _ -> do
           text "Zettel "
           QueryView.renderZettelLinkIDOnly zid
-          text " has malformed queries"
+          text " has broken wiki-links"
         ZettelError_AmbiguousFiles _ -> do
           text $
             "More than one file define the same zettel ID slug ("

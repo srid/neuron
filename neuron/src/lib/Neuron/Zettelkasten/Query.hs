@@ -33,10 +33,10 @@ import Relude
 
 runZettelQuery :: [Zettel] -> ZettelQuery r -> Either QueryResultError r
 runZettelQuery zs = \case
-  ZettelQuery_ZettelByID zid _ ->
+  ZettelQuery_ZettelByID zid conn ->
     case find ((== zid) . zettelID) zs of
       Nothing ->
-        Left $ QueryResultError_NoSuchZettel zid
+        Left $ QueryResultError_NoSuchZettel (Just conn) zid
       Just z ->
         Right z
   ZettelQuery_ZettelsByTag pats _mconn _mview ->
@@ -67,7 +67,7 @@ runGraphQuery g = \case
   GraphQuery_BacklinksOf conn zid ->
     case getZettel zid g of
       Nothing ->
-        Left $ QueryResultError_NoSuchZettel zid
+        Left $ QueryResultError_NoSuchZettel conn zid
       Just z ->
         Right $ backlinks (maybe isJust (const (== conn)) conn) z g
 

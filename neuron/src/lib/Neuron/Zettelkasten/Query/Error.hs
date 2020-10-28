@@ -8,6 +8,7 @@ module Neuron.Zettelkasten.Query.Error where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Neuron.Orphans ()
+import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import Relude
 
@@ -15,9 +16,9 @@ import Relude
 --
 -- This error is only thrown when *using* (eg: in HTML) the query results.
 data QueryResultError
-  = QueryResultError_NoSuchZettel ZettelID
+  = QueryResultError_NoSuchZettel (Maybe Connection) ZettelID
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 showQueryResultError :: QueryResultError -> Text
-showQueryResultError (QueryResultError_NoSuchZettel zid) =
+showQueryResultError (QueryResultError_NoSuchZettel _conn zid) =
   "no such zettel: " <> zettelIDRaw zid
