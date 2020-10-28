@@ -20,7 +20,6 @@ where
 import Data.Some
 import Data.TagTree
 import Data.Tagged (untag)
-import qualified Data.Text as T
 import Neuron.Reader.Type (ZettelParseError)
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route
@@ -30,8 +29,7 @@ import qualified Neuron.Web.Widget.InvertedTree as IT
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID (ZettelID (zettelIDRaw))
-import Neuron.Zettelkasten.Query.Error (QueryResultError (..), showQueryResultError)
+import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import qualified Neuron.Zettelkasten.Query.Eval as Q
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
@@ -101,16 +99,8 @@ evalAndRenderZettelQuery ::
 evalAndRenderZettelQuery graph oldRender uriLink@(URILink inner _uri) = do
   case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uriLink) of
     Left e@(QueryResultError_NoSuchZettel mconn zid) -> do
-      -- Error running the query.
-      -- TODO: refactor & finalize design
-      elAttr "span" ("title" =: showQueryResultError e) $ do
-        let cnt = case mconn of
-              Just Folgezettel -> 3
-              _ -> 2
-        elClass "span" "ui red text" $ text $ T.replicate cnt "["
-        text $ zettelIDRaw zid
-        elClass "span" "ui red text" $ text $ T.replicate cnt "]"
-        pure [e]
+      Q.renderMissingZettelLink mconn zid
+      pure [e]
     Right Nothing -> do
       -- This is not a query link; pass through.
       oldRender

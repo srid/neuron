@@ -48,15 +48,13 @@ parseZettel format zreader fn zid s = do
           -- Determine other metadata
           date = Meta.date =<< meta
           unlisted = fromMaybe False $ Meta.unlisted =<< meta
-       in -- TODO: Eliminate errors field
-          Right $ Zettel zid format fn title titleInBody tags date unlisted queries Nothing doc
+       in Right $ Zettel zid format fn title titleInBody tags date unlisted queries Nothing doc
   where
     -- Extract all (valid) queries from the Pandoc document
     extractQueries :: Pandoc -> [Some ZettelQuery]
     extractQueries doc =
       catMaybes $
-        flip fmap (queryURILinks doc) $ \ul ->
-          queryFromURILink ul
+        queryFromURILink <$> queryURILinks doc
     getInlineTag :: Some ZettelQuery -> Maybe Tag
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag

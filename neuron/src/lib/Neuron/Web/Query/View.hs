@@ -12,6 +12,7 @@ module Neuron.Web.Query.View
   ( renderQueryResult,
     renderZettelLink,
     renderZettelLinkIDOnly,
+    renderMissingZettelLink,
     style,
   )
 where
@@ -32,14 +33,15 @@ import Data.TagTree
   )
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
+import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Markdown))
 import Neuron.Web.Route
   ( NeuronWebT,
     Route (..),
     neuronRouteLink,
   )
-import Neuron.Web.Widget (elTime, semanticIcon)
+import Neuron.Web.Widget (elNoSnippetSpan, elTime, semanticIcon)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
-import Neuron.Zettelkasten.ID (ZettelID (zettelIDRaw))
+import Neuron.Zettelkasten.ID (ZettelID (zettelIDRaw), zettelIDSourceFileName)
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
@@ -128,7 +130,7 @@ renderZettelLink ::
   NeuronWebT t m ()
 renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
   let connClass = show <$> conn
-      rawClass = maybe Nothing (const $ Just "raw") zettelError
+      rawClass = maybe Nothing (const $ Just "errors") zettelError
       mextra =
         case linkView of
           LinkView_Default ->
@@ -148,10 +150,7 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
     elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
       let linkInnerHtml = fromMaybe (text zettelTitle) mInner
       neuronRouteLink (Some $ Route_Zettel zettelID) mempty linkInnerHtml
-      case conn of
-        Just Folgezettel -> elNoSnippetSpan mempty $ do
-          elAttr "sup" ("title" =: "Branching link (folgezettel)") $ text "ᛦ"
-        _ -> pure mempty
+      elConnSuffix conn
   where
     linkTooltip =
       -- If there is custom inner text, put zettel title in tooltip.
@@ -162,10 +161,6 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
           if null zettelTags
             then Nothing
             else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
-    -- Prevent this element from appearing in Google search results
-    -- https://developers.google.com/search/reference/robots_meta_tag#data-nosnippet-attr
-    elNoSnippetSpan :: DomBuilder t m => Map Text Text -> NeuronWebT t m a -> NeuronWebT t m a
-    elNoSnippetSpan attrs = elAttr "span" ("data-nosnippet" =: "" <> attrs)
     withTooltip :: Maybe Text -> Map Text Text
     withTooltip = \case
       Nothing -> mempty
@@ -174,6 +169,24 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
             <> "data-inverted" =: ""
             <> "data-position" =: "right center"
         )
+
+elConnSuffix :: DomBuilder t m => Maybe Connection -> m ()
+elConnSuffix mconn =
+  case mconn of
+    Just Folgezettel -> elNoSnippetSpan mempty $ do
+      elAttr "sup" ("title" =: "Branching link (folgezettel)") $ text "ᛦ"
+    _ -> pure mempty
+
+-- TODO: Eventually refactor this function to reuse what's in renderZettelLink
+renderMissingZettelLink :: DomBuilder t m => Maybe Connection -> ZettelID -> m ()
+renderMissingZettelLink mconn zid = do
+  let connClass = show <$> mconn
+      classes :: [Text] = catMaybes $ [Just "zettel-link-container", Just "errors"] <> [connClass]
+  elClass "span" (T.intercalate " " classes) $ do
+    let errMsg = "Broken wiki-link (" <> toText (zettelIDSourceFileName zid ZettelFormat_Markdown) <> " does not exist)"
+    elAttr "span" ("class" =: "zettel-link" <> "title" =: errMsg) $ do
+      elAttr "a" mempty $ text $ zettelIDRaw zid
+      elConnSuffix mconn
 
 -- | Like `renderZettelLink` but when we only have ID in hand.
 renderZettelLinkIDOnly :: DomBuilder t m => ZettelID -> NeuronWebT t m ()
@@ -233,7 +246,7 @@ zettelLinkCss = do
     C.textDecoration C.none
   "span.zettel-link-container span.extra" ? do
     C.color C.auto
-  "span.zettel-link-container.raw" ? do
+  "span.zettel-link-container.errors" ? do
     C.border C.solid (C.px 1) C.red
   "[data-tooltip]:after" ? do
     C.fontSize $ em 0.7

@@ -30,3 +30,8 @@ elLinkGoogleFonts fs =
   let fsEncoded = T.intercalate "|" $ T.replace " " "+" <$> fs
       fsUrl = "https://fonts.googleapis.com/css?family=" <> fsEncoded <> "&display=swap"
    in elAttr "link" ("rel" =: "stylesheet" <> "href" =: fsUrl) blank
+
+-- Prevent this element from appearing in Google search results
+-- https://developers.google.com/search/reference/robots_meta_tag#data-nosnippet-attr
+elNoSnippetSpan :: DomBuilder t m => Map Text Text -> m a -> m a
+elNoSnippetSpan attrs = elAttr "span" ("data-nosnippet" =: "" <> attrs)
