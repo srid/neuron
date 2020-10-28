@@ -6,7 +6,7 @@
 
 module Neuron.Zettelkasten.Query.Error where
 
-import Data.Aeson
+import Data.Aeson (FromJSON, ToJSON)
 import Neuron.Orphans ()
 import Neuron.Zettelkasten.ID (InvalidID, ZettelID (..))
 import Relude
@@ -17,7 +17,6 @@ type QueryError = Either QueryParseError QueryResultError
 
 data QueryParseError
   = QueryParseError_InvalidID URI InvalidID
-  | QueryParseError_UnsupportedHost URI
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Error in evaluating a query
@@ -30,7 +29,6 @@ data QueryResultError
 queryParseErrorUri :: QueryParseError -> URI
 queryParseErrorUri = \case
   QueryParseError_InvalidID uri _ -> uri
-  QueryParseError_UnsupportedHost uri -> uri
 
 showQueryError :: QueryError -> Text
 showQueryError = \case
@@ -43,11 +41,9 @@ showQueryParseError :: QueryParseError -> Text
 showQueryParseError qe =
   let uri = URI.render (queryParseErrorUri qe)
    in uri <> ": " <> case qe of
-        QueryParseError_UnsupportedHost _uri ->
-          "unsupported host"
         QueryParseError_InvalidID _uri e'' ->
           "invalidID: " <> show e''
 
 showQueryResultError :: QueryResultError -> Text
 showQueryResultError (QueryResultError_NoSuchZettel zid) =
-  "links to non-existant zettel: " <> zettelIDRaw zid
+  "no such zettel: " <> zettelIDRaw zid
