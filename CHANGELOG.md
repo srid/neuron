@@ -7,6 +7,8 @@
 - `neuron search`
   - Revert #429 for neuron-search regression
   - Deal with title IDs in search (#445)
+- Web interface
+  - Simplify error message UX for missing wiki-links (#448)
 
 ## 1.0.1.0
 

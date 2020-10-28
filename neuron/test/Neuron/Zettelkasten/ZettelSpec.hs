@@ -22,7 +22,7 @@ import Test.Hspec
 spec :: Spec
 spec = do
   let noQueries = mempty -- TODO: test queries
-      noError = Right mempty
+      noError = Nothing
       noContent = MetadataOnly ()
   describe "sortZettelsReverseChronological" $ do
     let mkDay = fromGregorian 2020 3
