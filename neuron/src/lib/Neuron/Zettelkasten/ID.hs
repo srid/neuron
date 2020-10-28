@@ -98,6 +98,7 @@ allowedSpecialChars =
     '-',
     '.',
     -- Whitespace is essential for title IDs
+    -- This gets replaced with underscope in ID slug (see unsafeMkZettelID).
     ' ',
     -- Allow some puctuation letters that are common in note titles
     ',',

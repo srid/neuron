@@ -15,7 +15,7 @@ import Neuron.Reader.Type
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error (QueryError)
+import Neuron.Zettelkasten.Query.Error (QueryResultError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Parser
@@ -29,13 +29,16 @@ buildZettelkasten ::
   )
 buildZettelkasten fs =
   let zs = parseZettels fs
-      (g, queryErrors) = mkZettelGraph $ filter (not . zettelUnlisted) $ sansContent <$> zs
+      (g, qErrs) = mkZettelGraph $ filter (not . zettelUnlisted) $ sansContent <$> zs
       errors =
         Map.unions
           [ fmap ZettelError_ParseError $
               Map.fromList $
-                lefts zs <&> (zettelID &&& zettelError),
-            fmap ZettelError_QueryErrors queryErrors
+                flip mapMaybe (lefts zs) $ \z ->
+                  case zettelError z of
+                    Just zerr -> Just (zettelID z, zerr)
+                    _ -> Nothing,
+            fmap ZettelError_QueryResultErrors qErrs
           ]
    in (g, zs, errors)
 
@@ -46,10 +49,10 @@ buildZettelkasten fs =
 mkZettelGraph ::
   [Zettel] ->
   ( ZettelGraph,
-    Map ZettelID (NonEmpty QueryError)
+    Map ZettelID (NonEmpty QueryResultError)
   )
 mkZettelGraph zettels =
-  let res :: [(Zettel, ([(Connection, Zettel)], [QueryError]))] =
+  let res :: [(Zettel, ([(Connection, Zettel)], [QueryResultError]))] =
         flip fmap zettels $ \z ->
           (z, runQueryConnections zettels z)
       g :: ZettelGraph = G.mkGraphFrom zettels $
@@ -60,7 +63,7 @@ mkZettelGraph zettels =
           (zettelID z,) <$> merrs
    in (g, errors)
 
-runQueryConnections :: [Zettel] -> Zettel -> ([(Connection, Zettel)], [QueryError])
+runQueryConnections :: [Zettel] -> Zettel -> ([(Connection, Zettel)], [QueryResultError])
 runQueryConnections zettels z =
   flip runReader zettels $ do
     runWriterT $ queryConnections z

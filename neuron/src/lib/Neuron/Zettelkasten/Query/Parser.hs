@@ -25,7 +25,6 @@ import Data.TagTree (TagNode (..), TagPattern, constructTag, mkTagPattern)
 import Neuron.Reader.Type (ZettelFormat (..))
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error
 import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
 import Reflex.Dom.Pandoc (URILink (..))
@@ -36,7 +35,7 @@ import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam, hasQueryFlag)
 
 -- | Parse a query if any from a Markdown link
-queryFromURILink :: MonadError QueryParseError m => URILink -> m (Maybe (Some ZettelQuery))
+queryFromURILink :: URILink -> Maybe (Some ZettelQuery)
 queryFromURILink l@URILink {..} =
   queryFromURI (defaultConnection l) _uriLink_uri
   where
@@ -50,10 +49,10 @@ queryFromURILink l@URILink {..} =
         else OrdinaryConnection
 
 -- | Parse a query from the given URI.
-queryFromURI :: MonadError QueryParseError m => Connection -> URI -> m (Maybe (Some ZettelQuery))
+queryFromURI :: Connection -> URI -> Maybe (Some ZettelQuery)
 queryFromURI defConn uri = do
   let conn = fromMaybe defConn (queryConn uri)
-  liftEither . runMaybeT $ do
+  do
     -- Non-relevant parts of the URI should be empty
     guard $ isNothing $ URI.uriFragment uri
     case URI.uriScheme uri of
@@ -64,18 +63,17 @@ queryFromURI defConn uri = do
               guard $ URI.uriAuthority uri == Left False
               (False, path) <- URI.uriPath uri
               pure path
-        (URI.unRText -> path) :| [] <- hoistMaybe shortLinkPath
+        (URI.unRText -> path) :| [] <- shortLinkPath
         zid <-
-          hoistMaybe $
-            -- Allow raw filename (ending with ".md"). HACK: hardcoding
-            -- format, but we shouldn't.
-            getZettelID ZettelFormat_Markdown (toString path)
-              -- Before checking for direct use of ID
-              <|> rightToMaybe (parseZettelID path)
+          -- Allow raw filename (ending with ".md"). HACK: hardcoding
+          -- format, but we shouldn't.
+          getZettelID ZettelFormat_Markdown (toString path)
+            -- Before checking for direct use of ID
+            <|> rightToMaybe (parseZettelID path)
         pure $ Some $ ZettelQuery_ZettelByID zid conn
       Just (URI.unRText -> proto) -> do
         guard $ proto == "z"
-        zPath <- hoistMaybe $ fmap snd (URI.uriPath uri)
+        zPath <- fmap snd (URI.uriPath uri)
         let -- Found "z:" without a trailing slash
             noSlash = URI.uriAuthority uri == Left False
             -- Found "z:/" instead of "z:"
@@ -84,13 +82,17 @@ queryFromURI defConn uri = do
           -- Parse z:/<id>
           (URI.unRText -> path) :| []
             | hasSlash -> do
-              zid <- parseQueryZettelID uri path
-              pure $ Some $ ZettelQuery_ZettelByID zid conn
+              case parseZettelID path of
+                Left _ -> empty
+                Right zid ->
+                  pure $ Some $ ZettelQuery_ZettelByID zid conn
           -- Parse z:zettel/<id>
           (URI.unRText -> "zettel") :| [URI.unRText -> path]
             | noSlash -> do
-              zid <- parseQueryZettelID uri path
-              pure $ Some $ ZettelQuery_ZettelByID zid conn
+              case parseZettelID path of
+                Left _ -> empty
+                Right zid ->
+                  pure $ Some $ ZettelQuery_ZettelByID zid conn
           -- Parse z:zettels?...
           (URI.unRText -> "zettels") :| []
             | noSlash -> do
@@ -104,10 +106,6 @@ queryFromURI defConn uri = do
             | noSlash -> do
               pure $ Some $ ZettelQuery_TagZettel (constructTag tagNodes)
           _ -> empty
-
-parseQueryZettelID :: MonadError QueryParseError m => URI -> Text -> m ZettelID
-parseQueryZettelID uri =
-  liftEither . first (QueryParseError_InvalidID uri) . parseZettelID
 
 tagPatterns :: URI -> Text -> [TagPattern]
 tagPatterns uri k =

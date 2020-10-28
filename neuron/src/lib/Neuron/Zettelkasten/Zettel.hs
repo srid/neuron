@@ -18,20 +18,20 @@
 
 module Neuron.Zettelkasten.Zettel where
 
-import Data.Aeson
-import Data.Aeson.GADT.TH
+import Data.Aeson (FromJSON (parseJSON), ToJSON (toJSON))
+import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Dependent.Sum.Orphans ()
-import Data.GADT.Compare.TH
-import Data.GADT.Show.TH
+import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
+import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some
 import Data.TagTree (Tag, TagPattern (..))
 import Data.Time.DateMayTime (DateMayTime)
-import Neuron.Reader.Type
-import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Error
-import Neuron.Zettelkasten.Query.Theme
+import Neuron.Reader.Type (ZettelFormat, ZettelParseError)
+import Neuron.Zettelkasten.Connection (Connection)
+import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.Query.Error (QueryResultError)
+import Neuron.Zettelkasten.Query.Theme (ZettelsView)
 import Relude hiding (show)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
@@ -62,7 +62,7 @@ data ZettelT content = Zettel
     zettelUnlisted :: Bool,
     -- | List of all queries in the zettel
     zettelQueries :: [Some ZettelQuery],
-    zettelError :: ContentError content,
+    zettelError :: Maybe ZettelParseError,
     zettelContent :: content
   }
   deriving (Generic)
@@ -70,21 +70,13 @@ data ZettelT content = Zettel
 newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
 
-type family ContentError c where
--- The list of queries that failed to parse.
-  ContentError Pandoc = [QueryParseError]
--- When a zettel fails to parse, we use its raw text along with its parse error.
-  ContentError Text = ZettelParseError
--- When working with zettel sans content, we gather both kinds of errors (above)
-  ContentError MetadataOnly = Either (ContentError Text) (ContentError Pandoc)
-
 -- | All possible errors in a zettel
 --
 -- NOTE: Unlike `ContentError MetadataOnly` this also includes QueryResultError
 -- (which can be determined only after *evaluating* the queries).
 data ZettelError
   = ZettelError_ParseError ZettelParseError
-  | ZettelError_QueryErrors (NonEmpty QueryError)
+  | ZettelError_QueryResultErrors (NonEmpty QueryResultError)
   | ZettelError_AmbiguousFiles (NonEmpty FilePath)
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
@@ -98,13 +90,11 @@ sansContent :: ZettelC -> Zettel
 sansContent = \case
   Left z ->
     z
-      { zettelError = Left $ zettelError z,
-        zettelContent = MetadataOnly ()
+      { zettelContent = MetadataOnly ()
       }
   Right z ->
     z
-      { zettelError = Right $ zettelError z,
-        zettelContent = MetadataOnly ()
+      { zettelContent = MetadataOnly ()
       }
 
 instance Eq (ZettelT c) where

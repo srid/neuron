@@ -23,13 +23,19 @@ import Data.Tree
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
+import Neuron.Web.Widget (elPreOverflowing)
+import Neuron.Web.Zettel.View (renderZettelParseError)
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Query (zettelsByTag)
-import Neuron.Zettelkasten.Query.Error (showQueryError)
+import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
+  ( Zettel,
+    ZettelError (..),
+    ZettelT (zettelTitle),
+  )
 import Reflex.Dom.Core hiding (mapMaybe, (&))
 import Relude hiding ((&))
 
@@ -123,17 +129,17 @@ renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
 renderErrors errors = do
   let severity = \case
         ZettelError_ParseError _ -> "negative"
-        ZettelError_QueryErrors _ -> "warning"
+        ZettelError_QueryResultErrors _ -> "warning"
         ZettelError_AmbiguousFiles _ -> "negative"
       errorMessageHeader zid = \case
         ZettelError_ParseError _ -> do
           text "Zettel "
           QueryView.renderZettelLinkIDOnly zid
           text " failed to parse"
-        ZettelError_QueryErrors _ -> do
+        ZettelError_QueryResultErrors _ -> do
           text "Zettel "
           QueryView.renderZettelLinkIDOnly zid
-          text " has malformed queries"
+          text " has broken wiki-links"
         ZettelError_AmbiguousFiles _ -> do
           text $
             "More than one file define the same zettel ID slug ("
@@ -145,11 +151,11 @@ renderErrors errors = do
       el "p" $ do
         case zError of
           ZettelError_ParseError parseError ->
-            el "pre" $ text $ show parseError
-          ZettelError_QueryErrors queryErrors ->
+            renderZettelParseError parseError
+          ZettelError_QueryResultErrors queryErrors ->
             el "ol" $ do
               forM_ queryErrors $ \qe ->
-                el "li" $ el "pre" $ text $ showQueryError qe
+                el "li" $ elPreOverflowing $ text $ showQueryResultError qe
           ZettelError_AmbiguousFiles filePaths ->
             el "ul" $ do
               forM_ filePaths $ \fp ->

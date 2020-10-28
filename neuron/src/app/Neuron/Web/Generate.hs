@@ -35,7 +35,7 @@ import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
-import Neuron.Zettelkasten.Query.Error (showQueryError)
+import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
 import Options.Applicative
 import Relude
@@ -83,8 +83,8 @@ generateSite config writeHtmlRoute' = do
       case err of
         ZettelError_ParseError (untag -> parseErr) ->
           parseErr :| []
-        ZettelError_QueryErrors queryErrs ->
-          showQueryError <$> queryErrs
+        ZettelError_QueryResultErrors queryErrs ->
+          showQueryResultError <$> queryErrs
         ZettelError_AmbiguousFiles filePaths ->
           ("Multiple zettels have the same ID: " <> T.intercalate ", " (fmap toText $ toList filePaths))
             :| []

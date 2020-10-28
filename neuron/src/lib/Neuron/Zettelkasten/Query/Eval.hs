@@ -32,15 +32,15 @@ import Relude
 --
 -- We need the full list of zettels, for running the query against.
 runQueryURILink ::
-  ( MonadError QueryError m,
+  ( MonadError QueryResultError m,
     MonadReader [Zettel] m
   ) =>
   URILink ->
   m (Maybe (DSum ZettelQuery Identity))
 runQueryURILink ul = do
-  mq <- liftEither $ first Left $ queryFromURILink ul
+  let mq = queryFromURILink ul
   flip traverse mq $ \q ->
-    either (throwError . Right) pure =<< runExceptT (runSomeZettelQuery q)
+    either throwError pure =<< runExceptT (runSomeZettelQuery q)
 
 -- Query connections in the given zettel
 --
@@ -48,24 +48,18 @@ runQueryURILink ul = do
 -- query result errors.
 queryConnections ::
   ( -- Errors are written aside, accumulating valid connections.
-    MonadWriter [QueryError] m,
+    MonadWriter [QueryResultError] m,
     -- Running queries requires the zettels list.
     MonadReader [Zettel] m
   ) =>
   Zettel ->
   m [(Connection, Zettel)]
 queryConnections Zettel {..} = do
-  -- Report any query parse errors
-  case zettelError of
-    Right queryParseErrors ->
-      tell $ Left <$> queryParseErrors
-    Left _ ->
-      pure ()
   fmap concat $
     forM zettelQueries $ \someQ ->
       runExceptT (runSomeZettelQuery someQ) >>= \case
         Left e -> do
-          tell [Right e]
+          tell [e]
           pure mempty
         Right res ->
           pure $ getConnections res
