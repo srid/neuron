@@ -32,7 +32,7 @@ parseZettel ::
 parseZettel format zreader fn zid s = do
   case zreader fn s of
     Left parseErr ->
-      Left $ Zettel zid format fn "Unknown" False [] Nothing False [] parseErr s
+      Left $ Zettel zid format fn "Unknown" False [] Nothing False [] (Just parseErr) s
     Right (meta, doc) ->
       let -- Determine zettel title
           (title, titleInBody) = case Meta.title =<< meta of
@@ -49,7 +49,7 @@ parseZettel format zreader fn zid s = do
           date = Meta.date =<< meta
           unlisted = fromMaybe False $ Meta.unlisted =<< meta
        in -- TODO: Eliminate errors field
-          Right $ Zettel zid format fn title titleInBody tags date unlisted queries () doc
+          Right $ Zettel zid format fn title titleInBody tags date unlisted queries Nothing doc
   where
     -- Extract all (valid) queries from the Pandoc document
     extractQueries :: Pandoc -> [Some ZettelQuery]

@@ -34,7 +34,10 @@ buildZettelkasten fs =
         Map.unions
           [ fmap ZettelError_ParseError $
               Map.fromList $
-                lefts zs <&> (zettelID &&& zettelError),
+                flip mapMaybe (lefts zs) $ \z ->
+                  case zettelError z of
+                    Just zerr -> Just (zettelID z, zerr)
+                    _ -> Nothing,
             fmap ZettelError_QueryResultErrors qErrs
           ]
    in (g, zs, errors)
