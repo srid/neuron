@@ -17,6 +17,11 @@ elTime t = do
   elAttr "time" ("datetime" =: formatDateMayTime t) $ do
     text $ formatDay $ getDay t
 
+-- | A pre element with scrollbar
+elPreOverflowing :: DomBuilder t m => m a -> m a
+elPreOverflowing w =
+  elAttr "pre" ("style" =: "overflow: auto") w
+
 semanticIcon :: DomBuilder t m => Text -> m ()
 semanticIcon name = elClass "i" (name <> " icon") blank
 

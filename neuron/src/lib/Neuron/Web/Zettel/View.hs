@@ -12,11 +12,14 @@
 module Neuron.Web.Zettel.View
   ( renderZettel,
     renderZettelContentCard,
+    renderZettelParseError,
   )
 where
 
 import Data.Some
 import Data.TagTree
+import Data.Tagged (untag)
+import Neuron.Reader.Type (ZettelParseError)
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route
 import Neuron.Web.Widget
@@ -128,9 +131,13 @@ renderZettelRawContent :: (DomBuilder t m) => ZettelT Text -> m ()
 renderZettelRawContent Zettel {..} = do
   divClass "ui error message" $ do
     elClass "h2" "header" $ text "Zettel failed to parse"
-    el "p" $ el "pre" $ text $ show zettelError
+    maybe blank renderZettelParseError zettelError
   elClass "article" "ui raised attached segment zettel-content raw" $ do
-    el "pre" $ text $ zettelContent
+    elPreOverflowing $ text $ zettelContent
+
+renderZettelParseError :: DomBuilder t m => ZettelParseError -> m ()
+renderZettelParseError err =
+  el "p" $ elPreOverflowing $ text $ untag err
 
 renderTags :: DomBuilder t m => NonEmpty Tag -> NeuronWebT t m ()
 renderTags tags = do
