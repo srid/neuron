@@ -8,7 +8,7 @@ module Neuron.VersionSpec
 where
 
 import qualified Data.Text as T
-import Neuron.Version
+import Neuron.Version (neuronVersion, olderThan)
 import Relude
 import Test.Hspec
 
@@ -24,14 +24,14 @@ spec = do
     it "simple versions" $ do
       -- If the user requires 0.4, and we are "older than" than that, fail (aka. isGreater)
       "1.3" `isGreater` olderThan
-      "1.0" `isLesserOrEqual` olderThan -- This is current version
+      "1.1" `isLesserOrEqual` olderThan -- This is current version
       "0.4" `isLesserOrEqual` olderThan
     it "full versions" $ do
       "1.2.1.2" `isGreater` olderThan
-      "1.0.15" `isGreater` olderThan
-      "1.0.12.8" `isGreater` olderThan
-      "1.0.0.0" `isLesserOrEqual` olderThan -- This is current version
+      "1.1.15" `isGreater` olderThan
+      "1.1.12.8" `isGreater` olderThan
+      "1.1.0.0" `isLesserOrEqual` olderThan -- This is current version
       "0.6.1.0" `isLesserOrEqual` olderThan
     it "within same major version" $ do
       "1.9.12.8" `isGreater` olderThan
-      "1.0.0.0" `isLesserOrEqual` olderThan -- This is current version
+      "1.1.0.0" `isLesserOrEqual` olderThan -- This is current version

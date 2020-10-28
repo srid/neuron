@@ -35,7 +35,8 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc
 import Relude hiding ((&))
-import Text.Pandoc.Definition (Pandoc)
+import Text.Pandoc.Definition (Inline, Pandoc)
+import qualified Text.URI as URI
 
 renderZettel ::
   PandocBuilder t m =>
@@ -94,24 +95,31 @@ evalAndRenderZettelQuery ::
   PandocBuilder t m =>
   ZettelGraph ->
   NeuronWebT t m [QueryResultError] ->
-  URILink ->
+  Text ->
+  Maybe [Inline] ->
   NeuronWebT t m [QueryResultError]
-evalAndRenderZettelQuery graph oldRender uriLink@(URILink inner _uri) = do
-  case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uriLink) of
-    Left e@(QueryResultError_NoSuchZettel mconn zid) -> do
-      Q.renderMissingZettelLink mconn zid
-      pure [e]
-    Right Nothing -> do
-      -- This is not a query link; pass through.
-      oldRender
-    Right (Just res) -> do
-      Q.renderQueryResult inner res
-      pure mempty
+evalAndRenderZettelQuery graph oldRender lUrl minner = do
+  let muri = do
+        uri <- URI.mkURI lUrl
+        pure uri
+  case muri of
+    Nothing -> oldRender
+    Just uri -> do
+      case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uri) of
+        Left e@(QueryResultError_NoSuchZettel mconn zid) -> do
+          Q.renderMissingZettelLink mconn zid
+          pure [e]
+        Right Nothing -> do
+          -- This is not a query link; pass through.
+          oldRender
+        Right (Just res) -> do
+          Q.renderQueryResult minner res
+          pure mempty
 
 renderZettelContent ::
   forall t m a.
   (PandocBuilder t m, Monoid a) =>
-  (NeuronWebT t m a -> URILink -> NeuronWebT t m a) ->
+  (NeuronWebT t m a -> Text -> Maybe [Inline] -> NeuronWebT t m a) ->
   ZettelT Pandoc ->
   NeuronWebT t m ()
 renderZettelContent handleLink Zettel {..} = do

@@ -12,12 +12,11 @@ import Control.Monad.Writer
 import Data.List (nub)
 import Data.Some
 import Data.TagTree (Tag)
-import Neuron.Reader.Type
+import Neuron.Reader.Type (ZettelFormat, ZettelReader)
 import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
+import Neuron.Zettelkasten.Query.Parser (queryFromURILink, queryZURILinks)
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
-import Reflex.Dom.Pandoc.URILink (queryURILinks)
 import Relude
 import Text.Pandoc.Definition (Pandoc)
 import Text.Pandoc.Util
@@ -54,7 +53,7 @@ parseZettel format zreader fn zid s = do
     extractQueries :: Pandoc -> [Some ZettelQuery]
     extractQueries doc =
       catMaybes $
-        queryFromURILink <$> queryURILinks doc
+        queryFromURILink <$> queryZURILinks doc
     getInlineTag :: Some ZettelQuery -> Maybe Tag
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag

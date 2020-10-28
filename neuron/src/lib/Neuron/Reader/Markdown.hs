@@ -111,7 +111,7 @@ neuronSpec ::
   CM.SyntaxSpec m il bl
 neuronSpec =
   mconcat
-    [ autoLinkSpec,
+    [ -- autoLinkSpec,
       wikiLinkSpec,
       inlineTagSpec,
       gfmExtensionsSansEmoji,
@@ -124,7 +124,7 @@ neuronSpec =
       CE.rawAttributeSpec,
       CE.fencedDivSpec,
       CE.bracketedSpanSpec,
-      CM.defaultSyntaxSpec {CM.syntaxBlockSpecs = defaultBlockSpecsSansRawHtml}
+      CM.defaultSyntaxSpec --{CM.syntaxBlockSpecs = defaultBlockSpecsSansRawHtml}
     ]
   where
     -- Emoji extension introduces ghcjs linker issues
@@ -152,10 +152,11 @@ inlineTagSpec =
       pure $! cmAutoLink tagQuery
 
 -- | Convert the given wrapped link to a `B.Link`.
-autoLinkSpec ::
+-- TODO remove
+_autoLinkSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
   CM.SyntaxSpec m il bl
-autoLinkSpec =
+_autoLinkSpec =
   mempty
     { CM.syntaxInlineParsers = [pLink]
     }
@@ -211,6 +212,7 @@ wikiLinkSpec =
               _ -> uri
         Nothing ->
           fail "Not a neuron URI; ignoring"
+    -- Convert wiki-link to z: URI
     parseNeuronUri :: Text -> Maybe URI
     parseNeuronUri s =
       case toString s of
@@ -219,7 +221,13 @@ wikiLinkSpec =
         _ -> do
           -- Treat it as plain ID
           path <- mkPathPiece s
-          pure $ URI (Just [scheme|z|]) (Left True) (Just (False, path :| [])) [] Nothing
+          pure $
+            URI
+              (Just [scheme|z|])
+              (Left True)
+              (Just (False, path :| []))
+              []
+              Nothing
 
 inlineTagP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
 inlineTagP =
@@ -228,8 +236,9 @@ inlineTagP =
     punctuation = "[];:,.?!"
 
 -- rawHtmlSpec eats angle bracket links as html tags
-defaultBlockSpecsSansRawHtml :: (Monad m, CM.IsBlock il bl) => [CM.BlockSpec m il bl]
-defaultBlockSpecsSansRawHtml =
+-- TODO remove
+_defaultBlockSpecsSansRawHtml :: (Monad m, CM.IsBlock il bl) => [CM.BlockSpec m il bl]
+_defaultBlockSpecsSansRawHtml =
   [ CM.indentedCodeSpec,
     CM.fencedCodeSpec,
     CM.blockQuoteSpec,

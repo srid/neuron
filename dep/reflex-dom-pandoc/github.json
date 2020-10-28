@@ -1,8 +1,8 @@
 {
   "owner": "srid",
   "repo": "reflex-dom-pandoc",
-  "branch": "master",
+  "branch": "remove-urilink",
   "private": false,
-  "rev": "19d81f48643f26deb74ef606a511da7dd8873385",
-  "sha256": "1gy7v3m5b3l8wz6qw89w1y9sncvr8praws8advhc2vp6q46xm9ks"
+  "rev": "549471690fa93911dab53da854d588862627173f",
+  "sha256": "00b4j5pqag8n02fdfdj4d0427gk4lm4wk0gzdzn0gfva652dpa42"
 }
