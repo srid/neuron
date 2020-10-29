@@ -14,7 +14,7 @@ import Data.Some (Some (..))
 import Data.TagTree (Tag)
 import Neuron.Reader.Type (ZettelFormat, ZettelReader)
 import Neuron.Zettelkasten.ID (ZettelID (zettelIDRaw))
-import Neuron.Zettelkasten.Query.Parser (queryFromPandocLink)
+import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
     ZettelQuery (..),
@@ -42,7 +42,7 @@ parseZettel format zreader fn zid s = do
             Nothing -> fromMaybe (zettelIDRaw zid, False) $ do
               ((,True) . P.plainify . snd <$> P.getH1 doc)
           -- Accumulate queries
-          queries = mapMaybe queryFromPandocLink $ P.getLinks doc
+          queries = mapMaybe (parseQueryLink . P._pandocLink_uri) $ P.getLinks doc
           -- Determine zettel tags
           metaTags = fromMaybe [] $ Meta.tags =<< meta
           queryTags = getInlineTag `mapMaybe` queries

@@ -31,6 +31,7 @@ import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import qualified Neuron.Zettelkasten.Query.Eval as Q
+import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc
@@ -98,21 +99,23 @@ evalAndRenderZettelQuery ::
   Text ->
   Maybe [Inline] ->
   NeuronWebT t m [QueryResultError]
-evalAndRenderZettelQuery graph oldRender lUrl minner = do
-  case URI.mkURI lUrl of
+evalAndRenderZettelQuery graph oldRender (URI.mkURI -> muri) minner = do
+  case muri of
     Nothing ->
       oldRender
-    Just uri -> do
-      case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uri) of
-        Left e@(QueryResultError_NoSuchZettel mconn zid) -> do
-          Q.renderMissingZettelLink mconn zid
-          pure [e]
-        Right Nothing -> do
+    Just (Q.parseQueryLink -> mquery) -> do
+      case mquery of
+        Nothing ->
           -- This is not a query link; pass through.
           oldRender
-        Right (Just res) -> do
-          Q.renderQueryResult minner res
-          pure mempty
+        Just query ->
+          case Q.runQuery (G.getZettels graph) query of
+            Left e@(QueryResultError_NoSuchZettel mconn zid) -> do
+              Q.renderMissingZettelLink mconn zid
+              pure [e]
+            Right res -> do
+              Q.renderQueryResult minner res
+              pure mempty
 
 renderZettelContent ::
   forall t m a.

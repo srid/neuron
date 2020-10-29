@@ -14,10 +14,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Query.Parser
-  ( queryFromPandocLink,
+  ( parseQueryLink,
   )
 where
 
+import Data.Default (Default (def))
 import Data.Some (Some (..))
 import Data.TagTree (TagNode (..), TagPattern, constructTag, mkTagPattern)
 import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Markdown))
@@ -26,39 +27,20 @@ import Neuron.Zettelkasten.ID (getZettelID, parseZettelID)
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
 import Relude
-import qualified Text.Pandoc.Util as P
 import Text.URI (URI)
 import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam, hasQueryFlag)
 
 -- | Parse a query if any from a Markdown link
-queryFromPandocLink :: P.PandocLink -> Maybe (Some ZettelQuery)
-queryFromPandocLink l@P.PandocLink {..} =
-  queryFromURI (defaultConnection l) _pandocLink_uri
-  where
-    -- The default connection to use if the user has not explicitly specified
-    -- one in the query URI.
-    -- TODO: Understand and document why the default *still* has to be Folgezettel?
-    -- Perhaps remove "?cf" and make "?branch" explicit
-    -- Right, because wiki-link parser explicitly puts ?cf, with default being
-    -- Folgezettel. We should change that!
-    defaultConnection :: P.PandocLink -> Connection
-    defaultConnection pl =
-      if P.isAutoLink pl
-        then Folgezettel -- Autolinks
-        -- NOTE: This will need to be changed when we implement `[[foo | some text]]`
-        else OrdinaryConnection
-
--- | Parse a query from the given URI.
-queryFromURI :: Connection -> URI -> Maybe (Some ZettelQuery)
-queryFromURI defConn uri = do
+parseQueryLink :: URI -> Maybe (Some ZettelQuery)
+parseQueryLink uri =
   case bareFileUrlPath uri of
     Just path -> do
       -- Allow raw filename (ending with ".md"). HACK: hardcoding format, but we
       -- shouldn't.
       zid <- getZettelID ZettelFormat_Markdown (toString path)
-      pure $ Some $ ZettelQuery_ZettelByID zid OrdinaryConnection
+      pure $ Some $ ZettelQuery_ZettelByID zid def
     Nothing -> do
       (URI.unRText -> "z") <- URI.uriScheme uri
       -- Non-relevant parts of the URI should be empty
@@ -68,7 +50,7 @@ queryFromURI defConn uri = do
           noSlash = URI.uriAuthority uri == Left False
           -- Found "z:/" instead of "z:"
           hasSlash = URI.uriAuthority uri == Left True
-          conn = fromMaybe defConn (queryConn uri)
+          conn = fromMaybe def (queryConn uri)
       case zPath of
         -- Parse z:/<id>
         (URI.unRText -> path) :| []
@@ -136,6 +118,6 @@ queryView uri =
 
 queryConn :: URI -> Maybe Connection
 queryConn uri =
-  if hasQueryFlag [queryKey|cf|] uri
-    then Just OrdinaryConnection
+  if getQueryParam [queryKey|type|] uri == Just "branch"
+    then Just Folgezettel
     else Nothing

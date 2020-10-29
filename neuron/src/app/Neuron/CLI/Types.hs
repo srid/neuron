@@ -42,7 +42,6 @@ import Neuron.Zettelkasten.Zettel as Q
 import Options.Applicative
 import Relude
 import qualified Rib.Cli
-import qualified Text.Pandoc.Util as P
 import qualified Text.URI as URI
 
 data App = App
@@ -222,7 +221,7 @@ commandParser defaultNotesDir now = do
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
           maybe (Left "Not a valid query") Right $
-            Q.queryFromPandocLink (P.mkPandocAutoLink uri)
+            Q.parseQueryLink uri
         Left e ->
           Left $ displayException e
     dateReader :: ReadM DateMayTime

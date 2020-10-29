@@ -9,7 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Query.Eval
-  ( runQueryURILink,
+  ( runQuery,
     queryConnections,
   )
 where
@@ -21,31 +21,16 @@ import Data.Some (Some, withSome)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.Query (runZettelQuery)
 import Neuron.Zettelkasten.Query.Error (QueryResultError)
-import Neuron.Zettelkasten.Query.Parser (queryFromPandocLink)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelQuery (..),
     ZettelT (..),
   )
 import Relude
-import qualified Text.Pandoc.Util as P
-import Text.URI (URI)
 
--- | Evaluate the given query link and return its results.
---
--- Return Nothing if the link is not a query.
---
--- We need the full list of zettels, for running the query against.
-runQueryURILink ::
-  ( MonadError QueryResultError m,
-    MonadReader [Zettel] m
-  ) =>
-  URI ->
-  m (Maybe (DSum ZettelQuery Identity))
-runQueryURILink ul = do
-  let mq = queryFromPandocLink $ P.mkPandocAutoLink ul
-  flip traverse mq $ \q ->
-    either throwError pure =<< runExceptT (runSomeZettelQuery q)
+runQuery :: [Zettel] -> Some ZettelQuery -> Either QueryResultError (DSum ZettelQuery Identity)
+runQuery zs =
+  flip runReaderT zs . runSomeZettelQuery
 
 -- Query connections in the given zettel
 --

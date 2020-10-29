@@ -32,13 +32,13 @@ import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
 import Text.Show (Show (show))
 import Text.URI
-  ( QueryParam (QueryFlag),
+  ( QueryParam (QueryParam),
     URI (URI, uriQuery),
     mkPathPiece,
     mkURI,
     render,
   )
-import Text.URI.QQ (queryKey, scheme)
+import Text.URI.QQ (queryKey, queryValue, scheme)
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --
@@ -186,9 +186,9 @@ wikiLinkSpec =
           void $ M.count n $ symbol ']'
           pure $
             render $ case n of
-              2 ->
-                -- [[..]] adds "cf" flag in URI
-                uri {uriQuery = uriQuery uri <> [QueryFlag [queryKey|cf|]]}
+              3 ->
+                -- [[[..]]] adds type=branch in URI
+                uri {uriQuery = uriQuery uri <> [QueryParam [queryKey|type|] [queryValue|branch|]]}
               _ -> uri
         Nothing ->
           fail "Not a neuron URI; ignoring"
@@ -201,13 +201,7 @@ wikiLinkSpec =
         _ -> do
           -- Treat it as plain ID
           path <- mkPathPiece s
-          pure $
-            URI
-              (Just [scheme|z|])
-              (Left True)
-              (Just (False, path :| []))
-              []
-              Nothing
+          pure $ URI (Just [scheme|z|]) (Left True) (Just (False, path :| [])) [] Nothing
 
 inlineTagP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
 inlineTagP =
