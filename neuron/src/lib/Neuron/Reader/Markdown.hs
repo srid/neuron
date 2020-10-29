@@ -4,6 +4,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Reader.Markdown
@@ -19,6 +20,7 @@ import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
 import Data.Tagged (Tagged (..))
+import qualified Data.Text as T
 import qualified Data.YAML as YAML
 import Neuron.Orphans ()
 import Neuron.Reader.Type (ZettelParseError, ZettelReader)
@@ -36,8 +38,8 @@ import Text.URI
     URI (URI, uriQuery),
     mkPathPiece,
     mkURI,
-    render,
   )
+import qualified Text.URI as URI
 import Text.URI.QQ (queryKey, queryValue, scheme)
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
@@ -146,8 +148,17 @@ inlineTagSpec =
     pInlineTag = P.try $ do
       _ <- symbol '#'
       tag <- CM.untokenize <$> inlineTagP
-      let tagQuery = "z:tag/" <> tag
-      pure $! cmAutoLink tagQuery
+      -- let tagQuery = "z:tag/" <> tag
+      case makeZTagURI tag of
+        Nothing ->
+          fail "Not an inline tag"
+        Just (URI.render -> url) ->
+          pure $! cmAutoLink url
+    makeZTagURI :: Text -> Maybe URI
+    makeZTagURI s = do
+      tag <- mkPathPiece "tag"
+      path <- traverse mkPathPiece $ T.splitOn "/" s
+      pure $ URI (Just [scheme|z|]) (Left False) (Just (False, tag :| path)) [] Nothing
 
 -- | Create a commonmark link element
 cmAutoLink :: CM.IsInline a => Text -> a
@@ -179,13 +190,13 @@ wikiLinkSpec =
     wikiLinkP n = do
       void $ M.count n $ symbol '['
       s <- fmap CM.untokenize $ some $ noneOfToks [Symbol ']', LineEnd]
-      -- Parse as URI, add cf flag, and then render back. If parse fails, we
+      -- Parse as URI, add connection type, and then render back. If parse fails, we
       -- just ignore this inline.
-      case parseNeuronUri s of
+      case makeZLinkURI s of
         Just uri -> do
           void $ M.count n $ symbol ']'
           pure $
-            render $ case n of
+            URI.render $ case n of
               3 ->
                 -- [[[..]]] adds type=branch in URI
                 uri {uriQuery = uriQuery uri <> [QueryParam [queryKey|type|] [queryValue|branch|]]}
@@ -193,8 +204,8 @@ wikiLinkSpec =
         Nothing ->
           fail "Not a neuron URI; ignoring"
     -- Convert wiki-link to z: URI
-    parseNeuronUri :: Text -> Maybe URI
-    parseNeuronUri s =
+    makeZLinkURI :: Text -> Maybe URI
+    makeZLinkURI s =
       case toString s of
         ('z' : ':' : _) ->
           mkURI s

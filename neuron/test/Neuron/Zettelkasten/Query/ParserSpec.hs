@@ -23,7 +23,7 @@ import Text.URI (URI, mkURI)
 spec :: Spec
 spec = do
   -- The Markdown parser converts wiki-links to z: links, which should work.
-  describe "z:/ links" $ do
+  describe "z: links" $ do
     it "parses custom/hash ID" $ do
       parseQueryLink (asURI "z:/foo-bar")
         `shouldBe` (Just $ Some $ ZettelQuery_ZettelByID (unsafeMkZettelID "foo-bar") OrdinaryConnection)
@@ -57,8 +57,12 @@ spec = do
     it "z:tag/foo/bar/baz" $ do
       parseQueryLink (asURI "z:tag/foo/bar/baz")
         `shouldBe` (Just $ Some $ ZettelQuery_TagZettel (Tag "foo/bar/baz"))
-    it "i18n" $ do
-      let encodeUriPath = toText . E.encode
+  describe "z: links with i18n" $ do
+    let encodeUriPath = toText . E.encode
+    it "z:tag i18n" $ do
+      parseQueryLink (asURI $ "z:tag/" <> encodeUriPath "日本語/おかもと先生/宿題")
+        `shouldBe` (Just $ Some $ ZettelQuery_TagZettel (Tag "日本語/おかもと先生/宿題"))
+    it "z:/ i18n" $ do
       parseQueryLink (asURI $ "z:/" <> encodeUriPath "计算机")
         `shouldBe` (Just $ Some $ ZettelQuery_ZettelByID (unsafeMkZettelID "计算机") OrdinaryConnection)
 
