@@ -99,11 +99,9 @@ evalAndRenderZettelQuery ::
   Maybe [Inline] ->
   NeuronWebT t m [QueryResultError]
 evalAndRenderZettelQuery graph oldRender lUrl minner = do
-  let muri = do
-        uri <- URI.mkURI lUrl
-        pure uri
-  case muri of
-    Nothing -> oldRender
+  case URI.mkURI lUrl of
+    Nothing ->
+      oldRender
     Just uri -> do
       case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uri) of
         Left e@(QueryResultError_NoSuchZettel mconn zid) -> do

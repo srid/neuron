@@ -14,16 +14,21 @@ module Neuron.Zettelkasten.Query.Eval
   )
 where
 
-import Control.Monad.Except
-import Control.Monad.Writer
-import Data.Dependent.Sum
-import Data.Some
-import Neuron.Zettelkasten.Connection
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Writer (MonadWriter (tell))
+import Data.Dependent.Sum (DSum (..))
+import Data.Some (Some, withSome)
+import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.Query (runZettelQuery)
-import Neuron.Zettelkasten.Query.Error
-import Neuron.Zettelkasten.Query.Parser (queryFromURI)
+import Neuron.Zettelkasten.Query.Error (QueryResultError)
+import Neuron.Zettelkasten.Query.Parser (queryFromPandocLink)
 import Neuron.Zettelkasten.Zettel
+  ( Zettel,
+    ZettelQuery (..),
+    ZettelT (..),
+  )
 import Relude
+import qualified Text.Pandoc.Util as P
 import Text.URI (URI)
 
 -- | Evaluate the given query link and return its results.
@@ -38,9 +43,7 @@ runQueryURILink ::
   URI ->
   m (Maybe (DSum ZettelQuery Identity))
 runQueryURILink ul = do
-  -- TODO: Understand and document why the default *still* has to be Folgezettel?
-  -- Perhaps remove "?cf" and make "?branch" explicit
-  let mq = queryFromURI Folgezettel ul
+  let mq = queryFromPandocLink $ P.mkPandocAutoLink ul
   flip traverse mq $ \q ->
     either throwError pure =<< runExceptT (runSomeZettelQuery q)
 

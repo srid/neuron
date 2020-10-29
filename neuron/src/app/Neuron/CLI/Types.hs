@@ -20,9 +20,9 @@ module Neuron.CLI.Types
 where
 
 import Data.Default (def)
-import Data.Some
+import Data.Some (Some (..))
 import Data.TagTree (mkTagPattern)
-import Data.Time
+import Data.Time (LocalTime)
 import Data.Time.DateMayTime
   ( DateMayTime,
     formatDateMayTime,
@@ -34,12 +34,15 @@ import qualified Neuron.Web.Route as R
 import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
-import Neuron.Zettelkasten.Query.Graph as Q
+import Neuron.Zettelkasten.Query.Graph as Q (GraphQuery (..))
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel as Q
+  ( ZettelQuery (..),
+  )
 import Options.Applicative
 import Relude
 import qualified Rib.Cli
+import qualified Text.Pandoc.Util as P
 import qualified Text.URI as URI
 
 data App = App
@@ -219,7 +222,7 @@ commandParser defaultNotesDir now = do
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
           maybe (Left "Not a valid query") Right $
-            Q.queryFromURI connDummy uri
+            Q.queryFromPandocLink (P.mkPandocAutoLink uri)
         Left e ->
           Left $ displayException e
     dateReader :: ReadM DateMayTime

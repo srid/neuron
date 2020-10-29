@@ -56,10 +56,7 @@ import Text.Pandoc.Definition (Inline)
 
 -- | Render the query results.
 renderQueryResult ::
-  PandocBuilder t m =>
-  Maybe [Inline] ->
-  DSum ZettelQuery Identity ->
-  NeuronWebT t m ()
+  PandocBuilder t m => Maybe [Inline] -> DSum ZettelQuery Identity -> NeuronWebT t m ()
 renderQueryResult minner = \case
   ZettelQuery_ZettelByID _zid conn :=> Identity target -> do
     renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target

@@ -12,7 +12,6 @@ module Neuron.Reader.Markdown
 where
 
 import qualified Commonmark as CM
-import qualified Commonmark.Blocks as CM
 import qualified Commonmark.Extensions as CE
 import qualified Commonmark.Inlines as CM
 import qualified Commonmark.Pandoc as CP
@@ -111,8 +110,7 @@ neuronSpec ::
   CM.SyntaxSpec m il bl
 neuronSpec =
   mconcat
-    [ -- autoLinkSpec,
-      wikiLinkSpec,
+    [ wikiLinkSpec,
       inlineTagSpec,
       gfmExtensionsSansEmoji,
       CE.fancyListSpec,
@@ -124,7 +122,7 @@ neuronSpec =
       CE.rawAttributeSpec,
       CE.fencedDivSpec,
       CE.bracketedSpanSpec,
-      CM.defaultSyntaxSpec --{CM.syntaxBlockSpecs = defaultBlockSpecsSansRawHtml}
+      CM.defaultSyntaxSpec
     ]
   where
     -- Emoji extension introduces ghcjs linker issues
@@ -150,24 +148,6 @@ inlineTagSpec =
       tag <- CM.untokenize <$> inlineTagP
       let tagQuery = "z:tag/" <> tag
       pure $! cmAutoLink tagQuery
-
--- | Convert the given wrapped link to a `B.Link`.
--- TODO remove
-_autoLinkSpec ::
-  (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
-  CM.SyntaxSpec m il bl
-_autoLinkSpec =
-  mempty
-    { CM.syntaxInlineParsers = [pLink]
-    }
-  where
-    pLink ::
-      (Monad m, CM.IsInline il) =>
-      CM.InlineParser m il
-    pLink = P.try $ do
-      x <- angleBracketLinkP
-      let url = CM.untokenize x
-      pure $! cmAutoLink url
 
 -- | Create a commonmark link element
 cmAutoLink :: CM.IsInline a => Text -> a
@@ -234,39 +214,3 @@ inlineTagP =
   some (noneOfToks $ [Spaces, UnicodeSpace, LineEnd] <> fmap Symbol punctuation)
   where
     punctuation = "[];:,.?!"
-
--- rawHtmlSpec eats angle bracket links as html tags
--- TODO remove
-_defaultBlockSpecsSansRawHtml :: (Monad m, CM.IsBlock il bl) => [CM.BlockSpec m il bl]
-_defaultBlockSpecsSansRawHtml =
-  [ CM.indentedCodeSpec,
-    CM.fencedCodeSpec,
-    CM.blockQuoteSpec,
-    CM.atxHeadingSpec,
-    CM.setextHeadingSpec,
-    CM.thematicBreakSpec,
-    CM.listItemSpec (CM.bulletListMarker <|> CM.orderedListMarker),
-    myRawHtmlSpec,
-    CM.attributeSpec
-  ]
-
--- | Like `CM.rawHtmlSpec` but lets zettel style links pass through.
-myRawHtmlSpec ::
-  (Monad m, CM.IsBlock il bl) =>
-  CM.BlockSpec m il bl
-myRawHtmlSpec =
-  -- TODO: Ideally we should use a more restrictive parsers; one that allows known safe HTML tags
-  -- Although, this prevents the user from naming their zettels say "div.md"
-  CM.rawHtmlSpec
-    { CM.blockStart = P.notFollowedBy angleBracketLinkP >> CM.blockStart CM.rawHtmlSpec
-    }
-
-angleBracketLinkP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
-angleBracketLinkP = do
-  void $ symbol '<'
-  -- NOTE: Intentionally be lenient to support `<z:zettels?t...>` style
-  -- queries. FIXME: Should fail on `</foo>` though (HTML end tags). TODO:
-  -- Add unit tests before modifying this matching any further.
-  x <- some (noneOfToks [Symbol '>', Spaces, UnicodeSpace, LineEnd])
-  void $ symbol '>'
-  pure x
