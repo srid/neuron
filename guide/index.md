@@ -5,7 +5,6 @@
 ![Neuron logo](https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg){.ui .small .centered .image}
 
 ## Getting started
-this is [install it](install.md)
 
 * [[[install]]]
 * [[[tutorial]]]
