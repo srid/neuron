@@ -10,17 +10,19 @@ module Neuron.Zettelkasten.Zettel.Parser where
 
 import Control.Monad.Writer
 import Data.List (nub)
-import Data.Some
+import Data.Some (Some (..))
 import Data.TagTree (Tag)
-import Neuron.Reader.Type
-import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
+import Neuron.Reader.Type (ZettelFormat, ZettelReader)
+import Neuron.Zettelkasten.ID (ZettelID (zettelIDRaw))
+import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
+  ( ZettelC,
+    ZettelQuery (..),
+    ZettelT (Zettel),
+  )
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
-import Reflex.Dom.Pandoc.URILink (queryURILinks)
 import Relude
-import Text.Pandoc.Definition (Pandoc)
-import Text.Pandoc.Util
+import qualified Text.Pandoc.Util as P
 
 parseZettel ::
   ZettelFormat ->
@@ -38,9 +40,9 @@ parseZettel format zreader fn zid s = do
           (title, titleInBody) = case Meta.title =<< meta of
             Just tit -> (tit, False)
             Nothing -> fromMaybe (zettelIDRaw zid, False) $ do
-              ((,True) . plainify . snd <$> getH1 doc)
+              ((,True) . P.plainify . snd <$> P.getH1 doc)
           -- Accumulate queries
-          queries = extractQueries doc
+          queries = mapMaybe (parseQueryLink . P._pandocLink_uri) $ P.getLinks doc
           -- Determine zettel tags
           metaTags = fromMaybe [] $ Meta.tags =<< meta
           queryTags = getInlineTag `mapMaybe` queries
@@ -50,11 +52,6 @@ parseZettel format zreader fn zid s = do
           unlisted = fromMaybe False $ Meta.unlisted =<< meta
        in Right $ Zettel zid format fn title titleInBody tags date unlisted queries Nothing doc
   where
-    -- Extract all (valid) queries from the Pandoc document
-    extractQueries :: Pandoc -> [Some ZettelQuery]
-    extractQueries doc =
-      catMaybes $
-        queryFromURILink <$> queryURILinks doc
     getInlineTag :: Some ZettelQuery -> Maybe Tag
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag

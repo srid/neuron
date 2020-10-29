@@ -9,38 +9,28 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Query.Eval
-  ( runQueryURILink,
+  ( runQuery,
     queryConnections,
   )
 where
 
-import Control.Monad.Except
-import Control.Monad.Writer
-import Data.Dependent.Sum
-import Data.Some
-import Neuron.Zettelkasten.Connection
+import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Writer (MonadWriter (tell))
+import Data.Dependent.Sum (DSum (..))
+import Data.Some (Some, withSome)
+import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.Query (runZettelQuery)
-import Neuron.Zettelkasten.Query.Error
-import Neuron.Zettelkasten.Query.Parser (queryFromURILink)
+import Neuron.Zettelkasten.Query.Error (QueryResultError)
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Pandoc.URILink (URILink)
+  ( Zettel,
+    ZettelQuery (..),
+    ZettelT (..),
+  )
 import Relude
 
--- | Evaluate the given query link and return its results.
---
--- Return Nothing if the link is not a query.
---
--- We need the full list of zettels, for running the query against.
-runQueryURILink ::
-  ( MonadError QueryResultError m,
-    MonadReader [Zettel] m
-  ) =>
-  URILink ->
-  m (Maybe (DSum ZettelQuery Identity))
-runQueryURILink ul = do
-  let mq = queryFromURILink ul
-  flip traverse mq $ \q ->
-    either throwError pure =<< runExceptT (runSomeZettelQuery q)
+runQuery :: [Zettel] -> Some ZettelQuery -> Either QueryResultError (DSum ZettelQuery Identity)
+runQuery zs =
+  flip runReaderT zs . runSomeZettelQuery
 
 -- Query connections in the given zettel
 --

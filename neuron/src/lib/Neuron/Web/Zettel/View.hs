@@ -31,11 +31,13 @@ import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import qualified Neuron.Zettelkasten.Query.Eval as Q
+import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc
 import Relude hiding ((&))
-import Text.Pandoc.Definition (Pandoc)
+import Text.Pandoc.Definition (Inline, Pandoc)
+import qualified Text.URI as URI
 
 renderZettel ::
   PandocBuilder t m =>
@@ -94,24 +96,31 @@ evalAndRenderZettelQuery ::
   PandocBuilder t m =>
   ZettelGraph ->
   NeuronWebT t m [QueryResultError] ->
-  URILink ->
+  Text ->
+  Maybe [Inline] ->
   NeuronWebT t m [QueryResultError]
-evalAndRenderZettelQuery graph oldRender uriLink@(URILink inner _uri) = do
-  case flip runReaderT (G.getZettels graph) (Q.runQueryURILink uriLink) of
-    Left e@(QueryResultError_NoSuchZettel mconn zid) -> do
-      Q.renderMissingZettelLink mconn zid
-      pure [e]
-    Right Nothing -> do
-      -- This is not a query link; pass through.
+evalAndRenderZettelQuery graph oldRender (URI.mkURI -> muri) minner = do
+  case muri of
+    Nothing ->
       oldRender
-    Right (Just res) -> do
-      Q.renderQueryResult inner res
-      pure mempty
+    Just (Q.parseQueryLink -> mquery) -> do
+      case mquery of
+        Nothing ->
+          -- This is not a query link; pass through.
+          oldRender
+        Just query ->
+          case Q.runQuery (G.getZettels graph) query of
+            Left e@(QueryResultError_NoSuchZettel mconn zid) -> do
+              Q.renderMissingZettelLink mconn zid
+              pure [e]
+            Right res -> do
+              Q.renderQueryResult minner res
+              pure mempty
 
 renderZettelContent ::
   forall t m a.
   (PandocBuilder t m, Monoid a) =>
-  (NeuronWebT t m a -> URILink -> NeuronWebT t m a) ->
+  (NeuronWebT t m a -> Text -> Maybe [Inline] -> NeuronWebT t m a) ->
   ZettelT Pandoc ->
   NeuronWebT t m ()
 renderZettelContent handleLink Zettel {..} = do

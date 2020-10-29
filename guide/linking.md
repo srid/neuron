@@ -1,7 +1,7 @@
 # Linking
 
 To link to another zettel, you can use regular Markdown links, or use the
-special Wiki-link syntax by putting the [[id]] inside `[[..]]`[^autolink]:
+special Wiki-link syntax by putting the [[id]] inside `[[..]]`:
 
 ```
 This is a zettel file, which links to another zettel:
@@ -37,9 +37,3 @@ zettel is displayed.
 ## Advanced linking
 
 * [[[link-query]]]
-
-[^autolink]:
-    Neuron used to use "autolink" style linking. `<ef3dke98>` is the
-    same as `[[[ef3dke98]]]`; and `<ef3dke98?cf>` is the same as
-    `[[ef3dke98]]`. Autolinks are supported for backwards compatibility only;
-    users are recommended to use the new wiki-style links.
