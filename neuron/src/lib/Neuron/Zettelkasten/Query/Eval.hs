@@ -27,6 +27,7 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (..),
   )
 import Relude
+import Text.Pandoc.Definition (Block)
 
 runQuery :: [Zettel] -> Some ZettelQuery -> Either QueryResultError (DSum ZettelQuery Identity)
 runQuery zs =
@@ -43,16 +44,16 @@ queryConnections ::
     MonadReader [Zettel] m
   ) =>
   Zettel ->
-  m [(Connection, Zettel)]
+  m [((Connection, [Block]), Zettel)]
 queryConnections Zettel {..} = do
   fmap concat $
-    forM zettelQueries $ \someQ ->
+    forM zettelQueries $ \(someQ, ctx) ->
       runExceptT (runSomeZettelQuery someQ) >>= \case
         Left e -> do
           tell [e]
           pure mempty
         Right res ->
-          pure $ getConnections res
+          pure $ fmap (first (,ctx)) $ getConnections res
   where
     getConnections :: DSum ZettelQuery Identity -> [(Connection, Zettel)]
     getConnections = \case

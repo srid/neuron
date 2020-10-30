@@ -7,11 +7,11 @@ module Neuron.Config.AliasSpec
   )
 where
 
-import Neuron.Config.Alias
-import Neuron.Zettelkasten.ID
+import Neuron.Config.Alias (Alias (..), aliasParser)
+import Neuron.Zettelkasten.ID (ZettelID (zettelIDSlug))
 import Relude
 import Test.Hspec
-import Text.Megaparsec.Simple
+import Text.Megaparsec.Simple (parse)
 
 spec :: Spec
 spec = do

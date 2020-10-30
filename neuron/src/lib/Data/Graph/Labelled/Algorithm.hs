@@ -64,13 +64,13 @@ preSetWithEdgeLabel f v g =
 -- | Optimized version of preSetWithEdgeLabel for multiple-input vertices.
 preSetWithEdgeLabelMany ::
   (Eq e, Monoid e, Vertex v, Ord (VertexID v)) =>
-  e ->
+  (e -> Bool) ->
   LabelledGraph v e ->
   (v -> [v])
-preSetWithEdgeLabelMany e g =
+preSetWithEdgeLabelMany f g =
   -- Compute the graph to search once, and then use it multiple times via the
   -- returned function.
-  let g' = LAM.transpose $ graph $ induceOnEdge (== e) g
+  let g' = LAM.transpose $ graph $ induceOnEdge f g
    in \(vertexID -> v) -> fmap (getVertex g) $ toList $ LAM.postSet v g'
 
 topSort :: (Vertex v, Ord (VertexID v)) => LabelledGraph v e -> Either (NonEmpty v) [v]
