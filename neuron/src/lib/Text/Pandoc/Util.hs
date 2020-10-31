@@ -57,6 +57,7 @@ getLinks = W.query go
             pure inlines
       pure $ PandocLink inner uri
 
+-- | Like @getLinks@, but includes the "surrounding context"
 getLinksWithContext :: Pandoc -> Map URI [B.Block]
 getLinksWithContext doc =
   fmap (reverse . nub) $ Map.fromListWith (<>) . fmap (second one) $ W.query go doc

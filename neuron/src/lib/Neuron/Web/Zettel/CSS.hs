@@ -37,6 +37,11 @@ zettelCss = do
     C.color black
     "a" ? do
       C.color black
+  "ul.backlinks > li" ? do
+    C.paddingBottom $ em 0.4
+    C.listStyleType C.disc
+  "ul.context-list > li" ? do
+    C.listStyleType C.lowerRoman
 
 zettelContentCss :: Css
 zettelContentCss = do

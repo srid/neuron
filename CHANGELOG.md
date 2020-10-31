@@ -8,6 +8,7 @@
   - Deal with title IDs in search (#445)
 - Web interface
   - Simplify error message UX for missing wiki-links (#448)
+  - Baclinks surrounding context (#190)
 - Zettel format
   - Ignore punctuation in inline tags (#443)
   - Remove support for autolinks (`<..>`) (#449) (see [migration script](https://github.com/srid/neuron/issues/449#issuecomment-719062302))

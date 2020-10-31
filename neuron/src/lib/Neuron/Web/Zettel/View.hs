@@ -96,11 +96,11 @@ renderZettelBottomPane graph z@Zettel {..} = do
     elClass "nav" "ui bottom attached segment deemphasized" $ do
       whenJust backlinks $ \links -> do
         elClass "h3" "ui header" $ text "Backlinks"
-        el "ul" $ do
+        elClass "ul" "backlinks" $ do
           forM_ links $ \((conn, ctxList), zl) ->
             el "li" $ do
               Q.renderZettelLink Nothing (Just conn) def zl
-              elAttr "ul" ("style" =: "zoom: 85%;") $ do
+              elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
                 forM_ ctxList $ \ctx -> do
                   elClass "li" "item" $ do
                     void $ elPandoc (mkPandocRenderConfig graph) $ Pandoc mempty [ctx]
