@@ -93,7 +93,7 @@ renderZettelBottomPane graph z@Zettel {..} = do
   let backlinks = nonEmpty $ G.backlinks isJust z graph
       tags = nonEmpty zettelTags
   when (isJust backlinks || isJust tags) $
-    elClass "nav" "ui bottom attached segment deemphasized" $ do
+    elClass "nav" "ui bottom attached segment deemphasized backlinks-container" $ do
       whenJust backlinks $ \links -> do
         elClass "h3" "ui header" $ text "Backlinks"
         elClass "ul" "backlinks" $ do
