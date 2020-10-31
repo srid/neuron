@@ -11,15 +11,22 @@ where
 import Control.Monad.Writer (runWriterT)
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
-import Neuron.Reader.Type
-import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Graph.Type
-import Neuron.Zettelkasten.ID
+import Neuron.Reader.Type (ZettelFormat, ZettelReader)
+import Neuron.Zettelkasten.Connection (Connection)
+import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
+import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (QueryResultError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.Zettel.Parser
+  ( Zettel,
+    ZettelC,
+    ZettelError (..),
+    ZettelT (..),
+    sansContent,
+  )
+import Neuron.Zettelkasten.Zettel.Parser (parseZettels)
 import Relude
+import Text.Pandoc.Definition (Block)
 
 buildZettelkasten ::
   [((ZettelFormat, ZettelReader), [(ZettelID, FilePath, Text)])] ->
@@ -52,7 +59,7 @@ mkZettelGraph ::
     Map ZettelID (NonEmpty QueryResultError)
   )
 mkZettelGraph zettels =
-  let res :: [(Zettel, ([(Connection, Zettel)], [QueryResultError]))] =
+  let res :: [(Zettel, ([((Connection, [Block]), Zettel)], [QueryResultError]))] =
         flip fmap zettels $ \z ->
           (z, runQueryConnections zettels z)
       g :: ZettelGraph = G.mkGraphFrom zettels $
@@ -63,12 +70,12 @@ mkZettelGraph zettels =
           (zettelID z,) <$> merrs
    in (g, errors)
 
-runQueryConnections :: [Zettel] -> Zettel -> ([(Connection, Zettel)], [QueryResultError])
+runQueryConnections :: [Zettel] -> Zettel -> ([((Connection, [Block]), Zettel)], [QueryResultError])
 runQueryConnections zettels z =
   flip runReader zettels $ do
     runWriterT $ queryConnections z
 
-edgeFromConnection :: Zettel -> (Connection, Zettel) -> (Maybe Connection, Zettel, Zettel)
+edgeFromConnection :: Zettel -> (e, Zettel) -> (Maybe e, Zettel, Zettel)
 edgeFromConnection z (c, z2) =
   (connectionMonoid c, z, z2)
   where

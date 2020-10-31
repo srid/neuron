@@ -33,10 +33,15 @@ zettelCss = do
         mempty -- C.paddingBottom $ em 1
     zettelContentCss
   IT.style
-  ".ui.label.zettel-tag a.tag-inner" ? do
+  ".ui.label.zettel-tag" ? do
     C.color black
     "a" ? do
       C.color black
+  "ul.backlinks > li" ? do
+    C.paddingBottom $ em 0.4
+    C.listStyleType C.disc
+  "ul.context-list > li" ? do
+    C.listStyleType C.lowerRoman
 
 zettelContentCss :: Css
 zettelContentCss = do
@@ -130,4 +135,4 @@ zettelCommonCss = do
     opacity 1
   ".deemphasized:not(:hover)" ? do
     opacity 0.7
-    "span.zettel-link a, div.item a" ? important (color gray)
+    "a" ? important (color gray)

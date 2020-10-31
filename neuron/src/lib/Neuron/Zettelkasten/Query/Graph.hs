@@ -9,16 +9,17 @@
 
 module Neuron.Zettelkasten.Query.Graph where
 
-import Data.Aeson
-import Data.Aeson.GADT.TH
+import Data.Aeson (FromJSON (parseJSON), ToJSON (toJSON))
+import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Dependent.Sum.Orphans ()
-import Data.GADT.Compare.TH
-import Data.GADT.Show.TH
-import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Graph.Type
-import Neuron.Zettelkasten.ID
-import Neuron.Zettelkasten.Zettel
+import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
+import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
+import Neuron.Zettelkasten.Connection (Connection)
+import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
+import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.Zettel (Zettel)
 import Relude
+import Text.Pandoc.Definition (Block)
 
 -- | Like `GraphQuery` but focused on the relationship between zettels.
 data GraphQuery r where
@@ -28,7 +29,7 @@ data GraphQuery r where
   GraphQuery_BacklinksOf ::
     Maybe Connection ->
     ZettelID ->
-    GraphQuery [(Connection, Zettel)]
+    GraphQuery [((Connection, [Block]), Zettel)]
 
 deriveJSONGADT ''GraphQuery
 

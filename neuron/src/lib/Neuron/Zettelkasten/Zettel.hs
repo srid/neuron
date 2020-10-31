@@ -33,6 +33,7 @@ import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (QueryResultError)
 import Neuron.Zettelkasten.Query.Theme (ZettelsView)
 import Relude hiding (show)
+import Text.Pandoc.Builder (Block)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
 
@@ -61,7 +62,7 @@ data ZettelT content = Zettel
     zettelDate :: Maybe DateMayTime,
     zettelUnlisted :: Bool,
     -- | List of all queries in the zettel
-    zettelQueries :: [Some ZettelQuery],
+    zettelQueries :: [(Some ZettelQuery, [Block])],
     zettelError :: Maybe ZettelParseError,
     zettelContent :: content
   }
