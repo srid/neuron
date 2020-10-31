@@ -8,7 +8,6 @@
 
 module Neuron.Zettelkasten.Zettel.Parser where
 
-import Control.Monad.Writer
 import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))

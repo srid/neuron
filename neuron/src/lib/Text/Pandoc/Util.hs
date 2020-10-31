@@ -59,7 +59,7 @@ getLinks = W.query go
 
 getLinksWithContext :: Pandoc -> Map URI [B.Block]
 getLinksWithContext doc =
-  fmap nub $ Map.fromListWith (<>) . fmap (second one) $ W.query go doc
+  fmap (reverse . nub) $ Map.fromListWith (<>) . fmap (second one) $ W.query go doc
   where
     go :: B.Block -> [(URI, B.Block)]
     go blk =

@@ -93,24 +93,19 @@ renderZettelBottomPane graph z@Zettel {..} = do
   let backlinks = nonEmpty $ G.backlinks isJust z graph
       tags = nonEmpty zettelTags
   when (isJust backlinks || isJust tags) $
-    elClass "nav" "ui bottom attached segment deemphasized" $
-      do
-        divClass "ui grid" $ do
-          divClass "fourteen wide column" $ do
-            whenJust backlinks $ \links -> do
-              elAttr "div" ("class" =: "ui header" <> "title" =: "Zettels that link here (branching or not)") $
-                text "Backlinks"
-              elAttr "backlinks" ("style" =: "zoom: 85%;") $ do
-                forM_ links $ \((conn, ctxList), zl) ->
-                  divClass "backlink" $ do
-                    el "hr" blank
-                    elClass "h3" "header" $ Q.renderZettelLink Nothing (Just conn) def zl
-                    elClass "ul" "ui list context-list" $ do
-                      forM_ ctxList $ \ctx -> do
-                        elClass "li" "item" $ do
-                          void $ elPandoc (mkPandocRenderConfig graph) $ Pandoc mempty [ctx]
-          whenJust tags $
-            divClass "two wide column" . renderTags
+    elClass "nav" "ui bottom attached segment deemphasized" $ do
+      whenJust backlinks $ \links -> do
+        elClass "h3" "ui header" $ text "Backlinks"
+        el "ul" $ do
+          forM_ links $ \((conn, ctxList), zl) ->
+            el "li" $ do
+              Q.renderZettelLink Nothing (Just conn) def zl
+              elAttr "ul" ("style" =: "zoom: 85%;") $ do
+                forM_ ctxList $ \ctx -> do
+                  elClass "li" "item" $ do
+                    void $ elPandoc (mkPandocRenderConfig graph) $ Pandoc mempty [ctx]
+      whenJust tags $
+        renderTags
 
 mkPandocRenderConfig ::
   PandocBuilder t m =>
@@ -169,12 +164,10 @@ renderTags tags = do
     -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
     -- the top pushes the zettel content down, introducing unnecessary white
     -- space below the title. So we put it at the bottom for now.
-    elAttr "span" ("class" =: "ui right ribbon label zettel-tag" <> "title" =: "Tag") $ do
-      neuronRouteLink
-        (Some $ Route_Search $ Just t)
-        ( "class" =: "tag-inner"
-            <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
-        )
-        $ do
-          text $ unTag t
+    neuronRouteLink
+      (Some $ Route_Search $ Just t)
+      ( "class" =: "ui right ribbon label zettel-tag "
+          <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
+      )
+      $ text $ unTag t
     el "p" blank

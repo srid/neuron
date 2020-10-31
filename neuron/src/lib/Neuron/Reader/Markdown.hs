@@ -148,7 +148,6 @@ inlineTagSpec =
     pInlineTag = P.try $ do
       _ <- symbol '#'
       tag <- CM.untokenize <$> inlineTagP
-      -- let tagQuery = "z:tag/" <> tag
       case makeZTagURI tag of
         Nothing ->
           fail "Not an inline tag"
