@@ -37,6 +37,7 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext)
 import Options.Applicative
 import Relude
 import Rib.Route
@@ -175,6 +176,6 @@ loadZettelkastenFrom fs = do
               flip fmap (Map.toList $ Map.mapMaybe leftToMaybe zidMap) $
                 \(zid, (fmt, (path, s))) ->
                   (fmt, [(zid, path, s)])
-      (g, zs, gerrs) = G.buildZettelkasten files
+      (g, zs, gerrs) = G.buildZettelkasten extractQueriesWithContext files
       errs = Map.unions [dups, gerrs]
   pure (g, zs, errs)

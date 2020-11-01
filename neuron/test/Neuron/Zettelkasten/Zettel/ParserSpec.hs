@@ -16,7 +16,7 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (zettelTags),
     sansContent,
   )
-import Neuron.Zettelkasten.Zettel.Parser (parseZettel)
+import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettel)
 import Relude
 import Test.Hspec
 
@@ -24,7 +24,13 @@ spec :: Spec
 spec = do
   describe "inline tags" $ do
     let parseSomeZettel =
-          sansContent . parseZettel ZettelFormat_Markdown parseMarkdown "<test>" (unsafeMkZettelID "note.md")
+          sansContent
+            . parseZettel
+              ZettelFormat_Markdown
+              parseMarkdown
+              extractQueriesWithContext
+              "<test>"
+              (unsafeMkZettelID "note.md")
     it "simple" $ do
       let z :: Zettel = parseSomeZettel "An #inline tag"
       zettelTags z `shouldBe` [Tag "inline"]

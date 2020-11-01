@@ -24,17 +24,18 @@ import Neuron.Zettelkasten.Zettel
   )
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude
-import Text.Pandoc.Definition (Block (Plain), Inline (Code, Str), nullAttr)
+import Text.Pandoc.Definition (Block (Plain), Inline (Code, Str), Pandoc, nullAttr)
 import qualified Text.Pandoc.Util as P
 
 parseZettel ::
   ZettelFormat ->
   ZettelReader ->
+  QueryExtractor ->
   FilePath ->
   ZettelID ->
   Text ->
   ZettelC
-parseZettel format zreader fn zid s = do
+parseZettel format zreader queryExtractor fn zid s = do
   case zreader fn s of
     Left parseErr ->
       Left $ Zettel zid format fn "Unknown" False [] Nothing False [] (Just parseErr) s
@@ -45,9 +46,7 @@ parseZettel format zreader fn zid s = do
             Nothing -> fromMaybe (zettelIDRaw zid, False) $ do
               ((,True) . P.plainify . snd <$> P.getH1 doc)
           -- Accumulate queries
-          queries =
-            mapMaybe (uncurry parseQueryLinkWithContext) $
-              Map.toList $ P.getLinksWithContext doc
+          queries = queryExtractor doc
           -- Determine zettel tags
           metaTags = fromMaybe [] $ Meta.tags =<< meta
           queryTags = (getInlineTag . fst) `mapMaybe` queries
@@ -61,6 +60,24 @@ parseZettel format zreader fn zid s = do
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag
       _ -> Nothing
+
+-- | Like `parseZettel` but operates on multiple files.
+parseZettels ::
+  QueryExtractor ->
+  [((ZettelFormat, ZettelReader), [(ZettelID, FilePath, Text)])] ->
+  [ZettelC]
+parseZettels queryExtractor filesPerFormat =
+  flip concatMap filesPerFormat $ \((format, zreader), files) ->
+    flip fmap files $ \(zid, path, s) ->
+      parseZettel format zreader queryExtractor path zid s
+
+type QueryExtractor = Pandoc -> [(Some ZettelQuery, [Block])]
+
+extractQueriesWithContext :: QueryExtractor
+extractQueriesWithContext doc =
+  mapMaybe (uncurry parseQueryLinkWithContext) $
+    Map.toList $ P.getLinksWithContext doc
+  where
     parseQueryLinkWithContext uri ctx = do
       case parseQueryLink uri of
         Nothing -> Nothing
@@ -78,11 +95,8 @@ parseZettel format zreader fn zid s = do
       _ ->
         mempty
 
--- | Like `parseZettel` but operates on multiple files.
-parseZettels ::
-  [((ZettelFormat, ZettelReader), [(ZettelID, FilePath, Text)])] ->
-  [ZettelC]
-parseZettels filesPerFormat =
-  flip concatMap filesPerFormat $ \((format, zreader), files) ->
-    flip fmap files $ \(zid, path, s) ->
-      parseZettel format zreader path zid s
+extractQueriesWithoutContext :: QueryExtractor
+extractQueriesWithoutContext doc =
+  flip mapMaybe (P.getLinks doc) $ \(P._pandocLink_uri -> uri) -> do
+    someQ <- parseQueryLink uri
+    pure (someQ, mempty)

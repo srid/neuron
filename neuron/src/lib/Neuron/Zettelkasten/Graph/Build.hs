@@ -24,18 +24,19 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (..),
     sansContent,
   )
-import Neuron.Zettelkasten.Zettel.Parser (parseZettels)
+import Neuron.Zettelkasten.Zettel.Parser (QueryExtractor, parseZettels)
 import Relude
 import Text.Pandoc.Definition (Block)
 
 buildZettelkasten ::
+  QueryExtractor ->
   [((ZettelFormat, ZettelReader), [(ZettelID, FilePath, Text)])] ->
   ( ZettelGraph,
     [ZettelC],
     Map ZettelID ZettelError
   )
-buildZettelkasten fs =
-  let zs = parseZettels fs
+buildZettelkasten queryExtractor fs =
+  let zs = parseZettels queryExtractor fs
       (g, qErrs) = mkZettelGraph $ filter (not . zettelUnlisted) $ sansContent <$> zs
       errors =
         Map.unions

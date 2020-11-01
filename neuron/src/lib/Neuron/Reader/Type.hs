@@ -14,12 +14,18 @@ module Neuron.Reader.Type
   )
 where
 
-import Data.Aeson
-import Data.Tagged
-import Neuron.Zettelkasten.Zettel.Meta
+import Data.Aeson (FromJSON (parseJSON), ToJSON (toJSON))
+import Data.Tagged (Tagged)
+import Neuron.Zettelkasten.Zettel.Meta (Meta)
 import Relude hiding (readEither, show)
 import Text.Pandoc.Definition (Pandoc)
 import Text.Read
+  ( Lexeme (Ident),
+    Read (readPrec),
+    choice,
+    lexP,
+    readEither,
+  )
 import Prelude (show)
 
 -- | A function that parses the zettel into a Pandoc AST
