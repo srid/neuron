@@ -25,7 +25,8 @@ import qualified Data.Text as T
 import Data.Traversable
 import Development.Shake (Action, need)
 import Neuron.Config.Alias (Alias (..), getAliases)
-import Neuron.Config.Type (Config (minVersion), getZettelFormats)
+import Neuron.Config.Type (Config)
+import qualified Neuron.Config.Type as C
 import Neuron.Reader (readerForZettelFormat)
 import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Neuron.Version (neuronVersion, olderThan)
@@ -57,11 +58,11 @@ generateSite ::
   (forall a. Z.Route a -> (ZettelGraph, a) -> Action ()) ->
   Action ZettelGraph
 generateSite config writeHtmlRoute' = do
-  when (olderThan $ minVersion config) $ do
+  when (olderThan $ C.minVersion config) $ do
     fail $
       toString $
         "Require neuron mininum version "
-          <> minVersion config
+          <> C.minVersion config
           <> ", but your neuron version is "
           <> neuronVersion
   (zettelGraph, zettelContents, errors) <- loadZettelkasten config
@@ -125,9 +126,11 @@ loadZettelkasten ::
       Map ZettelID ZettelError
     )
 loadZettelkasten config = do
-  formats <- getZettelFormats config
+  formats <- C.getZettelFormats config
+  -- Experimental feature; see https://github.com/srid/neuron/issues/309
+  let patternPrefix = bool "*" "**/*" $ C.recurseDir config
   zettelFiles <- forM formats $ \fmt -> do
-    let pat = toString $ "*" <> zettelFormatToExtension fmt
+    let pat = toString $ patternPrefix <> zettelFormatToExtension fmt
     files <- forEvery [pat] pure
     pure (fmt, files)
   res@(g, _, errs) <- loadZettelkastenFrom zettelFiles

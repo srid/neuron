@@ -40,7 +40,9 @@ data Config = Config
     minVersion :: Text,
     siteBaseUrl :: Maybe Text,
     siteTitle :: Text,
-    theme :: Text
+    theme :: Text,
+    -- EXPERIMENTAL: may go way, or be changed
+    recurseDir :: Bool
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
@@ -75,6 +77,8 @@ defaultConfig =
   \   [] : List Text\
   \, formats =\
   \   [ \"markdown\" ]\
+  \, recurseDir =\
+  \   False \
   \, minVersion =\
   \   \"0.5\" \
   \}"
