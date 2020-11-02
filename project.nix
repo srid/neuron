@@ -52,9 +52,9 @@ let
     reflex-dom-pandoc =
       pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
 
-    # This version is not the default in nixpkgs, yet.
-    skylighting = super.skylighting_0_10_0_2;
-    skylighting-core = super.skylighting-core_0_10_0_2;
+    # This version is not the default in the static nixpkgs, yet.
+    skylighting = super.skylighting_0_10_0_2 or super.skylighting;
+    skylighting-core = super.skylighting-core_0_10_0_2 or super.skylighting-core;
     # Jailbreak pandoc to work with newer skylighting
     pandoc = doJailbreak (dontCheck super.pandoc);
 
