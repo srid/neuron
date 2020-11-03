@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -9,9 +10,12 @@
 
 module Neuron.Reader.Markdown
   ( parseMarkdown,
+    highlightStyle,
   )
 where
 
+import Clay (Css, (?))
+import qualified Clay as C
 import qualified Commonmark as CM
 import qualified Commonmark.Extensions as CE
 import qualified Commonmark.Inlines as CM
@@ -107,13 +111,15 @@ neuronSpec ::
     CE.HasDefinitionList il bl,
     CE.HasDiv bl,
     CE.HasQuoted il,
-    CE.HasSpan il
+    CE.HasSpan il,
+    HasHighlight il
   ) =>
   CM.SyntaxSpec m il bl
 neuronSpec =
   mconcat
     [ wikiLinkSpec,
       inlineTagSpec,
+      highlightSpec,
       gfmExtensionsSansEmoji,
       CE.fancyListSpec,
       CE.footnoteSpec,
@@ -218,3 +224,37 @@ inlineTagP =
   some (noneOfToks $ [Spaces, UnicodeSpace, LineEnd] <> fmap Symbol punctuation)
   where
     punctuation = "[];:,.?!"
+
+highlightSpec ::
+  (Monad m, CM.IsBlock il bl, CM.IsInline il, HasHighlight il) =>
+  CM.SyntaxSpec m il bl
+highlightSpec =
+  mempty
+    { CM.syntaxFormattingSpecs =
+        [ CM.FormattingSpec '=' True True Nothing (Just highlight) '='
+        ]
+    }
+
+class HasHighlight a where
+  highlight :: a -> a
+
+instance HasHighlight (CM.Html a) where
+  highlight x = CM.htmlInline "mark" (Just x)
+
+instance
+  (HasHighlight i, Monoid i) =>
+  HasHighlight (CM.WithSourceMap i)
+  where
+  highlight x = (highlight <$> x) <* CM.addName "highlight"
+
+instance HasHighlight (CP.Cm a B.Inlines) where
+  highlight ils =
+    B.spanWith attr <$> ils
+    where
+      attr = ("", ["highlight"], [])
+
+highlightStyle :: Css
+highlightStyle = do
+  -- In lieu of <mark>
+  ".highlight" ? do
+    C.backgroundColor C.yellow

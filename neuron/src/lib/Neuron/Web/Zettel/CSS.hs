@@ -12,6 +12,7 @@ import qualified Clay.Media as CM
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget.InvertedTree as IT
 import Relude hiding ((&))
+import qualified Neuron.Reader.Markdown as Markdown
 
 zettelCss :: Css
 zettelCss = do
@@ -49,6 +50,7 @@ zettelCss = do
 zettelContentCss :: Css
 zettelContentCss = do
   ".pandoc" ? do
+    Markdown.highlightStyle
     -- GitHub task list
     ".ui.disabled.fitted.checkbox" ? do
       C.marginRight $ em 0.3
