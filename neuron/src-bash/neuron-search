@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
+
 NOTESDIR=${1}
 FILTERBY=${2}
 SEARCHFROMFIELD=${3}
@@ -10,13 +11,12 @@ cd ${NOTESDIR}
 
 # The LC_ALL here is fix the "illegal byte sequence" error
 # See https://github.com/srid/neuron/pull/445#discussion_r513066111
-{    rg --no-heading --no-line-number --with-filename --sort path "${FILTERBY}" -g "${EXTENSIONS}" \
+{   (rg --no-heading --no-line-number --with-filename --sort path "${FILTERBY}" -g "${EXTENSIONS}" || echo) \
   && rg --no-heading --no-line-number --with-filename --sort path "${FILTERBY}" -g "${EXTENSIONS}" \
-     --files-without-match | awk '{ printf "%s:!title: %s\n", $0, $0}'; } \
+     --files-without-match | awk '{ printf "%s:# %s\n", $0, $0}'; } \
   | ( [ ${FILTERBY} ] && LC_ALL=C sort -t: -k1,2 -r || cat ) \
   | ( [ ${FILTERBY} ] && LC_ALL=C sort -t: -k1,1 -u || cat )\
   | fzf --tac --no-sort -d ':' -n ${SEARCHFROMFIELD}.. \
     --preview 'bat --style=plain --color=always {1}' \
   | awk -F: "{printf \"${NOTESDIR}/%s\", \$1}" \
   | xargs -I % ${OPENCMD} %
-

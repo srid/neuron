@@ -5,7 +5,7 @@
 - Fix search.html to handle zettels with title IDs (with whitespace) (#438)
 - `neuron search`
   - Revert #429 for neuron-search regression
-  - Deal with title IDs in search (#445)
+  - Deal with title IDs in search (#445, #439)
 - Web interface
   - Simplify error message UX for missing wiki-links (#448)
   - Baclinks surrounding context (#190)
