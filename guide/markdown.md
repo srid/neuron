@@ -15,6 +15,6 @@ Misc features:
 
 * Text highlighting: Surround text with `== ... ==` to highlighting them (eg: This ==word== is highlighted).
 
-[^other]: Neuron is designed to be extended with other markup formats as well. Org-mode is currently supported (see the `formats` setting in [[configuration]]) but not all features work with it. Neuron recommends Markdown, which is supported everywhere including [[cerveau]].  
+[^other]: See also: [[org]]
 
 [^tech]: Neuron uses [commonmark-hs](https://github.com/jgm/commonmark-hs) to parse them into the [Pandoc AST](https://pandoc.org/using-the-pandoc-api.html), as well as provides an extention on top to handle zettel links.
