@@ -98,7 +98,6 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
             el "li" $ QueryView.renderZettelLink Nothing Nothing def z
     whenNotNull zIndexOrphans $ \(toList -> zs) ->
       divClass ("ui piled segment") $ do
-        elClass "h3" "ui header" $ text "Folgezettel Orphans"
         elClass "p" "info" $ do
           text "Notes without any "
           elAttr "a" ("href" =: "https://neuron.zettel.page/linking.html") $ text "folgezettel"
