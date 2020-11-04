@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -uo pipefail
 NOTESDIR=${1}
 FILTERBY=${2}
 SEARCHFROMFIELD=${3}
