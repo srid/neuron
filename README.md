@@ -21,10 +21,11 @@ See [neuron.zettel.page](https://neuron.zettel.page/) for the full guide to inst
 
 ## Discussion
 
-To chat about neuron with the project owners and interested users, join one of the following:
+To share your thoughts and ask questions on neuron, you may join one of the following:
 
-- [Matrix room Neuron](https://app.element.io/#/room/#neuron:matrix.org)
-- [Zulip stream Neuron](https://funprog.zulipchat.com/#narrow/stream/231929-Neuron)
+- Forum: [GitHub Discussions](https://github.com/srid/neuron/discussions)
+- Chat: [Matrix room Neuron](https://app.element.io/#/room/#neuron:matrix.org)
+- Chat: [Zulip stream Neuron](https://funprog.zulipchat.com/#narrow/stream/231929-Neuron)
 
 ## Developing
 
