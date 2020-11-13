@@ -42,7 +42,7 @@ data RouteConfig t m = RouteConfig
 type NeuronWebT t m = ReaderT (RouteConfig t m) m
 
 runNeuronWeb :: RouteConfig t m -> NeuronWebT t m a -> m a
-runNeuronWeb cfg = flip runReaderT cfg
+runNeuronWeb = flip runReaderT
 
 whenStaticallyGenerated :: Monad m => NeuronWebT t m () -> NeuronWebT t m ()
 whenStaticallyGenerated f = do

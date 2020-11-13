@@ -5,7 +5,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Query.Eval
@@ -53,7 +52,7 @@ queryConnections Zettel {..} = do
           tell [e]
           pure mempty
         Right res ->
-          pure $ fmap (first (,ctx)) $ getConnections res
+          pure $ first (,ctx) <$> getConnections res
   where
     getConnections :: DSum ZettelQuery Identity -> [(Connection, Zettel)]
     getConnections = \case

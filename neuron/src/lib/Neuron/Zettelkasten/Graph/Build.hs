@@ -67,7 +67,7 @@ mkZettelGraph zettels =
         flip concatMap res $ \(z1, fst -> conns) ->
           edgeFromConnection z1 <$> conns
       errors = Map.fromList $
-        flip mapMaybe res $ \(z, (nonEmpty . snd -> merrs)) ->
+        flip mapMaybe res $ \(z, nonEmpty . snd -> merrs) ->
           (zettelID z,) <$> merrs
    in (g, errors)
 

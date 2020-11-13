@@ -11,6 +11,9 @@ import qualified Algebra.Graph.AdjacencyMap as AM
 import qualified Algebra.Graph.AdjacencyMap.Algorithm as Algo
 import qualified Algebra.Graph.Labelled.AdjacencyMap as LAM
 import Data.Graph.Labelled.Type
+  ( LabelledGraph (LabelledGraph, graph),
+    Vertex (..),
+  )
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Tree (Forest, Tree (..))

@@ -82,7 +82,7 @@ categoryClusters (G.induceOnEdge ((== Just Folgezettel) . fmap fst) -> g) =
             `Set.difference` Set.fromList clusteredZettels
       uncleanCluster =
         G.dfsForest $
-          G.induce (flip Set.member unclustered) g
+          G.induce (`Set.member` unclustered) g
    in cleanClusters
         <> if null uncleanCluster
           then mempty

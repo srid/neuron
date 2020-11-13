@@ -44,7 +44,7 @@ parseZettel format zreader queryExtractor fn zid s = do
           (title, titleInBody) = case Meta.title =<< meta of
             Just tit -> (tit, False)
             Nothing -> fromMaybe (zettelIDRaw zid, False) $ do
-              ((,True) . P.plainify . snd <$> P.getH1 doc)
+              (,True) . P.plainify . snd <$> P.getH1 doc
           -- Accumulate queries
           queries = queryExtractor doc
           -- Determine zettel tags
@@ -53,7 +53,7 @@ parseZettel format zreader queryExtractor fn zid s = do
           tags = nub $ metaTags <> queryTags
           -- Determine other metadata
           date = Meta.date =<< meta
-          unlisted = fromMaybe False $ Meta.unlisted =<< meta
+          unlisted = Just True == (Meta.unlisted =<< meta)
        in Right $ Zettel zid format fn title titleInBody tags date unlisted queries Nothing doc
   where
     getInlineTag :: Some ZettelQuery -> Maybe Tag

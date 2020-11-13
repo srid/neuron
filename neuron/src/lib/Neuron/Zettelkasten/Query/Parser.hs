@@ -108,13 +108,10 @@ queryView uri =
       getQueryParam [queryKey|linkTheme|] uri == Just "withDate"
         || hasQueryFlag [queryKey|timeline|] uri
     isGrouped = hasQueryFlag [queryKey|grouped|] uri
-    linkView =
-      if isTimeline
-        then LinkView_ShowDate
-        else
-          if hasQueryFlag [queryKey|showid|] uri
-            then LinkView_ShowID
-            else LinkView_Default
+    linkView
+      | isTimeline = LinkView_ShowDate
+      | hasQueryFlag [queryKey|showid|] uri = LinkView_ShowID
+      | otherwise = LinkView_Default
 
 queryConn :: URI -> Maybe Connection
 queryConn uri =

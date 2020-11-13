@@ -81,8 +81,8 @@ parseMarkdown fn s = do
 
 -- | Identify metadata block at the top, and split it from markdown body.
 partitionMarkdown :: FilePath -> Text -> Either Text (Maybe Text, Text)
-partitionMarkdown fn =
-  parse (M.try splitP <|> fmap (Nothing,) M.takeRest) fn
+partitionMarkdown =
+  parse (M.try splitP <|> fmap (Nothing,) M.takeRest)
   where
     separatorP :: Parser ()
     separatorP =
@@ -184,8 +184,8 @@ wikiLinkSpec =
       (Monad m, CM.IsInline il) =>
       CM.InlineParser m il
     pLink = P.try $ do
-      fmap cmAutoLink $
-        P.choice
+      cmAutoLink
+        <$> P.choice
           [ -- Folgezettel link: [[[...]]]
             P.try (wikiLinkP 3),
             -- Cf link: [[...]]

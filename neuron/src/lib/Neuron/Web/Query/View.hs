@@ -63,22 +63,20 @@ renderQueryResult minner = \case
   q@(ZettelQuery_ZettelsByTag pats conn view) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
-      case zettelsViewGroupByTag view of
-        False ->
-          el "ul" $
-            forM_ res $ \z -> do
-              el "li" $
-                renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
-        True ->
-          forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
-            el "section" $ do
-              elClass "span" "ui basic pointing below grey label" $ do
-                semanticIcon "tag"
-                text $ unTag tag
-              el "ul" $
-                forM_ zettelGrp $ \z ->
-                  el "li" $
-                    renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
+      if zettelsViewGroupByTag view
+        then forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
+          el "section" $ do
+            elClass "span" "ui basic pointing below grey label" $ do
+              semanticIcon "tag"
+              text $ unTag tag
+            el "ul" $
+              forM_ zettelGrp $ \z ->
+                el "li" $
+                  renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
+        else el "ul" $
+          forM_ res $ \z -> do
+            el "li" $
+              renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
   q@(ZettelQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
@@ -130,7 +128,7 @@ renderZettelLink ::
   NeuronWebT t m ()
 renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
   let connClass = show <$> conn
-      rawClass = maybe Nothing (const $ Just "errors") zettelError
+      rawClass = const (Just "errors") =<< zettelError
       mextra =
         case linkView of
           LinkView_Default ->
@@ -152,15 +150,12 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
       neuronRouteLink (Some $ Route_Zettel zettelID) mempty linkInnerHtml
       elConnSuffix conn
   where
-    linkTooltip =
-      -- If there is custom inner text, put zettel title in tooltip.
-      -- Otherwise put tags if any.
-      if isJust mInner
-        then Just $ "Zettel: " <> zettelTitle
-        else
-          if null zettelTags
-            then Nothing
-            else Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
+    -- If there is custom inner text, put zettel title in tooltip.
+    -- Otherwise put tags if any.
+    linkTooltip
+      | isJust mInner = Just $ "Zettel: " <> zettelTitle
+      | null zettelTags = Nothing
+      | otherwise = Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
     withTooltip :: Maybe Text -> Map Text Text
     withTooltip = \case
       Nothing -> mempty
@@ -227,8 +222,7 @@ renderTagTree t =
             unTagNode n <> "/" <> renderTagNode rest
 
 renderInlineTag :: DomBuilder t m => Tag -> Map Text Text -> m () -> NeuronWebT t m ()
-renderInlineTag tag attr body =
-  neuronRouteLink (Some $ Route_Search $ Just tag) attr body
+renderInlineTag tag = neuronRouteLink (Some $ Route_Search $ Just tag)
 
 style :: Css
 style = do
