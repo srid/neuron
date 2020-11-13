@@ -4,10 +4,22 @@ Neuron includes a web interface for your notes that update automatically. This v
 
 Neuron also generates a complete index (at [z-index](./z-index.html)) of *all* Zettels visualized as a [[folgezettel-heterarchy]].
 
+Core concepts:
+
 - [[[id]]]
 - [[[markdown]]]
+
+For generating static sites:
+
 - [[[web]]]
+
+For working with your Zettelkasten:
+
 - [[[create]]]
 - [[[searching]]]
 - [[[query]]]
+
+Other pages of interest:
+
 - [[[experimental]]]
+- [[[extras]]]
