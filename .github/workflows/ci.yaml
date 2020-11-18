@@ -11,58 +11,58 @@ jobs:
     env:
       MAINLINE: refs/heads/master
     steps:
-    - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v11
-    # This also runs nix-build.
-    - uses: cachix/cachix-action@v6
-      with:
-        name: srid
-        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        # Only needed for private caches
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-    # This gets everything from cache, but doesn't build neuron (yet).
-    - name: Pull from Nix cache
-      run: nix-build -j4 shell.nix
-    # This builds neuron, as well as run tests
-    - name: Build neuron 🔧
-      run: nix-build -j4 ci.nix
-    # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
-    - name: Bundle up
-      if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
-      run: |
-        git clone -b neuron-stable https://github.com/srid/nix-bundle.git tmp/nix-bundle
-        cd tmp/nix-bundle
-        NIX_PATH=nixpkgs=https://github.com/NixOS/nixpkgs/tarball/ab5863afada3c1b50fc43bf774b75ea71b287cde ./nix-bundle.sh '(import ../.. {})' /bin/neuron > ../../neuron-linux-bundle
-        cd -
-        mkdir ~/bundle
-        cp neuron-linux-bundle ~/bundle/neuron
-        chmod a+x neuron-linux-bundle ~/bundle/neuron
-    - name: Upload bundle as artifact 
-      uses: actions/upload-artifact@v2
-      if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
-      with:
-        name: neuron-bundle-linux
-        path: ~/bundle/neuron
-    - name: Get current date and time
-      id: date
-      run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
-    - name: Upload bundle to nightly release
-      uses: meeDamian/github-release@v2.0.3
-      if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        tag: nightly
-        name: Neuron nightly
-        body: >
-          Current build of Neuron from `${{ env.MAINLINE }}` branch -
-          last updated on ${{ steps.date.outputs.date }}.
-        prerelease: true
-        files: neuron-linux-bundle
-        gzip: false
-        allow_override: true
-    - name: Publish Docker image to Docker Hub
-      if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
-      run: |
-        docker load -i $(nix-build docker.nix --argstr tag latest)
-        docker login -u sridca -p ${{ secrets.DOCKER_PASS }}
-        docker push sridca/neuron:latest
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v12
+      # This also runs nix-build.
+      - uses: cachix/cachix-action@v8
+        with:
+          name: srid
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+          # Only needed for private caches
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+      # This gets everything from cache, but doesn't build neuron (yet).
+      - name: Pull from Nix cache
+        run: nix-build -j4 shell.nix
+      # This builds neuron, as well as run tests
+      - name: Build neuron 🔧
+        run: nix-build -j4 ci.nix
+      # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
+      - name: Bundle up
+        if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
+        run: |
+          git clone -b neuron-stable https://github.com/srid/nix-bundle.git tmp/nix-bundle
+          cd tmp/nix-bundle
+          NIX_PATH=nixpkgs=https://github.com/NixOS/nixpkgs/tarball/ab5863afada3c1b50fc43bf774b75ea71b287cde ./nix-bundle.sh '(import ../.. {})' /bin/neuron > ../../neuron-linux-bundle
+          cd -
+          mkdir ~/bundle
+          cp neuron-linux-bundle ~/bundle/neuron
+          chmod a+x neuron-linux-bundle ~/bundle/neuron
+      - name: Upload bundle as artifact
+        uses: actions/upload-artifact@v2
+        if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
+        with:
+          name: neuron-bundle-linux
+          path: ~/bundle/neuron
+      - name: Get current date and time
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
+      - name: Upload bundle to nightly release
+        uses: meeDamian/github-release@v2.0.3
+        if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: nightly
+          name: Neuron nightly
+          body: >
+            Current build of Neuron from `${{ env.MAINLINE }}` branch -
+            last updated on ${{ steps.date.outputs.date }}.
+          prerelease: true
+          files: neuron-linux-bundle
+          gzip: false
+          allow_override: true
+      - name: Publish Docker image to Docker Hub
+        if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
+        run: |
+          docker load -i $(nix-build docker.nix --argstr tag latest)
+          docker login -u sridca -p ${{ secrets.DOCKER_PASS }}
+          docker push sridca/neuron:latest

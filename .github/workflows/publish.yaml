@@ -8,22 +8,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v11
-    - uses: cachix/cachix-action@v6
-      with:
-        name: srid
-    # This builds neuron, as well as run tests
-    - name: Install neuron 
-      run: nix-env -if . 
-    - name: Build neuron site 🔧
-      run: |
-        neuron --version
-        neuron -d guide/ rib
-    - name: Deploy to GitHub Pages 🚀
-      uses: JamesIves/github-pages-deploy-action@3.5.8
-      with:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        BRANCH: gh-pages
-        FOLDER: guide/.neuron/output
-
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: srid
+      # This builds neuron, as well as run tests
+      - name: Install neuron
+        run: nix-env -if .
+      - name: Build neuron site 🔧
+        run: |
+          neuron --version
+          neuron -d guide/ rib
+      - name: Deploy to GitHub Pages 🚀
+        uses: JamesIves/github-pages-deploy-action@3.5.8
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: guide/.neuron/output
