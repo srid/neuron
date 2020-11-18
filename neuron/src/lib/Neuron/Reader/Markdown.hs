@@ -120,10 +120,8 @@ neuronSpec =
     [ wikiLinkSpec,
       inlineTagSpec,
       highlightSpec,
-      CE.fancyListSpec,
-      -- as the commonmark documentation states, pipeTableSpec should be placed after
-      -- fancyListSpec to avoid bad results when non-table lines contain pipe characters
       gfmExtensionsSansEmoji,
+      CE.fancyListSpec,
       CE.footnoteSpec,
       CE.mathSpec,
       CE.smartPunctuationSpec,

@@ -15,7 +15,6 @@
   - Remove support for autolinks (`<..>`) (#449) (see [migration script](https://github.com/srid/neuron/issues/449#issuecomment-719062302))
     - Raw HTML now works without any special syntax.
   - Add Markdown highlighting extension (#453)
-  - Fix `|` breaking Markdown parsing (#465)
 - Unicode-aware in inline tags (#446)
 
 ## 1.0.1.0
