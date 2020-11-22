@@ -3,7 +3,7 @@ on:
   # Run only when pushing to master branch
   push:
     branches:
-      - ci-publish
+      - master
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,3 +26,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: gh-pages
           FOLDER: guide/.neuron/output
+          CLEAN: true
