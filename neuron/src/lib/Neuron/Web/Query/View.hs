@@ -41,7 +41,7 @@ import Neuron.Web.Route
   )
 import Neuron.Web.Widget (elNoSnippetSpan, elTime, semanticIcon)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
-import Neuron.Zettelkasten.ID (ZettelID (zettelIDRaw), zettelIDSourceFileName)
+import Neuron.Zettelkasten.ID (Slug, ZettelID (), unZettelID, zettelIDSourceFileName)
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
@@ -128,7 +128,7 @@ renderZettelLink ::
   NeuronWebT t m ()
 renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
   let connClass = show <$> conn
-      rawClass = const (Just "errors") =<< zettelError
+      rawClass = const (Just "errors") =<< zettelParseError
       mextra =
         case linkView of
           LinkView_Default ->
@@ -136,7 +136,7 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
           LinkView_ShowDate ->
             elTime <$> zettelDate
           LinkView_ShowID ->
-            Just $ el "tt" $ text $ zettelIDRaw zettelID
+            Just $ el "tt" $ text $ unZettelID zettelID
       classes :: [Text] = catMaybes $ [Just "zettel-link-container"] <> [connClass, rawClass]
   elClass "span" (T.intercalate " " classes) $ do
     forM_ mextra $ \extra ->
@@ -147,7 +147,7 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
         text " "
     elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
       let linkInnerHtml = fromMaybe (text zettelTitle) mInner
-      neuronRouteLink (Some $ Route_Zettel zettelID) mempty linkInnerHtml
+      neuronRouteLink (Some $ Route_Zettel zettelSlug) mempty linkInnerHtml
       elConnSuffix conn
   where
     -- If there is custom inner text, put zettel title in tooltip.
@@ -180,15 +180,15 @@ renderMissingZettelLink mconn zid = do
   elClass "span" (T.intercalate " " classes) $ do
     let errMsg = "Broken wiki-link (" <> toText (zettelIDSourceFileName zid ZettelFormat_Markdown) <> " does not exist)"
     elAttr "span" ("class" =: "zettel-link" <> "title" =: errMsg) $ do
-      elAttr "a" mempty $ text $ zettelIDRaw zid
+      elAttr "a" mempty $ text $ unZettelID zid
       elConnSuffix mconn
 
 -- | Like `renderZettelLink` but when we only have ID in hand.
-renderZettelLinkIDOnly :: DomBuilder t m => ZettelID -> NeuronWebT t m ()
-renderZettelLinkIDOnly zid =
+renderZettelLinkIDOnly :: DomBuilder t m => ZettelID -> Slug -> NeuronWebT t m ()
+renderZettelLinkIDOnly zid slug =
   elClass "span" "zettel-link-container" $ do
     elClass "span" "zettel-link" $ do
-      neuronRouteLink (Some $ Route_Zettel zid) mempty $ text $ zettelIDRaw zid
+      neuronRouteLink (Some $ Route_Zettel slug) mempty $ text $ unZettelID zid
 
 renderTagTree :: forall t m. DomBuilder t m => Forest (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
 renderTagTree t =

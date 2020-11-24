@@ -29,7 +29,7 @@ import Data.TagTree (Tag, TagPattern (..))
 import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Reader.Type (ZettelFormat, ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
-import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Query.Error (QueryResultError)
 import Neuron.Zettelkasten.Query.Theme (ZettelsView)
 import Relude hiding (show)
@@ -51,6 +51,7 @@ data ZettelQuery r where
 -- The metadata could have been inferred from the content.
 data ZettelT content = Zettel
   { zettelID :: ZettelID,
+    zettelSlug :: Slug,
     zettelFormat :: ZettelFormat,
     -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
@@ -63,7 +64,7 @@ data ZettelT content = Zettel
     zettelUnlisted :: Bool,
     -- | List of all queries in the zettel
     zettelQueries :: [(Some ZettelQuery, [Block])],
-    zettelError :: Maybe ZettelParseError,
+    zettelParseError :: Maybe ZettelParseError,
     zettelContent :: content
   }
   deriving (Generic)
@@ -72,13 +73,15 @@ newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
 
 -- | All possible errors in a zettel
---
--- NOTE: Unlike `ContentError MetadataOnly` this also includes QueryResultError
--- (which can be determined only after *evaluating* the queries).
 data ZettelError
-  = ZettelError_ParseError ZettelParseError
-  | ZettelError_QueryResultErrors (NonEmpty QueryResultError)
-  | ZettelError_AmbiguousFiles (NonEmpty FilePath)
+  = -- | The zettel file content is malformed
+    ZettelError_ParseError ZettelParseError
+  | -- | Some queries in zettel file are incorrect
+    ZettelError_QueryResultErrors (Slug, NonEmpty QueryResultError)
+  | -- | Multiple zettel files share the same zettel ID
+    ZettelError_AmbiguousFiles (NonEmpty FilePath)
+  | -- | Multiple zettel files share the same slug
+    ZettelError_SlugConflict Slug
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Zettel without its content

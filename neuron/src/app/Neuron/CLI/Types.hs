@@ -151,9 +151,11 @@ commandParser defaultNotesDir now = do
           <|> fmap
             (const $ OpenCommand $ Some $ R.Route_Search Nothing)
             (switch (long "search" <> help "Open the search page"))
-          <|> fmap
-            (OpenCommand . Some . R.Route_Zettel)
-            (option zettelIDReader (long "id" <> help "Open the zettel HTML page" <> metavar "ID"))
+    -- TODO: reinstate this, by getting slug from markdown file
+    {- <|> fmap
+      (OpenCommand . Some . R.Route_Zettel)
+      (option zettelIDReader (long "id" <> help "Open the zettel HTML page" <> metavar "ID"))
+    -}
     queryCommand = do
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
       query <-

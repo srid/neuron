@@ -28,7 +28,7 @@ import Neuron.Web.Zettel.View (renderZettelParseError)
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID (ZettelID (..))
+import Neuron.Zettelkasten.ID (ZettelID (..), mkDefaultSlug)
 import Neuron.Zettelkasten.Query (zettelsByTag)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
@@ -130,20 +130,25 @@ renderErrors errors = do
         ZettelError_ParseError _ -> "negative"
         ZettelError_QueryResultErrors _ -> "warning"
         ZettelError_AmbiguousFiles _ -> "negative"
+        ZettelError_SlugConflict _ -> "negative"
       errorMessageHeader zid = \case
         ZettelError_ParseError _ -> do
           text "Zettel "
-          QueryView.renderZettelLinkIDOnly zid
+          QueryView.renderZettelLinkIDOnly zid (mkDefaultSlug $ unZettelID zid)
           text " failed to parse"
-        ZettelError_QueryResultErrors _ -> do
+        ZettelError_QueryResultErrors (slug, _) -> do
           text "Zettel "
-          QueryView.renderZettelLinkIDOnly zid
+          QueryView.renderZettelLinkIDOnly zid slug
           text " has broken wiki-links"
         ZettelError_AmbiguousFiles _ -> do
           text $
-            "More than one file define the same zettel ID slug ("
-              <> zettelIDSlug zid
+            "More than one file define the same zettel ID ("
+              -- TODO: not correct
+              <> unZettelID zid
               <> "):"
+        ZettelError_SlugConflict slug -> do
+          text $ "Zettel " <> unZettelID zid <> " has slug " <> slug <> " used by other zettels"
+
   forM_ (Map.toList errors) $ \(zid, zError) ->
     divClass ("ui tiny message " <> severity zError) $ do
       divClass "header" $ errorMessageHeader zid zError
@@ -153,12 +158,14 @@ renderErrors errors = do
             renderZettelParseError parseError
           ZettelError_QueryResultErrors queryErrors ->
             el "ol" $ do
-              forM_ queryErrors $ \qe ->
+              forM_ (snd queryErrors) $ \qe ->
                 el "li" $ elPreOverflowing $ text $ showQueryResultError qe
           ZettelError_AmbiguousFiles filePaths ->
             el "ul" $ do
               forM_ filePaths $ \fp ->
                 el "li" $ el "tt" $ text $ toText fp
+          ZettelError_SlugConflict _slug ->
+            el "p" $ text "todo msg"
 
 renderForest ::
   DomBuilder t m =>

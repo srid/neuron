@@ -14,7 +14,7 @@ import qualified Data.Map.Strict as Map
 import Neuron.Reader.Type (ZettelFormat, ZettelReader)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Query.Error (QueryResultError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
@@ -37,16 +37,35 @@ buildZettelkasten ::
   )
 buildZettelkasten queryExtractor fs =
   let zs = parseZettels queryExtractor fs
-      (g, qErrs) = mkZettelGraph $ filter (not . zettelUnlisted) $ sansContent <$> zs
+      zsC = sansContent <$> zs
+      slugMap :: Map Slug (NonEmpty Zettel) =
+        Map.fromListWith (<>) $
+          zsC <&> (zettelSlug &&& one . id)
+      zsCsplit =
+        Map.toList slugMap <&> \(slug, zettels) ->
+          case zettels of
+            z :| [] ->
+              -- Unique slug; accept this Zettel
+              Left z
+            _ ->
+              -- Duplicate slugs
+              Right (slug, zettels)
+
+      (g, qErrs) = mkZettelGraph $ filter (not . zettelUnlisted) $ lefts zsCsplit
       errors =
         Map.unions
           [ fmap ZettelError_ParseError $
               Map.fromList $
                 flip mapMaybe (lefts zs) $ \z ->
-                  case zettelError z of
+                  case zettelParseError z of
                     Just zerr -> Just (zettelID z, zerr)
                     _ -> Nothing,
-            fmap ZettelError_QueryResultErrors qErrs
+            fmap ZettelError_QueryResultErrors qErrs,
+            fmap ZettelError_SlugConflict $
+              Map.fromList $
+                concat $
+                  rights zsCsplit <&> \(slug, zettels) ->
+                    (,slug) . zettelID <$> toList zettels
           ]
    in (g, zs, errors)
 
@@ -57,7 +76,7 @@ buildZettelkasten queryExtractor fs =
 mkZettelGraph ::
   [Zettel] ->
   ( ZettelGraph,
-    Map ZettelID (NonEmpty QueryResultError)
+    Map ZettelID (Slug, NonEmpty QueryResultError)
   )
 mkZettelGraph zettels =
   let res :: [(Zettel, ([((Connection, [Block]), Zettel)], [QueryResultError]))] =
@@ -68,7 +87,7 @@ mkZettelGraph zettels =
           edgeFromConnection z1 <$> conns
       errors = Map.fromList $
         flip mapMaybe res $ \(z, nonEmpty . snd -> merrs) ->
-          (zettelID z,) <$> merrs
+          (zettelID z,) . (zettelSlug z,) <$> merrs
    in (g, errors)
 
 runQueryConnections :: [Zettel] -> Zettel -> ([((Connection, [Block]), Zettel)], [QueryResultError])

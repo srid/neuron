@@ -42,10 +42,11 @@ mkAliases aliasSpecs graph =
       alias@Alias {..} <- liftEither $ parse aliasParser configFile aliasSpec
       when (isJust $ G.getZettel aliasZettel graph) $ do
         throwError $
-          "Cannot create redirect from '" <> zettelIDRaw aliasZettel <> "', because a zettel with that ID already exists"
-      when (zettelIDSlug targetZettel /= "z-index" && isNothing (G.getZettel targetZettel graph)) $ do
+          "Cannot create redirect from '" <> unZettelID aliasZettel <> "', because a zettel with that ID already exists"
+      -- TODO: remove this entire feature
+      when (unZettelID targetZettel /= "z-index" && isNothing (G.getZettel targetZettel graph)) $ do
         throwError $
-          "Target zettel '" <> zettelIDRaw targetZettel <> "' does not exist"
+          "Target zettel '" <> unZettelID targetZettel <> "' does not exist"
       pure alias
 
 aliasParser :: Parser Alias

@@ -10,7 +10,8 @@
 module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     InvalidID (..),
-    unsafeMkZettelID,
+    Slug,
+    mkDefaultSlug,
     indexZid,
     parseZettelID,
     allowedSpecialChars,
@@ -22,7 +23,6 @@ module Neuron.Zettelkasten.ID
 where
 
 import Data.Aeson
-import Data.Aeson.Types (toJSONKeyText)
 import qualified Data.Text as T
 import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Relude
@@ -32,40 +32,21 @@ import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple
 import qualified Text.Show
 
-data ZettelID = ZettelID
-  { -- | Slug must be unique
-    zettelIDSlug :: Text,
-    -- | Actual ID used by the user, inside `[[..]]`
-    zettelIDRaw :: Text
-  }
-  deriving (Show, Ord, Generic)
+type Slug = Text
 
--- | Make ZettelID from raw text.
---
--- Assumes that input text is already validated for allowed characters.
-unsafeMkZettelID :: Text -> ZettelID
-unsafeMkZettelID s =
-  let slug = T.intercalate "_" $ T.splitOn " " s
-   in ZettelID slug s
+newtype ZettelID = ZettelID {unZettelID :: Text}
+  deriving (Show, Ord, Eq, Generic, ToJSON, FromJSON, ToJSONKey)
+
+mkDefaultSlug :: Text -> Slug
+mkDefaultSlug =
+  T.intercalate "_" . T.splitOn " "
 
 indexZid :: ZettelID
-indexZid = unsafeMkZettelID "index"
-
-instance Eq ZettelID where
-  (==) (ZettelID a _) (ZettelID b _) = a == b
+indexZid = ZettelID "index"
 
 instance Show InvalidID where
   show (InvalidIDParseError s) =
     "Invalid Zettel ID: " <> toString s
-
-instance ToJSON ZettelID where
-  toJSON = toJSON . zettelIDRaw
-
-instance FromJSON ZettelID where
-  parseJSON = fmap unsafeMkZettelID . parseJSON
-
-instance ToJSONKey ZettelID where
-  toJSONKey = toJSONKeyText zettelIDRaw
 
 instance FromJSONKey ZettelID where
   fromJSONKey = FromJSONKeyTextParser $ \s ->
@@ -75,9 +56,8 @@ instance FromJSONKey ZettelID where
 
 zettelIDSourceFileName :: ZettelID -> ZettelFormat -> FilePath
 zettelIDSourceFileName zid fmt =
-  toString (fn <> ext)
+  toString (unZettelID zid <> ext)
   where
-    fn = zettelIDRaw zid
     ext = zettelFormatToExtension fmt
 
 ---------
@@ -116,7 +96,7 @@ idParser = idParser' allowedSpecialChars
 idParser' :: String -> Parser ZettelID
 idParser' cs = do
   s <- M.some $ M.alphaNumChar <|> M.choice (M.char <$> cs)
-  pure $ unsafeMkZettelID (toText s)
+  pure $ ZettelID $ toText s
 
 -- | Parse the ZettelID if the given filepath is a zettel.
 getZettelID :: ZettelFormat -> FilePath -> Maybe ZettelID

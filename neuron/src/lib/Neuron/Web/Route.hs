@@ -20,7 +20,7 @@ import Reflex.Dom.Core
 import Relude
 
 data Route a where
-  Route_Redirect :: ZettelID -> Route ZettelID
+  -- Route_Redirect :: Slug -> Route Slug
   -- ZIndex takes a report of all errors in the zettelkasten.
   -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
   Route_ZIndex :: Route (Map ZettelID ZettelError)
@@ -28,7 +28,7 @@ data Route a where
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
   Route_Search :: Maybe Tag -> Route Text
-  Route_Zettel :: ZettelID -> Route ZettelC
+  Route_Zettel :: Slug -> Route ZettelC
 
 data RouteConfig t m = RouteConfig
   { -- | Whether the view is being rendered for static HTML generation
@@ -61,7 +61,7 @@ neuronRouteURL someR = do
 
 routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
-  Route_Redirect _ -> "Redirecting..."
+  -- Route_Redirect _ -> "Redirecting..."
   Route_ZIndex -> "Zettel Index"
   Route_Search _mtag -> "Search"
   Route_Zettel _ ->

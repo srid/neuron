@@ -24,7 +24,6 @@ import Data.Tagged (untag)
 import qualified Data.Text as T
 import Data.Traversable
 import Development.Shake (Action, need)
-import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as C
 import Neuron.Reader (readerForZettelFormat)
@@ -35,15 +34,13 @@ import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
+import Neuron.Zettelkasten.ID (ZettelID, getZettelID, unZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext)
-import Options.Applicative
 import Relude
-import Rib.Route
 import Rib.Shake (forEvery, ribInputDir)
-import System.FilePath
+import System.FilePath ((</>))
 
 -- | The contents of search.js
 --
@@ -70,33 +67,38 @@ generateSite config writeHtmlRoute' = do
       writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
   forM_ zettelContents $ \val@(sansContent -> z) ->
-    writeHtmlRoute val $ Z.Route_Zettel (zettelID z)
+    writeHtmlRoute val $ Z.Route_Zettel (zettelSlug z)
   -- Generate the z-index
   writeHtmlRoute errors Z.Route_ZIndex
   -- Generate search page
   writeHtmlRoute searchScript $ Z.Route_Search Nothing
   -- Write alias redirects, unless a zettel with that name exists.
+  {-
   aliases <- getAliases config zettelGraph
   forM_ aliases $ \Alias {..} ->
     writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
+  -}
   -- Report all errors
   forM_ (Map.toList errors) $ \(zid, err) -> do
-    reportError (Z.Route_Zettel zid) $
+    reportError zid $
       case err of
         ZettelError_ParseError (untag -> parseErr) ->
           parseErr :| []
         ZettelError_QueryResultErrors queryErrs ->
-          showQueryResultError <$> queryErrs
+          showQueryResultError <$> snd queryErrs
         ZettelError_AmbiguousFiles filePaths ->
           ("Multiple zettels have the same ID: " <> T.intercalate ", " (fmap toText $ toList filePaths))
             :| []
+        ZettelError_SlugConflict slug ->
+          "Slug " <> slug <> " is used by other zettels" :| []
   pure zettelGraph
 
 -- | Report an error in the terminal
-reportError :: (MonadIO m, IsRoute r) => r a -> NonEmpty Text -> m ()
-reportError route errors = do
-  path <- liftIO $ routeFile route
-  putTextLn $ "E " <> toText path
+reportError :: MonadIO m => ZettelID -> NonEmpty Text -> m ()
+reportError zid errors = do
+  -- path <- liftIO $ routeFile route
+  -- TODO: print original path .md
+  putTextLn $ "E " <> unZettelID zid
   forM_ errors $ \err ->
     putText $ "  - " <> indentAllButFirstLine 4 err
   where
@@ -171,6 +173,7 @@ loadZettelkastenFrom fs = do
                     lift $ need [absPath]
                     s <- decodeUtf8With lenientDecode <$> readFileBS absPath
                     modify $ Map.insert zid (Left (format, (relPath, s)))
+  -- TODO: dups detection should detect slug conflicts
   let dups = fmap ZettelError_AmbiguousFiles $ Map.mapMaybe rightToMaybe zidMap
       files =
         fmap (first (id &&& readerForZettelFormat)) $

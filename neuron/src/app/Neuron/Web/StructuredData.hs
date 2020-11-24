@@ -44,7 +44,7 @@ routeStructuredData cfg (graph, v) = \case
       Just baseUrl ->
         let mkCrumb :: Zettel -> Breadcrumb.Item
             mkCrumb Zettel {..} =
-              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
+              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelSlug)
          in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (sansContent v) graph
   _ ->
     []
@@ -55,7 +55,7 @@ routeOpenGraph cfg@Config {siteTitle, author} v r =
     { _openGraph_title = routeTitle' v r,
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
-        Route_Redirect _ -> Nothing
+        -- Route_Redirect _ -> Nothing
         Route_ZIndex -> Just "Zettelkasten Index"
         (Route_Search _mtag) -> Just "Search Zettelkasten"
         Route_Zettel _ -> do
