@@ -22,7 +22,7 @@ data ReadMode
   | ReadMode_Cached
   deriving (Eq, Show)
 
-type CacheData = (ZettelGraph, Map ZettelID ZettelError)
+type CacheData = (ZettelGraph, Map ZettelID (NonEmpty ZettelError))
 
 cacheFile :: Action FilePath
 cacheFile = do

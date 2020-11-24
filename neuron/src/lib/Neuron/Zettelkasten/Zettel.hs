@@ -73,6 +73,7 @@ newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
 
 -- | All possible errors in a zettel
+-- TODO: rename constructors for legibility
 data ZettelError
   = -- | The zettel file content is malformed
     ZettelError_ParseError ZettelParseError

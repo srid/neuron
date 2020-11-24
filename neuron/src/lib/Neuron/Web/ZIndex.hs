@@ -48,7 +48,7 @@ data ZIndex = ZIndex
     zIndexClusters :: [Forest (Zettel, [Zettel])],
     zIndexOrphans :: [Zettel],
     -- | All zettel errors
-    zIndexErrors :: Map ZettelID ZettelError,
+    zIndexErrors :: Map ZettelID (NonEmpty ZettelError),
     zIndexStats :: Stats,
     zPinned :: [Zettel]
   }
@@ -59,7 +59,7 @@ data Stats = Stats
   }
   deriving (Eq, Show)
 
-buildZIndex :: ZettelGraph -> Map ZettelID ZettelError -> ZIndex
+buildZIndex :: ZettelGraph -> Map ZettelID (NonEmpty ZettelError) -> ZIndex
 buildZIndex graph errors =
   let (orphans, clusters) = partitionEithers $
         flip fmap (G.categoryClusters graph) $ \case
@@ -124,7 +124,7 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
       1 -> "1 " <> noun
       n -> show n <> " " <> nounPlural
 
-renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
+renderErrors :: DomBuilder t m => Map ZettelID (NonEmpty ZettelError) -> NeuronWebT t m ()
 renderErrors errors = do
   let severity = \case
         ZettelError_ParseError _ -> "negative"
@@ -149,23 +149,24 @@ renderErrors errors = do
         ZettelError_SlugConflict slug -> do
           text $ "Zettel " <> unZettelID zid <> " has slug " <> slug <> " used by other zettels"
 
-  forM_ (Map.toList errors) $ \(zid, zError) ->
-    divClass ("ui tiny message " <> severity zError) $ do
-      divClass "header" $ errorMessageHeader zid zError
-      el "p" $ do
-        case zError of
-          ZettelError_ParseError parseError ->
-            renderZettelParseError parseError
-          ZettelError_QueryResultErrors queryErrors ->
-            el "ol" $ do
-              forM_ (snd queryErrors) $ \qe ->
-                el "li" $ elPreOverflowing $ text $ showQueryResultError qe
-          ZettelError_AmbiguousFiles filePaths ->
-            el "ul" $ do
-              forM_ filePaths $ \fp ->
-                el "li" $ el "tt" $ text $ toText fp
-          ZettelError_SlugConflict _slug ->
-            el "p" $ text "todo msg"
+  forM_ (Map.toList errors) $ \(zid, zErrors) ->
+    forM_ zErrors $ \zError -> do
+      divClass ("ui tiny message " <> severity zError) $ do
+        divClass "header" $ errorMessageHeader zid zError
+        el "p" $ do
+          case zError of
+            ZettelError_ParseError parseError ->
+              renderZettelParseError parseError
+            ZettelError_QueryResultErrors queryErrors ->
+              el "ol" $ do
+                forM_ (snd queryErrors) $ \qe ->
+                  el "li" $ elPreOverflowing $ text $ showQueryResultError qe
+            ZettelError_AmbiguousFiles filePaths ->
+              el "ul" $ do
+                forM_ filePaths $ \fp ->
+                  el "li" $ el "tt" $ text $ toText fp
+            ZettelError_SlugConflict _slug ->
+              el "p" $ text "todo msg"
 
 renderForest ::
   DomBuilder t m =>

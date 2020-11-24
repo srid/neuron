@@ -73,8 +73,8 @@ generateSite config writeHtmlRoute' = do
   -- Generate search page
   writeHtmlRoute searchScript $ Z.Route_Search Nothing
   -- Report all errors
-  forM_ (Map.toList errors) $ \(zid, err) -> do
-    reportError zid $
+  forM_ (Map.toList errors) $ \(zid, errs) -> do
+    for errs $ \err -> reportError zid $
       case err of
         ZettelError_ParseError (untag -> parseErr) ->
           parseErr :| []
@@ -109,7 +109,7 @@ reportError zid errors = do
 -- Also allows retrieving the cached data for faster execution.
 loadZettelkastenGraph ::
   Config ->
-  Action (ZettelGraph, Map ZettelID ZettelError)
+  Action (ZettelGraph, Map ZettelID (NonEmpty ZettelError))
 loadZettelkastenGraph config = do
   (g, _, errs) <- loadZettelkasten config
   pure (g, errs)
@@ -119,7 +119,7 @@ loadZettelkasten ::
   Action
     ( ZettelGraph,
       [ZettelC],
-      Map ZettelID ZettelError
+      Map ZettelID (NonEmpty ZettelError)
     )
 loadZettelkasten config = do
   formats <- C.getZettelFormats config
@@ -139,7 +139,7 @@ loadZettelkastenFrom ::
   Action
     ( ZettelGraph,
       [ZettelC],
-      Map ZettelID ZettelError
+      Map ZettelID (NonEmpty ZettelError)
     )
 loadZettelkastenFrom fs = do
   notesDir <- ribInputDir
@@ -167,7 +167,6 @@ loadZettelkastenFrom fs = do
                     lift $ need [absPath]
                     s <- decodeUtf8With lenientDecode <$> readFileBS absPath
                     modify $ Map.insert zid (Left (format, (relPath, s)))
-  -- TODO: dups detection should detect slug conflicts
   let dups = fmap ZettelError_AmbiguousFiles $ Map.mapMaybe rightToMaybe zidMap
       files =
         fmap (first (id &&& readerForZettelFormat)) $
@@ -177,5 +176,5 @@ loadZettelkastenFrom fs = do
                 \(zid, (fmt, (path, s))) ->
                   (fmt, [(zid, path, s)])
       (g, zs, gerrs) = G.buildZettelkasten extractQueriesWithContext files
-      errs = Map.unions [dups, gerrs]
+      errs = Map.unionsWith (<>) [one <$> dups, one <$> gerrs]
   pure (g, zs, errs)

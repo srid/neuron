@@ -23,7 +23,7 @@ data Route a where
   -- Route_Redirect :: Slug -> Route Slug
   -- ZIndex takes a report of all errors in the zettelkasten.
   -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
-  Route_ZIndex :: Route (Map ZettelID ZettelError)
+  Route_ZIndex :: Route (Map ZettelID (NonEmpty ZettelError))
   -- | Takes search JS code as render data
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
