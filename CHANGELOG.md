@@ -16,6 +16,8 @@
     - Raw HTML now works without any special syntax.
   - Add Markdown highlighting extension (#453)
 - Unicode-aware in inline tags (#446)
+- Removed features
+  - Aliases (#479)
 
 ## 1.0.1.0
 

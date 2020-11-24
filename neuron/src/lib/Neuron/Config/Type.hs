@@ -32,8 +32,7 @@ configFile = "neuron.dhall"
 --
 -- TODO: Implement custom `FromDhall` instance, while using original field types
 data Config = Config
-  { aliases :: [Text],
-    author :: Maybe Text,
+  { author :: Maybe Text,
     editUrl :: Maybe Text,
     -- TODO: This should use `NonEmpty`.
     formats :: [Text],
@@ -73,8 +72,6 @@ defaultConfig =
   \   None Text\
   \, theme =\
   \   \"blue\"\
-  \, aliases =\
-  \   [] : List Text\
   \, formats =\
   \   [ \"markdown\" ]\
   \, recurseDir =\
