@@ -23,19 +23,26 @@ module Neuron.Zettelkasten.ID
 where
 
 import Data.Aeson
+  ( FromJSON (parseJSON),
+    FromJSONKey (fromJSONKey),
+    FromJSONKeyFunction (FromJSONKeyTextParser),
+    ToJSON (toJSON),
+    ToJSONKey (toJSONKey),
+  )
+import Data.Aeson.Types (toJSONKeyText)
 import qualified Data.Text as T
 import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Relude
-import System.FilePath
+import System.FilePath (splitExtension, takeFileName)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
-import Text.Megaparsec.Simple
+import Text.Megaparsec.Simple (Parser, parse)
 import qualified Text.Show
 
 type Slug = Text
 
 newtype ZettelID = ZettelID {unZettelID :: Text}
-  deriving (Show, Ord, Eq, Generic, ToJSON, FromJSON, ToJSONKey)
+  deriving (Show, Ord, Eq, Generic)
 
 mkDefaultSlug :: Text -> Slug
 mkDefaultSlug =
@@ -47,6 +54,15 @@ indexZid = ZettelID "index"
 instance Show InvalidID where
   show (InvalidIDParseError s) =
     "Invalid Zettel ID: " <> toString s
+
+instance ToJSON ZettelID where
+  toJSON = toJSON . unZettelID
+
+instance FromJSON ZettelID where
+  parseJSON = fmap ZettelID . parseJSON
+
+instance ToJSONKey ZettelID where
+  toJSONKey = toJSONKeyText unZettelID
 
 instance FromJSONKey ZettelID where
   fromJSONKey = FromJSONKeyTextParser $ \s ->

@@ -7,15 +7,22 @@ module Neuron.Zettelkasten.ZettelSpec
   )
 where
 
-import Data.TagTree
-import Data.Time.Calendar
-import Data.Time.DateMayTime
+import Data.TagTree (Tag (Tag))
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.DateMayTime (mkDateMayTime)
 import Data.Time.LocalTime
-import Neuron.Reader.Markdown
-import Neuron.Reader.Type
-import Neuron.Zettelkasten.ID
+  ( LocalTime (LocalTime),
+    TimeOfDay (TimeOfDay),
+  )
+import Neuron.Reader.Markdown (parseMarkdown)
+import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Markdown))
+import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.Zettel.Meta
+  ( MetadataOnly (MetadataOnly),
+    ZettelT (Zettel),
+    sortZettelsReverseChronological,
+  )
+import Neuron.Zettelkasten.Zettel.Meta (Meta)
 import Relude
 import Test.Hspec
 
@@ -33,9 +40,10 @@ spec = do
 
         (_ :: Maybe Meta, _dummyContent) = either (error . show) id $ parseMarkdown "<spec>" "Dummy"
 
-        mkZettel zid datetime =
+        mkZettel s datetime =
           Zettel
-            (unsafeMkZettelID zid)
+            (ZettelID s)
+            s
             ZettelFormat_Markdown
             "<spec>.md"
             "Some title"

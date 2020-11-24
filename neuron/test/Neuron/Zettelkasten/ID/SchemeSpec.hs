@@ -7,8 +7,13 @@ module Neuron.Zettelkasten.ID.SchemeSpec
 where
 
 import qualified Data.Set as Set
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.ID (ZettelID (ZettelID), parseZettelID)
 import Neuron.Zettelkasten.ID.Scheme
+  ( IDConflict (IDConflict_AlreadyExists),
+    IDScheme (IDSchemeCustom, IDSchemeHash),
+    genVal,
+    nextAvailableZettelID,
+  )
 import Relude
 import Test.Hspec
 
@@ -31,7 +36,7 @@ spec = do
           `shouldReturn` Left IDConflict_AlreadyExists
       it "succeeds" $ do
         nextAvail (IDSchemeCustom "sunny-side-eggs")
-          `shouldReturn` Right (unsafeMkZettelID "sunny-side-eggs")
+          `shouldReturn` Right (ZettelID "sunny-side-eggs")
     context "hash ID" $ do
       it "should succeed" $
         nextAvail IDSchemeHash
