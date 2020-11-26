@@ -22,7 +22,7 @@ import Neuron.Zettelkasten.Zettel.Meta (Meta (..))
 import Relude
 import Relude.Extra.Map (lookup)
 import Text.Pandoc (def, runPure)
-import Text.Pandoc.Definition (Inline(Link), Pandoc)
+import Text.Pandoc.Definition (Inline (Link), Pandoc)
 import Text.Pandoc.Readers.Org (readOrg)
 import Text.Pandoc.Util (getH1)
 import Text.Pandoc.Walk (walk)
@@ -38,12 +38,12 @@ parseOrg _ s = do
 changeLinkTypes :: Pandoc -> Pandoc
 changeLinkTypes = walk modLink
   where
-    modLink:: Inline -> Inline
+    modLink :: Inline -> Inline
     modLink (Link a b t) = Link a b (replaceTarget t)
     modLink x = x
     replaceTarget (url, title)
       | not $ isSuffixOf "?cf" url = (append url "?type=branch", title)
-      | otherwise                  = (url , title)
+      | otherwise = (url, title)
 
 -- | Extract metadata from the properties that are attached to the first headline
 extractMetadata :: Pandoc -> Either ZettelParseError (Maybe Meta)
