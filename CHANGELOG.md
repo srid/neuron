@@ -17,6 +17,8 @@
     - Raw HTML now works without any special syntax.
   - Add Markdown highlighting extension (#453)
 - Unicode-aware in inline tags (#446)
+- CLI:
+  - `neuron open --id` is replaced by `neuron open --slug` (#483)
 - Removed features
   - Aliases (#479)
 
