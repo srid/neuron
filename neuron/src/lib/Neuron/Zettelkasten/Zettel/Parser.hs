@@ -15,7 +15,7 @@ import Data.Some (Some (..))
 import Data.TagTree (Tag, unTagPattern)
 import qualified Data.Text as T
 import Neuron.Reader.Type (ZettelFormat, ZettelReader)
-import Neuron.Zettelkasten.ID (ZettelID (unZettelID), mkDefaultSlug)
+import Neuron.Zettelkasten.ID (ZettelID (unZettelID), Slug)
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
@@ -38,7 +38,8 @@ parseZettel ::
 parseZettel format zreader queryExtractor fn zid s = do
   case zreader fn s of
     Left parseErr ->
-      Left $ Zettel zid (mkDefaultSlug $ unZettelID zid) format fn "Unknown" False [] Nothing False [] (Just parseErr) s
+      let slug = mkDefaultSlug $ unZettelID zid
+       in Left $ Zettel zid slug format fn "Unknown" False [] Nothing False [] (Just parseErr) s
     Right (meta, doc) ->
       let -- Determine zettel title
           (title, titleInBody) = case Meta.title =<< meta of
@@ -61,6 +62,9 @@ parseZettel format zreader queryExtractor fn zid s = do
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag
       _ -> Nothing
+    mkDefaultSlug :: Text -> Slug
+    mkDefaultSlug =
+      T.intercalate "_" . T.splitOn " "
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::

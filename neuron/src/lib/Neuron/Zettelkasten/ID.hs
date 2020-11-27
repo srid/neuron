@@ -11,7 +11,6 @@ module Neuron.Zettelkasten.ID
   ( ZettelID (..),
     InvalidID (..),
     Slug,
-    mkDefaultSlug,
     indexZid,
     parseZettelID,
     allowedSpecialChars,
@@ -30,7 +29,6 @@ import Data.Aeson
     ToJSONKey (toJSONKey),
   )
 import Data.Aeson.Types (toJSONKeyText)
-import qualified Data.Text as T
 import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Relude
 import System.FilePath (splitExtension, takeFileName)
@@ -43,10 +41,6 @@ type Slug = Text
 
 newtype ZettelID = ZettelID {unZettelID :: Text}
   deriving (Show, Ord, Eq, Generic)
-
-mkDefaultSlug :: Text -> Slug
-mkDefaultSlug =
-  T.intercalate "_" . T.splitOn " "
 
 indexZid :: ZettelID
 indexZid = ZettelID "index"

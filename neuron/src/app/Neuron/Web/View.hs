@@ -32,10 +32,10 @@ import Neuron.Web.HeadHtml (HeadHtml, renderHeadHtml)
 import Neuron.Web.Manifest (Manifest, renderManifest)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
-import Neuron.Web.StructuredData
+import Neuron.Web.StructuredData (renderStructuredData)
 import Neuron.Web.Theme (Theme)
 import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Widget
+import Neuron.Web.Widget (elLinkGoogleFonts, semanticIcon)
 import qualified Neuron.Web.ZIndex as ZIndex
 import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
@@ -67,7 +67,6 @@ renderRouteHead config headHtml manifest route val = do
   el "title" $ text $ routeTitle config (snd val) route
   renderManifest manifest
   case route of
-    -- Route_Redirect _ -> blank
     Route_Search {} -> do
       renderCommon
       forM_
@@ -124,10 +123,6 @@ renderRouteBody neuronVersion Config {..} r (g, x) = do
         actionsNav neuronTheme indexZettel zettelEditUrl
         ZettelView.renderZettel (g, x)
           <* renderBrandFooter noVersion
-
---Route_Redirect _ -> do
---  targetUrl <- neuronRouteURL $ Some $ Route_Zettel x
---  elAttr "meta" ("http-equiv" =: "Refresh" <> "content" =: ("0; url=" <> targetUrl)) blank
 
 renderSearch :: DomBuilder t m => ZettelGraph -> Text -> m ()
 renderSearch graph script = do

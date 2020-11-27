@@ -75,7 +75,7 @@ newtype MetadataOnly = MetadataOnly ()
 -- | All possible errors for a given zettel ID
 data ZettelError
   = -- | The zettel file content is malformed
-    ZettelError_ParseError ZettelParseError
+    ZettelError_ParseError (Slug, ZettelParseError)
   | -- | Some queries in zettel file are incorrect
     ZettelError_QueryResultErrors (Slug, NonEmpty QueryResultError)
   | -- | A zettel ID may refer one of several zettel files

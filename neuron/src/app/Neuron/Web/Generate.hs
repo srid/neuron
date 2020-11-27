@@ -76,7 +76,7 @@ generateSite config writeHtmlRoute' = do
   forM_ (Map.toList errors) $ \(zid, errs) -> do
     for errs $ \err -> reportError zid $
       case err of
-        ZettelError_ParseError (untag -> parseErr) ->
+        ZettelError_ParseError (untag . snd -> parseErr) ->
           parseErr :| []
         ZettelError_QueryResultErrors queryErrs ->
           showQueryResultError <$> snd queryErrs

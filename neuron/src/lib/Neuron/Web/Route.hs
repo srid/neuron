@@ -9,18 +9,20 @@
 -- | Neuron's route and its config
 module Neuron.Web.Route where
 
-import Control.Monad.Reader
-import Data.GADT.Compare.TH
-import Data.GADT.Show.TH
-import Data.Some
+import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
+import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
+import Data.Some (Some)
 import Data.TagTree (Tag)
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Core
+  ( ZettelC,
+    ZettelError,
+    ZettelT (zettelTitle),
+  )
+import Reflex.Dom.Core (DomBuilder)
 import Relude
 
 data Route a where
-  -- Route_Redirect :: Slug -> Route Slug
   -- ZIndex takes a report of all errors in the zettelkasten.
   -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
   Route_ZIndex :: Route (Map ZettelID (NonEmpty ZettelError))

@@ -28,7 +28,7 @@ import Neuron.Web.Zettel.View (renderZettelParseError)
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID (ZettelID (..), mkDefaultSlug)
+import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Query (zettelsByTag)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
@@ -132,14 +132,14 @@ renderErrors errors = do
         ZettelError_AmbiguousIDs _ -> "negative"
         ZettelError_AmbiguousSlugs _ -> "negative"
       errorMessageHeader zid = \case
-        ZettelError_ParseError _ -> do
+        ZettelError_ParseError (slug, _) -> do
           text "Zettel "
-          QueryView.renderZettelLinkIDOnly zid (mkDefaultSlug $ unZettelID zid)
+          QueryView.renderZettelLinkIDOnly zid slug
           text " failed to parse"
         ZettelError_QueryResultErrors (slug, _) -> do
           text "Zettel "
           QueryView.renderZettelLinkIDOnly zid slug
-          text " has broken wiki-links"
+          text " has missing wiki-links"
         ZettelError_AmbiguousIDs _files -> do
           text $
             "More than one file define the same zettel ID ("
@@ -154,7 +154,7 @@ renderErrors errors = do
         divClass "header" $ errorMessageHeader zid zError
         el "p" $ do
           case zError of
-            ZettelError_ParseError parseError ->
+            ZettelError_ParseError (_slug, parseError) ->
               renderZettelParseError parseError
             ZettelError_QueryResultErrors queryErrors ->
               el "ol" $ do

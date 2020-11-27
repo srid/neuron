@@ -10,6 +10,7 @@
   - Simplify error message UX for missing wiki-links (#448)
   - Baclinks surrounding context (#190)
   - Fix blockquote paragraph order in footnotes (#350)
+  - Allow specifying URL slugs in notes (#483)
 - Zettel format
   - Ignore punctuation in inline tags (#443)
   - Remove support for autolinks (`<..>`) (#449) (see [migration script](https://github.com/srid/neuron/issues/449#issuecomment-719062302))

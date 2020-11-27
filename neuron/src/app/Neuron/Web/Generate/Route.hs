@@ -26,8 +26,6 @@ import qualified Text.URI as URI
 
 instance IsRoute Route where
   routeFile = \case
-    --Route_Redirect slug ->
-    --  routeFile $ Route_Zettel slug
     Route_ZIndex ->
       pure "z-index.html"
     Route_Search _mtag ->

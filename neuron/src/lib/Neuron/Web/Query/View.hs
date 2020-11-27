@@ -33,7 +33,6 @@ import Data.TagTree
   )
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
-import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Markdown))
 import Neuron.Web.Route
   ( NeuronWebT,
     Route (..),
@@ -41,7 +40,7 @@ import Neuron.Web.Route
   )
 import Neuron.Web.Widget (elNoSnippetSpan, elTime, semanticIcon)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
-import Neuron.Zettelkasten.ID (Slug, ZettelID (), unZettelID, zettelIDSourceFileName)
+import Neuron.Zettelkasten.ID (Slug, ZettelID (), unZettelID)
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
@@ -178,7 +177,7 @@ renderMissingZettelLink mconn zid = do
   let connClass = show <$> mconn
       classes :: [Text] = catMaybes $ [Just "zettel-link-container", Just "errors"] <> [connClass]
   elClass "span" (T.intercalate " " classes) $ do
-    let errMsg = "Broken wiki-link (" <> toText (zettelIDSourceFileName zid ZettelFormat_Markdown) <> " does not exist)"
+    let errMsg = "Wiki-link does not refer to any existing zettel"
     elAttr "span" ("class" =: "zettel-link" <> "title" =: errMsg) $ do
       elAttr "a" mempty $ text $ unZettelID zid
       elConnSuffix mconn

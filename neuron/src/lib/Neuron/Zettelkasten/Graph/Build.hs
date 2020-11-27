@@ -50,7 +50,6 @@ buildZettelkasten queryExtractor fs =
             _ ->
               -- Duplicate slugs
               Right (slug, zettels)
-
       (g, qErrs) = mkZettelGraph $ filter (not . zettelUnlisted) $ lefts zsCsplit
       errors =
         Map.unions
@@ -58,7 +57,7 @@ buildZettelkasten queryExtractor fs =
               Map.fromList $
                 flip mapMaybe (lefts zs) $ \z ->
                   case zettelParseError z of
-                    Just zerr -> Just (zettelID z, zerr)
+                    Just zerr -> Just (zettelID z, (zettelSlug z, zerr))
                     _ -> Nothing,
             fmap ZettelError_QueryResultErrors qErrs,
             fmap ZettelError_AmbiguousSlugs $
