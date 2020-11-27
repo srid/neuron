@@ -39,6 +39,7 @@ extractMetadata doc
     date <- traverse parseDate $ lookup "date" properties
     -- title is now deprecated
     let title = Nothing
+        slug = Nothing
         tags = fmap Tag . words <$> lookup "tags" properties
         unlisted = parseUnlisted <$> lookup "unlisted" properties
     pure $ Just Meta {..}

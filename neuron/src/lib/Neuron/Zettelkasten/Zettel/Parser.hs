@@ -15,7 +15,7 @@ import Data.Some (Some (..))
 import Data.TagTree (Tag, unTagPattern)
 import qualified Data.Text as T
 import Neuron.Reader.Type (ZettelFormat, ZettelReader)
-import Neuron.Zettelkasten.ID (ZettelID (zettelIDRaw))
+import Neuron.Zettelkasten.ID (ZettelID (unZettelID), Slug)
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
@@ -38,12 +38,13 @@ parseZettel ::
 parseZettel format zreader queryExtractor fn zid s = do
   case zreader fn s of
     Left parseErr ->
-      Left $ Zettel zid format fn "Unknown" False [] Nothing False [] (Just parseErr) s
+      let slug = mkDefaultSlug $ unZettelID zid
+       in Left $ Zettel zid slug format fn "Unknown" False [] Nothing False [] (Just parseErr) s
     Right (meta, doc) ->
       let -- Determine zettel title
           (title, titleInBody) = case Meta.title =<< meta of
             Just tit -> (tit, False)
-            Nothing -> fromMaybe (zettelIDRaw zid, False) $ do
+            Nothing -> fromMaybe (unZettelID zid, False) $ do
               (,True) . P.plainify . snd <$> P.getH1 doc
           -- Accumulate queries
           queries = queryExtractor doc
@@ -53,13 +54,17 @@ parseZettel format zreader queryExtractor fn zid s = do
           tags = nub $ metaTags <> queryTags
           -- Determine other metadata
           date = Meta.date =<< meta
+          slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
           unlisted = Just True == (Meta.unlisted =<< meta)
-       in Right $ Zettel zid format fn title titleInBody tags date unlisted queries Nothing doc
+       in Right $ Zettel zid slug format fn title titleInBody tags date unlisted queries Nothing doc
   where
     getInlineTag :: Some ZettelQuery -> Maybe Tag
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag
       _ -> Nothing
+    mkDefaultSlug :: Text -> Slug
+    mkDefaultSlug =
+      T.intercalate "_" . T.splitOn " "
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::

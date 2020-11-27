@@ -153,7 +153,7 @@ commandParser defaultNotesDir now = do
             (switch (long "search" <> help "Open the search page"))
           <|> fmap
             (OpenCommand . Some . R.Route_Zettel)
-            (option zettelIDReader (long "id" <> help "Open the zettel HTML page" <> metavar "ID"))
+            (strOption (long "slug" <> help "Open the zettel HTML page" <> metavar "SLUG"))
     queryCommand = do
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
       query <-

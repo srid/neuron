@@ -14,6 +14,16 @@ date: 2020-08-21T13:06
 
 This date can be made to display in a query result by using the `timeline` flag (see [[link-query]]).
 
+## Slug
+
+The "slug" of a zettel is used in its URL, which in turn is determined by the filename of the generated HTML file. By default neuron will use the [[id]] with whitespace replaced with underscore as the slug, which may be overriden here.
+
+```markdown
+---
+slug: foo-bar
+---
+```
+
 ## Pinning
 
 Zettels can be pinned in the z-index so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[tags]]) to it.

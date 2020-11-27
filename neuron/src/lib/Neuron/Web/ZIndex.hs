@@ -48,7 +48,7 @@ data ZIndex = ZIndex
     zIndexClusters :: [Forest (Zettel, [Zettel])],
     zIndexOrphans :: [Zettel],
     -- | All zettel errors
-    zIndexErrors :: Map ZettelID ZettelError,
+    zIndexErrors :: Map ZettelID (NonEmpty ZettelError),
     zIndexStats :: Stats,
     zPinned :: [Zettel]
   }
@@ -59,7 +59,7 @@ data Stats = Stats
   }
   deriving (Eq, Show)
 
-buildZIndex :: ZettelGraph -> Map ZettelID ZettelError -> ZIndex
+buildZIndex :: ZettelGraph -> Map ZettelID (NonEmpty ZettelError) -> ZIndex
 buildZIndex graph errors =
   let (orphans, clusters) = partitionEithers $
         flip fmap (G.categoryClusters graph) $ \case
@@ -124,41 +124,48 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
       1 -> "1 " <> noun
       n -> show n <> " " <> nounPlural
 
-renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
+renderErrors :: DomBuilder t m => Map ZettelID (NonEmpty ZettelError) -> NeuronWebT t m ()
 renderErrors errors = do
   let severity = \case
         ZettelError_ParseError _ -> "negative"
         ZettelError_QueryResultErrors _ -> "warning"
-        ZettelError_AmbiguousFiles _ -> "negative"
+        ZettelError_AmbiguousID _ -> "negative"
+        ZettelError_AmbiguousSlug _ -> "negative"
       errorMessageHeader zid = \case
-        ZettelError_ParseError _ -> do
+        ZettelError_ParseError (slug, _) -> do
           text "Zettel "
-          QueryView.renderZettelLinkIDOnly zid
+          QueryView.renderZettelLinkIDOnly zid slug
           text " failed to parse"
-        ZettelError_QueryResultErrors _ -> do
+        ZettelError_QueryResultErrors (slug, _) -> do
           text "Zettel "
-          QueryView.renderZettelLinkIDOnly zid
-          text " has broken wiki-links"
-        ZettelError_AmbiguousFiles _ -> do
+          QueryView.renderZettelLinkIDOnly zid slug
+          text " has missing wiki-links"
+        ZettelError_AmbiguousID _files -> do
           text $
-            "More than one file define the same zettel ID slug ("
-              <> zettelIDSlug zid
+            "More than one file define the same zettel ID ("
+              <> unZettelID zid
               <> "):"
-  forM_ (Map.toList errors) $ \(zid, zError) ->
-    divClass ("ui tiny message " <> severity zError) $ do
-      divClass "header" $ errorMessageHeader zid zError
-      el "p" $ do
-        case zError of
-          ZettelError_ParseError parseError ->
-            renderZettelParseError parseError
-          ZettelError_QueryResultErrors queryErrors ->
-            el "ol" $ do
-              forM_ queryErrors $ \qe ->
-                el "li" $ elPreOverflowing $ text $ showQueryResultError qe
-          ZettelError_AmbiguousFiles filePaths ->
-            el "ul" $ do
-              forM_ filePaths $ \fp ->
-                el "li" $ el "tt" $ text $ toText fp
+        ZettelError_AmbiguousSlug _slug -> do
+          text $ "Zettel '" <> unZettelID zid <> "' ignored; has ambiguous slug"
+
+  forM_ (Map.toList errors) $ \(zid, zErrors) ->
+    forM_ zErrors $ \zError -> do
+      divClass ("ui tiny message " <> severity zError) $ do
+        divClass "header" $ errorMessageHeader zid zError
+        el "p" $ do
+          case zError of
+            ZettelError_ParseError (_slug, parseError) ->
+              renderZettelParseError parseError
+            ZettelError_QueryResultErrors queryErrors ->
+              el "ol" $ do
+                forM_ (snd queryErrors) $ \qe ->
+                  el "li" $ elPreOverflowing $ text $ showQueryResultError qe
+            ZettelError_AmbiguousID filePaths ->
+              el "ul" $ do
+                forM_ filePaths $ \fp ->
+                  el "li" $ el "tt" $ text $ toText fp
+            ZettelError_AmbiguousSlug slug ->
+              el "p" $ text $ "Slug '" <> slug <> "' is used by another zettel"
 
 renderForest ::
   DomBuilder t m =>

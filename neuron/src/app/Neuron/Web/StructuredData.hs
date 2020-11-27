@@ -18,12 +18,12 @@ import Data.Structured.OpenGraph.Render (renderOpenGraph)
 import qualified Data.Text as T
 import Neuron.Config.Type (Config (..), getSiteBaseUrl)
 import Neuron.Web.Generate.Route (routeUri)
-import Neuron.Web.Route
-import Neuron.Zettelkasten.Connection
+import Neuron.Web.Route (Route (..), routeTitle')
+import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Core hiding ((&))
+import Reflex.Dom.Core (DomBuilder, def)
 import Relude
 import Text.Pandoc (runPure, writePlain)
 import Text.Pandoc.Definition (Block (Plain), Inline (Image), Pandoc (..))
@@ -44,7 +44,7 @@ routeStructuredData cfg (graph, v) = \case
       Just baseUrl ->
         let mkCrumb :: Zettel -> Breadcrumb.Item
             mkCrumb Zettel {..} =
-              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelID)
+              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelSlug)
          in Breadcrumb.fromForest $ fmap mkCrumb <$> G.backlinkForest Folgezettel (sansContent v) graph
   _ ->
     []
@@ -55,7 +55,6 @@ routeOpenGraph cfg@Config {siteTitle, author} v r =
     { _openGraph_title = routeTitle' v r,
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
-        Route_Redirect _ -> Nothing
         Route_ZIndex -> Just "Zettelkasten Index"
         (Route_Search _mtag) -> Just "Search Zettelkasten"
         Route_Zettel _ -> do

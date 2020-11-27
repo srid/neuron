@@ -27,7 +27,8 @@ data Meta = Meta
     -- | Creation day
     date :: Maybe DateMayTime,
     -- | List in the z-index
-    unlisted :: Maybe Bool
+    unlisted :: Maybe Bool,
+    slug :: Maybe Text
   }
   deriving (Eq, Show, Generic)
 
@@ -40,6 +41,7 @@ instance FromYAML Meta where
         <*> liftA2 (<|>) (m .:? "tags") (m .:? "keywords")
         <*> m .:? "date"
         <*> m .:? "unlisted"
+        <*> m .:? "slug"
 
 -- NOTE: Not using this instance because it generates "tags: null" when tags is
 -- Nothing.

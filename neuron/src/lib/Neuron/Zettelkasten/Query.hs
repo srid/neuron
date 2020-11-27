@@ -77,7 +77,7 @@ zettelQueryResultJson ::
   ZettelQuery r ->
   Either QueryResultError r ->
   -- Zettels that cannot be parsed by neuron
-  Map ZettelID ZettelError ->
+  Map ZettelID (NonEmpty ZettelError) ->
   Value
 zettelQueryResultJson q er skippedZettels =
   toJSON $
@@ -113,7 +113,7 @@ graphQueryResultJson ::
   GraphQuery r ->
   Either QueryResultError r ->
   -- Zettels that cannot be parsed by neuron (and as such are excluded from the graph)
-  Map ZettelID ZettelError ->
+  Map ZettelID (NonEmpty ZettelError) ->
   Value
 graphQueryResultJson q er skippedZettels =
   toJSON $

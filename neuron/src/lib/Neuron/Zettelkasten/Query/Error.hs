@@ -21,4 +21,4 @@ data QueryResultError
 
 showQueryResultError :: QueryResultError -> Text
 showQueryResultError (QueryResultError_NoSuchZettel _conn zid) =
-  "no such zettel: " <> zettelIDRaw zid
+  "no such zettel: " <> unZettelID zid

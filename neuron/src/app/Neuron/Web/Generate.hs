@@ -22,9 +22,8 @@ import Data.FileEmbed (embedOneStringFileOf)
 import qualified Data.Map.Strict as Map
 import Data.Tagged (untag)
 import qualified Data.Text as T
-import Data.Traversable
+import Data.Traversable (for)
 import Development.Shake (Action, need)
-import Neuron.Config.Alias (Alias (..), getAliases)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as C
 import Neuron.Reader (readerForZettelFormat)
@@ -35,15 +34,13 @@ import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
+import Neuron.Zettelkasten.ID (ZettelID, getZettelID, unZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext)
-import Options.Applicative
+import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
 import Relude
-import Rib.Route
 import Rib.Shake (forEvery, ribInputDir)
-import System.FilePath
+import System.FilePath ((</>))
 
 -- | The contents of search.js
 --
@@ -70,33 +67,30 @@ generateSite config writeHtmlRoute' = do
       writeHtmlRoute v r = writeHtmlRoute' r (zettelGraph, v)
   -- Generate HTML for every zettel
   forM_ zettelContents $ \val@(sansContent -> z) ->
-    writeHtmlRoute val $ Z.Route_Zettel (zettelID z)
+    writeHtmlRoute val $ Z.Route_Zettel (zettelSlug z)
   -- Generate the z-index
   writeHtmlRoute errors Z.Route_ZIndex
   -- Generate search page
   writeHtmlRoute searchScript $ Z.Route_Search Nothing
-  -- Write alias redirects, unless a zettel with that name exists.
-  aliases <- getAliases config zettelGraph
-  forM_ aliases $ \Alias {..} ->
-    writeHtmlRoute targetZettel (Z.Route_Redirect aliasZettel)
   -- Report all errors
-  forM_ (Map.toList errors) $ \(zid, err) -> do
-    reportError (Z.Route_Zettel zid) $
+  forM_ (Map.toList errors) $ \(zid, errs) -> do
+    for errs $ \err -> reportError zid $
       case err of
-        ZettelError_ParseError (untag -> parseErr) ->
+        ZettelError_ParseError (untag . snd -> parseErr) ->
           parseErr :| []
         ZettelError_QueryResultErrors queryErrs ->
-          showQueryResultError <$> queryErrs
-        ZettelError_AmbiguousFiles filePaths ->
+          showQueryResultError <$> snd queryErrs
+        ZettelError_AmbiguousID filePaths ->
           ("Multiple zettels have the same ID: " <> T.intercalate ", " (fmap toText $ toList filePaths))
             :| []
+        ZettelError_AmbiguousSlug slug ->
+          "Slug '" <> slug <> "' is already used by another zettel" :| []
   pure zettelGraph
 
 -- | Report an error in the terminal
-reportError :: (MonadIO m, IsRoute r) => r a -> NonEmpty Text -> m ()
-reportError route errors = do
-  path <- liftIO $ routeFile route
-  putTextLn $ "E " <> toText path
+reportError :: MonadIO m => ZettelID -> NonEmpty Text -> m ()
+reportError zid errors = do
+  putTextLn $ "E " <> unZettelID zid
   forM_ errors $ \err ->
     putText $ "  - " <> indentAllButFirstLine 4 err
   where
@@ -113,7 +107,7 @@ reportError route errors = do
 -- Also allows retrieving the cached data for faster execution.
 loadZettelkastenGraph ::
   Config ->
-  Action (ZettelGraph, Map ZettelID ZettelError)
+  Action (ZettelGraph, Map ZettelID (NonEmpty ZettelError))
 loadZettelkastenGraph config = do
   (g, _, errs) <- loadZettelkasten config
   pure (g, errs)
@@ -123,7 +117,7 @@ loadZettelkasten ::
   Action
     ( ZettelGraph,
       [ZettelC],
-      Map ZettelID ZettelError
+      Map ZettelID (NonEmpty ZettelError)
     )
 loadZettelkasten config = do
   formats <- C.getZettelFormats config
@@ -143,7 +137,7 @@ loadZettelkastenFrom ::
   Action
     ( ZettelGraph,
       [ZettelC],
-      Map ZettelID ZettelError
+      Map ZettelID (NonEmpty ZettelError)
     )
 loadZettelkastenFrom fs = do
   notesDir <- ribInputDir
@@ -171,7 +165,7 @@ loadZettelkastenFrom fs = do
                     lift $ need [absPath]
                     s <- decodeUtf8With lenientDecode <$> readFileBS absPath
                     modify $ Map.insert zid (Left (format, (relPath, s)))
-  let dups = fmap ZettelError_AmbiguousFiles $ Map.mapMaybe rightToMaybe zidMap
+  let dups = fmap ZettelError_AmbiguousID $ Map.mapMaybe rightToMaybe zidMap
       files =
         fmap (first (id &&& readerForZettelFormat)) $
           Map.toList $
@@ -179,6 +173,7 @@ loadZettelkastenFrom fs = do
               flip fmap (Map.toList $ Map.mapMaybe leftToMaybe zidMap) $
                 \(zid, (fmt, (path, s))) ->
                   (fmt, [(zid, path, s)])
-      (g, zs, gerrs) = G.buildZettelkasten extractQueriesWithContext files
-      errs = Map.unions [dups, gerrs]
+      zs = parseZettels extractQueriesWithContext files
+      (g, gerrs) = G.buildZettelkasten zs
+      errs = Map.unionsWith (<>) [one <$> dups, one <$> gerrs]
   pure (g, zs, errs)

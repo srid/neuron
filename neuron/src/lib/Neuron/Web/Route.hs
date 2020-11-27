@@ -9,26 +9,28 @@
 -- | Neuron's route and its config
 module Neuron.Web.Route where
 
-import Control.Monad.Reader
-import Data.GADT.Compare.TH
-import Data.GADT.Show.TH
-import Data.Some
+import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
+import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
+import Data.Some (Some)
 import Data.TagTree (Tag)
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Core
+  ( ZettelC,
+    ZettelError,
+    ZettelT (zettelTitle),
+  )
+import Reflex.Dom.Core (DomBuilder)
 import Relude
 
 data Route a where
-  Route_Redirect :: ZettelID -> Route ZettelID
   -- ZIndex takes a report of all errors in the zettelkasten.
   -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
-  Route_ZIndex :: Route (Map ZettelID ZettelError)
+  Route_ZIndex :: Route (Map ZettelID (NonEmpty ZettelError))
   -- | Takes search JS code as render data
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
   Route_Search :: Maybe Tag -> Route Text
-  Route_Zettel :: ZettelID -> Route ZettelC
+  Route_Zettel :: Slug -> Route ZettelC
 
 data RouteConfig t m = RouteConfig
   { -- | Whether the view is being rendered for static HTML generation
@@ -61,7 +63,7 @@ neuronRouteURL someR = do
 
 routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
-  Route_Redirect _ -> "Redirecting..."
+  -- Route_Redirect _ -> "Redirecting..."
   Route_ZIndex -> "Zettel Index"
   Route_Search _mtag -> "Search"
   Route_Zettel _ ->

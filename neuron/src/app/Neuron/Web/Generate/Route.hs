@@ -18,7 +18,6 @@ import Data.Some
 import Data.TagTree (unTag)
 import qualified Network.URI.Encode as E
 import Neuron.Web.Route (Route (..), RouteConfig (..))
-import Neuron.Zettelkasten.ID
 import Reflex.Dom.Core
 import Relude
 import Rib.Route (IsRoute (..), routeUrlRel)
@@ -27,14 +26,12 @@ import qualified Text.URI as URI
 
 instance IsRoute Route where
   routeFile = \case
-    Route_Redirect zid ->
-      routeFile $ Route_Zettel zid
     Route_ZIndex ->
       pure "z-index.html"
     Route_Search _mtag ->
       pure "search.html"
-    Route_Zettel (zettelIDSlug -> s) ->
-      pure $ toString s <> ".html"
+    Route_Zettel slug ->
+      pure $ toString slug <> ".html"
 
 staticRouteConfig :: RouteConfig t m
 staticRouteConfig =
