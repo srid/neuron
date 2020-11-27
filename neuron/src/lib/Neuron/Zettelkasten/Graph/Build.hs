@@ -11,7 +11,6 @@ where
 import Control.Monad.Writer (runWriterT)
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
-import Neuron.Reader.Type (ZettelFormat, ZettelReader)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
@@ -24,49 +23,55 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (..),
     sansContent,
   )
-import Neuron.Zettelkasten.Zettel.Parser (QueryExtractor, parseZettels)
 import Relude
 import Text.Pandoc.Definition (Block)
 
+-- Build the zettelkasten graph from a list of zettels
+--
+-- Identify errors along the way:
+--   - Parse errors (already in function input)
+--   - Slug errors
+--   - Query errors
+-- The errors are gathered in the `snd` of the tuple. This should probably be
+-- refactored to use some Haskell idiom (Writer monad?).
 buildZettelkasten ::
-  QueryExtractor ->
-  [((ZettelFormat, ZettelReader), [(ZettelID, FilePath, Text)])] ->
+  [ZettelC] ->
   ( ZettelGraph,
-    [ZettelC],
     Map ZettelID ZettelError
   )
-buildZettelkasten queryExtractor fs =
-  let zs = parseZettels queryExtractor fs
-      zsC = sansContent <$> zs
-      slugMap :: Map Slug (NonEmpty Zettel) =
+buildZettelkasten (fmap sansContent &&& lefts -> (zs', zsEParse)) =
+  let slugMap :: Map Slug (NonEmpty Zettel) =
         Map.fromListWith (<>) $
-          zsC <&> (zettelSlug &&& one . id)
-      zsCsplit =
-        Map.toList slugMap <&> \(slug, zettels) ->
-          case zettels of
-            z :| [] ->
-              -- Unique slug; accept this Zettel
-              Left z
-            _ ->
-              -- Duplicate slugs
-              Right (slug, zettels)
-      (g, qErrs) = mkZettelGraph $ filter (not . zettelUnlisted) $ lefts zsCsplit
+          zs' <&> (zettelSlug &&& one . id)
+      (zs, zsESlug) =
+        (lefts &&& rights) $
+          Map.toList slugMap <&> \(slug, zettels) ->
+            case zettels of
+              z :| [] ->
+                -- Unique slug; accept this Zettel
+                Left z
+              _ ->
+                -- Duplicate slugs
+                Right (slug, zettels)
+      (g, qErrs) = mkZettelGraph $ filter (not . zettelUnlisted) zs
       errors =
         Map.unions
           [ fmap ZettelError_ParseError $
               Map.fromList $
-                flip mapMaybe (lefts zs) $ \z ->
+                flip mapMaybe zsEParse $ \z ->
                   case zettelParseError z of
-                    Just zerr -> Just (zettelID z, (zettelSlug z, zerr))
-                    _ -> Nothing,
+                    Just zerr ->
+                      Just (zettelID z, (zettelSlug z, zerr))
+                    _ ->
+                      Nothing,
             fmap ZettelError_QueryResultErrors qErrs,
-            fmap ZettelError_AmbiguousSlugs $
+            fmap ZettelError_AmbiguousSlug $
               Map.fromList $
                 concat $
-                  rights zsCsplit <&> \(slug, zettels) ->
+                  zsESlug <&> \(slug, zettels) ->
                     (,slug) . zettelID <$> toList zettels
           ]
-   in (g, zs, errors)
+   in (g, errors)
 
 -- | Build the Zettelkasten graph from a list of zettels
 --

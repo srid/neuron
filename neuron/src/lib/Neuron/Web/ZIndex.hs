@@ -129,8 +129,8 @@ renderErrors errors = do
   let severity = \case
         ZettelError_ParseError _ -> "negative"
         ZettelError_QueryResultErrors _ -> "warning"
-        ZettelError_AmbiguousIDs _ -> "negative"
-        ZettelError_AmbiguousSlugs _ -> "negative"
+        ZettelError_AmbiguousID _ -> "negative"
+        ZettelError_AmbiguousSlug _ -> "negative"
       errorMessageHeader zid = \case
         ZettelError_ParseError (slug, _) -> do
           text "Zettel "
@@ -140,12 +140,12 @@ renderErrors errors = do
           text "Zettel "
           QueryView.renderZettelLinkIDOnly zid slug
           text " has missing wiki-links"
-        ZettelError_AmbiguousIDs _files -> do
+        ZettelError_AmbiguousID _files -> do
           text $
             "More than one file define the same zettel ID ("
               <> unZettelID zid
               <> "):"
-        ZettelError_AmbiguousSlugs _slug -> do
+        ZettelError_AmbiguousSlug _slug -> do
           text $ "Zettel '" <> unZettelID zid <> "' ignored; has ambiguous slug"
 
   forM_ (Map.toList errors) $ \(zid, zErrors) ->
@@ -160,11 +160,11 @@ renderErrors errors = do
               el "ol" $ do
                 forM_ (snd queryErrors) $ \qe ->
                   el "li" $ elPreOverflowing $ text $ showQueryResultError qe
-            ZettelError_AmbiguousIDs filePaths ->
+            ZettelError_AmbiguousID filePaths ->
               el "ul" $ do
                 forM_ filePaths $ \fp ->
                   el "li" $ el "tt" $ text $ toText fp
-            ZettelError_AmbiguousSlugs slug ->
+            ZettelError_AmbiguousSlug slug ->
               el "p" $ text $ "Slug '" <> slug <> "' is used by another zettel"
 
 renderForest ::

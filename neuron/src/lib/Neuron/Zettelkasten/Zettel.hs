@@ -24,7 +24,7 @@ import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
-import Data.Some
+import Data.Some (Some)
 import Data.TagTree (Tag, TagPattern (..))
 import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Reader.Type (ZettelFormat, ZettelParseError)
@@ -79,9 +79,9 @@ data ZettelError
   | -- | Some queries in zettel file are incorrect
     ZettelError_QueryResultErrors (Slug, NonEmpty QueryResultError)
   | -- | A zettel ID may refer one of several zettel files
-    ZettelError_AmbiguousIDs (NonEmpty FilePath)
+    ZettelError_AmbiguousID (NonEmpty FilePath)
   | -- | A slug is shared more than one zettel file
-    ZettelError_AmbiguousSlugs Slug
+    ZettelError_AmbiguousSlug Slug
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Zettel without its content

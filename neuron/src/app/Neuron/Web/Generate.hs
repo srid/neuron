@@ -22,7 +22,7 @@ import Data.FileEmbed (embedOneStringFileOf)
 import qualified Data.Map.Strict as Map
 import Data.Tagged (untag)
 import qualified Data.Text as T
-import Data.Traversable
+import Data.Traversable (for)
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as C
@@ -37,7 +37,7 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID, unZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
-import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext)
+import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
 import Relude
 import Rib.Shake (forEvery, ribInputDir)
 import System.FilePath ((</>))
@@ -80,10 +80,10 @@ generateSite config writeHtmlRoute' = do
           parseErr :| []
         ZettelError_QueryResultErrors queryErrs ->
           showQueryResultError <$> snd queryErrs
-        ZettelError_AmbiguousIDs filePaths ->
+        ZettelError_AmbiguousID filePaths ->
           ("Multiple zettels have the same ID: " <> T.intercalate ", " (fmap toText $ toList filePaths))
             :| []
-        ZettelError_AmbiguousSlugs slug ->
+        ZettelError_AmbiguousSlug slug ->
           "Slug '" <> slug <> "' is already used by another zettel" :| []
   pure zettelGraph
 
@@ -165,7 +165,7 @@ loadZettelkastenFrom fs = do
                     lift $ need [absPath]
                     s <- decodeUtf8With lenientDecode <$> readFileBS absPath
                     modify $ Map.insert zid (Left (format, (relPath, s)))
-  let dups = fmap ZettelError_AmbiguousIDs $ Map.mapMaybe rightToMaybe zidMap
+  let dups = fmap ZettelError_AmbiguousID $ Map.mapMaybe rightToMaybe zidMap
       files =
         fmap (first (id &&& readerForZettelFormat)) $
           Map.toList $
@@ -173,6 +173,7 @@ loadZettelkastenFrom fs = do
               flip fmap (Map.toList $ Map.mapMaybe leftToMaybe zidMap) $
                 \(zid, (fmt, (path, s))) ->
                   (fmt, [(zid, path, s)])
-      (g, zs, gerrs) = G.buildZettelkasten extractQueriesWithContext files
+      zs = parseZettels extractQueriesWithContext files
+      (g, gerrs) = G.buildZettelkasten zs
       errs = Map.unionsWith (<>) [one <$> dups, one <$> gerrs]
   pure (g, zs, errs)
