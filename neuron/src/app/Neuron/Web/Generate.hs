@@ -80,18 +80,16 @@ generateSite config writeHtmlRoute' = do
           parseErr :| []
         ZettelError_QueryResultErrors queryErrs ->
           showQueryResultError <$> snd queryErrs
-        ZettelError_AmbiguousFiles filePaths ->
+        ZettelError_AmbiguousIDs filePaths ->
           ("Multiple zettels have the same ID: " <> T.intercalate ", " (fmap toText $ toList filePaths))
             :| []
-        ZettelError_SlugConflict slug ->
-          "Slug " <> slug <> " is used by other zettels" :| []
+        ZettelError_AmbiguousSlugs slug ->
+          "Slug '" <> slug <> "' is already used by another zettel" :| []
   pure zettelGraph
 
 -- | Report an error in the terminal
 reportError :: MonadIO m => ZettelID -> NonEmpty Text -> m ()
 reportError zid errors = do
-  -- path <- liftIO $ routeFile route
-  -- TODO: print original path .md
   putTextLn $ "E " <> unZettelID zid
   forM_ errors $ \err ->
     putText $ "  - " <> indentAllButFirstLine 4 err
@@ -167,7 +165,7 @@ loadZettelkastenFrom fs = do
                     lift $ need [absPath]
                     s <- decodeUtf8With lenientDecode <$> readFileBS absPath
                     modify $ Map.insert zid (Left (format, (relPath, s)))
-  let dups = fmap ZettelError_AmbiguousFiles $ Map.mapMaybe rightToMaybe zidMap
+  let dups = fmap ZettelError_AmbiguousIDs $ Map.mapMaybe rightToMaybe zidMap
       files =
         fmap (first (id &&& readerForZettelFormat)) $
           Map.toList $

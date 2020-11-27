@@ -61,7 +61,7 @@ buildZettelkasten queryExtractor fs =
                     Just zerr -> Just (zettelID z, zerr)
                     _ -> Nothing,
             fmap ZettelError_QueryResultErrors qErrs,
-            fmap ZettelError_SlugConflict $
+            fmap ZettelError_AmbiguousSlugs $
               Map.fromList $
                 concat $
                   rights zsCsplit <&> \(slug, zettels) ->

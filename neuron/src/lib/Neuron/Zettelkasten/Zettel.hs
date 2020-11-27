@@ -72,17 +72,16 @@ data ZettelT content = Zettel
 newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
 
--- | All possible errors in a zettel
--- TODO: rename constructors for legibility
+-- | All possible errors for a given zettel ID
 data ZettelError
   = -- | The zettel file content is malformed
     ZettelError_ParseError ZettelParseError
   | -- | Some queries in zettel file are incorrect
     ZettelError_QueryResultErrors (Slug, NonEmpty QueryResultError)
-  | -- | Multiple zettel files share the same zettel ID
-    ZettelError_AmbiguousFiles (NonEmpty FilePath)
-  | -- | Multiple zettel files share the same slug
-    ZettelError_SlugConflict Slug
+  | -- | A zettel ID may refer one of several zettel files
+    ZettelError_AmbiguousIDs (NonEmpty FilePath)
+  | -- | A slug is shared more than one zettel file
+    ZettelError_AmbiguousSlugs Slug
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Zettel without its content

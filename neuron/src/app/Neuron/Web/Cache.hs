@@ -13,9 +13,9 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Zettel (ZettelError)
 import Relude
-import Rib.Shake
+import Rib.Shake (ribInputDir)
 import System.Directory (createDirectoryIfMissing)
-import System.FilePath
+import System.FilePath ((</>))
 
 data ReadMode
   = ReadMode_Direct Config
