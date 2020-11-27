@@ -130,13 +130,15 @@ neuronSpec =
       CE.rawAttributeSpec,
       CE.fencedDivSpec,
       CE.bracketedSpanSpec,
-      CM.defaultSyntaxSpec
+      CM.defaultSyntaxSpec,
+      -- as the commonmark documentation states, pipeTableSpec should be placed after
+      -- fancyListSpec and defaultSyntaxSpec to avoid bad results when non-table lines
+      CE.pipeTableSpec
     ]
   where
     -- Emoji extension introduces ghcjs linker issues
     gfmExtensionsSansEmoji =
       CE.strikethroughSpec
-        <> CE.pipeTableSpec
         <> CE.autoIdentifiersSpec
         <> CE.taskListSpec
 
