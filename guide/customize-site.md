@@ -1,4 +1,6 @@
-# Icons, manifests and custom JS/CSS
+# Customizing the generated website
+
+Although neuron uses fixed HTML & CSS structure, you can customize the final site in one of the few ways.
 
 ## Favicon
 
@@ -17,4 +19,4 @@ If a [web app manifest](https://web.dev/add-manifest/) file named `static/manife
 
 ## Custom JavaScript / CSS
 
-You can add custom JavaSript or CSS code to the `<head>` element of the generated pages by adding it to the `head.html` file under the notes directory. If this file does not exist, neuron will use its builtin one that embeds MathJax JavaScript (see [[math]]).
+[[[custom-head]]]
