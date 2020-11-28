@@ -195,6 +195,10 @@ style = do
     QueryView.style
     footerStyle
     navBarStyle
+    "i.tree.icon" ? do
+      -- Apparently this workarounds the tree icon disappearing or getting
+      -- botched at times.
+      C.overflow C.hidden
   where
     footerStyle = do
       ".footer-version img" ? do
