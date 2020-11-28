@@ -33,7 +33,7 @@ Development documentation, including instructions to install from source, is ava
 
 ## Sponsors
 
-Sponsors get full access to [Cerveau](https://www.cerveau.app/).
+Sponsors get full access to [Cerveau](https://www.cerveau.app/) & [Ka](https://ka.srid.ca/).
 
 [<img src="https://github-sponsors.srid.ca/sponsor/avatar/0" width="35">](https://github-sponsors.srid.ca/sponsor/profile/0)
 [<img src="https://github-sponsors.srid.ca/sponsor/avatar/1" width="35">](https://github-sponsors.srid.ca/sponsor/profile/1)
