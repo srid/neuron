@@ -30,6 +30,7 @@ let
     rib = thunkOrPath "rib";
     reflex-dom-pandoc = thunkOrPath "reflex-dom-pandoc";
     commonmark = thunkOrPath "commonmark-hs";
+    pandoc-link-context = thunkOrPath "pandoc-link-context";
   };
 
   searchBuilder = ''
@@ -55,6 +56,7 @@ let
     commonmark-extensions = self.callCabal2nix "commonmark-extensions" (sources.commonmark + "/commonmark-extensions") {};
     commonmark-pandoc = self.callCabal2nix "commonmark-pandoc" (sources.commonmark + "/commonmark-pandoc") {};
 
+    pandoc-link-context = self.callCabal2nix "pandoc-link-context" sources.pandoc-link-context {};
     reflex-dom-pandoc =
       pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
 

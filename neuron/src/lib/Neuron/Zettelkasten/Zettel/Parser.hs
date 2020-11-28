@@ -15,7 +15,7 @@ import Data.Some (Some (..))
 import Data.TagTree (Tag, unTagPattern)
 import qualified Data.Text as T
 import Neuron.Reader.Type (ZettelFormat, ZettelReader)
-import Neuron.Zettelkasten.ID (ZettelID (unZettelID), Slug)
+import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
@@ -25,7 +25,9 @@ import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude
 import Text.Pandoc.Definition (Block (Plain), Inline (Code, Str), Pandoc, nullAttr)
+import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
+import qualified Text.URI as URI
 
 parseZettel ::
   ZettelFormat ->
@@ -81,13 +83,12 @@ type QueryExtractor = Pandoc -> [(Some ZettelQuery, [Block])]
 extractQueriesWithContext :: QueryExtractor
 extractQueriesWithContext doc =
   mapMaybe (uncurry parseQueryLinkWithContext) $
-    Map.toList $ P.getLinksWithContext doc
+    Map.toList $ LC.queryLinksWithContext doc
   where
-    parseQueryLinkWithContext uri ctx = do
-      case parseQueryLink uri of
-        Nothing -> Nothing
-        Just someQ ->
-          Just (someQ, convertCtx ctx someQ)
+    parseQueryLinkWithContext url ctx = do
+      uri <- URI.mkURI url
+      someQ <- parseQueryLink uri
+      pure (someQ, convertCtx ctx someQ)
     convertCtx :: [Block] -> Some ZettelQuery -> [Block]
     convertCtx ctx = \case
       Some (ZettelQuery_ZettelByID _ _) ->

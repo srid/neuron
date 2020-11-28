@@ -14,12 +14,9 @@ module Text.Pandoc.Util
     mkPandocAutoLink,
     isAutoLink,
     getLinks,
-    getLinksWithContext,
   )
 where
 
-import Data.List (nub)
-import qualified Data.Map.Strict as Map
 import Relude
 import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
@@ -56,35 +53,6 @@ getLinks = W.query go
             guard $ inlines /= [B.Str url]
             pure inlines
       pure $ PandocLink inner uri
-
--- | Like @getLinks@, but includes the "surrounding context"
-getLinksWithContext :: Pandoc -> Map URI [B.Block]
-getLinksWithContext doc =
-  fmap (reverse . nub) $ Map.fromListWith (<>) . fmap (second one) $ W.query go doc
-  where
-    go :: B.Block -> [(URI, B.Block)]
-    go blk =
-      fmap (,blk) $ case blk of
-        B.Para is ->
-          W.query linksFromInline is
-        B.Plain is ->
-          W.query linksFromInline is
-        B.LineBlock is ->
-          W.query linksFromInline is
-        B.Header _ _ is ->
-          W.query linksFromInline is
-        B.DefinitionList xs ->
-          -- Gather all filenames linked, and have them put (see above) in the
-          -- same definition list block.
-          concat $
-            flip fmap xs $ \(is, bss) ->
-              let def = W.query linksFromInline is
-                  body = fmap (fmap (fmap fst . go)) bss
-               in def <> concat (concat body)
-        _ -> mempty
-
-    linksFromInline :: B.Inline -> [URI]
-    linksFromInline = fmap _pandocLink_uri . getLinks
 
 getFirstParagraphText :: Pandoc -> Maybe [B.Inline]
 getFirstParagraphText = listToMaybe . W.query go
