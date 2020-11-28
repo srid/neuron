@@ -13,6 +13,7 @@
   - Allow specifying URL slugs in notes (#483)
   - Fix pipe character (`|`) messing up Markdown parsing (#469, #465)
   - Fix internal z:/ URIs appearing in OpenGraph previews (#482)
+  - Fix unnecessary horizontal scrolling on mobile (#468)
 - Zettel format
   - Ignore punctuation in inline tags (#443)
   - Remove support for autolinks (`<..>`) (#449) (see [migration script](https://github.com/srid/neuron/issues/449#issuecomment-719062302))

@@ -166,8 +166,7 @@ renderTags tags = do
     -- space below the title. So we put it at the bottom for now.
     neuronRouteLink
       (Some $ Route_Search $ Just t)
-      ( "class" =: "ui right ribbon label zettel-tag "
+      ( "class" =: "ui basic label zettel-tag"
           <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
       )
       $ text $ unTag t
-    el "p" blank
