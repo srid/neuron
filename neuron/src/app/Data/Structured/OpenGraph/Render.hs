@@ -7,6 +7,10 @@
 module Data.Structured.OpenGraph.Render where
 
 import Data.Structured.OpenGraph
+  ( Article (..),
+    OGType (..),
+    OpenGraph (..),
+  )
 import Data.Time.ISO8601 (formatISO8601)
 import Reflex.Dom.Core
 import Relude

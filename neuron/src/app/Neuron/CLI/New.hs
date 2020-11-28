@@ -12,25 +12,24 @@ module Neuron.CLI.New
 where
 
 import qualified Data.Set as Set
-import Data.Some
+import Data.Some (withSome)
 import Data.Text (strip)
 import qualified Data.Text as T
 import Data.Time.DateMayTime (DateMayTime, formatDateMayTime)
 import Development.Shake (Action)
-import Neuron.CLI.Types
+import Neuron.CLI.Types (NewCommand (..))
 import Neuron.Config.Type (Config (..), getZettelFormats)
 import Neuron.Reader.Type (ZettelFormat (..))
-import Neuron.Web.Generate as Gen
+import Neuron.Web.Generate as Gen (loadZettelkasten)
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
-import Options.Applicative
 import Relude
 import Rib.Shake (ribInputDir)
 import System.Directory (setCurrentDirectory)
-import System.FilePath
+import System.FilePath ((</>))
 import qualified System.Posix.Env as Env
-import System.Posix.Process
+import System.Posix.Process (executeFile)
 
 -- | Create a new zettel file and open it in editor if requested
 --

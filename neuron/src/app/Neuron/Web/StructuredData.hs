@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Web.StructuredData
@@ -11,10 +12,16 @@ module Neuron.Web.StructuredData
   )
 where
 
+import Data.Some
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.Structured.OpenGraph
+  ( Article (Article),
+    OGType (..),
+    OpenGraph (..),
+  )
 import Data.Structured.OpenGraph.Render (renderOpenGraph)
+import Data.TagTree (Tag (unTag))
 import qualified Data.Text as T
 import Neuron.Config.Type (Config (..), getSiteBaseUrl)
 import Neuron.Web.Generate.Route (routeUri)
@@ -22,18 +29,24 @@ import Neuron.Web.Route (Route (..), routeTitle')
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
+import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
+  ( Zettel,
+    ZettelQuery (..),
+    ZettelT (..),
+    sansContent,
+  )
 import Reflex.Dom.Core (DomBuilder, def)
 import Relude
 import Text.Pandoc (runPure, writePlain)
-import Text.Pandoc.Definition (Block (Plain), Inline (Image), Pandoc (..))
+import Text.Pandoc.Definition (Block (Plain), Inline (Image, Link, Str), Pandoc (..))
 import Text.Pandoc.Util (getFirstParagraphText)
-import Text.Pandoc.Walk (query)
+import qualified Text.Pandoc.Walk as W
 import qualified Text.URI as URI
 
 renderStructuredData :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
 renderStructuredData config route val = do
-  renderOpenGraph $ routeOpenGraph config (snd val) route
+  renderOpenGraph $ routeOpenGraph config (fst val) (snd val) route
   Breadcrumb.renderBreadcrumbs $ routeStructuredData config val route
 
 routeStructuredData :: Config -> (ZettelGraph, a) -> Route a -> [Breadcrumb]
@@ -49,8 +62,8 @@ routeStructuredData cfg (graph, v) = \case
   _ ->
     []
 
-routeOpenGraph :: Config -> a -> Route a -> OpenGraph
-routeOpenGraph cfg@Config {siteTitle, author} v r =
+routeOpenGraph :: Config -> ZettelGraph -> a -> Route a -> OpenGraph
+routeOpenGraph cfg@Config {siteTitle, author} g v r =
   OpenGraph
     { _openGraph_title = routeTitle' v r,
       _openGraph_siteName = siteTitle,
@@ -60,7 +73,7 @@ routeOpenGraph cfg@Config {siteTitle, author} v r =
         Route_Zettel _ -> do
           doc <- getPandocDoc v
           para <- getFirstParagraphText doc
-          paraText <- renderPandocAsText para
+          paraText <- renderPandocAsText g para
           pure $ T.take 300 paraText,
       _openGraph_author = author,
       _openGraph_type = case r of
@@ -84,10 +97,38 @@ routeOpenGraph cfg@Config {siteTitle, author} v r =
       -- | Relative URL path to the image
       Maybe Text
     getFirstImg (Pandoc _ bs) = listToMaybe $
-      flip query bs $ \case
+      flip W.query bs $ \case
         Image _ _ (url, _) -> [toText url]
         _ -> []
 
-renderPandocAsText :: [Inline] -> Maybe Text
-renderPandocAsText =
-  either (const Nothing) Just . runPure . writePlain def . Pandoc mempty . pure . Plain
+renderPandocAsText :: ZettelGraph -> [Inline] -> Maybe Text
+renderPandocAsText g =
+  either (const Nothing) Just
+    . runPure
+    . writePlain def
+    . Pandoc mempty
+    . pure
+    . Plain
+    . W.walk plainifyZQueries
+  where
+    plainifyZQueries :: Inline -> Inline
+    plainifyZQueries = \case
+      x@(Link attr inlines (url, title)) ->
+        fromMaybe x $ do
+          -- REFACTOR: This code should would fit in Query.View (rendering text,
+          -- rather than html, variation)
+          someQ <- parseQueryLink =<< URI.mkURI url
+          readableInlines <- case someQ of
+            Some (ZettelQuery_ZettelByID zid _conn) -> do
+              if inlines == [Str url]
+                then do
+                  Zettel {zettelTitle} <- G.getZettel zid g
+                  pure [Str zettelTitle]
+                else pure inlines
+            Some (ZettelQuery_TagZettel (unTag -> tag)) -> do
+              pure [Str $ "#" <> tag]
+            _ ->
+              -- Ideally we should replace these with `[[..]]`
+              Nothing
+          pure $ Link attr readableInlines (url, title)
+      x -> x
