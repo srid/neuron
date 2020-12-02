@@ -48,7 +48,9 @@ Link queries support a few query flags to control the link listing UI:
 
 You can limit the amount of zettels to be shown in a query. This can be useful for e.g. a feed of posts.
 
+```
 [[z:zettels?tag=**&limit=2&timeline]]
+```
 
 [URI]: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 
