@@ -59,7 +59,7 @@ renderQueryResult ::
 renderQueryResult minner = \case
   ZettelQuery_ZettelByID _zid conn :=> Identity target -> do
     renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
-  q@(ZettelQuery_ZettelsByTag pats conn view) :=> Identity res -> do
+  q@(ZettelQuery_ZettelsByTag pats _limit conn view) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
       if zettelsViewGroupByTag view
@@ -98,11 +98,11 @@ renderQuery someQ =
     case someQ of
       Some (ZettelQuery_ZettelByID _ _) ->
         blank
-      Some (ZettelQuery_ZettelsByTag [] _mconn _mview) ->
+      Some (ZettelQuery_ZettelsByTag [] _limit _mconn _mview) ->
         text "All zettels"
-      Some (ZettelQuery_ZettelsByTag (fmap unTagPattern -> pats) _mconn _mview) -> do
+      Some (ZettelQuery_ZettelsByTag (fmap unTagPattern -> pats) maybeLimit _mconn _mview) -> do
         let qs = toText $ intercalate ", " pats
-            desc = toText $ "Zettels tagged '" <> qs <> "'"
+            desc = toText $ (maybe "" (\limit -> show limit <> " ") maybeLimit) <> "Zettels tagged '" <> qs <> "'"
         elAttr "span" ("class" =: "ui basic pointing below black label" <> "title" =: desc) $ do
           semanticIcon "tags"
           text qs

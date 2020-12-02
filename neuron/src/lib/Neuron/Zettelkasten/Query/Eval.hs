@@ -58,7 +58,7 @@ queryConnections Zettel {..} = do
     getConnections = \case
       ZettelQuery_ZettelByID _ conn :=> Identity res ->
         [(conn, res)]
-      ZettelQuery_ZettelsByTag _ conn _mview :=> Identity res ->
+      ZettelQuery_ZettelsByTag _ _ conn _mview :=> Identity res ->
         (conn,) <$> res
       ZettelQuery_Tags _ :=> _ ->
         mempty

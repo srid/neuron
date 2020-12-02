@@ -19,6 +19,7 @@ import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
 import Relude
 import Test.Hspec
 import Text.URI (URI, mkURI)
+import Neuron.Zettelkasten.Query.Theme (LinkView(LinkView_ShowDate), zettelsViewGroupByTag, zettelsViewLinkView, ZettelsView(ZettelsView))
 
 spec :: Spec
 spec = do
@@ -38,13 +39,22 @@ spec = do
         `shouldBe` (Just $ Some $ ZettelQuery_ZettelByID (ZettelID "tags") OrdinaryConnection)
     it "z:zettels" $ do
       parseQueryLink (asURI "z:zettels")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] OrdinaryConnection def)
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] Nothing OrdinaryConnection def)
     it "z:zettels?tag=foo" $ do
       parseQueryLink (asURI "z:zettels?tag=foo")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [mkTagPattern "foo"] OrdinaryConnection def)
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [mkTagPattern "foo"] Nothing OrdinaryConnection def)
     it "z:zettels?type=branch" $ do
       parseQueryLink (asURI "z:zettels?type=branch")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] Folgezettel def)
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] Nothing Folgezettel def)
+    it "z:zettels?limit=10" $ do
+      parseQueryLink (asURI "z:zettels?limit=10")
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] (Just 10) OrdinaryConnection def)
+    it "z:zettels?timeline&limit=10" $ do
+      parseQueryLink (asURI "z:zettels?timeline&limit=10")
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] (Just 10) OrdinaryConnection ZettelsView{zettelsViewLinkView=LinkView_ShowDate, zettelsViewGroupByTag=False})
+    it "z:zettels?limit=10&limit=20" $ do
+      parseQueryLink (asURI "z:zettels?limit=10&limit=20")
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] (Just 10) OrdinaryConnection def)
     it "z:tags" $ do
       parseQueryLink (asURI "z:tags")
         `shouldBe` (Just $ Some $ ZettelQuery_Tags [])

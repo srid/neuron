@@ -39,8 +39,8 @@ runZettelQuery zs = \case
         Left $ QueryResultError_NoSuchZettel (Just conn) zid
       Just z ->
         Right z
-  ZettelQuery_ZettelsByTag pats _mconn _mview ->
-    Right $ zettelsByTag zs pats
+  ZettelQuery_ZettelsByTag pats limit _mconn _mview ->
+    Right $ zettelsByTag zs pats limit
   ZettelQuery_Tags [] ->
     Right allTags
   ZettelQuery_Tags pats ->
@@ -53,13 +53,14 @@ runZettelQuery zs = \case
       Map.fromListWith (+) $
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
 
-zettelsByTag :: [Zettel] -> [TagPattern] -> [Zettel]
-zettelsByTag zs pats =
+zettelsByTag :: [Zettel] -> [TagPattern] -> Maybe Int -> [Zettel]
+zettelsByTag zs pats limit =
   sortZettelsReverseChronological $
-    flip filter zs $ \Zettel {..} ->
-      and $
-        flip fmap pats $ \pat ->
-          any (tagMatch pat) zettelTags
+    maybe id take limit $
+      flip filter zs $ \Zettel {..} ->
+        and $
+          flip fmap pats $ \pat ->
+            any (tagMatch pat) zettelTags
 
 runGraphQuery :: ZettelGraph -> GraphQuery r -> Either QueryResultError r
 runGraphQuery g = \case
@@ -94,7 +95,7 @@ zettelQueryResultJson q er skippedZettels =
     resultJson r = case q of
       ZettelQuery_ZettelByID _ _mconn ->
         toJSON r
-      ZettelQuery_ZettelsByTag _ _mconn _mview ->
+      ZettelQuery_ZettelsByTag _ _ _mconn _mview ->
         toJSON r
       ZettelQuery_Tags _ ->
         toJSON $ fmap treeToJson . tagTree $ r

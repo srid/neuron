@@ -69,7 +69,7 @@ parseQueryLink uri =
         -- Parse z:zettels?...
         (URI.unRText -> "zettels") :| []
           | noSlash -> do
-            pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") conn (queryView uri)
+            pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") (queryLimit uri) conn (queryView uri)
         -- Parse z:tags?...
         (URI.unRText -> "tags") :| []
           | noSlash -> do
@@ -96,6 +96,17 @@ tagPatterns uri k =
         URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
           if key == k
             then Just val
+            else Nothing
+        _ -> Nothing
+
+queryLimit :: URI -> Maybe Int
+queryLimit uri =
+  viaNonEmpty head $
+    flip mapMaybe (URI.uriQuery uri) $
+      \case
+        URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
+          if key == "limit"
+            then readMaybe . toString $ val
             else Nothing
         _ -> Nothing
 

@@ -44,6 +44,12 @@ Link queries support a few query flags to control the link listing UI:
 * `?timeline`: Sort the results by `date` from [[metadata]], and also display the date.
 * `?showid`: Display the zettel ID alongside the zettel title (link).
 
+## Limit the amount of zettels
+
+You can limit the amount of zettels to be shown in a query. This can be useful for e.g. a feed of posts.
+
+[[z:zettels?tag=**&limit=2&timeline]]
+
 [URI]: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
 
 [^folge]: Note that here we use `[[..]]` to not affect the [[folgezettel-heterarchy]] of the graph; whereas if we had used `[[[...]]]`, it would have formed the appropriate folgezettel connections to the listed notes (which is not what we want on *this* note).
