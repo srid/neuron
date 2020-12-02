@@ -15,11 +15,11 @@ import qualified Network.URI.Encode as E
 import Neuron.Zettelkasten.Connection (Connection (..))
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
+import Neuron.Zettelkasten.Query.Theme (LinkView(LinkView_ShowDate), zettelsViewGroupByTag, zettelsViewLinkView, ZettelsView(ZettelsView))
 import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
 import Relude
 import Test.Hspec
 import Text.URI (URI, mkURI)
-import Neuron.Zettelkasten.Query.Theme (LinkView(LinkView_ShowDate), zettelsViewGroupByTag, zettelsViewLinkView, ZettelsView(ZettelsView))
 
 spec :: Spec
 spec = do
