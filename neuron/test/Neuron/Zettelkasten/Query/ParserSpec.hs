@@ -39,13 +39,13 @@ spec = do
         `shouldBe` (Just $ Some $ ZettelQuery_ZettelByID (ZettelID "tags") OrdinaryConnection)
     it "z:zettels" $ do
       parseQueryLink (asURI "z:zettels")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] Nothing OrdinaryConnection def)
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] def OrdinaryConnection def)
     it "z:zettels?tag=foo" $ do
       parseQueryLink (asURI "z:zettels?tag=foo")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [mkTagPattern "foo"] Nothing OrdinaryConnection def)
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [mkTagPattern "foo"] def OrdinaryConnection def)
     it "z:zettels?type=branch" $ do
       parseQueryLink (asURI "z:zettels?type=branch")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] Nothing Folgezettel def)
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] def Folgezettel def)
     it "z:zettels?limit=10" $ do
       parseQueryLink (asURI "z:zettels?limit=10")
         `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] (Just 10) OrdinaryConnection def)
