@@ -23,11 +23,13 @@ import Data.Aeson
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, TagPattern, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
+import GHC.Natural (naturalToInt)
 import Neuron.Zettelkasten.Graph (backlinks, getZettel)
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Graph
+import Neuron.Zettelkasten.Query.Theme (ZettelsView(zettelsViewLimit))
 import Neuron.Zettelkasten.Zettel
 import Relude
 
@@ -39,8 +41,8 @@ runZettelQuery zs = \case
         Left $ QueryResultError_NoSuchZettel (Just conn) zid
       Just z ->
         Right z
-  ZettelQuery_ZettelsByTag pats mlimit _mconn _mview ->
-    Right $ zettelsByTag zs pats mlimit
+  ZettelQuery_ZettelsByTag pats _mconn mview ->
+    Right $ zettelsByTag zs pats (zettelsViewLimit mview)
   ZettelQuery_Tags [] ->
     Right allTags
   ZettelQuery_Tags pats ->
@@ -53,10 +55,10 @@ runZettelQuery zs = \case
       Map.fromListWith (+) $
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
 
-zettelsByTag :: [Zettel] -> [TagPattern] -> Maybe Int -> [Zettel]
+zettelsByTag :: [Zettel] -> [TagPattern] -> Maybe Natural -> [Zettel]
 zettelsByTag zs pats mlimit =
   sortZettelsReverseChronological $
-    maybe id take mlimit $
+    maybe id (take . naturalToInt) mlimit $
       flip filter zs $ \Zettel {..} ->
         and $
           flip fmap pats $ \pat ->
@@ -95,7 +97,7 @@ zettelQueryResultJson q er skippedZettels =
     resultJson r = case q of
       ZettelQuery_ZettelByID _ _mconn ->
         toJSON r
-      ZettelQuery_ZettelsByTag _ _ _mconn _mview ->
+      ZettelQuery_ZettelsByTag _ _mconn _mview ->
         toJSON r
       ZettelQuery_Tags _ ->
         toJSON $ fmap treeToJson . tagTree $ r

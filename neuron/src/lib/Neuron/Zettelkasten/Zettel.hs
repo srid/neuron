@@ -42,7 +42,7 @@ import Text.Show (Show (show))
 -- It does not care about the relationship *between* those zettels; for that use `GraphQuery`.
 data ZettelQuery r where
   ZettelQuery_ZettelByID :: ZettelID -> Connection -> ZettelQuery Zettel
-  ZettelQuery_ZettelsByTag :: [TagPattern] -> Maybe Int -> Connection -> ZettelsView -> ZettelQuery [Zettel]
+  ZettelQuery_ZettelsByTag :: [TagPattern] -> Connection -> ZettelsView -> ZettelQuery [Zettel]
   ZettelQuery_Tags :: [TagPattern] -> ZettelQuery (Map Tag Natural)
   ZettelQuery_TagZettel :: Tag -> ZettelQuery ()
 

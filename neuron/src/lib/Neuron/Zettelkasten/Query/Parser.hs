@@ -69,7 +69,7 @@ parseQueryLink uri =
         -- Parse z:zettels?...
         (URI.unRText -> "zettels") :| []
           | noSlash -> do
-            pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") (queryLimit uri) conn (queryView uri)
+            pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") conn (queryView uri)
         -- Parse z:tags?...
         (URI.unRText -> "tags") :| []
           | noSlash -> do
@@ -99,7 +99,7 @@ tagPatterns uri k =
             else Nothing
         _ -> Nothing
 
-queryLimit :: URI -> Maybe Int
+queryLimit :: URI -> Maybe Natural
 queryLimit uri =
   viaNonEmpty head $
     flip mapMaybe (URI.uriQuery uri) $
@@ -112,7 +112,7 @@ queryLimit uri =
 
 queryView :: URI -> ZettelsView
 queryView uri =
-  ZettelsView linkView isGrouped
+  ZettelsView linkView isGrouped limit
   where
     isTimeline =
       -- linkTheme=withDate is legacy format; timeline is current standard.
@@ -123,6 +123,7 @@ queryView uri =
       | isTimeline = LinkView_ShowDate
       | hasQueryFlag [queryKey|showid|] uri = LinkView_ShowID
       | otherwise = LinkView_Default
+    limit = queryLimit uri
 
 queryConn :: URI -> Maybe Connection
 queryConn uri =

@@ -93,9 +93,9 @@ extractQueriesWithContext doc =
     convertCtx ctx = \case
       Some (ZettelQuery_ZettelByID _ _) ->
         ctx
-      Some (ZettelQuery_ZettelsByTag (nonEmpty -> Nothing) _ _ _) ->
+      Some (ZettelQuery_ZettelsByTag (nonEmpty -> Nothing) _ _) ->
         one $ Plain [Str "All zettels query"]
-      Some (ZettelQuery_ZettelsByTag (nonEmpty -> Just pats) _ _ _) ->
+      Some (ZettelQuery_ZettelsByTag (nonEmpty -> Just pats) _ _) ->
         let tagsStr = T.intercalate ", " $ toText . unTagPattern <$> toList pats
          in one $ Plain [Str "Linking by tag: ", Code nullAttr tagsStr]
       _ ->
