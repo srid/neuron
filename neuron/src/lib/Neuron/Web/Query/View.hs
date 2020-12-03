@@ -33,6 +33,7 @@ import Data.TagTree
   )
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
+import GHC.Natural (intToNatural, naturalToInt)
 import Neuron.Web.Route
   ( NeuronWebT,
     Route (..),
@@ -73,9 +74,14 @@ renderQueryResult minner = \case
                 el "li" $
                   renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
         else el "ul" $
-          forM_ res $ \z -> do
+          forM_ (maybe id (take . naturalToInt) (zettelsViewLimit view) $ res) $ \z -> do
             el "li" $
               renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
+      elClass "div" "ui basic center aligned segment" $ do
+        el "em" $ do
+          let zettelCount = (intToNatural . length $ res)
+              limitHint = maybe "" (\limit -> " (Displaying " <> (show $ min limit zettelCount) <> " out of " <> show zettelCount <> " zettels)") $ zettelsViewLimit view
+          text $ limitHint
   q@(ZettelQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
@@ -100,9 +106,9 @@ renderQuery someQ =
         blank
       Some (ZettelQuery_ZettelsByTag [] _mconn _mview) ->
         text "All zettels"
-      Some (ZettelQuery_ZettelsByTag (fmap unTagPattern -> pats) _mconn mview) -> do
+      Some (ZettelQuery_ZettelsByTag (fmap unTagPattern -> pats) _mconn _mview) -> do
         let qs = toText $ intercalate ", " pats
-            desc = toText $ (maybe "" (\limit -> show limit <> " ") (zettelsViewLimit mview)) <> "Zettels tagged '" <> qs <> "'"
+            desc = toText $ "Zettels tagged '" <> qs <> "'"
         elAttr "span" ("class" =: "ui basic pointing below black label" <> "title" =: desc) $ do
           semanticIcon "tags"
           text qs

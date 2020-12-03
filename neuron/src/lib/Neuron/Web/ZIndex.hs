@@ -70,7 +70,7 @@ buildZIndex graph errors =
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
-      pinnedZettels = zettelsByTag (G.getZettels graph) [mkTagPattern "pinned"] Nothing
+      pinnedZettels = zettelsByTag (G.getZettels graph) [mkTagPattern "pinned"]
    in ZIndex (fmap sortCluster clustersWithBacklinks) orphans errors stats pinnedZettels
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)

@@ -23,13 +23,11 @@ import Data.Aeson
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, TagPattern, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
-import GHC.Natural (naturalToInt)
 import Neuron.Zettelkasten.Graph (backlinks, getZettel)
 import Neuron.Zettelkasten.Graph.Type
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Graph
-import Neuron.Zettelkasten.Query.Theme (ZettelsView(zettelsViewLimit))
 import Neuron.Zettelkasten.Zettel
 import Relude
 
@@ -41,8 +39,8 @@ runZettelQuery zs = \case
         Left $ QueryResultError_NoSuchZettel (Just conn) zid
       Just z ->
         Right z
-  ZettelQuery_ZettelsByTag pats _mconn mview ->
-    Right $ zettelsByTag zs pats (zettelsViewLimit mview)
+  ZettelQuery_ZettelsByTag pats _mconn _mview ->
+    Right $ zettelsByTag zs pats
   ZettelQuery_Tags [] ->
     Right allTags
   ZettelQuery_Tags pats ->
@@ -55,14 +53,13 @@ runZettelQuery zs = \case
       Map.fromListWith (+) $
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
 
-zettelsByTag :: [Zettel] -> [TagPattern] -> Maybe Natural -> [Zettel]
-zettelsByTag zs pats mlimit =
-  maybe id (take . naturalToInt) mlimit $
-    sortZettelsReverseChronological $
-      flip filter zs $ \Zettel {..} ->
-        and $
-          flip fmap pats $ \pat ->
-            any (tagMatch pat) zettelTags
+zettelsByTag :: [Zettel] -> [TagPattern] -> [Zettel]
+zettelsByTag zs pats =
+  sortZettelsReverseChronological $
+    flip filter zs $ \Zettel {..} ->
+      and $
+        flip fmap pats $ \pat ->
+          any (tagMatch pat) zettelTags
 
 runGraphQuery :: ZettelGraph -> GraphQuery r -> Either QueryResultError r
 runGraphQuery g = \case
