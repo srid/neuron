@@ -39,8 +39,8 @@ runZettelQuery zs = \case
         Left $ QueryResultError_NoSuchZettel (Just conn) zid
       Just z ->
         Right z
-  ZettelQuery_ZettelsByTag pats maybeLimit _mconn _mview ->
-    Right $ zettelsByTag zs pats maybeLimit
+  ZettelQuery_ZettelsByTag pats mlimit _mconn _mview ->
+    Right $ zettelsByTag zs pats mlimit
   ZettelQuery_Tags [] ->
     Right allTags
   ZettelQuery_Tags pats ->
@@ -54,9 +54,9 @@ runZettelQuery zs = \case
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
 
 zettelsByTag :: [Zettel] -> [TagPattern] -> Maybe Int -> [Zettel]
-zettelsByTag zs pats maybeLimit =
+zettelsByTag zs pats mlimit =
   sortZettelsReverseChronological $
-    maybe id take maybeLimit $
+    maybe id take mlimit $
       flip filter zs $ \Zettel {..} ->
         and $
           flip fmap pats $ \pat ->
