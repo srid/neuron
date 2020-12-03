@@ -57,8 +57,8 @@ runZettelQuery zs = \case
 
 zettelsByTag :: [Zettel] -> [TagPattern] -> Maybe Natural -> [Zettel]
 zettelsByTag zs pats mlimit =
-  sortZettelsReverseChronological $
-    maybe id (take . naturalToInt) mlimit $
+  maybe id (take . naturalToInt) mlimit $
+    sortZettelsReverseChronological $
       flip filter zs $ \Zettel {..} ->
         and $
           flip fmap pats $ \pat ->
