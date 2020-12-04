@@ -101,7 +101,7 @@ tagPatterns uri k =
 
 queryView :: URI -> ZettelsView
 queryView uri =
-  ZettelsView linkView isGrouped
+  ZettelsView linkView isGrouped limit
   where
     isTimeline =
       -- linkTheme=withDate is legacy format; timeline is current standard.
@@ -112,6 +112,7 @@ queryView uri =
       | isTimeline = LinkView_ShowDate
       | hasQueryFlag [queryKey|showid|] uri = LinkView_ShowID
       | otherwise = LinkView_Default
+    limit = readMaybe . toString =<< getQueryParam [queryKey|limit|] uri
 
 queryConn :: URI -> Maybe Connection
 queryConn uri =

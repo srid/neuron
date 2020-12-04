@@ -33,6 +33,7 @@ import Data.TagTree
   )
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
+import GHC.Natural (naturalToInt)
 import Neuron.Web.Route
   ( NeuronWebT,
     Route (..),
@@ -72,10 +73,18 @@ renderQueryResult minner = \case
               forM_ zettelGrp $ \z ->
                 el "li" $
                   renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
-        else el "ul" $
-          forM_ res $ \z -> do
+        else el "ul" $ do
+          let resToDisplay =
+                case zettelsViewLimit view of
+                  Nothing -> res
+                  Just (naturalToInt -> limit) -> take limit res
+          forM_ resToDisplay $ \z -> do
             el "li" $
               renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
+          when (length resToDisplay /= length res) $ do
+            el "li" $
+              elClass "span" "ui grey text" $ do
+                text $ "(displaying only " <> (show $ length resToDisplay) <> " out of " <> show (length res) <> " zettels)"
   q@(ZettelQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q

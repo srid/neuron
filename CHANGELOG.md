@@ -14,6 +14,7 @@
   - Fix pipe character (`|`) messing up Markdown parsing (#469, #465)
   - Fix internal z:/ URIs appearing in OpenGraph previews (#482)
   - Fix unnecessary horizontal scrolling on mobile (#468)
+  - Add `limit` flag to zettel queries (#486)
 - Zettel format
   - Ignore punctuation in inline tags (#443)
   - Remove support for autolinks (`<..>`) (#449) (see [migration script](https://github.com/srid/neuron/issues/449#issuecomment-719062302))
@@ -93,7 +94,7 @@
   - Allow custom CLI in $EDITOR (#227)
 - Others
   - Reduce install size (#240)
-  - Nightly docker releases 
+  - Nightly docker releases
   - Automatic publishing through [neuron-template](https://github.com/srid/neuron-template)
 
 ## 0.4.0.0
