@@ -99,17 +99,6 @@ tagPatterns uri k =
             else Nothing
         _ -> Nothing
 
-queryLimit :: URI -> Maybe Natural
-queryLimit uri =
-  viaNonEmpty head $
-    flip mapMaybe (URI.uriQuery uri) $
-      \case
-        URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-          if key == "limit"
-            then readMaybe . toString $ val
-            else Nothing
-        _ -> Nothing
-
 queryView :: URI -> ZettelsView
 queryView uri =
   ZettelsView linkView isGrouped limit
@@ -123,7 +112,7 @@ queryView uri =
       | isTimeline = LinkView_ShowDate
       | hasQueryFlag [queryKey|showid|] uri = LinkView_ShowID
       | otherwise = LinkView_Default
-    limit = queryLimit uri
+    limit = readMaybe . toString =<< getQueryParam [queryKey|limit|] uri
 
 queryConn :: URI -> Maybe Connection
 queryConn uri =
