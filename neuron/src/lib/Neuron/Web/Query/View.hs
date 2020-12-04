@@ -73,16 +73,16 @@ renderQueryResult minner = \case
               forM_ zettelGrp $ \z ->
                 el "li" $
                   renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
-        else el "ul" $
+        else el "ul" $ do
           forM_ (maybe id (take . naturalToInt) (zettelsViewLimit view) $ res) $ \z -> do
             el "li" $
               renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
-      forM_ (zettelsViewLimit view) $ \limit ->
-        elClass "div" "ui basic center aligned segment" $ do
-          el "em" $ do
-            let zettelCount = (intToNatural . length $ res)
-                limitHint = " (Displaying " <> (show $ min limit zettelCount) <> " out of " <> show zettelCount <> " zettels)"
-            text $ limitHint
+          forM_ (zettelsViewLimit view) $ \limit ->
+            el "li" $
+              elClass "span" "ui grey text" $ do
+                let zettelCount = (intToNatural . length $ res)
+                    limitHint = "(displaying only " <> (show $ min limit zettelCount) <> " out of " <> show zettelCount <> " zettels)"
+                text $ limitHint
   q@(ZettelQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
