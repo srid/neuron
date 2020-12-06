@@ -6,7 +6,7 @@
 [![built with nix](https://img.shields.io/badge/Built_With-Nix-5277C3.svg?logo=nixos&labelColor=73C3D5)](https://builtwithnix.org)
 [![Matrix](https://img.shields.io/matrix/neuron:matrix.org)](https://app.element.io/#/room/#neuron:matrix.org)
 
-neuron is a **future-proof** command-line app for managing your plain-text [Zettelkasten](https://neuron.zettel.page/2011401.html) notes.
+neuron is a **future-proof** command-line app for managing your plain-text [Zettelkasten](https://neuron.zettel.page/zettelkasten.html) notes.
 
 **Highlights**
 
