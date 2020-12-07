@@ -9,17 +9,20 @@
 - Web interface
   - Simplify error message UX for missing wiki-links (#448)
   - Baclinks surrounding context (#190)
-  - Fix blockquote paragraph order in footnotes (#350)
   - Allow specifying URL slugs in notes (#483)
-  - Fix pipe character (`|`) messing up Markdown parsing (#469, #465)
-  - Fix internal z:/ URIs appearing in OpenGraph previews (#482)
-  - Fix unnecessary horizontal scrolling on mobile (#468)
   - Add `limit` flag to zettel queries (#486)
+  - Rendering fixes
+    - Fix internal z:/ URIs appearing in OpenGraph previews (#482)
+    - Fix blockquote paragraph order in footnotes (#350)
+    - Fix unnecessary horizontal scrolling on mobile (#468)
 - Zettel format
   - Ignore punctuation in inline tags (#443)
   - Remove support for autolinks (`<..>`) (#449) (see [migration script](https://github.com/srid/neuron/issues/449#issuecomment-719062302))
     - Raw HTML now works without any special syntax.
-  - Add Markdown highlighting extension (#453)
+  - Markdown parsing
+    - Fix pipe character (`|`) messing up Markdown parsing (#469, #465)
+    - Recognize plain links are hyperlinks, aka. autolinks (#471)
+    - Add Markdown highlighting extension (#453)
 - Unicode-aware in inline tags (#446)
 - CLI:
   - `neuron open --id` is replaced by `neuron open --slug` (#483)

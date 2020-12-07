@@ -130,6 +130,7 @@ neuronSpec =
       CE.rawAttributeSpec,
       CE.fencedDivSpec,
       CE.bracketedSpanSpec,
+      CE.autolinkSpec,
       CM.defaultSyntaxSpec,
       -- as the commonmark documentation states, pipeTableSpec should be placed after
       -- fancyListSpec and defaultSyntaxSpec to avoid bad results when non-table lines
