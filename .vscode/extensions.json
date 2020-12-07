@@ -3,6 +3,7 @@
 	// for the documentation about the extensions.json format
 	"recommendations": [
 		"haskell.haskell",
-		"arrterian.nix-env-selector"
+		"arrterian.nix-env-selector",
+		"bbenoist.nix"
 	]
 }
