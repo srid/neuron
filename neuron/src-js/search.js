@@ -14,7 +14,7 @@ function makeZettelLink(zettel) {
   zettelLink.classList.add("zettel-link");
 
   let actualLink = document.createElement("a");
-  actualLink.href = zettel.id.replaceAll(" ", "_") + ".html";
+  actualLink.href = (zettel.slug || zettel.id.replaceAll(" ", "_")) + ".html";
   actualLink.innerHTML = zettel.title;
 
   zettelLink.appendChild(actualLink);

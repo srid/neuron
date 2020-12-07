@@ -148,6 +148,7 @@ renderSearch graph script = do
   where
     zettelJson Zettel {..} =
       [ "id" .= toJSON zettelID,
+        "slug" .= toJSON zettelSlug,
         "title" .= zettelTitle,
         "tags" .= zettelTags,
         "day" .= zettelDate
