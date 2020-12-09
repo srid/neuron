@@ -1,7 +1,6 @@
 { system ? builtins.currentSystem }:
 let
-  sources = import ./nix/sources.nix {};
-  pkgs = import sources.nixpkgs { inherit system; };
+  pkgs = import ./dep/nixpkgs { inherit system; };
 in
 pkgs.recurseIntoAttrs {
   # Build both default.nix and shell.nix such that both derivations are

@@ -3,8 +3,7 @@ let
     url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
     sha256 = "1npnx0h6bd0d7ql93ka7azhj40zgjp815fw2r6smg8ch9p7mzdlx";
   };
-  sources = import nix/sources.nix {};
-  nixpkgs = import sources.nixpkgs {};
+  nixpkgs = import ./dep/nixpkgs {};
 in {
   pkgs ? nixpkgs,
   pkgsForBins ? null,

@@ -7,8 +7,7 @@
 #       --argstr tag <image-tag>
 #   )
 let
-  sources = import nix/sources.nix {};
-  pkgs = import sources.nixpkgs {};
+  pkgs = import ./dep/nixpkgs {};
   neuron = import ./. {};
 in {
   name ? "sridca/neuron"
