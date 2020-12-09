@@ -5,7 +5,7 @@
 
 module Neuron.Orphans where
 
-import Data.Aeson
+import Data.Aeson (FromJSON (parseJSON), ToJSON (toJSON))
 import Relude
 import Text.URI (URI, mkURI, render)
 
@@ -13,4 +13,4 @@ instance ToJSON URI where
   toJSON = toJSON @Text . render
 
 instance FromJSON URI where
-  parseJSON = (either (fail . displayException) pure) . mkURI <=< parseJSON @Text
+  parseJSON = either (fail . displayException) pure . mkURI <=< parseJSON @Text

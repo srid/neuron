@@ -53,7 +53,7 @@ import qualified Skylighting.Styles as Skylighting
 renderRoutePage :: PandocBuilder t m => Text -> Config -> HeadHtml -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
 renderRoutePage neuronVersion config headHtml manifest r val = do
   -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
-  el "!DOCTYPE html" $ blank
+  el "!DOCTYPE html" blank
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
       renderRouteHead config headHtml manifest r val
@@ -180,7 +180,7 @@ actionsNav theme mIndexZettel mEditUrl = elClass "nav" "top-menu" $ do
     neuronRouteLink (Some $ Route_Search Nothing) ("class" =: "left item" <> "title" =: "Search Zettels") $ do
       semanticIcon "search"
     forM_ mEditUrl $ \editUrl -> do
-      let attrs = ("href" =: editUrl <> "title" =: "Edit this Zettel")
+      let attrs = "href" =: editUrl <> "title" =: "Edit this Zettel"
       elAttr "a" ("class" =: "center item" <> attrs) $ do
         semanticIcon "edit"
     neuronRouteLink (Some Route_ZIndex) ("class" =: "right item" <> "title" =: "All Zettels (z-index)") $

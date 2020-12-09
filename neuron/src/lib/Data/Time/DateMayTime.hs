@@ -27,7 +27,15 @@ where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Time
-import Data.YAML
+  ( Day,
+    FormatTime,
+    LocalTime (..),
+    TimeOfDay,
+    defaultTimeLocale,
+    formatTime,
+    parseTimeM,
+  )
+import Data.YAML (FromYAML (..), ToYAML (..))
 import Relude
 
 -- | Like `Day` but with optional time.

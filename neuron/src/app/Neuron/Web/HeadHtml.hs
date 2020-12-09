@@ -9,7 +9,7 @@ module Neuron.Web.HeadHtml
   )
 where
 
-import Development.Shake
+import Development.Shake (Action, doesFileExist, readFile')
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Pandoc.PandocRaw (PandocRaw (..))

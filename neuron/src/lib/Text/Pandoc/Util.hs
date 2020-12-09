@@ -32,8 +32,7 @@ data PandocLink = PandocLink
   deriving (Eq, Show, Ord)
 
 mkPandocAutoLink :: URI -> PandocLink
-mkPandocAutoLink uri =
-  PandocLink Nothing uri
+mkPandocAutoLink = PandocLink Nothing
 
 isAutoLink :: PandocLink -> Bool
 isAutoLink PandocLink {..} =

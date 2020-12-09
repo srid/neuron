@@ -13,7 +13,7 @@ neuron is a **future-proof** command-line app for managing your plain-text [Zett
 - Work with a directory of markdown files
 - Powerful linking syntax and hierarchical tagging
 - Auto-generated static web site (see [examples](https://neuron.zettel.page/examples.html))
-- Simple to use, with optional editor integration (emacs, vim)
+- Simple to use, with optional editor integration ([emacs, vim, vscode, etc.](https://neuron.zettel.page/editor.html))
 
 ## Getting started
 
@@ -25,7 +25,6 @@ To share your thoughts and ask questions on neuron, you may join one of the foll
 
 - Forum: [GitHub Discussions](https://github.com/srid/neuron/discussions)
 - Chat: [Matrix room Neuron](https://app.element.io/#/room/#neuron:matrix.org)
-- Chat: [Zulip stream Neuron](https://funprog.zulipchat.com/#narrow/stream/231929-Neuron)
 
 ## Developing
 

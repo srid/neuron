@@ -17,7 +17,7 @@ where
 
 import Data.TagTree (Tag)
 import Data.Time.DateMayTime (DateMayTime)
-import Data.YAML
+import Data.YAML (FromYAML (..), withMap, (.:?))
 import Relude
 
 -- | YAML metadata in a zettel markdown file

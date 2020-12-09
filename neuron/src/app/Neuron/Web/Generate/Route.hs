@@ -13,8 +13,8 @@
 -- | Static generation of routes
 module Neuron.Web.Generate.Route where
 
-import Control.Monad.Except
-import Data.Some
+import Control.Monad.Except (liftEither, runExcept)
+import Data.Some (Some, withSome)
 import Data.TagTree (unTag)
 import qualified Network.URI.Encode as E
 import Neuron.Web.Route (Route (..), RouteConfig (..))

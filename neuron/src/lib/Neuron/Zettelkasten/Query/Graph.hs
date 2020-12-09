@@ -9,7 +9,7 @@
 
 module Neuron.Zettelkasten.Query.Graph where
 
-import Data.Aeson (FromJSON (parseJSON), ToJSON (toJSON))
+import Data.Aeson
 import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))

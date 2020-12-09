@@ -37,6 +37,11 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID, unZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
+  ( ZettelC,
+    ZettelError (..),
+    ZettelT (zettelSlug),
+    sansContent,
+  )
 import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
 import Relude
 import Rib.Shake (forEvery, ribInputDir)
@@ -81,7 +86,7 @@ generateSite config writeHtmlRoute' = do
         ZettelError_QueryResultErrors queryErrs ->
           showQueryResultError <$> snd queryErrs
         ZettelError_AmbiguousID filePaths ->
-          ("Multiple zettels have the same ID: " <> T.intercalate ", " (fmap toText $ toList filePaths))
+          ("Multiple zettels have the same ID: " <> T.intercalate ", " (toText <$> toList filePaths))
             :| []
         ZettelError_AmbiguousSlug slug ->
           "Slug '" <> slug <> "' is already used by another zettel" :| []
@@ -100,7 +105,7 @@ reportError zid errors = do
         go [] = []
         go [x] = [x]
         go (x : xs) =
-          x : fmap (toText . (take n (repeat ' ') <>) . toString) xs
+          x : fmap (toText . (replicate n ' ' <>) . toString) xs
 
 -- | Like `loadZettelkasten` but without the content
 --
@@ -153,19 +158,22 @@ loadZettelkastenFrom fs = do
               Nothing ->
                 pure ()
               Just zid -> do
-                fmap (Map.lookup zid) get >>= \case
-                  Just (Left (_f, (oldPath, _s))) -> do
-                    -- The zettel ID is already used by `oldPath`. Mark it as a dup.
-                    modify $ Map.insert zid (Right $ relPath :| [oldPath])
-                  Just (Right (toList -> ambiguities)) -> do
-                    -- Third or later duplicate file with the same Zettel ID
-                    modify $ Map.insert zid (Right $ relPath :| ambiguities)
-                  Nothing -> do
-                    let absPath = notesDir </> relPath
-                    lift $ need [absPath]
-                    s <- decodeUtf8With lenientDecode <$> readFileBS absPath
-                    modify $ Map.insert zid (Left (format, (relPath, s)))
-  let dups = fmap ZettelError_AmbiguousID $ Map.mapMaybe rightToMaybe zidMap
+                get
+                  >>= ( \case
+                          Just (Left (_f, (oldPath, _s))) -> do
+                            -- The zettel ID is already used by `oldPath`. Mark it as a dup.
+                            modify $ Map.insert zid (Right $ relPath :| [oldPath])
+                          Just (Right (toList -> ambiguities)) -> do
+                            -- Third or later duplicate file with the same Zettel ID
+                            modify $ Map.insert zid (Right $ relPath :| ambiguities)
+                          Nothing -> do
+                            let absPath = notesDir </> relPath
+                            lift $ need [absPath]
+                            s <- decodeUtf8With lenientDecode <$> readFileBS absPath
+                            modify $ Map.insert zid (Left (format, (relPath, s)))
+                      )
+                    . Map.lookup zid
+  let dups = ZettelError_AmbiguousID <$> Map.mapMaybe rightToMaybe zidMap
       files =
         fmap (first (id &&& readerForZettelFormat)) $
           Map.toList $

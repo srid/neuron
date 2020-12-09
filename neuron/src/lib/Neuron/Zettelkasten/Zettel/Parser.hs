@@ -29,6 +29,8 @@ import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
 import qualified Text.URI as URI
 
+type QueryExtractor = Pandoc -> [(Some ZettelQuery, [Block])]
+
 parseZettel ::
   ZettelFormat ->
   ZettelReader ->
@@ -77,8 +79,6 @@ parseZettels queryExtractor filesPerFormat =
   flip concatMap filesPerFormat $ \((format, zreader), files) ->
     flip fmap files $ \(zid, path, s) ->
       parseZettel format zreader queryExtractor path zid s
-
-type QueryExtractor = Pandoc -> [(Some ZettelQuery, [Block])]
 
 extractQueriesWithContext :: QueryExtractor
 extractQueriesWithContext doc =

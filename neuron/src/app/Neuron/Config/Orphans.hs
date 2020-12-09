@@ -7,6 +7,6 @@
 module Neuron.Config.Orphans where
 
 import Dhall (FromDhall)
-import Neuron.Config.Type
+import Neuron.Config.Type (Config)
 
 deriving instance FromDhall Config

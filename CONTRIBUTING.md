@@ -31,11 +31,11 @@ This too reloads when any of the source files change.
 
 ### Hacking on Pandoc's HTML layout
 
-Neuron delegates HTML rendering of the Pandoc AST to [reflex-dom-pandoc](https://github.com/srid/reflex-dom-pandoc). To hack on it, first [install Obelisk](https://github.com/obsidiansystems/obelisk#installing-obelisk) and then:
+Neuron delegates HTML rendering of the Pandoc AST to [reflex-dom-pandoc](https://github.com/srid/reflex-dom-pandoc). To hack on it, first [install nix-thunk](https://github.com/obsidiansystems/nix-thunk) and then:
 
 ```sh
 # This will clone the git repo of reflex-dom-pandoc at dep/reflex-dom-pandoc
-ob thunk unpack dep/reflex-dom-pandoc
+nix-thunk unpack dep/reflex-dom-pandoc
 
 # Let's work on that repo
 cd dep/reflex-dom-pandoc
@@ -54,7 +54,7 @@ When you are done, commit your changes to reflex-dom-pandoc (presumably in a bra
 ```sh
 cd ../..  # Back to neuron
 rm -rf dep/reflex-platform/dist-newstyle # cleanup build artifacts before packing
-ob thunk pack dep/reflex-dom-pandoc
+nix-thunk pack dep/reflex-dom-pandoc
 git add dep/reflex-dom-pandoc
 ```
 

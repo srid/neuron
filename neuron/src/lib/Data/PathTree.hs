@@ -9,9 +9,9 @@ where
 
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as Map
-import Data.Tree
+import Data.Tree (Forest, Tree (Node))
 import Relude
-import Relude.Extra.Group
+import Relude.Extra.Group (groupBy)
 
 mkTreeFromPaths :: Ord a => [[a]] -> Forest a
 mkTreeFromPaths paths = uncurry mkNode <$> Map.assocs groups

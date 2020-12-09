@@ -18,16 +18,15 @@ module Neuron.Zettelkasten.Query
   )
 where
 
-import Control.Monad.Except
-import Data.Aeson
+import Data.Aeson (KeyValue ((.=)), ToJSON (toJSON), Value, object)
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, TagPattern, tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
 import Neuron.Zettelkasten.Graph (backlinks, getZettel)
-import Neuron.Zettelkasten.Graph.Type
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
+import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
-import Neuron.Zettelkasten.Query.Graph
+import Neuron.Zettelkasten.Query.Graph (GraphQuery (..))
 import Neuron.Zettelkasten.Zettel
 import Relude
 

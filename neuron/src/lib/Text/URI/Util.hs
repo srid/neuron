@@ -24,12 +24,13 @@ getQueryParam k uri =
 
 hasQueryFlag :: URI.RText 'URI.QueryKey -> URI.URI -> Bool
 hasQueryFlag k uri =
-  fromMaybe False $
-    listToMaybe $
-      catMaybes $
-        flip fmap (URI.uriQuery uri) $ \case
-          URI.QueryFlag key ->
-            if key == k
-              then Just True
-              else Nothing
-          _ -> Nothing
+  Just True
+    == listToMaybe
+      ( catMaybes $
+          flip fmap (URI.uriQuery uri) $ \case
+            URI.QueryFlag key ->
+              if key == k
+                then Just True
+                else Nothing
+            _ -> Nothing
+      )
