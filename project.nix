@@ -3,8 +3,7 @@ let
     url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
     sha256 = "1npnx0h6bd0d7ql93ka7azhj40zgjp815fw2r6smg8ch9p7mzdlx";
   };
-  sources = import nix/sources.nix {};
-  nixpkgs = import sources.nixpkgs {};
+  nixpkgs = import ./dep/nixpkgs {};
 in {
   pkgs ? nixpkgs,
   pkgsForBins ? null,
@@ -29,7 +28,6 @@ let
     # TODO: Switch to using `niv` exclusively.
     rib = thunkOrPath "rib";
     reflex-dom-pandoc = thunkOrPath "reflex-dom-pandoc";
-    commonmark = thunkOrPath "commonmark-hs";
     pandoc-link-context = thunkOrPath "pandoc-link-context";
   };
 
@@ -51,20 +49,9 @@ let
   haskellOverrides = self: super: {
     rib-core = self.callCabal2nix "rib-core" (sources.rib + "/rib-core") { };
 
-    # Use commonmark from git for bug fixes (not yet released)
-    commonmark = self.callCabal2nix "commonmark" (sources.commonmark + "/commonmark") {};
-    commonmark-extensions = self.callCabal2nix "commonmark-extensions" (sources.commonmark + "/commonmark-extensions") {};
-    commonmark-pandoc = self.callCabal2nix "commonmark-pandoc" (sources.commonmark + "/commonmark-pandoc") {};
-
     pandoc-link-context = self.callCabal2nix "pandoc-link-context" sources.pandoc-link-context {};
     reflex-dom-pandoc =
       pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
-
-    # This version is not the default in the static nixpkgs, yet.
-    skylighting = super.skylighting_0_10_0_2 or super.skylighting;
-    skylighting-core = super.skylighting-core_0_10_0_2 or super.skylighting-core;
-    # Jailbreak pandoc to work with newer skylighting (and commonmark)
-    pandoc = doJailbreak (dontCheck super.pandoc);
 
     # Test fails on pkgsMusl
     # https://github.com/hslua/hslua/issues/67

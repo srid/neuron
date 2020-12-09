@@ -28,6 +28,7 @@
   - `neuron open --id` is replaced by `neuron open --slug` (#483)
 - Removed features
   - Aliases (#479)
+- Migrate to GHC 8.10
 
 ## 1.0.1.0
 

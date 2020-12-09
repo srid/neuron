@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 1.1.10.0
+version: 1.1.12.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -35,7 +35,7 @@ common library-common
   import: ghc-common
   default-language: Haskell2010
   build-depends:
-    base >=4.12 && < 4.14,
+    base >=4.12 && < 4.15,
     aeson,
     mtl,
     text,
@@ -48,9 +48,9 @@ common library-common
     filepattern,
     megaparsec,
     commonmark ^>= 0.1.0.2,
-    commonmark-extensions ^>= 0.2.0.0,
+    commonmark-extensions ^>= 0.2.0.4,
     commonmark-pandoc >= 0.1.0.0 && < 0.3,
-    pandoc-link-context,
+    pandoc-link-context >= 1.0,
     pandoc-types >= 1.21,
     parsec,
     modern-uri,
@@ -114,7 +114,7 @@ common app-common
   import: library-common
   default-language: Haskell2010
   build-depends:
-    base >=4.12 && < 4.14,
+    base >=4.12 && < 4.15,
     aeson,
     clay -any,
     mtl,

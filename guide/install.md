@@ -24,7 +24,7 @@ OS-specific notes
 * If you are on **Windows**, you should begin by [installing Ubuntu on WSL 2](https://docs.microsoft.com/en-us/windows/wsl/install-win10) (not WSL 1), before installing Nix on it.
 * If you are on **macOS Catalina or later**, refer to the [macOS Installation](https://nixos.org/manual/nix/stable/#sect-macos-installation) section of the Nix manual on how to install Nix.
 
-If you do not wish to install Nix, try the [[[docker]]] or, if you are on Linux or WSL, use the [[[install-static]]].
+If you do not wish to install Nix, try the [[[docker]]].
 :::
 
 [staticbin]: https://github.com/srid/neuron/releases/download/1.0.1.0/neuron-1.0.1.0-linux.tar.gz

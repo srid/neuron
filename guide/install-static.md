@@ -1,6 +1,12 @@
 # Static binary 
 
 :::{.ui .warning .message}
+**IMPORTANT**: These instructions for an *older version* of neuron. Static builds are currently unavailable[^why] for latest versions of neuron.
+:::
+
+[^why]: See <https://github.com/srid/neuron/pull/490#issuecomment-742085530>; specifically, we need someone willing to volunteer maintenance of static builds over time.
+
+:::{.ui .warning .message}
 **Note**: Some users have [reported problems](https://github.com/srid/neuron/issues/430#issuecomment-718597211) with the static binary; if you notice the same, just install using Nix. 
 :::
 

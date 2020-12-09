@@ -1,5 +1,4 @@
 args@{...}:
 let 
-  sources = import nix/sources.nix {};
-  pkgs = import sources.nixpkgs args;
+  pkgs = import ./dep/nixpkgs {} ;
 in (import ./project.nix { pkgs = pkgs; } ).neuron
