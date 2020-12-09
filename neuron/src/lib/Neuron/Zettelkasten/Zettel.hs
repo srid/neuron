@@ -18,7 +18,7 @@
 
 module Neuron.Zettelkasten.Zettel where
 
-import Data.Aeson (FromJSON (parseJSON), ToJSON (toJSON))
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
