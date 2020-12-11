@@ -55,7 +55,7 @@ common library-common
     parsec,
     modern-uri,
     HsYAML,
-    aeson-gadt-th,
+    aeson-gadt-th >= 0.2.5.0,
     dependent-sum,
     dependent-sum-template,
     dependent-sum-aeson-orphans >= 0.2.1.0,
