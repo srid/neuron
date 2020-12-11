@@ -13,10 +13,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | HTML & CSS
-module Neuron.Web.View
-  ( renderRoutePage,
-  )
-where
+module Neuron.Web.View where
 
 import Clay (Css, em, gray, important, pct, px, (?))
 import qualified Clay as C
@@ -36,7 +33,6 @@ import Neuron.Web.Route
     neuronRouteLink,
     routeTitle',
   )
-import Neuron.Web.StructuredData (renderStructuredData)
 import Neuron.Web.Theme (Theme)
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget (elLinkGoogleFonts, semanticIcon)
@@ -56,18 +52,6 @@ import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding ((&))
 import qualified Skylighting.Format.HTML as Skylighting
 import qualified Skylighting.Styles as Skylighting
-
--- | Render the given route
-renderRoutePage :: PandocBuilder t m => Text -> Config -> HeadHtml -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
-renderRoutePage neuronVersion config headHtml manifest r val = do
-  -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
-  el "!DOCTYPE html" blank
-  elAttr "html" ("lang" =: "en") $ do
-    el "head" $ do
-      renderRouteHead config headHtml manifest r (snd val) $ do
-        renderStructuredData config r val
-    el "body" $ do
-      renderRouteBody neuronVersion config r val
 
 renderRouteHead ::
   PandocBuilder t m =>
