@@ -20,11 +20,10 @@ where
 
 import Clay (Css, em, gray, important, pct, px, (?))
 import qualified Clay as C
-import Control.Monad.Except
 import Data.Aeson (object, toJSON, (.=))
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Set as Set
-import Data.Some
+import Data.Some (Some (Some))
 import Data.TagTree (Tag (..))
 import Neuron.Config.Type (Config (..))
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
@@ -32,6 +31,11 @@ import Neuron.Web.HeadHtml (HeadHtml, renderHeadHtml)
 import Neuron.Web.Manifest (Manifest, renderManifest)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
+  ( NeuronWebT,
+    Route (..),
+    neuronRouteLink,
+    routeTitle',
+  )
 import Neuron.Web.StructuredData (renderStructuredData)
 import Neuron.Web.Theme (Theme)
 import qualified Neuron.Web.Theme as Theme
@@ -43,7 +47,11 @@ import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (indexZid)
 import Neuron.Zettelkasten.Zettel
-import Reflex.Dom.Core hiding ((&))
+  ( Zettel,
+    ZettelT (..),
+    sansContent,
+  )
+import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding ((&))
 import qualified Skylighting.Format.HTML as Skylighting
@@ -56,19 +64,30 @@ renderRoutePage neuronVersion config headHtml manifest r val = do
   el "!DOCTYPE html" blank
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
-      renderRouteHead config headHtml manifest r val
+      renderRouteHead config headHtml manifest r (snd val) $ do
+        renderStructuredData config r val
     el "body" $ do
       renderRouteBody neuronVersion config r val
 
-renderRouteHead :: PandocBuilder t m => Config -> HeadHtml -> Manifest -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
-renderRouteHead config headHtml manifest route val = do
+renderRouteHead ::
+  PandocBuilder t m =>
+  Config ->
+  HeadHtml ->
+  Manifest ->
+  Route a ->
+  a ->
+  -- | Extra widget to put in Head
+  NeuronWebT t m () ->
+  NeuronWebT t m ()
+renderRouteHead config headHtml manifest route val extra = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
-  el "title" $ text $ routeTitle config (snd val) route
+  el "title" $ text $ routeTitle config val route
   renderManifest manifest
+  renderCommon
+  extra
   case route of
     Route_Search {} -> do
-      renderCommon
       forM_
         [ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js",
           "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.js",
@@ -77,8 +96,6 @@ renderRouteHead config headHtml manifest route val = do
         $ \scrpt -> do
           elAttr "script" ("src" =: scrpt) blank
     _ -> do
-      renderCommon
-      renderStructuredData config route val
       elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
   where
     renderCommon = do

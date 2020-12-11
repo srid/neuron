@@ -12,7 +12,7 @@ module Neuron.Web.StructuredData
   )
 where
 
-import Data.Some
+import Data.Some (Some (Some))
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.Structured.OpenGraph
@@ -46,13 +46,13 @@ import qualified Text.URI as URI
 
 renderStructuredData :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
 renderStructuredData config route val = do
-  renderOpenGraph $ routeOpenGraph config (fst val) (snd val) route
+  renderOpenGraph $ uncurry (routeOpenGraph config) val route
   Breadcrumb.renderBreadcrumbs $ routeStructuredData config val route
 
 routeStructuredData :: Config -> (ZettelGraph, a) -> Route a -> [Breadcrumb]
 routeStructuredData cfg (graph, v) = \case
   Route_Zettel _ ->
-    case (either fail id $ getSiteBaseUrl cfg) of
+    case either fail id $ getSiteBaseUrl cfg of
       Nothing -> []
       Just baseUrl ->
         let mkCrumb :: Zettel -> Breadcrumb.Item

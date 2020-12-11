@@ -63,7 +63,6 @@ neuronRouteURL someR = do
 
 routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
-  -- Route_Redirect _ -> "Redirecting..."
   Route_ZIndex -> "Zettel Index"
   Route_Search _mtag -> "Search"
   Route_Zettel _ ->
