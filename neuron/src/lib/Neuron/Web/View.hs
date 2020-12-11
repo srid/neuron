@@ -50,13 +50,13 @@ import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding ((&))
 
 renderRouteHead ::
-  PandocBuilder t m =>
+  DomBuilder t m =>
   Config ->
   Route a ->
   a ->
   -- | Extra widget to put in Head
-  NeuronWebT t m () ->
-  NeuronWebT t m ()
+  m () ->
+  m ()
 renderRouteHead config route val extra = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
@@ -88,7 +88,13 @@ renderRouteHead config route val extra = do
             then x
             else x <> " - " <> suffix
 
-renderRouteBody :: PandocBuilder t m => Text -> Config -> Route a -> (ZettelGraph, a) -> NeuronWebT t m ()
+renderRouteBody ::
+  PandocBuilder t m =>
+  Text ->
+  Config ->
+  Route a ->
+  (ZettelGraph, a) ->
+  NeuronWebT t m ()
 renderRouteBody neuronVersion Config {..} r (g, x) = do
   let neuronTheme = Theme.mkTheme theme
       themeSelector = toText $ Theme.themeIdentifier neuronTheme
