@@ -36,11 +36,10 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (..),
     sansContent,
   )
-import Reflex.Dom.Core (DomBuilder, def)
+import Reflex.Dom.Core (DomBuilder)
 import Relude
-import Text.Pandoc (runPure, writePlain)
-import Text.Pandoc.Definition (Block (Plain), Inline (Image, Link, Str), Pandoc (..))
-import Text.Pandoc.Util (getFirstParagraphText)
+import Text.Pandoc.Definition (Inline (Image, Link, Str), Pandoc (..))
+import Text.Pandoc.Util (getFirstParagraphText, plainify)
 import qualified Text.Pandoc.Walk as W
 import qualified Text.URI as URI
 
@@ -73,7 +72,7 @@ routeOpenGraph cfg@Config {siteTitle, author} g v r =
         Route_Zettel _ -> do
           doc <- getPandocDoc v
           para <- getFirstParagraphText doc
-          paraText <- renderPandocAsText g para
+          let paraText = renderPandocAsText g para
           pure $ T.take 300 paraText,
       _openGraph_author = author,
       _openGraph_type = case r of
@@ -101,14 +100,9 @@ routeOpenGraph cfg@Config {siteTitle, author} g v r =
         Image _ _ (url, _) -> [toText url]
         _ -> []
 
-renderPandocAsText :: ZettelGraph -> [Inline] -> Maybe Text
+renderPandocAsText :: ZettelGraph -> [Inline] -> Text
 renderPandocAsText g =
-  either (const Nothing) Just
-    . runPure
-    . writePlain def
-    . Pandoc mempty
-    . pure
-    . Plain
+  plainify
     . W.walk plainifyZQueries
   where
     plainifyZQueries :: Inline -> Inline
