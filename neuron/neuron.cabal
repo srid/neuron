@@ -98,6 +98,7 @@ library
     Neuron.Web.Zettel.CSS
     Neuron.Web.ZIndex
     Neuron.Web.Theme
+    Neuron.Web.View
     Neuron.Orphans
     Text.Megaparsec.Simple
     Text.Pandoc.Util
@@ -175,7 +176,6 @@ library neuron-app-lib
     Neuron.Web.HeadHtml
     Neuron.Web.Generate
     Neuron.Web.Generate.Route
-    Neuron.Web.View
     Neuron.Web.StructuredData
     Neuron.Reader
     Neuron.Reader.Org
