@@ -63,11 +63,13 @@ renderRoutePage config headHtml manifest r val = do
   el "!DOCTYPE html" blank
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
-      renderRouteHead config r (snd val) $ do
-        renderHeadHtml headHtml
-        renderManifest manifest
-        renderStructuredData config r val
-        syntaxHighlightingInclude
+      renderRouteHead config r (snd val)
+      -- Extra head stuff (those we can't do in `renderRouteHead` because that's
+      -- core library)
+      renderHeadHtml headHtml
+      renderManifest manifest
+      renderStructuredData config r val
+      syntaxHighlightingInclude
     el "body" $ do
       renderRouteBody neuronVersion config r val
   where

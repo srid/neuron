@@ -54,15 +54,15 @@ renderRouteHead ::
   Config ->
   Route a ->
   a ->
-  -- | Extra widget to put in Head
-  m () ->
   m ()
-renderRouteHead config route val extra = do
+renderRouteHead config route val = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
   el "title" $ text $ routeTitle config val route
-  renderCommon
-  extra
+  elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.css") blank
+  elAttr "style" ("type" =: "text/css") $ text $ toText $ C.renderWith C.compact [] style
+  elLinkGoogleFonts neuronFonts
+  -- Inject search.html specific stuff
   case route of
     Route_Search {} -> do
       forM_
@@ -74,11 +74,6 @@ renderRouteHead config route val extra = do
           elAttr "script" ("src" =: scrpt) blank
     _ -> blank
   where
-    renderCommon = do
-      let neuronCss = toText $ C.renderWith C.compact [] style
-      elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.css") blank
-      elAttr "style" ("type" =: "text/css") $ text neuronCss
-      elLinkGoogleFonts neuronFonts
     routeTitle :: Config -> a -> Route a -> Text
     routeTitle Config {..} v =
       withSuffix siteTitle . routeTitle' v
