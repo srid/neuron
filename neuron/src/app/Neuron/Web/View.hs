@@ -24,8 +24,6 @@ import Data.Some (Some (Some))
 import Data.TagTree (Tag (..))
 import Neuron.Config.Type (Config (..))
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
-import Neuron.Web.HeadHtml (HeadHtml, renderHeadHtml)
-import Neuron.Web.Manifest (Manifest, renderManifest)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
   ( NeuronWebT,
@@ -56,18 +54,15 @@ import qualified Skylighting.Styles as Skylighting
 renderRouteHead ::
   PandocBuilder t m =>
   Config ->
-  HeadHtml ->
-  Manifest ->
   Route a ->
   a ->
   -- | Extra widget to put in Head
   NeuronWebT t m () ->
   NeuronWebT t m ()
-renderRouteHead config headHtml manifest route val extra = do
+renderRouteHead config route val extra = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
   el "title" $ text $ routeTitle config val route
-  renderManifest manifest
   renderCommon
   extra
   case route of
@@ -87,7 +82,6 @@ renderRouteHead config headHtml manifest route val extra = do
       elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.css") blank
       elAttr "style" ("type" =: "text/css") $ text neuronCss
       elLinkGoogleFonts neuronFonts
-      renderHeadHtml headHtml
     routeTitle :: Config -> a -> Route a -> Text
     routeTitle Config {..} v =
       withSuffix siteTitle . routeTitle' v

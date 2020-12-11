@@ -15,8 +15,8 @@ import Neuron.Config.Type (Config)
 import Neuron.Version (neuronVersion)
 import Neuron.Web.Generate (generateSite)
 import Neuron.Web.Generate.Route (staticRouteConfig)
-import Neuron.Web.HeadHtml (HeadHtml, getHeadHtml)
-import Neuron.Web.Manifest (Manifest)
+import Neuron.Web.HeadHtml (HeadHtml, getHeadHtml, renderHeadHtml)
+import Neuron.Web.Manifest (Manifest, renderManifest)
 import qualified Neuron.Web.Manifest as Manifest
 import Neuron.Web.Route (NeuronWebT, Route (..), runNeuronWeb)
 import Neuron.Web.StructuredData (renderStructuredData)
@@ -62,7 +62,9 @@ renderRoutePage config headHtml manifest r val = do
   el "!DOCTYPE html" blank
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
-      renderRouteHead config headHtml manifest r (snd val) $ do
+      renderRouteHead config r (snd val) $ do
+        renderHeadHtml headHtml
+        renderManifest manifest
         renderStructuredData config r val
     el "body" $ do
       renderRouteBody neuronVersion config r val
