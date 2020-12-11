@@ -27,6 +27,7 @@ import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude
 import Rib.Route (writeRoute)
 import Rib.Shake (buildStaticFiles, ribInputDir)
+import qualified Skylighting.Core as Skylighting
 
 main :: IO ()
 main = withUtf8 $ run generateMainSite
@@ -66,5 +67,9 @@ renderRoutePage config headHtml manifest r val = do
         renderHeadHtml headHtml
         renderManifest manifest
         renderStructuredData config r val
+        syntaxHighlightingInclude
     el "body" $ do
       renderRouteBody neuronVersion config r val
+  where
+    syntaxHighlightingInclude =
+      elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango

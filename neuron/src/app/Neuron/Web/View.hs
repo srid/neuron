@@ -48,8 +48,6 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding ((&))
-import qualified Skylighting.Format.HTML as Skylighting
-import qualified Skylighting.Styles as Skylighting
 
 renderRouteHead ::
   PandocBuilder t m =>
@@ -74,8 +72,7 @@ renderRouteHead config route val extra = do
         ]
         $ \scrpt -> do
           elAttr "script" ("src" =: scrpt) blank
-    _ -> do
-      elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
+    _ -> blank
   where
     renderCommon = do
       let neuronCss = toText $ C.renderWith C.compact [] style
