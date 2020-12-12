@@ -1,1 +1,1 @@
-These dependencies are to be managed by the `ob thunk` command from obelisk, and not hand-edited.
+These dependencies are to be managed by `nix-thunk`, and not hand-edited.
