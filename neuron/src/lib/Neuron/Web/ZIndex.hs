@@ -79,7 +79,7 @@ buildZIndex graph errors =
         flip fmap fs $ \Node {..} ->
           Node rootLabel $ sortZettelForest subForest
     -- Sort zettel trees so that trees containing the most recent zettel (by ID) come first.
-    sortZettelForest = reverse . sortOn maximum
+    sortZettelForest = sortOn (Down . maximum)
 
 renderZIndex ::
   DomBuilder t m =>
@@ -97,7 +97,7 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
           forM_ zs $ \z ->
             el "li" $ QueryView.renderZettelLink Nothing Nothing def z
     whenNotNull zIndexOrphans $ \(toList -> zs) ->
-      divClass ("ui piled segment") $ do
+      divClass "ui piled segment" $ do
         elClass "p" "info" $ do
           text "Notes without any "
           elAttr "a" ("href" =: "https://neuron.zettel.page/linking.html") $ text "folgezettel"
