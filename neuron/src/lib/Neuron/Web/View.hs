@@ -83,6 +83,19 @@ renderRouteHead config route val = do
             then x
             else x <> " - " <> suffix
 
+bodyTemplate ::
+  DomBuilder t m =>
+  Text ->
+  Config ->
+  m () ->
+  m ()
+bodyTemplate neuronVersion Config {..} w = do
+  let neuronTheme = Theme.mkTheme theme
+      themeSelector = toText $ Theme.themeIdentifier neuronTheme
+  elAttr "div" ("class" =: "ui fluid container" <> "id" =: themeSelector) $ do
+    w
+    renderBrandFooter neuronVersion
+
 renderRouteBody ::
   PandocBuilder t m =>
   Text ->
@@ -90,17 +103,13 @@ renderRouteBody ::
   Route a ->
   (ZettelGraph, a) ->
   NeuronWebT t m ()
-renderRouteBody neuronVersion Config {..} r val = do
-  let neuronTheme = Theme.mkTheme theme
-      themeSelector = toText $ Theme.themeIdentifier neuronTheme
-  elAttr "div" ("class" =: "ui fluid container" <> "id" =: themeSelector) $ do
-    let mEditUrl = case r of
-          Route_Zettel _ ->
-            (<> toText (zettelPath $ sansContent $ snd val)) <$> editUrl
-          _ ->
-            Nothing
-    actionsNav neuronTheme indexZettel mEditUrl
-    _ :: () <- case r of
+renderRouteBody neuronVersion cfg@Config {..} r val =
+  bodyTemplate neuronVersion cfg $ do
+    let neuronTheme = Theme.mkTheme theme
+    -- TODO: actionsNav should ideally belong in `bodyTemplate`, however it
+    -- might be replaced by a new navigation mechanism (cf. rememorate project)
+    navBar neuronTheme
+    case r of
       Route_ZIndex -> do
         divClass "ui text container" $ do
           let zIndexData = uncurry ZIndex.buildZIndex val
@@ -110,9 +119,15 @@ renderRouteBody neuronVersion Config {..} r val = do
           uncurry renderSearch val
       Route_Zettel _ -> do
         ZettelView.renderZettel val
-    renderBrandFooter neuronVersion
   where
     indexZettel = G.getZettel indexZid $ fst val
+    navBar neuronTheme = do
+      let mEditUrl = case r of
+            Route_Zettel _ ->
+              (<> toText (zettelPath $ sansContent $ snd val)) <$> editUrl
+            _ ->
+              Nothing
+      actionsNav neuronTheme indexZettel mEditUrl
 
 renderSearch :: DomBuilder t m => ZettelGraph -> Text -> m ()
 renderSearch graph script = do
