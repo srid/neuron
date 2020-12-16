@@ -34,7 +34,7 @@ import qualified Neuron.Web.Cache.Type as Cache
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
-import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
+import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID, unZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
@@ -134,7 +134,8 @@ loadZettelkasten config = do
     files <- forEvery [pat] pure
     pure (fmt, files)
   res@(g, _, errs) <- loadZettelkastenFrom zettelFiles
-  Cache.updateCache $ Cache.NeuronCache g errs config neuronVersion
+  let gSmall = stripSurroundingContext g
+  Cache.updateCache $ Cache.NeuronCache gSmall errs config neuronVersion
   pure res
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files

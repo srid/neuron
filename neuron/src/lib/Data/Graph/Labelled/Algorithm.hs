@@ -83,6 +83,10 @@ topSort g =
       LAM.skeleton $
         graph g
 
+emap :: (Eq f, Monoid f) => (e -> f) -> LabelledGraph v e -> LabelledGraph v f
+emap f (LabelledGraph g vs) =
+  LabelledGraph (LAM.emap f g) vs
+
 -- | Returns the clusters in an ayclic graph.
 --
 -- If the graph is one cluster and that is acyclic, this will return an empty list.

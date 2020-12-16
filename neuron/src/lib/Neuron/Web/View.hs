@@ -114,7 +114,7 @@ renderRouteBody neuronVersion cfg@Config {..} r val =
       Route_ZIndex -> do
         divClass "ui text container" $ do
           let zIndexData = uncurry ZIndex.buildZIndex val
-          ZIndex.renderZIndex neuronTheme zIndexData (constDyn $ Just "coffee")
+          ZIndex.renderZIndex neuronTheme zIndexData (constDyn Nothing)
       Route_Search {} -> do
         divClass "ui text container" $ do
           uncurry renderSearch val

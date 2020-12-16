@@ -19,9 +19,9 @@ import System.FilePath ((</>))
 
 cacheFile :: Action FilePath
 cacheFile = do
-  neuronDir <- (</> ".neuron") <$> ribInputDir
-  liftIO $ createDirectoryIfMissing True neuronDir
-  pure $ neuronDir </> "cache.json"
+  outputDir <- (</> ".neuron" </> "output") <$> ribInputDir
+  liftIO $ createDirectoryIfMissing True outputDir
+  pure $ outputDir </> "cache.json"
 
 updateCache :: NeuronCache -> Action ()
 updateCache v = do
