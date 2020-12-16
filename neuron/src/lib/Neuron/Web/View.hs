@@ -17,6 +17,7 @@ module Neuron.Web.View where
 
 import Clay (Css, em, gray, important, pct, px, (?))
 import qualified Clay as C
+import Control.Monad.Fix (MonadFix)
 import Data.Aeson (object, toJSON, (.=))
 import qualified Data.Aeson.Text as Aeson
 import qualified Data.Set as Set
@@ -97,7 +98,7 @@ bodyTemplate neuronVersion Config {..} w = do
     renderBrandFooter neuronVersion
 
 renderRouteBody ::
-  PandocBuilder t m =>
+  (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   Text ->
   Config ->
   Route a ->
@@ -113,7 +114,7 @@ renderRouteBody neuronVersion cfg@Config {..} r val =
       Route_ZIndex -> do
         divClass "ui text container" $ do
           let zIndexData = uncurry ZIndex.buildZIndex val
-          ZIndex.renderZIndex neuronTheme zIndexData
+          ZIndex.renderZIndex neuronTheme zIndexData (constDyn $ Just "coffee")
       Route_Search {} -> do
         divClass "ui text container" $ do
           uncurry renderSearch val

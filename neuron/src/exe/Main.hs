@@ -7,9 +7,9 @@
 
 module Main where
 
-import Control.Monad.Reader
-import Development.Shake
-import Main.Utf8
+import Control.Monad.Fix (MonadFix)
+import Development.Shake (Action, getDirectoryFiles)
+import Main.Utf8 (withUtf8)
 import Neuron.CLI (run)
 import Neuron.Config.Type (Config)
 import Neuron.Version (neuronVersion)
@@ -51,7 +51,7 @@ generateMainSite config = do
 
 -- | Render the given route
 renderRoutePage ::
-  PandocBuilder t m =>
+  (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   Config ->
   HeadHtml ->
   Manifest ->

@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -16,16 +17,18 @@ where
 
 import Clay (Css, em, (?))
 import qualified Clay as C
+import Control.Monad.Fix (MonadFix)
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
 import Data.TagTree (mkTagPattern)
-import Data.Tree
+import qualified Data.Text as T
+import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Web.Query.View as QueryView
-import Neuron.Web.Route
+import Neuron.Web.Route (NeuronWebT)
 import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Widget (elPreOverflowing)
+import Neuron.Web.Widget (elPreOverflowing, elVisible)
 import Neuron.Web.Zettel.View (renderZettelParseError)
-import Neuron.Zettelkasten.Connection
+import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (ZettelID (..))
@@ -59,19 +62,43 @@ data Stats = Stats
   }
   deriving (Eq, Show)
 
+data TreeMatch
+  = -- | Tree's root matches the query.
+    -- Subtrees may or may not match.
+    TreeMatch_Root
+  | -- | Tree's root does not match.
+    -- However, one of the subtrees match.
+    TreeMatch_Under
+  deriving (Eq, Show)
+
+treeMatch :: Tree (Maybe TreeMatch, a) -> Maybe TreeMatch
+treeMatch (Node (matches, _) _) = matches
+
+searchForest :: (a -> Bool) -> Tree a -> Tree (Maybe TreeMatch, a)
+searchForest f (Node x children) =
+  let match = f x
+      children' = searchForest f <$> children
+      tm =
+        if match
+          then Just TreeMatch_Root
+          else
+            bool (Just TreeMatch_Under) Nothing $
+              null $ catMaybes (treeMatch <$> children')
+   in Node (tm, x) children'
+
 buildZIndex :: ZettelGraph -> Map ZettelID (NonEmpty ZettelError) -> ZIndex
 buildZIndex graph errors =
   let (orphans, clusters) = partitionEithers $
         flip fmap (G.categoryClusters graph) $ \case
           [Node z []] -> Left z -- Orphans (cluster of exactly one)
           x -> Right x
-      clustersWithBacklinks :: [Forest (Zettel, [Zettel])] =
+      clustersWithUplinks :: [Forest (Zettel, [Zettel])] =
         -- Compute backlinks for each node in the tree.
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
       pinnedZettels = zettelsByTag (G.getZettels graph) [mkTagPattern "pinned"]
-   in ZIndex (fmap sortCluster clustersWithBacklinks) orphans errors stats pinnedZettels
+   in ZIndex (fmap sortCluster clustersWithUplinks) orphans errors stats pinnedZettels
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortCluster fs =
@@ -82,33 +109,49 @@ buildZIndex graph errors =
     sortZettelForest = sortOn (Down . maximum)
 
 renderZIndex ::
-  DomBuilder t m =>
+  (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   Theme.Theme ->
   ZIndex ->
+  -- | Search query to filter
+  Dynamic t (Maybe Text) ->
   NeuronWebT t m ()
-renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
+renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
   elClass "h1" "header" $ text "Zettel Index"
-  renderErrors zIndexErrors
+  divClass "errors" $ do
+    renderErrors zIndexErrors
+  dyn_ $
+    ffor mqDyn $ \mq -> forM_ mq $ \q ->
+      divClass "ui message" $ do
+        text $ "Filtering by query: " <> q
   divClass "z-index" $ do
-    forM_ (nonEmpty zPinned) $ \zs ->
+    let pinned = ffor mqDyn $ \mq -> filter (matchZettel mq) zPinned
+    elVisible (not . null <$> pinned) $
       divClass "ui pinned raised segment" $ do
         elClass "h3" "ui header" $ text "Pinned"
         el "ul" $
-          forM_ zs $ \z ->
-            el "li" $ QueryView.renderZettelLink Nothing Nothing def z
-    whenNotNull zIndexOrphans $ \(toList -> zs) ->
+          void $
+            simpleList pinned $ \zDyn ->
+              dyn_ $ ffor zDyn $ \z -> zettelLink TreeMatch_Root z blank
+    let orphans = ffor mqDyn $ \mq -> filter (matchZettel mq) zIndexOrphans
+    elVisible (not . null <$> orphans) $
       divClass "ui piled segment" $ do
         elClass "p" "info" $ do
           text "Notes without any "
           elAttr "a" ("href" =: "https://neuron.zettel.page/linking.html") $ text "folgezettel"
           text " relationships"
         el "ul" $
-          forM_ zs $ \z ->
-            el "li" $ do
-              QueryView.renderZettelLink Nothing Nothing def z
-    forM_ zIndexClusters $ \forest ->
-      divClass ("ui " <> themeColor <> " segment") $ do
-        el "ul" $ renderForest forest
+          void $
+            simpleList orphans $ \zDyn ->
+              dyn_ $ ffor zDyn $ \z -> zettelLink TreeMatch_Root z blank
+    let clusters = ffor mqDyn $ \mq -> ffor zIndexClusters $ fmap (searchForest $ matchZettel mq . fst)
+    void $
+      simpleList clusters $ \forestDyn ->
+        -- TODO: push forestDyn deep?
+        dyn_ $
+          ffor forestDyn $ \forest ->
+            when (any (isJust . treeMatch) forest) $ do
+              divClass ("ui " <> themeColor <> " segment") $ do
+                el "ul" $ renderForest forest
     el "p" $ do
       text $
         "The zettelkasten has "
@@ -123,6 +166,11 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} = do
     countNounBe noun nounPlural = \case
       1 -> "1 " <> noun
       n -> show n <> " " <> nounPlural
+    matchZettel :: Maybe Text -> Zettel -> Bool
+    matchZettel mq z =
+      isNothing $ do
+        q <- mq
+        guard $ not $ T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
 
 renderErrors :: DomBuilder t m => Map ZettelID (NonEmpty ZettelError) -> NeuronWebT t m ()
 renderErrors errors = do
@@ -169,19 +217,25 @@ renderErrors errors = do
 
 renderForest ::
   DomBuilder t m =>
-  [Tree (Zettel, [Zettel])] ->
+  [Tree (Maybe TreeMatch, (Zettel, [Zettel]))] ->
   NeuronWebT t m ()
 renderForest trees = do
-  forM_ trees $ \(Node (zettel, uplinks) subtrees) ->
-    el "li" $ do
-      QueryView.renderZettelLink Nothing Nothing def zettel
-      when (length uplinks >= 2) $ do
-        elClass "span" "uplinks" $ do
-          forM_ uplinks $ \z2 -> do
-            el "small" $
-              elAttr "i" ("class" =: "linkify icon" <> "title" =: zettelTitle z2) blank
-      unless (null subtrees) $ do
-        el "ul" $ renderForest subtrees
+  forM_ trees $ \(Node (mm, (zettel, uplinks)) subtrees) ->
+    whenJust mm $ \m -> do
+      zettelLink m zettel $ do
+        when (length uplinks >= 2) $ do
+          elClass "span" "uplinks" $ do
+            forM_ uplinks $ \z2 -> do
+              el "small" $
+                elAttr "i" ("class" =: "linkify icon" <> "title" =: zettelTitle z2) blank
+        unless (null subtrees) $ do
+          el "ul" $ renderForest subtrees
+
+zettelLink :: DomBuilder t m => TreeMatch -> Zettel -> NeuronWebT t m () -> NeuronWebT t m ()
+zettelLink m z w = do
+  elClass "span" (if m == TreeMatch_Root then "q root" else "q under") $ do
+    el "li" $ QueryView.renderZettelLink Nothing Nothing def z
+    w
 
 style :: Css
 style = do
@@ -193,3 +247,11 @@ style = do
       C.paddingLeft $ em 1.5
     ".uplinks" ? do
       C.marginLeft $ em 0.3
+  -- debug: TODO: fold
+  ".errors" ? do
+    C.display C.none
+  -- Search filtering
+  ".q.under > li > span.zettel-link-container span.zettel-link a" ? do
+    -- C.fontSize $ em 0.3
+    -- C.display C.none
+    C.important $ C.color C.gray
