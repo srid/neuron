@@ -26,7 +26,7 @@ import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route (NeuronWebT)
 import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Widget (elPreOverflowing, elVisible)
+import Neuron.Web.Widget (divClassVisible, elPreOverflowing, elVisible)
 import Neuron.Web.Zettel.View (renderZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
@@ -113,7 +113,8 @@ renderZIndex ::
 renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
   elClass "h1" "header" $ text "Zettel Index"
   elVisible (isNothing <$> mqDyn) $
-    divClass "errors" $ do
+    elClass "details" "ui tiny errors message" $ do
+      el "summary" $ text "Errors"
       renderErrors zIndexErrors
   dyn_ $
     ffor mqDyn $ \mq -> forM_ mq $ \q ->
@@ -121,33 +122,30 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
         text $ "Filtering by query: " <> q
   divClass "z-index" $ do
     let pinned = ffor mqDyn $ \mq -> filter (matchZettel mq) zPinned
-    elVisible (not . null <$> pinned) $
-      divClass "ui pinned raised segment" $ do
-        elClass "h3" "ui header" $ text "Pinned"
-        el "ul" $
-          void $
-            simpleList pinned $ \zDyn ->
-              dyn_ $ ffor zDyn zettelLink
+    divClassVisible (not . null <$> pinned) "ui pinned raised segment" $ do
+      elClass "h3" "ui header" $ text "Pinned"
+      el "ul" $
+        void $
+          simpleList pinned $ \zDyn ->
+            dyn_ $ ffor zDyn zettelLink
     let orphans = ffor mqDyn $ \mq -> filter (matchZettel mq) zIndexOrphans
-    elVisible (not . null <$> orphans) $
-      divClass "ui piled segment" $ do
-        elClass "p" "info" $ do
-          text "Notes without any "
-          elAttr "a" ("href" =: "https://neuron.zettel.page/linking.html") $ text "folgezettel"
-          text " relationships"
-        el "ul" $
-          void $
-            simpleList orphans $ \zDyn ->
-              dyn_ $ ffor zDyn zettelLink
+    divClassVisible (not . null <$> orphans) "ui piled segment" $ do
+      elClass "p" "info" $ do
+        text "Notes without any "
+        elAttr "a" ("href" =: "https://neuron.zettel.page/linking.html") $ text "folgezettel"
+        text " relationships"
+      el "ul" $
+        void $
+          simpleList orphans $ \zDyn ->
+            dyn_ $ ffor zDyn zettelLink
     let clusters = ffor mqDyn $ \mq ->
           ffor zIndexClusters $ \forest ->
             fforMaybe forest $ \tree -> do
               searchTree (matchZettel mq . fst) tree
     void $
       simpleList clusters $ \forestDyn ->
-        elVisible (not . null <$> forestDyn) $
-          divClass ("ui " <> themeColor <> " segment") $ do
-            el "ul" $ renderForest forestDyn
+        divClassVisible (not . null <$> forestDyn) ("ui " <> themeColor <> " segment") $ do
+          el "ul" $ renderForest forestDyn
     el "p" $ do
       text $
         "The zettelkasten has "
@@ -246,6 +244,8 @@ style = do
       C.paddingLeft $ em 1.5
     ".uplinks" ? do
       C.marginLeft $ em 0.3
+  ".errors" ? do
+    blank
   -- Display non-matching parents of matching nodes deemphasized
   ".q.under > li > span.zettel-link-container span.zettel-link a" ? do
     C.important $ C.color C.gray
