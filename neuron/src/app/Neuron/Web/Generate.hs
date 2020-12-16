@@ -30,6 +30,7 @@ import Neuron.Reader (readerForZettelFormat)
 import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Web.Cache as Cache
+import qualified Neuron.Web.Cache.Type as Cache
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G

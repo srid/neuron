@@ -8,28 +8,14 @@
 -- | Responsible for caching zettelkasten graph on disk
 module Neuron.Web.Cache where
 
-import Data.Aeson (FromJSON, ToJSON, eitherDecodeFileStrict, encodeFile)
+import Data.Aeson (eitherDecodeFileStrict, encodeFile)
 import Development.Shake (Action)
 import Neuron.Config.Type (Config)
-import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID)
-import Neuron.Zettelkasten.Zettel (ZettelError)
+import Neuron.Web.Cache.Type (NeuronCache, ReadMode (..))
 import Relude
 import Rib.Shake (ribInputDir)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
-
-data ReadMode
-  = ReadMode_Direct Config
-  | ReadMode_Cached
-  deriving (Eq, Show)
-
-data NeuronCache = NeuronCache
-  { _neuronCache_graph :: ZettelGraph,
-    _neuronCache_errors :: Map ZettelID (NonEmpty ZettelError),
-    _neuronCache_config :: Config
-  }
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 cacheFile :: Action FilePath
 cacheFile = do

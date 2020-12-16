@@ -12,8 +12,12 @@ module Neuron.CLI
 where
 
 import qualified Data.Aeson.Text as Aeson
-import Data.Some
+import Data.Some (withSome)
 import Data.Time
+  ( getCurrentTime,
+    getCurrentTimeZone,
+    utcToLocalTime,
+  )
 import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Open (openLocallyGeneratedFile)
@@ -24,12 +28,13 @@ import Neuron.Config (getConfig)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Version as Version
 import qualified Neuron.Web.Cache as Cache
+import qualified Neuron.Web.Cache.Type as Cache
 import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
 import Options.Applicative
 import Relude
-import System.Directory
+import System.Directory (getCurrentDirectory)
 
 run :: (Config -> Action ()) -> IO ()
 run act = do
