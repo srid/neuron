@@ -71,20 +71,15 @@ data TreeMatch
     TreeMatch_Under
   deriving (Eq, Show)
 
-treeMatch :: Tree (Maybe TreeMatch, a) -> Maybe TreeMatch
-treeMatch (Node (matches, _) _) = matches
-
-searchForest :: (a -> Bool) -> Tree a -> Tree (Maybe TreeMatch, a)
-searchForest f (Node x children) =
-  let match = f x
-      children' = searchForest f <$> children
-      tm =
-        if match
-          then Just TreeMatch_Root
-          else
-            bool (Just TreeMatch_Under) Nothing $
-              null $ catMaybes (treeMatch <$> children')
-   in Node (tm, x) children'
+searchTree :: (a -> Bool) -> Tree a -> Maybe (Tree (TreeMatch, a))
+searchTree f (Node x children) = do
+  let children' = catMaybes $ searchTree f <$> children
+      tm
+        | f x = Just TreeMatch_Root
+        | null children' = Nothing
+        | otherwise = Just TreeMatch_Under
+  m <- tm
+  pure $ Node (m, x) children'
 
 buildZIndex :: ZettelGraph -> Map ZettelID (NonEmpty ZettelError) -> ZIndex
 buildZIndex graph errors =
@@ -131,7 +126,7 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
         el "ul" $
           void $
             simpleList pinned $ \zDyn ->
-              dyn_ $ ffor zDyn $ \z -> zettelLink TreeMatch_Root z blank
+              dyn_ $ ffor zDyn zettelLink
     let orphans = ffor mqDyn $ \mq -> filter (matchZettel mq) zIndexOrphans
     elVisible (not . null <$> orphans) $
       divClass "ui piled segment" $ do
@@ -142,16 +137,16 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
         el "ul" $
           void $
             simpleList orphans $ \zDyn ->
-              dyn_ $ ffor zDyn $ \z -> zettelLink TreeMatch_Root z blank
-    let clusters = ffor mqDyn $ \mq -> ffor zIndexClusters $ fmap (searchForest $ matchZettel mq . fst)
+              dyn_ $ ffor zDyn zettelLink
+    let clusters = ffor mqDyn $ \mq ->
+          ffor zIndexClusters $ \forest ->
+            fforMaybe forest $ \tree -> do
+              searchTree (matchZettel mq . fst) tree
     void $
       simpleList clusters $ \forestDyn ->
-        -- TODO: push forestDyn deep?
-        dyn_ $
-          ffor forestDyn $ \forest ->
-            when (any (isJust . treeMatch) forest) $ do
-              divClass ("ui " <> themeColor <> " segment") $ do
-                el "ul" $ renderForest forest
+        elVisible (not . null <$> forestDyn) $
+          divClass ("ui " <> themeColor <> " segment") $ do
+            el "ul" $ renderForest forestDyn
     el "p" $ do
       text $
         "The zettelkasten has "
@@ -216,26 +211,29 @@ renderErrors errors = do
               el "p" $ text $ "Slug '" <> slug <> "' is used by another zettel"
 
 renderForest ::
-  DomBuilder t m =>
-  [Tree (Maybe TreeMatch, (Zettel, [Zettel]))] ->
+  (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) =>
+  Dynamic t [Tree (TreeMatch, (Zettel, [Zettel]))] ->
   NeuronWebT t m ()
-renderForest trees = do
-  forM_ trees $ \(Node (mm, (zettel, uplinks)) subtrees) ->
-    whenJust mm $ \m -> do
-      zettelLink m zettel $ do
-        when (length uplinks >= 2) $ do
-          elClass "span" "uplinks" $ do
-            forM_ uplinks $ \z2 -> do
-              el "small" $
-                elAttr "i" ("class" =: "linkify icon" <> "title" =: zettelTitle z2) blank
-        unless (null subtrees) $ do
-          el "ul" $ renderForest subtrees
+renderForest treesDyn = do
+  void $
+    simpleList treesDyn $ \treeDyn -> do
+      mDyn <- holdUniqDyn $ ffor treeDyn $ \(Node (m, _) _) -> m
+      subtreesDyn <- holdUniqDyn $ ffor treeDyn $ \(Node _ subtrees) -> subtrees
+      zup <- holdUniqDyn $ ffor treeDyn $ \(Node (_, x) _) -> x
+      elDynClass "span" (ffor mDyn $ \m -> if m == TreeMatch_Root then "q root" else "q under") $ do
+        dyn_ $
+          ffor zup $ \(zettel, uplinks) -> do
+            zettelLink zettel
+            when (length uplinks >= 2) $ do
+              elClass "span" "uplinks" $ do
+                forM_ uplinks $ \z2 -> do
+                  el "small" $
+                    elAttr "i" ("class" =: "linkify icon" <> "title" =: zettelTitle z2) blank
+        el "ul" $ renderForest subtreesDyn
 
-zettelLink :: DomBuilder t m => TreeMatch -> Zettel -> NeuronWebT t m () -> NeuronWebT t m ()
-zettelLink m z w = do
-  elClass "span" (if m == TreeMatch_Root then "q root" else "q under") $ do
-    el "li" $ QueryView.renderZettelLink Nothing Nothing def z
-    w
+zettelLink :: DomBuilder t m => Zettel -> NeuronWebT t m ()
+zettelLink z = do
+  el "li" $ QueryView.renderZettelLink Nothing Nothing def z
 
 style :: Css
 style = do
