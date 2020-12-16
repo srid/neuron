@@ -32,6 +32,15 @@ data Route a where
   Route_Search :: Maybe Tag -> Route Text
   Route_Zettel :: Slug -> Route ZettelC
 
+routeHtmlPath :: Route a -> FilePath
+routeHtmlPath = \case
+  Route_ZIndex ->
+    "z-index.html"
+  Route_Search _mtag ->
+    "search.html"
+  Route_Zettel slug ->
+    toString slug <> ".html"
+
 data RouteConfig t m = RouteConfig
   { -- | Whether the view is being rendered for static HTML generation
     routeConfigStaticallyGenerated :: Bool,
