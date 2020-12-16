@@ -112,8 +112,9 @@ renderZIndex ::
   NeuronWebT t m ()
 renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
   elClass "h1" "header" $ text "Zettel Index"
-  divClass "errors" $ do
-    renderErrors zIndexErrors
+  elVisible (isNothing <$> mqDyn) $
+    divClass "errors" $ do
+      renderErrors zIndexErrors
   dyn_ $
     ffor mqDyn $ \mq -> forM_ mq $ \q ->
       divClass "ui message" $ do
@@ -245,11 +246,6 @@ style = do
       C.paddingLeft $ em 1.5
     ".uplinks" ? do
       C.marginLeft $ em 0.3
-  -- debug: TODO: fold
-  ".errors" ? do
-    C.display C.none
-  -- Search filtering
+  -- Display non-matching parents of matching nodes deemphasized
   ".q.under > li > span.zettel-link-container span.zettel-link a" ? do
-    -- C.fontSize $ em 0.3
-    -- C.display C.none
     C.important $ C.color C.gray
