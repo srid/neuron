@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -6,7 +8,7 @@
 -- | Responsible for caching zettelkasten graph on disk
 module Neuron.Web.Cache where
 
-import Data.Aeson (eitherDecodeFileStrict, encodeFile)
+import Data.Aeson (FromJSON, ToJSON, eitherDecodeFileStrict, encodeFile)
 import Development.Shake (Action)
 import Neuron.Config.Type (Config)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
@@ -22,7 +24,12 @@ data ReadMode
   | ReadMode_Cached
   deriving (Eq, Show)
 
-type CacheData = (ZettelGraph, Map ZettelID (NonEmpty ZettelError))
+data NeuronCache = NeuronCache
+  { _neuronCache_graph :: ZettelGraph,
+    _neuronCache_errors :: Map ZettelID (NonEmpty ZettelError),
+    _neuronCache_config :: Config
+  }
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 cacheFile :: Action FilePath
 cacheFile = do
@@ -30,19 +37,19 @@ cacheFile = do
   liftIO $ createDirectoryIfMissing True neuronDir
   pure $ neuronDir </> "cache.json"
 
-updateCache :: CacheData -> Action ()
+updateCache :: NeuronCache -> Action ()
 updateCache v = do
   f <- cacheFile
   liftIO $ encodeFile f v
 
-getCache :: Action CacheData
+getCache :: Action NeuronCache
 getCache = do
   (liftIO . eitherDecodeFileStrict =<< cacheFile) >>= \case
     Left err -> fail err
     Right v -> pure v
 
 evalUnlessCacheRequested ::
-  ReadMode -> (Config -> Action CacheData) -> Action CacheData
+  ReadMode -> (Config -> Action NeuronCache) -> Action NeuronCache
 evalUnlessCacheRequested mode f = do
   case mode of
     ReadMode_Direct config ->

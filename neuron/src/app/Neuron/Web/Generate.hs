@@ -133,7 +133,7 @@ loadZettelkasten config = do
     files <- forEvery [pat] pure
     pure (fmt, files)
   res@(g, _, errs) <- loadZettelkastenFrom zettelFiles
-  Cache.updateCache (g, errs)
+  Cache.updateCache $ Cache.NeuronCache g errs config
   pure res
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files

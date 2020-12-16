@@ -61,11 +61,13 @@ runWith act App {..} =
     Open openCommand ->
       runRibOnceQuietly notesDir $ do
         openLocallyGeneratedFile openCommand
-    Query (QueryCommand {..}) ->
+    Query QueryCommand {..} ->
       runRibOnceQuietly notesDir $ do
         (graph, errors) <-
           if cached
-            then Cache.getCache
+            then do
+              Cache.NeuronCache {..} <- Cache.getCache
+              pure (_neuronCache_graph, _neuronCache_errors)
             else Gen.loadZettelkastenGraph =<< getConfig
         case query of
           Left someQ ->
