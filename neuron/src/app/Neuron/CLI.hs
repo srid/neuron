@@ -68,21 +68,19 @@ runWith act App {..} =
         openLocallyGeneratedFile openCommand
     Query QueryCommand {..} ->
       runRibOnceQuietly notesDir $ do
-        (graph, errors) <-
+        Cache.NeuronCache {..} <-
           if cached
-            then do
-              Cache.NeuronCache {..} <- Cache.getCache
-              pure (_neuronCache_graph, _neuronCache_errors)
+            then Cache.getCache
             else Gen.loadZettelkastenGraph =<< getConfig
         case query of
           Left someQ ->
             withSome someQ $ \q -> do
-              let result = Q.runZettelQuery (G.getZettels graph) q
-              putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson q result errors
+              let result = Q.runZettelQuery (G.getZettels _neuronCache_graph) q
+              putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson q result _neuronCache_errors
           Right someQ ->
             withSome someQ $ \q -> do
-              let result = Q.runGraphQuery graph q
-              putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result errors
+              let result = Q.runGraphQuery _neuronCache_graph q
+              putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result _neuronCache_errors
     Search searchCmd -> do
       runRibOnceQuietly notesDir $ do
         interactiveSearch notesDir searchCmd =<< getConfig

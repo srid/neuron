@@ -18,12 +18,10 @@ module Neuron.Web.View where
 import Clay (Css, em, gray, important, pct, px, (?))
 import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
-import Data.Aeson (object, toJSON, (.=))
 import qualified Data.Aeson.Text as Aeson
-import qualified Data.Set as Set
 import Data.Some (Some (Some))
-import Data.TagTree (Tag (..))
 import Neuron.Config.Type (Config (..))
+import Neuron.Web.Cache.Type (NeuronCache (..))
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
@@ -116,8 +114,12 @@ renderRouteBody neuronVersion cfg@Config {..} r val =
           let zIndexData = uncurry ZIndex.buildZIndex val
           ZIndex.renderZIndex neuronTheme zIndexData (constDyn Nothing)
       Route_Search {} -> do
+        -- Prerender what the dynamic JS will render.
         divClass "ui text container" $ do
-          uncurry renderSearch val
+          let NeuronCache {..} = fst $ snd val
+          let zIndexData = ZIndex.buildZIndex _neuronCache_graph _neuronCache_errors
+          ZIndex.renderZIndex neuronTheme zIndexData (constDyn Nothing)
+          uncurry renderSearch $ snd val
       Route_Zettel _ -> do
         ZettelView.renderZettel val
   where
@@ -130,35 +132,11 @@ renderRouteBody neuronVersion cfg@Config {..} r val =
               Nothing
       actionsNav neuronTheme indexZettel mEditUrl
 
-renderSearch :: DomBuilder t m => ZettelGraph -> Text -> m ()
-renderSearch graph script = do
-  elClass "h1" "header" $ text "Search"
-  divClass "ui fluid icon input search" $ do
-    elAttr "input" ("type" =: "text" <> "id" =: "search-input") blank
-    fa "search icon fas fa-search"
-  divClass "ui hidden divider" blank
-  let allZettels = G.getZettels graph
-      allTags = Set.fromList $ concatMap zettelTags allZettels
-      index = object ["zettels" .= fmap (object . zettelJson) allZettels, "tags" .= allTags]
-  elAttr "div" ("class" =: "ui fluid multiple search selection dropdown" <> "id" =: "search-tags") $ do
-    elAttr "input" ("name" =: "tags" <> "type" =: "hidden") blank
-    elClass "i" "dropdown icon" blank
-    divClass "default text" $ text "Select tags…"
-    divClass "menu" $ do
-      forM_ allTags $ \t -> do
-        divClass "item" $ text (unTag t)
-  divClass "ui divider" blank
-  elAttr "ul" ("id" =: "search-results" <> "class" =: "zettel-list") blank
-  el "script" $ text $ "let index = " <> toText (Aeson.encodeToLazyText index) <> ";"
+renderSearch :: DomBuilder t m => NeuronCache -> Text -> m ()
+renderSearch cache script = do
+  -- TODO: Embed JSON directly here?
+  el "script" $ text $ "let cache = " <> toText (Aeson.encodeToLazyText cache) <> ";"
   el "script" $ text script
-  where
-    zettelJson Zettel {..} =
-      [ "id" .= toJSON zettelID,
-        "slug" .= toJSON zettelSlug,
-        "title" .= zettelTitle,
-        "tags" .= zettelTags,
-        "day" .= zettelDate
-      ]
 
 renderBrandFooter :: DomBuilder t m => Text -> m ()
 renderBrandFooter ver =

@@ -20,7 +20,7 @@ import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
-import Data.TagTree (mkTagPattern)
+import Data.TagTree (mkTagPattern, unTag)
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Web.Query.View as QueryView
@@ -38,6 +38,7 @@ import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelError (..),
     ZettelT (zettelTitle),
+    zettelTags,
   )
 import Reflex.Dom.Core hiding (mapMaybe, (&))
 import Relude hiding ((&))
@@ -111,15 +112,17 @@ renderZIndex ::
   Dynamic t (Maybe Text) ->
   NeuronWebT t m ()
 renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
-  elClass "h1" "header" $ text "Zettel Index"
+  elClass "h1" "header" $ do
+    text "Zettel Index"
+    dyn_ $
+      ffor mqDyn $ \mq -> forM_ mq $ \q -> do
+        text " ["
+        el "tt" $ text q
+        text "]"
   elVisible (isNothing <$> mqDyn) $
     elClass "details" "ui tiny errors message" $ do
       el "summary" $ text "Errors"
       renderErrors zIndexErrors
-  dyn_ $
-    ffor mqDyn $ \mq -> forM_ mq $ \q ->
-      divClass "ui message" $ do
-        text $ "Filtering by query: " <> q
   divClass "z-index" $ do
     let pinned = ffor mqDyn $ \mq -> filter (matchZettel mq) zPinned
     divClassVisible (not . null <$> pinned) "ui pinned raised segment" $ do
@@ -164,7 +167,13 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
     matchZettel mq z =
       isNothing $ do
         q <- mq
-        guard $ not $ T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
+        -- HACK: We should "parse" the query text propertly into an ADT, the
+        -- more complex the query will become. For now, just looking for "tag:???"
+        if "tag:" `T.isPrefixOf` q
+          then do
+            let ztag = T.drop 4 q
+            guard $ ztag `notElem` fmap unTag (zettelTags z)
+          else guard $ not $ T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
 
 renderErrors :: DomBuilder t m => Map ZettelID (NonEmpty ZettelError) -> NeuronWebT t m ()
 renderErrors errors = do

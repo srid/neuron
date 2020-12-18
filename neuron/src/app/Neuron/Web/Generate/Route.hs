@@ -42,7 +42,7 @@ staticRouteConfig =
     -- Using relative URLs enables the site work in file:/// URLs
     routeFor = \case
       -- HACK: Hack around Rib.Route's limitation in dealing with query arguments
-      r@(Route_Search (Just t)) -> routeUrlRel r <> "?tag=" <> unTag t
+      r@(Route_Search (Just t)) -> routeUrlRel r <> "?q=tag:" <> unTag t
       r -> routeUrlRel r
 
 data BaseUrlError

@@ -13,6 +13,7 @@ import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some)
 import Data.TagTree (Tag)
+import Neuron.Web.Cache.Type (NeuronCache)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
@@ -23,13 +24,11 @@ import Reflex.Dom.Core (DomBuilder)
 import Relude
 
 data Route a where
-  -- ZIndex takes a report of all errors in the zettelkasten.
-  -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
   Route_ZIndex :: Route (Map ZettelID (NonEmpty ZettelError))
   -- | Takes search JS code as render data
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
-  Route_Search :: Maybe Tag -> Route Text
+  Route_Search :: Maybe Tag -> Route (NeuronCache, Text)
   Route_Zettel :: Slug -> Route ZettelC
 
 routeHtmlPath :: Route a -> FilePath
@@ -37,7 +36,8 @@ routeHtmlPath = \case
   Route_ZIndex ->
     "z-index.html"
   Route_Search _mtag ->
-    "search.html"
+    -- TODO: rememorate's file
+    "q.html"
   Route_Zettel slug ->
     toString slug <> ".html"
 
