@@ -12,7 +12,12 @@
 module Data.Structured.Breadcrumb where
 
 import Data.Aeson
-import Data.Tree
+  ( KeyValue ((.=)),
+    ToJSON (toJSON),
+    encode,
+    object,
+  )
+import Data.Tree (Forest, foldTree)
 import Reflex.Dom.Core hiding (mapMaybe)
 import Relude
 import Text.URI (URI)

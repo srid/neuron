@@ -84,7 +84,7 @@ renderRouteBody ::
 renderRouteBody neuronVersion cfg@Config {..} r val =
   case r of
     -- HTML for this route is all handled in JavaScript
-    Route_Search {} -> do
+    Route_Impulse {} -> do
       el "script" $ text $ snd val
     Route_Zettel _ -> do
       bodyTemplate neuronVersion cfg $ do

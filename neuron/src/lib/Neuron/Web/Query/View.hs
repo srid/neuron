@@ -230,7 +230,7 @@ renderTagTree t =
             unTagNode n <> "/" <> renderTagNode rest
 
 renderInlineTag :: DomBuilder t m => Tag -> Map Text Text -> m () -> NeuronWebT t m ()
-renderInlineTag tag = neuronRouteLink (Some $ Route_Search $ Just tag)
+renderInlineTag tag = neuronRouteLink (Some $ Route_Impulse $ Just tag)
 
 style :: Css
 style = do

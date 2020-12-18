@@ -53,8 +53,8 @@ import System.FilePath ((</>))
 --
 -- We specify an alternate path, that is relative to project root, so that
 -- ghcide will be able to compile this module.
-searchScript :: Text
-searchScript = $(embedOneStringFileOf ["./ghcjs/q.js", "./neuron/ghcjs/q.js"])
+impulseJS :: Text
+impulseJS = $(embedOneStringFileOf ["./ghcjs/impulse.js", "./neuron/ghcjs/impulse.js"])
 
 -- | Generate the Zettelkasten site
 generateSite ::
@@ -77,7 +77,7 @@ generateSite config writeHtmlRoute' = do
     writeHtmlRoute val $ Z.Route_Zettel (zettelSlug z)
   -- Generate search page
   -- TODO: Generate here, or just reuse rememorate's html?
-  writeHtmlRoute searchScript $ Z.Route_Search Nothing
+  writeHtmlRoute impulseJS $ Z.Route_Impulse Nothing
   -- Report all errors
   forM_ (Map.toList _neuronCache_errors) $ \(zid, errs) -> do
     for errs $ \err -> reportError zid $

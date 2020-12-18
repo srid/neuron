@@ -110,23 +110,21 @@ renderZettelBottomPane graph mEditUrl z@Zettel {..} = do
     -- Tags
     whenJust tags renderTags
     -- TODO: style it.
-    divClass "ui compact neuron icon menu" $ do
-      -- Search
-      neuronRouteLink (Some $ Route_Search Nothing) ("class" =: "left item" <> "title" =: "Search Zettels") $ do
-        semanticIcon "search"
+    divClass "ui icon menu" $ do
+      -- Home
+      let mIndexZettel = G.getZettel indexZid graph
+      forM_ mIndexZettel $ \indexZettel ->
+        neuronRouteLink (Some $ Route_Zettel $ Z.zettelSlug indexZettel) ("class" =: "left item" <> "title" =: "Home") $
+          semanticIcon "home"
       -- Edit url
       forM_ mEditUrl $ \editUrlBase -> do
         let editUrl = editUrlBase <> toText zettelPath
         let attrs = "href" =: editUrl <> "title" =: "Edit this Zettel"
         elAttr "a" ("class" =: "center item" <> attrs) $ do
           semanticIcon "edit"
-      -- Home
-      let mIndexZettel = G.getZettel indexZid graph
-      forM_ mIndexZettel $ \indexZettel ->
-        neuronRouteLink (Some $ Route_Zettel $ Z.zettelSlug indexZettel) ("class" =: "left item" <> "title" =: "Home") $
-          semanticIcon "home"
-
--- Search
+      -- Impulse
+      neuronRouteLink (Some $ Route_Impulse Nothing) ("class" =: "right item" <> "title" =: "Open Impulse") $ do
+        semanticIcon "wave square"
 
 mkPandocRenderConfig ::
   PandocBuilder t m =>
@@ -187,7 +185,7 @@ renderTags tags = do
       -- the top pushes the zettel content down, introducing unnecessary white
       -- space below the title. So we put it at the bottom for now.
       neuronRouteLink
-        (Some $ Route_Search $ Just t)
+        (Some $ Route_Impulse $ Just t)
         ( "class" =: "ui basic label zettel-tag"
             <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
         )

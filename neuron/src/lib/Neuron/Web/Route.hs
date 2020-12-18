@@ -24,17 +24,16 @@ import Relude
 -- TODO: Update docs/code for removal of z-index
 -- TODO: Do we even need a route GADT?
 data Route a where
-  -- | Takes search JS code as render data
+  Route_Zettel :: Slug -> Route ZettelC
+  -- | Impulse is implemented in github.com/srid/rememorate
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
-  Route_Search :: Maybe Tag -> Route Text
-  Route_Zettel :: Slug -> Route ZettelC
+  Route_Impulse :: Maybe Tag -> Route Text
 
 routeHtmlPath :: Route a -> FilePath
 routeHtmlPath = \case
-  Route_Search _mtag ->
-    -- TODO: rememorate's file
-    "q.html"
+  Route_Impulse _mtag ->
+    "impulse.html"
   Route_Zettel slug ->
     toString slug <> ".html"
 
@@ -69,7 +68,7 @@ neuronRouteURL someR = do
 
 routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
-  Route_Search _mtag -> "Search"
+  Route_Impulse _mtag -> "Impulse"
   Route_Zettel _ ->
     either zettelTitle zettelTitle v
 

@@ -7,6 +7,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- TODO: Rename ZIndex to Impulse; possibly even move to Impulse.
 module Neuron.Web.ZIndex
   ( renderZIndex,
     buildZIndex,
@@ -113,7 +114,7 @@ renderZIndex ::
   NeuronWebT t m ()
 renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
   elClass "h1" "header" $ do
-    text "Zettel Index"
+    text "Impulse"
     dyn_ $
       ffor mqDyn $ \mq -> forM_ mq $ \q -> do
         text " ["
@@ -198,7 +199,6 @@ renderErrors errors = do
               <> "):"
         ZettelError_AmbiguousSlug _slug -> do
           text $ "Zettel '" <> unZettelID zid <> "' ignored; has ambiguous slug"
-
   forM_ (Map.toList errors) $ \(zid, zErrors) ->
     forM_ zErrors $ \zError -> do
       divClass ("ui tiny message " <> severity zError) $ do
