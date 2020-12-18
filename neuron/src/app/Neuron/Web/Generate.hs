@@ -75,8 +75,6 @@ generateSite config writeHtmlRoute' = do
   -- Generate HTML for every zettel
   forM_ zettelContents $ \val@(sansContent -> z) ->
     writeHtmlRoute val $ Z.Route_Zettel (zettelSlug z)
-  -- Generate the z-index
-  writeHtmlRoute _neuronCache_errors Z.Route_ZIndex
   -- Generate search page
   -- TODO: Generate here, or just reuse rememorate's html?
   writeHtmlRoute (cache, searchScript) $ Z.Route_Search Nothing

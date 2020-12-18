@@ -146,11 +146,8 @@ commandParser defaultNotesDir now = do
     openCommand = do
       fmap Open $
         fmap
-          (const $ OpenCommand $ Some $ R.Route_ZIndex)
-          (switch (long "zindex" <> help "Open z-index"))
-          <|> fmap
-            (const $ OpenCommand $ Some $ R.Route_Search Nothing)
-            (switch (long "search" <> help "Open the search page"))
+          (const $ OpenCommand $ Some $ R.Route_Search Nothing)
+          (switch (long "search" <> help "Open the search page"))
           <|> fmap
             (OpenCommand . Some . R.Route_Zettel)
             (strOption (long "slug" <> help "Open the zettel HTML page" <> metavar "SLUG"))

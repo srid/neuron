@@ -67,7 +67,6 @@ routeOpenGraph cfg@Config {siteTitle, author} g v r =
     { _openGraph_title = routeTitle' v r,
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
-        Route_ZIndex -> Just "Zettelkasten Index"
         (Route_Search _mtag) -> Just "Search Zettelkasten"
         Route_Zettel _ -> do
           doc <- getPandocDoc v

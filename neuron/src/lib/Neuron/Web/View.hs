@@ -109,10 +109,6 @@ renderRouteBody neuronVersion cfg@Config {..} r val =
     -- might be replaced by a new navigation mechanism (cf. rememorate project)
     navBar neuronTheme
     case r of
-      Route_ZIndex -> do
-        divClass "ui text container" $ do
-          let zIndexData = uncurry ZIndex.buildZIndex val
-          ZIndex.renderZIndex neuronTheme zIndexData (constDyn Nothing)
       Route_Search {} -> do
         -- Prerender what the dynamic JS will render.
         divClass "ui text container" $ do
@@ -167,8 +163,6 @@ actionsNav theme mIndexZettel mEditUrl = elClass "nav" "top-menu" $ do
       let attrs = "href" =: editUrl <> "title" =: "Edit this Zettel"
       elAttr "a" ("class" =: "center item" <> attrs) $ do
         semanticIcon "edit"
-    neuronRouteLink (Some Route_ZIndex) ("class" =: "right item" <> "title" =: "All Zettels (z-index)") $
-      semanticIcon "tree"
 
 style :: Css
 style = do

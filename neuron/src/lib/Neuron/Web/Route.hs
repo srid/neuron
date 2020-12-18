@@ -14,17 +14,17 @@ import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some)
 import Data.TagTree (Tag)
 import Neuron.Web.Cache.Type (NeuronCache)
-import Neuron.Zettelkasten.ID (Slug, ZettelID)
+import Neuron.Zettelkasten.ID (Slug)
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
-    ZettelError,
     ZettelT (zettelTitle),
   )
 import Reflex.Dom.Core (DomBuilder)
 import Relude
 
+-- TODO: Update docs/code for removal of z-index
+-- TODO: Do we even need a route GADT?
 data Route a where
-  Route_ZIndex :: Route (Map ZettelID (NonEmpty ZettelError))
   -- | Takes search JS code as render data
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
@@ -33,8 +33,6 @@ data Route a where
 
 routeHtmlPath :: Route a -> FilePath
 routeHtmlPath = \case
-  Route_ZIndex ->
-    "z-index.html"
   Route_Search _mtag ->
     -- TODO: rememorate's file
     "q.html"
@@ -72,7 +70,6 @@ neuronRouteURL someR = do
 
 routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
-  Route_ZIndex -> "Zettel Index"
   Route_Search _mtag -> "Search"
   Route_Zettel _ ->
     either zettelTitle zettelTitle v
