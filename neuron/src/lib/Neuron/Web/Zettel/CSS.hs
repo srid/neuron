@@ -9,10 +9,10 @@ where
 import Clay hiding (id, ms, not, object, reverse, s, style, type_)
 import qualified Clay as C
 import qualified Clay.Media as CM
-import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Widget.InvertedTree as IT
-import Relude hiding ((&))
 import qualified Neuron.Reader.Markdown as Markdown
+import qualified Neuron.Web.Theme as Theme
+import Neuron.Web.Widget.InvertedTree as IT (style)
+import Relude hiding ((&))
 
 zettelCss :: Css
 zettelCss = do
@@ -20,10 +20,13 @@ zettelCss = do
   zettelCommonCss
   C.queryOnly CM.screen [CM.maxWidth $ px 768] $ do
     "div#zettel-container" ? do
-      -- Fix too big of margin on mobile.
       C.important $ do
+        -- Fix too big of margin on mobile.
         C.marginLeft $ em 0.4
         C.marginRight $ em 0.4
+  "div.container.universe" ? do
+    -- Some space on top
+    C.paddingTop $ em 1.0
   "div.zettel-view" ? do
     -- This list styling applies both to zettel content, and the rest of the
     -- view (eg: connections pane)

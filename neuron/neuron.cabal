@@ -14,7 +14,7 @@ synopsis:
 description:
   neuron is a future-proof system for managing your plain-text Zettelkasten notes.
 data-files:
-  src-js/search.js
+  ghcjs/q.js
   src-bash/neuron-search
 
 source-repository head
