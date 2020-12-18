@@ -18,10 +18,8 @@ module Neuron.Web.View where
 import Clay (Css, em, gray, important, pct, px, (?))
 import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
-import qualified Data.Aeson.Text as Aeson
 import Data.Some (Some (Some))
 import Neuron.Config.Type (Config (..))
-import Neuron.Web.Cache.Type (NeuronCache (..))
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
@@ -61,17 +59,6 @@ renderRouteHead config route val = do
   elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.css") blank
   elAttr "style" ("type" =: "text/css") $ text $ toText $ C.renderWith C.compact [] style
   elLinkGoogleFonts neuronFonts
-  -- Inject search.html specific stuff
-  case route of
-    Route_Search {} -> do
-      forM_
-        [ "https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.min.js",
-          "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.js",
-          "https://cdn.jsdelivr.net/npm/js-search@2.0.0/dist/umd/js-search.min.js"
-        ]
-        $ \scrpt -> do
-          elAttr "script" ("src" =: scrpt) blank
-    _ -> blank
   where
     routeTitle :: Config -> a -> Route a -> Text
     routeTitle Config {..} v =
@@ -83,6 +70,7 @@ renderRouteHead config route val = do
             else x <> " - " <> suffix
 
 bodyTemplate ::
+  forall t m.
   DomBuilder t m =>
   Text ->
   Config ->
@@ -96,6 +84,7 @@ bodyTemplate neuronVersion Config {..} w = do
     renderBrandFooter neuronVersion
 
 renderRouteBody ::
+  forall t m a.
   (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   Text ->
   Config ->
@@ -103,36 +92,19 @@ renderRouteBody ::
   (ZettelGraph, a) ->
   NeuronWebT t m ()
 renderRouteBody neuronVersion cfg@Config {..} r val =
-  bodyTemplate neuronVersion cfg $ do
-    let neuronTheme = Theme.mkTheme theme
-    -- TODO: actionsNav should ideally belong in `bodyTemplate`, however it
-    -- might be replaced by a new navigation mechanism (cf. rememorate project)
-    navBar neuronTheme
-    case r of
-      Route_Search {} -> do
-        -- Prerender what the dynamic JS will render.
-        divClass "ui text container" $ do
-          let NeuronCache {..} = fst $ snd val
-          let zIndexData = ZIndex.buildZIndex _neuronCache_graph _neuronCache_errors
-          ZIndex.renderZIndex neuronTheme zIndexData (constDyn Nothing)
-          uncurry renderSearch $ snd val
-      Route_Zettel _ -> do
+  case r of
+    -- HTML for this route is all handled in JavaScript
+    Route_Search {} -> do
+      el "script" $ text $ snd $ snd val
+    Route_Zettel _ -> do
+      bodyTemplate neuronVersion cfg $ do
+        let neuronTheme = Theme.mkTheme theme
+        -- TODO: actionsNav should ideally belong in `bodyTemplate`, however it
+        -- might be replaced by a new navigation mechanism (cf. rememorate project)
+        let indexZettel = G.getZettel indexZid $ fst val
+            mEditUrl = (<> toText (zettelPath $ sansContent $ snd val)) <$> editUrl
+        actionsNav neuronTheme indexZettel mEditUrl
         ZettelView.renderZettel val
-  where
-    indexZettel = G.getZettel indexZid $ fst val
-    navBar neuronTheme = do
-      let mEditUrl = case r of
-            Route_Zettel _ ->
-              (<> toText (zettelPath $ sansContent $ snd val)) <$> editUrl
-            _ ->
-              Nothing
-      actionsNav neuronTheme indexZettel mEditUrl
-
-renderSearch :: DomBuilder t m => NeuronCache -> Text -> m ()
-renderSearch cache script = do
-  -- TODO: Embed JSON directly here?
-  el "script" $ text $ "let cache = " <> toText (Aeson.encodeToLazyText cache) <> ";"
-  el "script" $ text script
 
 renderBrandFooter :: DomBuilder t m => Text -> m ()
 renderBrandFooter ver =
