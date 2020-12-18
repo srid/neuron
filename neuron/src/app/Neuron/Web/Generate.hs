@@ -69,7 +69,7 @@ generateSite config writeHtmlRoute' = do
           <> C.minVersion config
           <> ", but your neuron version is "
           <> neuronVersion
-  (cache@Cache.NeuronCache {..}, zettelContents) <- loadZettelkasten config
+  (Cache.NeuronCache {..}, zettelContents) <- loadZettelkasten config
   let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
       writeHtmlRoute v r = writeHtmlRoute' r (_neuronCache_graph, v)
   -- Generate HTML for every zettel
@@ -77,7 +77,7 @@ generateSite config writeHtmlRoute' = do
     writeHtmlRoute val $ Z.Route_Zettel (zettelSlug z)
   -- Generate search page
   -- TODO: Generate here, or just reuse rememorate's html?
-  writeHtmlRoute (cache, searchScript) $ Z.Route_Search Nothing
+  writeHtmlRoute searchScript $ Z.Route_Search Nothing
   -- Report all errors
   forM_ (Map.toList _neuronCache_errors) $ \(zid, errs) -> do
     for errs $ \err -> reportError zid $

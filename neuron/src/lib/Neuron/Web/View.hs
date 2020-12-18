@@ -85,7 +85,7 @@ renderRouteBody neuronVersion cfg@Config {..} r val =
   case r of
     -- HTML for this route is all handled in JavaScript
     Route_Search {} -> do
-      el "script" $ text $ snd $ snd val
+      el "script" $ text $ snd val
     Route_Zettel _ -> do
       bodyTemplate neuronVersion cfg $ do
         ZettelView.renderZettel val editUrl
