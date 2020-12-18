@@ -30,6 +30,7 @@ module Data.Graph.Labelled
     induceOnEdge,
     induce,
     emap,
+    vmap,
   )
 where
 

@@ -13,7 +13,7 @@ where
 import Data.Graph.Labelled (LabelledGraph)
 import qualified Data.Graph.Labelled as Algo
 import Neuron.Zettelkasten.Connection (Connection)
-import Neuron.Zettelkasten.Zettel (Zettel)
+import Neuron.Zettelkasten.Zettel (Zettel, zettelQueries)
 import Relude
 import Text.Pandoc.Definition (Block)
 
@@ -28,4 +28,8 @@ type ZettelGraph = LabelledGraph Zettel (Maybe (Connection, [Block]))
 -- | Compress the graph to save space, by eliminating the unnecessary
 -- surrounding context Pandoc blocks.
 stripSurroundingContext :: ZettelGraph -> ZettelGraph
-stripSurroundingContext = Algo.emap (fmap (second $ const mempty))
+stripSurroundingContext =
+  Algo.emap (fmap (second $ const mempty))
+    . Algo.vmap (\z -> z {zettelQueries = stripContextFromZettelQuery <$> zettelQueries z})
+  where
+    stripContextFromZettelQuery (someQ, _ctx) = (someQ, mempty)
