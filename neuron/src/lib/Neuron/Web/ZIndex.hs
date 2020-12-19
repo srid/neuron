@@ -121,7 +121,7 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
         text " ["
         el "tt" $ text q
         text "]"
-  elVisible (isNothing <$> mqDyn) $
+  elVisible (ffor mqDyn $ \mq -> isNothing mq && not (null zIndexErrors)) $
     elClass "details" "ui tiny errors message" $ do
       el "summary" $ text "Errors"
       renderErrors zIndexErrors
