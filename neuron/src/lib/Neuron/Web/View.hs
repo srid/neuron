@@ -15,7 +15,7 @@
 -- | HTML & CSS
 module Neuron.Web.View where
 
-import Clay (Css, em, gray, important, pct, px, (?))
+import Clay (Css, em, gray, important, pct, (?))
 import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Neuron.Config.Type (Config (..))
@@ -109,11 +109,6 @@ style = do
     ZettelCSS.zettelCss
     QueryView.style
     footerStyle
-    navBarStyle
-    "i.tree.icon" ? do
-      -- Apparently this workarounds the tree icon disappearing or getting
-      -- botched at times.
-      C.overflow C.hidden
   where
     footerStyle = do
       ".footer-version img" ? do
@@ -127,12 +122,3 @@ style = do
       ".footer-version" ? do
         important $ C.marginTop $ em 1
         C.fontSize $ em 0.7
-    navBarStyle = do
-      "nav.top-menu" ? do
-        C.paddingTop $ em 1
-        C.paddingBottom $ em 1
-        C.justifyContent C.center
-        C.textAlign C.center
-        "> *" ? do
-          C.paddingLeft $ px 0
-          C.paddingRight $ px 0

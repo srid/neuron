@@ -64,6 +64,7 @@ data Stats = Stats
   }
   deriving (Eq, Show)
 
+-- TODO: Create SearchQuery.hs, and make a note of sharing it with CLI search.
 data TreeMatch
   = -- | Tree's root matches the query.
     -- Subtrees may or may not match.
