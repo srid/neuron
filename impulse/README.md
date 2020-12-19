@@ -11,6 +11,7 @@ Unless you enjoy compiling for hours at end, you should use the reflex-platform 
 Running locally using GHC and jsaddle-warp:
 
 ```bash
+# First changed hardcoded path in ./src/Impulse/Run.hs
 nix-shell --run 'ghcid -T :main'
 # Or, to run with a custom port
 nix-shell --run 'JSADDLE_WARP_PORT=8080 ghcid -T :main'

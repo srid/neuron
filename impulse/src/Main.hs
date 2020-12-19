@@ -10,7 +10,6 @@ import Data.Some (Some, withSome)
 import qualified Data.Text as T
 import Impulse.Run (run)
 import Language.Javascript.JSaddle (MonadJSM)
-import Neuron.Config.Type (Config (Config))
 import Neuron.Web.Cache.Type (NeuronCache)
 import qualified Neuron.Web.Cache.Type as C
 import Neuron.Web.Route
@@ -35,22 +34,9 @@ main =
 
 headWidget :: DomBuilder t m => m ()
 headWidget = do
-  -- TODO: Set this using cache.json fetched (how..?)
-  let dummyConfig =
-        Config
-          Nothing
-          Nothing
-          ["markdown"]
-          "1.0"
-          Nothing
-          "TODO"
-          "blue"
-          False
-  V.renderRouteHead dummyConfig (Route_Impulse Nothing) ""
-
--- TODO(before testing on srid.ca)
--- - Finalize "q.html" (/explore/? /impulse/? ...)
--- - <head> dummy vars?
+  -- TODO: Include site title from neuron.dhall; this requires getting the cache
+  -- dynamic from bodyWidget.
+  V.renderHead $ text "Impulse (neuron)"
 
 bodyWidget ::
   forall t m.
@@ -69,7 +55,7 @@ bodyWidget = do
   mresp <- maybeDyn =<< getCache @C.NeuronCache
   dyn_ $
     ffor mresp $ \case
-      Nothing -> text "Loading JSON cache..."
+      Nothing -> loader
       Just resp -> do
         eresp <- eitherDyn resp
         dyn_ $
@@ -80,6 +66,13 @@ bodyWidget = do
             Right nDyn ->
               -- TODO: push dynamic inner?
               dyn_ $ ffor nDyn renderPage
+
+loader :: DomBuilder t m => m ()
+loader = do
+  divClass "ui text container" $ do
+    divClass "ui active dimmer" $ do
+      divClass "ui medium text loader" $ text "Fetching JSON cache"
+    el "p" blank
 
 renderPage ::
   ( PostBuild t m,
@@ -98,7 +91,6 @@ renderPage C.NeuronCache {..} = do
     divClass "ui text container" $ do
       mquery0 <- urlQueryVal [queryKey|q|]
       qDyn <- searchInput mquery0
-      divClass "ui hidden divider" blank
       let zindex =
             ZIndex.buildZIndex _neuronCache_graph _neuronCache_errors
       runNeuronGhcjs $ ZIndex.renderZIndex Theme.Red zindex qDyn

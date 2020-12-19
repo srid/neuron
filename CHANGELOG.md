@@ -15,6 +15,7 @@
     - Fix internal z:/ URIs appearing in OpenGraph previews (#482)
     - Fix blockquote paragraph order in footnotes (#350)
     - Fix unnecessary horizontal scrolling on mobile (#468)
+  - Introducing *impulse* -- foundation for upcoming advanced search, replacing both z-index and legacy JS search (#108)
 - Zettel format
   - Ignore punctuation in inline tags (#443)
   - Remove support for autolinks (`<..>`) (#449) (see [migration script](https://github.com/srid/neuron/issues/449#issuecomment-719062302))
