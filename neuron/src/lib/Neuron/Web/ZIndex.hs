@@ -134,7 +134,7 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
           simpleList pinned $ \zDyn ->
             dyn_ $ ffor zDyn zettelLink
     let orphans = ffor mqDyn $ \mq -> filter (matchZettel mq) zIndexOrphans
-    divClassVisible (not . null <$> orphans) "ui piled segment" $ do
+    divClassVisible (not . null <$> orphans) "ui segment" $ do
       elClass "p" "info" $ do
         text "Notes without any "
         elAttr "a" ("href" =: "https://neuron.zettel.page/linking.html") $ text "folgezettel"
