@@ -67,8 +67,11 @@ parseZettel format zreader queryExtractor fn zid s = do
       Some (ZettelQuery_TagZettel tag) -> Just tag
       _ -> Nothing
     mkDefaultSlug :: Text -> Slug
-    mkDefaultSlug =
-      T.intercalate "_" . T.splitOn " "
+    mkDefaultSlug ss =
+      foldl' (\s' x -> T.replace x "_" s') ss (charsDisallowedInURL <> [" "])
+    charsDisallowedInURL :: [Text]
+    charsDisallowedInURL =
+      [":"]
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
