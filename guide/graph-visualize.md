@@ -1,10 +1,12 @@
-# Graph view
+# Graph visualization
 
-A zettelkasten is a [directed graph](https://en.wikipedia.org/wiki/Directed_graph). Neuron also has the notion of [[[folgezettel-heterarchy]]], which is a subset of this graph established by having zettels "branch off" to other zettels.
+A zettelkasten is a [directed graph](https://en.wikipedia.org/wiki/Directed_graph). Neuron also has an unique notion of [[[folgezettel-heterarchy]]], which is a *subset* of this graph established by having zettels "branch off" to other zettels.
 
-## z-index 
+There are two modes of visualization these graph connections:
 
-The z-index page (at `/z-index.html`; also linked in the header) displays the zettelkasten [[[folgezettel-heterarchy]]] for all [[[2012301]]] in the zettelkasten graph.
+## [[impulse-feature]]
+
+In an otherwise statically-generated neuron site, [[[impulse-feature]]] represents its *dynamic* part.
 
 ## Uplinks and Backlinks
 

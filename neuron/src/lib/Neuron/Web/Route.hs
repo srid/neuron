@@ -21,7 +21,6 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core (DomBuilder)
 import Relude
 
--- TODO: Update docs/code for removal of z-index
 -- TODO: Do we even need a route GADT?
 data Route a where
   Route_Zettel :: Slug -> Route ZettelC
