@@ -1,0 +1,61 @@
+cabal-version:      2.4
+name:               impulse
+version:            0.1.0.0
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Sridhar Ratnakumar
+maintainer:         srid@srid.ca
+build-type:         Simple
+extra-source-files: README.md
+
+executable impulse
+  hs-source-dirs:     src
+  main-is:            Main.hs
+  -- TODO: Why is this not being recognized by Cabal (thus affecting HLS;
+  -- forcing the user to explicitly open Run.hs)? Replacing with other-modules
+  -- works, but that breaks ghcid's -T flag.
+  exposed-modules:
+    Impulse.Run
+  build-depends:
+      base
+    , reflex
+    , reflex-dom
+    , text
+    , aeson
+    , bytestring
+    , relude >= 0.7.0.0
+    , jsaddle
+    , neuron >= 1.1.14.0
+    , dependent-sum
+    , modern-uri
+  if !impl(ghcjs)
+    build-depends:
+      warp,
+      websockets,
+      jsaddle-warp,
+      wai,
+      http-types
+
+  mixins:
+    base hiding (Prelude),
+    relude (Relude as Prelude, Relude.Extra)
+
+  default-extensions:
+    DataKinds
+    FlexibleContexts
+    LambdaCase
+    OverloadedStrings
+    ScopedTypeVariables
+    TypeApplications
+    DeriveGeneric
+
+  ghc-options: -threaded -O -Wall -Wredundant-constraints -Wincomplete-uni-patterns -Wincomplete-record-updates -fno-show-valid-hole-fits
+
+  if impl(ghcjs -any)
+    ghc-options: -dedupe
+    cpp-options: -DGHCJS_BROWSER
+
+  default-language:   Haskell2010
+
+  if os(osx)
+    ghc-options: -dynamic

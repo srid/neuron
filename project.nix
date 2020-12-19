@@ -1,8 +1,4 @@
 let
-  gitignoreSrc = builtins.fetchTarball {
-    url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
-    sha256 = "1npnx0h6bd0d7ql93ka7azhj40zgjp815fw2r6smg8ch9p7mzdlx";
-  };
   nixpkgs = import ./dep/nixpkgs {};
 in {
   pkgs ? nixpkgs,
@@ -17,7 +13,7 @@ let
   inherit (pkgs.haskell.lib)
     overrideCabal doJailbreak dontCheck justStaticExecutables appendConfigureFlags;
 
-  inherit (import (gitignoreSrc) { inherit (pkgs) lib; }) gitignoreSource;
+  inherit (import ./dep/gitignore { inherit (pkgs) lib; }) gitignoreSource;
 
   thunkOrPath = dep:
     let p = ./dep + "/${dep}/thunk.nix";
