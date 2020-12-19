@@ -30,7 +30,7 @@ import Text.URI.Util (getQueryParam)
 
 main :: IO ()
 main =
-  run 3003 $ Main.mainWidgetWithHead headWidget bodyWidget
+  run "cache.json" 3003 $ Main.mainWidgetWithHead headWidget bodyWidget
 
 headWidget :: DomBuilder t m => m ()
 headWidget = do

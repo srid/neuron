@@ -27,21 +27,20 @@ import qualified Network.HTTP.Types as H
 -- | Run the given 'JSM' action as the main entry point.  Either directly
 --   in GHCJS or as a Warp server on the given port on GHC.
 #ifdef ghcjs_HOST_OS
-run :: Int -> IO () -> IO ()
-run _port = id
+run :: FilePath -> Int -> IO () -> IO ()
+run _dataPath _port = id
 #else
-run :: Int -> JSM () -> IO ()
-run port f =
+run :: FilePath -> Int -> JSM () -> IO ()
+run dataPath port f =
     runSettings (setPort port (setTimeout 3600 defaultSettings)) =<<
         jsaddleOr defaultConnectionOptions (f >> syncPoint) jsaddleAppOr
     where
       jsaddleAppOr =
         jsaddleAppWithJsOr (jsaddleJs False) otherApp
       otherApp req sendResponse = do
-        -- HACK: to serve neuron's json cache
         resp <- case W.rawPathInfo req of
           "/cache.json" -> do
-            s <- readFileLBS "/home/srid/Documents/zk/.neuron/output/cache.json"
+            s <- readFileLBS dataPath
             pure $ W.responseLBS H.status200 [("Content-Type", "text/plain")] s
           _path ->
             pure $ W.responseLBS H.status403 [("Content-Type", "text/plain")] "Forbidden"
