@@ -17,6 +17,7 @@ let
         cm = hackGet ./dep/commonmark;
       in {
         relude = hackGet ./dep/relude;
+        # TODO: Ignore bin, .vscode, etc.
         impulse = pkgs.lib.cleanSource (gitignoreSource ./.);
 
         # neuron & its dependencies (not already in reflex-platform)
