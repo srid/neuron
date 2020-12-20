@@ -1,13 +1,13 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Main where
 
 import Control.Monad.Fix (MonadFix)
-import Data.Aeson (FromJSON, eitherDecode)
-import qualified Data.ByteString.Lazy as BL
 import Data.Some (Some, withSome)
 import qualified Data.Text as T
+import qualified Impulse.Cache as Cache
 import qualified Impulse.Run as Run
 import Language.Javascript.JSaddle (MonadJSM)
 import Neuron.Web.Cache.Type (NeuronCache)
@@ -46,7 +46,10 @@ bodyWidget ::
   ) =>
   m ()
 bodyWidget = do
-  mresp <- maybeDyn =<< getCache @C.NeuronCache
+  -- Not using local cache (see comment in Web.View)
+  mresp <-
+    maybeDyn
+      =<< Cache.getCacheRemote @C.NeuronCache
   dyn_ $
     ffor mresp $ \case
       Nothing -> loader
@@ -57,9 +60,8 @@ bodyWidget = do
             Left errDyn -> do
               text "ERROR: "
               dynText $ T.pack <$> errDyn
-            Right nDyn ->
-              -- TODO: push dynamic inner?
-              dyn_ $ ffor nDyn renderPage
+            Right cacheDyn ->
+              dyn_ $ renderPage <$> cacheDyn
 
 loader :: DomBuilder t m => m ()
 loader = do
@@ -117,36 +119,6 @@ urlQueryVal :: MonadJSM m => URI.RText 'URI.QueryKey -> m (Maybe Text)
 urlQueryVal key = do
   uri <- URI.mkURI @Maybe <$> getLocationUrl
   pure $ getQueryParam key =<< uri
-
-getCache ::
-  forall a t m.
-  ( PostBuild t m,
-    PerformEvent t m,
-    TriggerEvent t m,
-    HasJSContext (Performable m),
-    MonadJSM (Performable m),
-    MonadHold t m,
-    MonadFix m,
-    FromJSON a,
-    Eq a
-  ) =>
-  m (Dynamic t (Maybe (Either String a)))
-getCache = do
-  -- TODO: refactor
-  pb <- getPostBuild
-  resp' <-
-    performRequestAsyncWithError $
-      XhrRequest "GET" "cache.json" def <$ pb
-  let resp = ffor resp' $ first show >=> decodeXhrResponseWithError
-  mresp <- holdDyn Nothing $ Just <$> resp
-  -- Workaround for thrice triggering bug?
-  holdUniqDyn mresp
-  where
-    decodeXhrResponseWithError :: XhrResponse -> Either String a
-    decodeXhrResponseWithError =
-      fromMaybe (Left "Empty response") . sequence
-        . traverse (eitherDecode . BL.fromStrict . encodeUtf8)
-        . _xhrResponse_responseText
 
 runNeuronGhcjs :: NeuronWebT t m a -> m a
 runNeuronGhcjs = runNeuronWeb routeConfigGhcjs

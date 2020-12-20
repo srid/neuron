@@ -69,14 +69,14 @@ generateSite config writeHtmlRoute' = do
           <> C.minVersion config
           <> ", but your neuron version is "
           <> neuronVersion
-  (Cache.NeuronCache {..}, zettelContents) <- loadZettelkasten config
+  (cache@Cache.NeuronCache {..}, zettelContents) <- loadZettelkasten config
   let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
       writeHtmlRoute v r = writeHtmlRoute' r (_neuronCache_graph, v)
   -- Generate HTML for every zettel
   forM_ zettelContents $ \val@(sansContent -> z) ->
     writeHtmlRoute val $ Z.Route_Zettel (zettelSlug z)
   -- Generate search page
-  writeHtmlRoute impulseJS $ Z.Route_Impulse Nothing
+  writeHtmlRoute (cache, impulseJS) $ Z.Route_Impulse Nothing
   -- Report all errors
   forM_ (Map.toList _neuronCache_errors) $ \(zid, errs) -> do
     for errs $ \err -> reportError zid $

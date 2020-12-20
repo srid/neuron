@@ -13,6 +13,7 @@ import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some)
 import Data.TagTree (Tag)
+import Neuron.Web.Cache.Type (NeuronCache)
 import Neuron.Zettelkasten.ID (Slug)
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
@@ -27,7 +28,7 @@ data Route a where
   -- | Impulse is implemented in github.com/srid/rememorate
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
-  Route_Impulse :: Maybe Tag -> Route Text
+  Route_Impulse :: Maybe Tag -> Route (NeuronCache, Text)
 
 routeHtmlPath :: Route a -> FilePath
 routeHtmlPath = \case

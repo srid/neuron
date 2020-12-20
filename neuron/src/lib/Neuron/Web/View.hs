@@ -71,6 +71,8 @@ bodyTemplate neuronVersion Config {..} w = do
     w
     renderBrandFooter neuronVersion
 
+-- TODO: Deconstruct and move to Main.hs, because the Route_Impulse stuff need
+-- not be in library.
 renderRouteBody ::
   forall t m a.
   (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
@@ -79,18 +81,32 @@ renderRouteBody ::
   Route a ->
   (ZettelGraph, a) ->
   NeuronWebT t m ()
-renderRouteBody neuronVersion cfg@Config {..} r val =
+renderRouteBody neuronVersion cfg@Config {..} r (g, val) =
   case r of
     Route_Impulse {} -> do
       -- HTML for this route is all handled in JavaScript (compiled from
       -- impulse's sources).
-      -- TODO: Inject cache.json inline here, to obviate having to download at
-      -- runtime.
-      el "script" $ text $ snd val
+      let (_cache, js) = val
+      -- XXX: Disabling JSON cache, because we don't yet know of a performant
+      -- way to load it in GHCJS.
+      -- ...
+      -- The JSON cache being injected here will be accessed at runtime by
+      -- Impulse. It is also available on disk as `cache.json`, which Impulse
+      -- retrieves in development mode (as no injection can happen in the
+      -- GHC/jsaddle context).
+      {-
+      let cacheJsonJson =
+            TL.toStrict $
+              encodeToLazyText $
+                TL.toStrict $ encodeToLazyText cache
+      el "script" $ text $ "\nvar cacheText = " <> cacheJsonJson <> ";\n"
+      -- el "script" $ text $ "\nvar cache = " <> (TL.toStrict . encodeToLazyText) cache <> ";\n"
+      -}
+      el "script" $ text js
     Route_Zettel _ -> do
       bodyTemplate neuronVersion cfg $ do
         let neuronTheme = Theme.mkTheme theme
-        ZettelView.renderZettel neuronTheme val editUrl
+        ZettelView.renderZettel neuronTheme (g, val) editUrl
 
 renderBrandFooter :: DomBuilder t m => Text -> m ()
 renderBrandFooter ver =
