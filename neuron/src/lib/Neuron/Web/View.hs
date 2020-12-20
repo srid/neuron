@@ -36,6 +36,7 @@ import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding ((&))
 
+-- TODO: Rename to headTemplate and put in its own file (for reducing ghcjs asset)
 renderHead ::
   DomBuilder t m =>
   m () ->
@@ -86,7 +87,8 @@ renderRouteBody neuronVersion cfg@Config {..} r val =
       el "script" $ text $ snd val
     Route_Zettel _ -> do
       bodyTemplate neuronVersion cfg $ do
-        ZettelView.renderZettel val editUrl
+        let neuronTheme = Theme.mkTheme theme
+        ZettelView.renderZettel neuronTheme val editUrl
 
 renderBrandFooter :: DomBuilder t m => Text -> m ()
 renderBrandFooter ver =

@@ -28,6 +28,8 @@ import Neuron.Web.Route
     neuronRouteLink,
     whenStaticallyGenerated,
   )
+import Neuron.Web.Theme (Theme)
+import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget (elPreOverflowing, elTime, semanticIcon)
 import qualified Neuron.Web.Widget.AutoScroll as AS
 import qualified Neuron.Web.Widget.InvertedTree as IT
@@ -57,14 +59,15 @@ import qualified Text.URI as URI
 
 renderZettel ::
   PandocBuilder t m =>
+  Theme ->
   (ZettelGraph, ZettelC) ->
   Maybe Text ->
   NeuronWebT t m ()
-renderZettel (graph, zc@(sansContent -> z)) mEditUrl = do
+renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
-      Q.renderZettelLink Nothing (fmap fst $ G.getConnection z z2 graph) def z2
+      Q.renderZettelLink Nothing (fst <$> G.getConnection z z2 graph) def z2
   -- Main content
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     whenStaticallyGenerated $ do
@@ -73,7 +76,7 @@ renderZettel (graph, zc@(sansContent -> z)) mEditUrl = do
       lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
       renderZettelContentCard (graph, zc)
-      renderZettelBottomPane graph mEditUrl z
+      renderZettelBottomPane theme graph mEditUrl z
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
   whenStaticallyGenerated $ do
@@ -91,40 +94,48 @@ renderZettelContentCard (graph, zc) =
     Left z -> do
       renderZettelRawContent z
 
-renderZettelBottomPane :: forall t m. PandocBuilder t m => ZettelGraph -> Maybe Text -> Zettel -> NeuronWebT t m ()
-renderZettelBottomPane graph mEditUrl z@Zettel {..} = do
+renderZettelBottomPane ::
+  forall t m.
+  PandocBuilder t m =>
+  Theme ->
+  ZettelGraph ->
+  Maybe Text ->
+  Zettel ->
+  NeuronWebT t m ()
+renderZettelBottomPane theme graph mEditUrl z@Zettel {..} = do
   let backlinks = nonEmpty $ G.backlinks isJust z graph
       tags = nonEmpty zettelTags
-  elClass "nav" "ui bottom attached segment deemphasized backlinks-container" $ do
-    -- Backlinks
-    whenJust backlinks $ \links -> do
-      elClass "h3" "ui header" $ text "Backlinks"
-      elClass "ul" "backlinks" $ do
-        forM_ links $ \((conn, ctxList), zl) ->
-          el "li" $ do
-            Q.renderZettelLink Nothing (Just conn) def zl
-            elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
-              forM_ ctxList $ \ctx -> do
-                elClass "li" "item" $ do
-                  void $ elPandoc (mkPandocRenderConfig graph) $ Pandoc mempty [ctx]
-    -- Tags
-    whenJust tags renderTags
-    -- TODO: style it.
-    divClass "ui icon menu" $ do
-      -- Home
-      let mIndexZettel = G.getZettel indexZid graph
-      forM_ mIndexZettel $ \indexZettel ->
-        neuronRouteLink (Some $ Route_Zettel $ Z.zettelSlug indexZettel) ("class" =: "left item" <> "title" =: "Home") $
-          semanticIcon "home"
-      -- Edit url
-      forM_ mEditUrl $ \editUrlBase -> do
-        let editUrl = editUrlBase <> toText zettelPath
-        let attrs = "href" =: editUrl <> "title" =: "Edit this Zettel"
-        elAttr "a" ("class" =: "center item" <> attrs) $ do
-          semanticIcon "edit"
-      -- Impulse
-      neuronRouteLink (Some $ Route_Impulse Nothing) ("class" =: "right item" <> "title" =: "Open Impulse") $ do
-        semanticIcon "wave square"
+  whenJust (() <$ backlinks <|> () <$ tags) $ \() -> do
+    -- TODO: background is too light
+    elClass "nav" "ui attached segment deemphasized bottomPane" $ do
+      -- Backlinks
+      whenJust backlinks $ \links -> do
+        elClass "h3" "ui header" $ text "Backlinks"
+        elClass "ul" "backlinks" $ do
+          forM_ links $ \((conn, ctxList), zl) ->
+            el "li" $ do
+              Q.renderZettelLink Nothing (Just conn) def zl
+              elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
+                forM_ ctxList $ \ctx -> do
+                  elClass "li" "item" $ do
+                    void $ elPandoc (mkPandocRenderConfig graph) $ Pandoc mempty [ctx]
+      -- Tags
+      whenJust tags renderTags
+  divClass ("ui bottom attached icon compact inverted menu " <> Theme.semanticColor theme) $ do
+    -- Home
+    let mIndexZettel = G.getZettel indexZid graph
+    forM_ mIndexZettel $ \indexZettel ->
+      neuronRouteLink (Some $ Route_Zettel $ Z.zettelSlug indexZettel) ("class" =: "item" <> "title" =: "Home") $
+        semanticIcon "home"
+    -- Edit url
+    forM_ mEditUrl $ \editUrlBase -> do
+      let editUrl = editUrlBase <> toText zettelPath
+      let attrs = "href" =: editUrl <> "title" =: "Edit this page"
+      elAttr "a" ("class" =: "item" <> attrs) $ do
+        semanticIcon "edit"
+    -- Impulse
+    neuronRouteLink (Some $ Route_Impulse Nothing) ("class" =: "right item" <> "title" =: "Open Impulse") $ do
+      semanticIcon "wave square"
 
 mkPandocRenderConfig ::
   PandocBuilder t m =>

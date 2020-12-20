@@ -42,7 +42,7 @@ zettelCss = do
     "a" ? do
       C.color black
   -- Backlinks
-  "nav.backlinks-container" ? do
+  "nav.bottomPane" ? do
     C.important $ C.backgroundColor "#eee"
   "ul.backlinks > li" ? do
     C.paddingBottom $ em 0.4
