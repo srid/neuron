@@ -12,19 +12,16 @@ in {
 let
   inherit (pkgs.haskell.lib)
     overrideCabal doJailbreak dontCheck justStaticExecutables appendConfigureFlags;
-
-  inherit (import ./dep/gitignore { inherit (pkgs) lib; }) gitignoreSource;
-
-  thunkOrPath = dep:
-    let p = ./dep + "/${dep}/thunk.nix";
-    in if builtins.pathExists p then import p else (./dep + "/${dep}");
+  inherit (import ./dep/gitignore { inherit (pkgs) lib; }) 
+    gitignoreSource;
+  inherit (import ./dep/nix-thunk {}) 
+    thunkSource;
 
   sources = {
     neuron = gitignoreSource ./neuron;
-    # TODO: Switch to using `niv` exclusively.
-    rib = thunkOrPath "rib";
-    reflex-dom-pandoc = thunkOrPath "reflex-dom-pandoc";
-    pandoc-link-context = thunkOrPath "pandoc-link-context";
+    rib = thunkSource ./dep/rib;
+    reflex-dom-pandoc = thunkSource ./dep/reflex-dom-pandoc;
+    pandoc-link-context = thunkSource ./dep/pandoc-link-context;
   };
 
   searchBuilder = ''
