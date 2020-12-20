@@ -20,7 +20,7 @@ import Neuron.Web.Manifest (Manifest, renderManifest)
 import qualified Neuron.Web.Manifest as Manifest
 import Neuron.Web.Route (NeuronWebT, Route (..), runNeuronWeb)
 import Neuron.Web.StructuredData (renderStructuredData)
-import Neuron.Web.View (renderHead, renderRouteBody, routeTitle)
+import Neuron.Web.View (headTemplate, renderRouteBody, routeTitle)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
@@ -63,15 +63,14 @@ renderRoutePage config headHtml manifest r val = do
   el "!DOCTYPE html" blank
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
-      renderHead $ text $ routeTitle config (snd val) r
-      -- Extra head stuff (those we can't do in `renderRouteHead` because that's
-      -- core library)
-      renderHeadHtml headHtml
-      renderManifest manifest
-      renderStructuredData config r val
-      syntaxHighlightingInclude
+      headTemplate $ do
+        text $ routeTitle config (snd val) r
+        case r of
+          Route_Zettel _ -> do
+            renderHeadHtml headHtml
+            renderManifest manifest
+            renderStructuredData config r val
+            elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
+          _ -> blank
     el "body" $ do
       renderRouteBody neuronVersion config r val
-  where
-    syntaxHighlightingInclude =
-      elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango

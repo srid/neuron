@@ -34,14 +34,13 @@ import qualified Neuron.Web.Zettel.View as ZettelView
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
-import Relude hiding ((&))
+import Relude
 
--- TODO: Rename to headTemplate and put in its own file (for reducing ghcjs asset)
-renderHead ::
+headTemplate ::
   DomBuilder t m =>
   m () ->
   m ()
-renderHead titleWidget = do
+headTemplate titleWidget = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
   el "title" titleWidget
@@ -82,8 +81,11 @@ renderRouteBody ::
   NeuronWebT t m ()
 renderRouteBody neuronVersion cfg@Config {..} r val =
   case r of
-    -- HTML for this route is all handled in JavaScript
     Route_Impulse {} -> do
+      -- HTML for this route is all handled in JavaScript (compiled from
+      -- impulse's sources).
+      -- TODO: Inject cache.json inline here, to obviate having to download at
+      -- runtime.
       el "script" $ text $ snd val
     Route_Zettel _ -> do
       bodyTemplate neuronVersion cfg $ do

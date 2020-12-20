@@ -8,10 +8,11 @@ import Data.Aeson (FromJSON, eitherDecode)
 import qualified Data.ByteString.Lazy as BL
 import Data.Some (Some, withSome)
 import qualified Data.Text as T
-import Impulse.Run (run)
+import qualified Impulse.Run as Run
 import Language.Javascript.JSaddle (MonadJSM)
 import Neuron.Web.Cache.Type (NeuronCache)
 import qualified Neuron.Web.Cache.Type as C
+import qualified Neuron.Web.Impulse as Impulse
 import Neuron.Web.Route
   ( NeuronWebT,
     Route (..),
@@ -21,22 +22,15 @@ import Neuron.Web.Route
   )
 import qualified Neuron.Web.Theme as Theme
 import qualified Neuron.Web.View as V
-import qualified Neuron.Web.Impulse as Impulse
 import Reflex.Dom.Core
-import qualified Reflex.Dom.Main as Main
 import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam)
 
 main :: IO ()
 main =
-  run "cache.json" 3003 $ Main.mainWidgetWithHead headWidget bodyWidget
-
-headWidget :: DomBuilder t m => m ()
-headWidget = do
-  -- TODO: Include site title from neuron.dhall; this requires getting the cache
-  -- dynamic from bodyWidget.
-  V.renderHead $ text "Impulse (neuron)"
+  Run.run "cache.json" 3003 $
+    Run.mainWidgetWithHeadOnJsaddleOnly (V.headTemplate $ text "Impulse (dev)") bodyWidget
 
 bodyWidget ::
   forall t m.

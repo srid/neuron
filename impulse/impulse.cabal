@@ -28,6 +28,9 @@ executable impulse
     , neuron >= 1.1.14.0
     , dependent-sum
     , modern-uri
+  if impl(ghcjs)
+    build-depends:
+      ghcjs-dom-jsffi
   if !impl(ghcjs)
     build-depends:
       warp,
