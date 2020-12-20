@@ -41,14 +41,13 @@ zettelCss = do
     C.color black
     "a" ? do
       C.color black
-  -- Backlinks
+  -- Bottom pane
   "nav.bottomPane" ? do
-    C.important $ C.backgroundColor "#eee"
-  "ul.backlinks > li" ? do
-    C.paddingBottom $ em 0.4
-    C.listStyleType C.disc
-  "ul.context-list > li" ? do
-    C.listStyleType C.lowerRoman
+    "ul.backlinks > li" ? do
+      C.paddingBottom $ em 0.4
+      C.listStyleType C.disc
+    "ul.context-list > li" ? do
+      C.listStyleType C.lowerRoman
 
 zettelContentCss :: Css
 zettelContentCss = do
@@ -138,7 +137,7 @@ zettelCommonCss = do
   "img" ? do
     C.maxWidth $ pct 100 -- Prevents large images from overflowing beyond zettel borders
   ".deemphasized" ? do
-    fontSize $ em 0.85
+    fontSize $ em 0.95
   ".deemphasized:hover" ? do
     opacity 1
   ".deemphasized:not(:hover)" ? do

@@ -64,6 +64,7 @@ themeCss = do
     let selector = fromString $ "div#" <> themeIdentifier theme
         textColor = withRgb theme rgb
         backgroundColor = withRgb theme rgba 0.1
+        backgroundColorLighter = withRgb theme rgba 0.02
     selector ? do
       -- Zettel heading's background color
       ".zettel-content h1" ? do
@@ -77,6 +78,9 @@ themeCss = do
       -- Deemphasized items in uptree; restore link colors
       ".deemphasized:hover" ? do
         "div.item a:hover" ? C.important (C.color textColor)
+      -- Bottom stuff
+      "nav.bottomPane" ? do
+        C.backgroundColor backgroundColorLighter
       -- Zettel footnote's top marging line
       "div#footnotes" ? do
         C.borderTopColor textColor

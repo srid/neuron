@@ -76,7 +76,8 @@ renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
       lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
       renderZettelContentCard (graph, zc)
-      renderZettelBottomPane theme graph mEditUrl z
+      renderZettelBottomPane graph z
+      renderBottomMenu theme graph mEditUrl z
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
   whenStaticallyGenerated $ do
@@ -97,12 +98,10 @@ renderZettelContentCard (graph, zc) =
 renderZettelBottomPane ::
   forall t m.
   PandocBuilder t m =>
-  Theme ->
   ZettelGraph ->
-  Maybe Text ->
   Zettel ->
   NeuronWebT t m ()
-renderZettelBottomPane theme graph mEditUrl z@Zettel {..} = do
+renderZettelBottomPane graph z@Zettel {..} = do
   let backlinks = nonEmpty $ G.backlinks isJust z graph
       tags = nonEmpty zettelTags
   whenJust (() <$ backlinks <|> () <$ tags) $ \() -> do
@@ -121,6 +120,9 @@ renderZettelBottomPane theme graph mEditUrl z@Zettel {..} = do
                     void $ elPandoc (mkPandocRenderConfig graph) $ Pandoc mempty [ctx]
       -- Tags
       whenJust tags renderTags
+
+renderBottomMenu :: (DomBuilder t m) => Theme -> ZettelGraph -> Maybe Text -> Zettel -> NeuronWebT t m ()
+renderBottomMenu theme graph mEditUrl Zettel {..} = do
   divClass ("ui bottom attached icon compact inverted menu " <> Theme.semanticColor theme) $ do
     -- Home
     let mIndexZettel = G.getZettel indexZid graph
