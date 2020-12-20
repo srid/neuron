@@ -21,7 +21,7 @@ import Neuron.Web.Route
   )
 import qualified Neuron.Web.Theme as Theme
 import qualified Neuron.Web.View as V
-import qualified Neuron.Web.ZIndex as ZIndex
+import qualified Neuron.Web.Impulse as Impulse
 import Reflex.Dom.Core
 import qualified Reflex.Dom.Main as Main
 import qualified Text.URI as URI
@@ -91,9 +91,9 @@ renderPage C.NeuronCache {..} = do
     divClass "ui text container" $ do
       mquery0 <- urlQueryVal [queryKey|q|]
       qDyn <- searchInput mquery0
-      let zindex =
-            ZIndex.buildZIndex _neuronCache_graph _neuronCache_errors
-      runNeuronGhcjs $ ZIndex.renderZIndex Theme.Red zindex qDyn
+      let impulse =
+            Impulse.buildImpulse _neuronCache_graph _neuronCache_errors
+      runNeuronGhcjs $ Impulse.renderImpulse Theme.Red impulse qDyn
 
 searchInput ::
   ( DomBuilder t m,

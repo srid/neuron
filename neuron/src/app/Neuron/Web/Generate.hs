@@ -76,7 +76,6 @@ generateSite config writeHtmlRoute' = do
   forM_ zettelContents $ \val@(sansContent -> z) ->
     writeHtmlRoute val $ Z.Route_Zettel (zettelSlug z)
   -- Generate search page
-  -- TODO: Generate here, or just reuse rememorate's html?
   writeHtmlRoute impulseJS $ Z.Route_Impulse Nothing
   -- Report all errors
   forM_ (Map.toList _neuronCache_errors) $ \(zid, errs) -> do

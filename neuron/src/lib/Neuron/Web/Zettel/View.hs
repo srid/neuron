@@ -108,7 +108,6 @@ renderZettelBottomPane graph z@Zettel {..} = do
   let backlinks = nonEmpty $ G.backlinks isJust z graph
       tags = nonEmpty zettelTags
   whenJust (() <$ backlinks <|> () <$ tags) $ \() -> do
-    -- TODO: background is too light
     elClass "nav" "ui attached segment deemphasized bottomPane" $ do
       -- Backlinks
       whenJust backlinks $ \links -> do

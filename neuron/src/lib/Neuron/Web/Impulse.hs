@@ -7,11 +7,10 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- TODO: Rename ZIndex to Impulse; possibly even move to Impulse.
-module Neuron.Web.ZIndex
-  ( renderZIndex,
-    buildZIndex,
-    ZIndex (..),
+module Neuron.Web.Impulse
+  ( renderImpulse,
+    buildImpulse,
+    Impulse (..),
     style,
   )
 where
@@ -48,14 +47,14 @@ import Relude hiding ((&))
 --
 -- All heavy graph computations are decoupled from rendering, producing this
 -- value, that is in turn used for instant rendering.
-data ZIndex = ZIndex
+data Impulse = Impulse
   { -- | Clusters on the folgezettel graph.
-    zIndexClusters :: [Forest (Zettel, [Zettel])],
-    zIndexOrphans :: [Zettel],
+    impulseClusters :: [Forest (Zettel, [Zettel])],
+    impulseOrphans :: [Zettel],
     -- | All zettel errors
-    zIndexErrors :: Map ZettelID (NonEmpty ZettelError),
-    zIndexStats :: Stats,
-    zPinned :: [Zettel]
+    impulseErrors :: Map ZettelID (NonEmpty ZettelError),
+    impulseStats :: Stats,
+    impulsePinned :: [Zettel]
   }
 
 data Stats = Stats
@@ -84,8 +83,8 @@ searchTree f (Node x children) = do
   m <- tm
   pure $ Node (m, x) children'
 
-buildZIndex :: ZettelGraph -> Map ZettelID (NonEmpty ZettelError) -> ZIndex
-buildZIndex graph errors =
+buildImpulse :: ZettelGraph -> Map ZettelID (NonEmpty ZettelError) -> Impulse
+buildImpulse graph errors =
   let (orphans, clusters) = partitionEithers $
         flip fmap (G.categoryClusters graph) $ \case
           [Node z []] -> Left z -- Orphans (cluster of exactly one)
@@ -96,7 +95,7 @@ buildZIndex graph errors =
           G.backlinksMulti Folgezettel zs graph
       stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
       pinnedZettels = zettelsByTag (G.getZettels graph) [mkTagPattern "pinned"]
-   in ZIndex (fmap sortCluster clustersWithUplinks) orphans errors stats pinnedZettels
+   in Impulse (fmap sortCluster clustersWithUplinks) orphans errors stats pinnedZettels
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortCluster fs =
@@ -106,14 +105,14 @@ buildZIndex graph errors =
     -- Sort zettel trees so that trees containing the most recent zettel (by ID) come first.
     sortZettelForest = sortOn (Down . maximum)
 
-renderZIndex ::
+renderImpulse ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   Theme.Theme ->
-  ZIndex ->
+  Impulse ->
   -- | Search query to filter
   Dynamic t (Maybe Text) ->
   NeuronWebT t m ()
-renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
+renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} mqDyn = do
   elClass "h1" "header" $ do
     text "Impulse"
     dyn_ $
@@ -121,19 +120,19 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
         text " ["
         el "tt" $ text q
         text "]"
-  elVisible (ffor mqDyn $ \mq -> isNothing mq && not (null zIndexErrors)) $
+  elVisible (ffor mqDyn $ \mq -> isNothing mq && not (null impulseErrors)) $
     elClass "details" "ui tiny errors message" $ do
       el "summary" $ text "Errors"
-      renderErrors zIndexErrors
+      renderErrors impulseErrors
   divClass "z-index" $ do
-    let pinned = ffor mqDyn $ \mq -> filter (matchZettel mq) zPinned
+    let pinned = ffor mqDyn $ \mq -> filter (matchZettel mq) impulsePinned
     divClassVisible (not . null <$> pinned) "ui pinned raised segment" $ do
       elClass "h3" "ui header" $ text "Pinned"
       el "ul" $
         void $
           simpleList pinned $ \zDyn ->
             dyn_ $ ffor zDyn zettelLink
-    let orphans = ffor mqDyn $ \mq -> filter (matchZettel mq) zIndexOrphans
+    let orphans = ffor mqDyn $ \mq -> filter (matchZettel mq) impulseOrphans
     divClassVisible (not . null <$> orphans) "ui segment" $ do
       elClass "p" "info" $ do
         text "Notes without any "
@@ -144,7 +143,7 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
           simpleList orphans $ \zDyn ->
             dyn_ $ ffor zDyn zettelLink
     let clusters = ffor mqDyn $ \mq ->
-          ffor zIndexClusters $ \forest ->
+          ffor impulseClusters $ \forest ->
             fforMaybe forest $ \tree -> do
               searchTree (matchZettel mq . fst) tree
     void $
@@ -154,10 +153,10 @@ renderZIndex (Theme.semanticColor -> themeColor) ZIndex {..} mqDyn = do
     el "p" $ do
       text $
         "The zettelkasten has "
-          <> countNounBe "zettel" "zettels" (statsZettelCount zIndexStats)
+          <> countNounBe "zettel" "zettels" (statsZettelCount impulseStats)
           <> " and "
-          <> countNounBe "link" "links" (statsZettelConnectionCount zIndexStats)
-      text $ ". It has " <> countNounBe "cluster" "clusters" (length zIndexClusters) <> " in its folgezettel graph. "
+          <> countNounBe "link" "links" (statsZettelConnectionCount impulseStats)
+      text $ ". It has " <> countNounBe "cluster" "clusters" (length impulseClusters) <> " in its folgezettel graph. "
       text "Each cluster's "
       elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"
       text " is rendered as a forest."

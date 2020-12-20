@@ -20,6 +20,7 @@ import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Neuron.Config.Type (Config (..))
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
+import qualified Neuron.Web.Impulse as Impulse
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route
   ( NeuronWebT,
@@ -28,7 +29,6 @@ import Neuron.Web.Route
   )
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget (elLinkGoogleFonts)
-import qualified Neuron.Web.ZIndex as ZIndex
 import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
 import Neuron.Zettelkasten.Graph (ZettelGraph)
@@ -107,7 +107,7 @@ style :: Css
 style = do
   "body" ? do
     neuronCommonStyle
-    ZIndex.style
+    Impulse.style
     ZettelCSS.zettelCss
     QueryView.style
     footerStyle

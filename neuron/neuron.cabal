@@ -97,7 +97,7 @@ library
     Neuron.Web.Query.View
     Neuron.Web.Zettel.View
     Neuron.Web.Zettel.CSS
-    Neuron.Web.ZIndex
+    Neuron.Web.Impulse
     Neuron.Web.Theme
     Neuron.Web.View
     Neuron.Orphans
