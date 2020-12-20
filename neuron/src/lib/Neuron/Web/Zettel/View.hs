@@ -64,6 +64,9 @@ renderZettel ::
   Maybe Text ->
   NeuronWebT t m ()
 renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
+  whenStaticallyGenerated $ do
+    el "script" $ do
+      text "document.onkeyup = function(e) { if (e.key == \"/\") { document.location.href = \"impulse.html\"; } }"
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
@@ -136,7 +139,7 @@ renderBottomMenu theme graph mEditUrl Zettel {..} = do
       elAttr "a" ("class" =: "item" <> attrs) $ do
         semanticIcon "edit"
     -- Impulse
-    neuronRouteLink (Some $ Route_Impulse Nothing) ("class" =: "right item" <> "title" =: "Open Impulse") $ do
+    neuronRouteLink (Some $ Route_Impulse Nothing) ("class" =: "right item" <> "title" =: "Open Impulse (press /)") $ do
       semanticIcon "wave square"
 
 mkPandocRenderConfig ::
