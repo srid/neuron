@@ -6,7 +6,7 @@ module Neuron.CLI.Open
   )
 where
 
-import Data.Some
+import Data.Some (foldSome)
 import qualified Data.Text as T
 import Development.Shake (Action, doesFileExist)
 import Neuron.CLI.Types (OpenCommand (..))
@@ -14,9 +14,9 @@ import Neuron.Web.Generate.Route ()
 import Relude
 import Rib.Route (routeUrlRel)
 import Rib.Shake (ribOutputDir)
-import System.FilePath
+import System.FilePath ((</>))
 import System.Info (os)
-import System.Posix.Process
+import System.Posix.Process (executeFile)
 
 openLocallyGeneratedFile :: OpenCommand -> Action ()
 openLocallyGeneratedFile OpenCommand {..} = do

@@ -36,7 +36,7 @@ import System.Posix.Process (executeFile)
 -- As well as print the path to the created file.
 newZettelFile :: NewCommand -> Config -> Action ()
 newZettelFile NewCommand {..} config = do
-  (_, zettels, _) <- Gen.loadZettelkasten config
+  (_, zettels) <- Gen.loadZettelkasten config
   mzid <- withSome idScheme $ \scheme -> do
     val <- liftIO $ IDScheme.genVal scheme
     pure $

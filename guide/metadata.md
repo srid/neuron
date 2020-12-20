@@ -26,7 +26,7 @@ slug: foo-bar
 
 ## Pinning
 
-Zettels can be pinned in the z-index so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[tags]]) to it.
+Zettels can be pinned in [[impulse-feature]] so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[tags]]) to it.
 
 ```markdown
 ---
@@ -37,7 +37,7 @@ tags:
 
 ## Hiding a zettel
 
-Sometimes you want to "draft" a note, and as such wish to hide it from the rest of Zettelkasten, notably the z-index. This can be achieved by marking a zettel as "unlisted":
+Sometimes you want to "draft" a note, and as such wish to hide it from the rest of Zettelkasten, notably in [[impulse-feature]]. This can be achieved by marking a zettel as "unlisted":
 
 ```markdown
 ---

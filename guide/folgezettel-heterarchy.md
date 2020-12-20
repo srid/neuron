@@ -14,12 +14,12 @@ ways:
 
 The heterarchy is displayed in the following places
 
-* z-index: Full folgezettel heterarchy of the zettelkasten.
+* [[impulse-feature]]: Full folgezettel heterarchy of the zettelkasten.
 * [[[5e41fd32]]]: Subset of the above, branching off to the zettel.
 
 ## See also
 
-* The [z-index](/z-index.html) of this site displays its folgezettel heterarchy.
+* The [impulse](impulse.html) of this site displays its folgezettel heterarchy.
 
 [^1]: Hence the German compound word "[folge]-[zettel]". Read <https://zettelkasten.de/posts/kinds-of-ties/>
 

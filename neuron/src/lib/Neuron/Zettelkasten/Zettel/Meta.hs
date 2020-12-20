@@ -26,7 +26,7 @@ data Meta = Meta
     tags :: Maybe [Tag],
     -- | Creation day
     date :: Maybe DateMayTime,
-    -- | List in the z-index
+    -- | List in impulse
     unlisted :: Maybe Bool,
     slug :: Maybe Text
   }

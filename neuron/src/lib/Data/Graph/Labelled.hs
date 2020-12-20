@@ -29,6 +29,8 @@ module Data.Graph.Labelled
     obviateRootUnlessForest,
     induceOnEdge,
     induce,
+    emap,
+    vmap,
   )
 where
 

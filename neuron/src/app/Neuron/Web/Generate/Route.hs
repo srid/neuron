@@ -17,7 +17,7 @@ import Control.Monad.Except (liftEither, runExcept)
 import Data.Some (Some, withSome)
 import Data.TagTree (unTag)
 import qualified Network.URI.Encode as E
-import Neuron.Web.Route (Route (..), RouteConfig (..))
+import Neuron.Web.Route (Route (..), RouteConfig (..), routeHtmlPath)
 import Reflex.Dom.Core
 import Relude
 import Rib.Route (IsRoute (..), routeUrlRel)
@@ -25,13 +25,7 @@ import Text.URI (URI, mkURI)
 import qualified Text.URI as URI
 
 instance IsRoute Route where
-  routeFile = \case
-    Route_ZIndex ->
-      pure "z-index.html"
-    Route_Search _mtag ->
-      pure "search.html"
-    Route_Zettel slug ->
-      pure $ toString slug <> ".html"
+  routeFile = pure . routeHtmlPath
 
 staticRouteConfig :: RouteConfig t m
 staticRouteConfig =
@@ -48,7 +42,7 @@ staticRouteConfig =
     -- Using relative URLs enables the site work in file:/// URLs
     routeFor = \case
       -- HACK: Hack around Rib.Route's limitation in dealing with query arguments
-      r@(Route_Search (Just t)) -> routeUrlRel r <> "?tag=" <> unTag t
+      r@(Route_Impulse (Just t)) -> routeUrlRel r <> "?q=tag:" <> unTag t
       r -> routeUrlRel r
 
 data BaseUrlError

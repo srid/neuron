@@ -1,8 +1,4 @@
 let
-  gitignoreSrc = builtins.fetchTarball {
-    url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
-    sha256 = "1npnx0h6bd0d7ql93ka7azhj40zgjp815fw2r6smg8ch9p7mzdlx";
-  };
   nixpkgs = import ./dep/nixpkgs {};
 in {
   pkgs ? nixpkgs,
@@ -16,19 +12,16 @@ in {
 let
   inherit (pkgs.haskell.lib)
     overrideCabal doJailbreak dontCheck justStaticExecutables appendConfigureFlags;
-
-  inherit (import (gitignoreSrc) { inherit (pkgs) lib; }) gitignoreSource;
-
-  thunkOrPath = dep:
-    let p = ./dep + "/${dep}/thunk.nix";
-    in if builtins.pathExists p then import p else (./dep + "/${dep}");
+  inherit (import ./dep/gitignore { inherit (pkgs) lib; }) 
+    gitignoreSource;
+  inherit (import ./dep/nix-thunk {}) 
+    thunkSource;
 
   sources = {
     neuron = gitignoreSource ./neuron;
-    # TODO: Switch to using `niv` exclusively.
-    rib = thunkOrPath "rib";
-    reflex-dom-pandoc = thunkOrPath "reflex-dom-pandoc";
-    pandoc-link-context = thunkOrPath "pandoc-link-context";
+    rib = thunkSource ./dep/rib;
+    reflex-dom-pandoc = thunkSource ./dep/reflex-dom-pandoc;
+    pandoc-link-context = thunkSource ./dep/pandoc-link-context;
   };
 
   searchBuilder = ''

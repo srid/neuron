@@ -20,15 +20,15 @@ import Neuron.CLI.Rib
 import Neuron.Config.Type (Config, getZettelFormats)
 import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Org), zettelFormatToExtension)
 import Relude
-import System.Posix.Process
-import System.Which
+import System.Posix.Process (executeFile)
+import System.Which (staticWhich)
 
 neuronSearchScript :: FilePath
 neuronSearchScript = $(staticWhich "neuron-search")
 
-searchScriptArgs :: (NonEmpty ZettelFormat) -> SearchCommand -> [String]
+searchScriptArgs :: NonEmpty ZettelFormat -> SearchCommand -> [String]
 searchScriptArgs formats SearchCommand {..} =
-  let extensionPattern = "/*{" <> (Text.unpack $ Text.intercalate "," $ toList $ zettelFormatToExtension <$> formats) <> "}"
+  let extensionPattern = "/*{" <> Text.unpack (Text.intercalate "," $ toList $ zettelFormatToExtension <$> formats) <> "}"
       searchByArgs =
         case searchBy of
           SearchByTitle -> ["(^# )|(^title: )", "2", extensionPattern]

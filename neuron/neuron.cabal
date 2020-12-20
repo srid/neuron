@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 1.1.12.0
+version: 1.1.14.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -14,7 +14,7 @@ synopsis:
 description:
   neuron is a future-proof system for managing your plain-text Zettelkasten notes.
 data-files:
-  src-js/search.js
+  ghcjs/impulse.js
   src-bash/neuron-search
 
 source-repository head
@@ -89,6 +89,7 @@ library
     Neuron.Zettelkasten.Graph.Build
     Neuron.Web.Route
     Neuron.Web.Manifest
+    Neuron.Web.Cache.Type
     Neuron.Web.Common
     Neuron.Web.Widget
     Neuron.Web.Widget.AutoScroll
@@ -96,8 +97,9 @@ library
     Neuron.Web.Query.View
     Neuron.Web.Zettel.View
     Neuron.Web.Zettel.CSS
-    Neuron.Web.ZIndex
+    Neuron.Web.Impulse
     Neuron.Web.Theme
+    Neuron.Web.View
     Neuron.Orphans
     Text.Megaparsec.Simple
     Text.Pandoc.Util
@@ -138,8 +140,8 @@ common app-common
     dhall >= 1.30,
     which,
     unix,
-    megaparsec >= 8.0,
-    dependent-sum >= 0.7,
+    megaparsec,
+    dependent-sum,
     dependent-sum-template,
     data-default,
     uuid,
@@ -175,7 +177,6 @@ library neuron-app-lib
     Neuron.Web.HeadHtml
     Neuron.Web.Generate
     Neuron.Web.Generate.Route
-    Neuron.Web.View
     Neuron.Web.StructuredData
     Neuron.Reader
     Neuron.Reader.Org

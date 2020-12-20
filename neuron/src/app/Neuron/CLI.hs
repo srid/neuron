@@ -12,8 +12,12 @@ module Neuron.CLI
 where
 
 import qualified Data.Aeson.Text as Aeson
-import Data.Some
+import Data.Some (withSome)
 import Data.Time
+  ( getCurrentTime,
+    getCurrentTimeZone,
+    utcToLocalTime,
+  )
 import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Open (openLocallyGeneratedFile)
@@ -24,12 +28,13 @@ import Neuron.Config (getConfig)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Version as Version
 import qualified Neuron.Web.Cache as Cache
+import qualified Neuron.Web.Cache.Type as Cache
 import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
 import Options.Applicative
 import Relude
-import System.Directory
+import System.Directory (getCurrentDirectory)
 
 run :: (Config -> Action ()) -> IO ()
 run act = do
@@ -61,21 +66,21 @@ runWith act App {..} =
     Open openCommand ->
       runRibOnceQuietly notesDir $ do
         openLocallyGeneratedFile openCommand
-    Query (QueryCommand {..}) ->
+    Query QueryCommand {..} ->
       runRibOnceQuietly notesDir $ do
-        (graph, errors) <-
+        Cache.NeuronCache {..} <-
           if cached
             then Cache.getCache
             else Gen.loadZettelkastenGraph =<< getConfig
         case query of
           Left someQ ->
             withSome someQ $ \q -> do
-              let result = Q.runZettelQuery (G.getZettels graph) q
-              putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson q result errors
+              let result = Q.runZettelQuery (G.getZettels _neuronCache_graph) q
+              putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson q result _neuronCache_errors
           Right someQ ->
             withSome someQ $ \q -> do
-              let result = Q.runGraphQuery graph q
-              putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result errors
+              let result = Q.runGraphQuery _neuronCache_graph q
+              putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result _neuronCache_errors
     Search searchCmd -> do
       runRibOnceQuietly notesDir $ do
         interactiveSearch notesDir searchCmd =<< getConfig

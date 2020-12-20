@@ -35,3 +35,11 @@ elLinkGoogleFonts fs =
 -- https://developers.google.com/search/reference/robots_meta_tag#data-nosnippet-attr
 elNoSnippetSpan :: DomBuilder t m => Map Text Text -> m a -> m a
 elNoSnippetSpan attrs = elAttr "span" ("data-nosnippet" =: "" <> attrs)
+
+elVisible :: (DomBuilder t m, PostBuild t m) => Dynamic t Bool -> m a -> m a
+elVisible visible w = do
+  elDynAttr "span" (ffor visible $ bool ("style" =: "display: none;") mempty) w
+
+divClassVisible :: (DomBuilder t m, PostBuild t m) => Dynamic t Bool -> Text -> m a -> m a
+divClassVisible visible cls w = do
+  elDynAttr "div" (ffor visible $ (<> "class" =: cls) . bool ("style" =: "display: none;") mempty) w

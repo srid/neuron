@@ -12,7 +12,7 @@ module Neuron.Web.StructuredData
   )
 where
 
-import Data.Some
+import Data.Some (Some (Some))
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.Structured.OpenGraph
@@ -36,23 +36,22 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (..),
     sansContent,
   )
-import Reflex.Dom.Core (DomBuilder, def)
+import Reflex.Dom.Core (DomBuilder)
 import Relude
-import Text.Pandoc (runPure, writePlain)
-import Text.Pandoc.Definition (Block (Plain), Inline (Image, Link, Str), Pandoc (..))
-import Text.Pandoc.Util (getFirstParagraphText)
+import Text.Pandoc.Definition (Inline (Image, Link, Str), Pandoc (..))
+import Text.Pandoc.Util (getFirstParagraphText, plainify)
 import qualified Text.Pandoc.Walk as W
 import qualified Text.URI as URI
 
 renderStructuredData :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
 renderStructuredData config route val = do
-  renderOpenGraph $ routeOpenGraph config (fst val) (snd val) route
+  renderOpenGraph $ uncurry (routeOpenGraph config) val route
   Breadcrumb.renderBreadcrumbs $ routeStructuredData config val route
 
 routeStructuredData :: Config -> (ZettelGraph, a) -> Route a -> [Breadcrumb]
 routeStructuredData cfg (graph, v) = \case
   Route_Zettel _ ->
-    case (either fail id $ getSiteBaseUrl cfg) of
+    case either fail id $ getSiteBaseUrl cfg of
       Nothing -> []
       Just baseUrl ->
         let mkCrumb :: Zettel -> Breadcrumb.Item
@@ -68,12 +67,11 @@ routeOpenGraph cfg@Config {siteTitle, author} g v r =
     { _openGraph_title = routeTitle' v r,
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
-        Route_ZIndex -> Just "Zettelkasten Index"
-        (Route_Search _mtag) -> Just "Search Zettelkasten"
+        (Route_Impulse _mtag) -> Just "Impulse"
         Route_Zettel _ -> do
           doc <- getPandocDoc v
           para <- getFirstParagraphText doc
-          paraText <- renderPandocAsText g para
+          let paraText = renderPandocAsText g para
           pure $ T.take 300 paraText,
       _openGraph_author = author,
       _openGraph_type = case r of
@@ -101,14 +99,9 @@ routeOpenGraph cfg@Config {siteTitle, author} g v r =
         Image _ _ (url, _) -> [toText url]
         _ -> []
 
-renderPandocAsText :: ZettelGraph -> [Inline] -> Maybe Text
+renderPandocAsText :: ZettelGraph -> [Inline] -> Text
 renderPandocAsText g =
-  either (const Nothing) Just
-    . runPure
-    . writePlain def
-    . Pandoc mempty
-    . pure
-    . Plain
+  plainify
     . W.walk plainifyZQueries
   where
     plainifyZQueries :: Inline -> Inline

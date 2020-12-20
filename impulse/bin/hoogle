@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+set -xe
+nix-shell --pure --arg withHoogle true --run "hoogle serve --local"

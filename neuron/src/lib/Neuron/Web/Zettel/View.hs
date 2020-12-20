@@ -24,16 +24,19 @@ import Neuron.Reader.Type (ZettelParseError)
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route
   ( NeuronWebT,
-    Route (Route_Search),
+    Route (..),
     neuronRouteLink,
     whenStaticallyGenerated,
   )
-import Neuron.Web.Widget (elPreOverflowing, elTime)
+import Neuron.Web.Theme (Theme)
+import qualified Neuron.Web.Theme as Theme
+import Neuron.Web.Widget (elPreOverflowing, elTime, semanticIcon)
 import qualified Neuron.Web.Widget.AutoScroll as AS
 import qualified Neuron.Web.Widget.InvertedTree as IT
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
+import Neuron.Zettelkasten.ID (indexZid)
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import qualified Neuron.Zettelkasten.Query.Eval as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
@@ -43,6 +46,7 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (..),
     sansContent,
   )
+import qualified Neuron.Zettelkasten.Zettel as Z
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc
   ( Config (Config),
@@ -55,13 +59,18 @@ import qualified Text.URI as URI
 
 renderZettel ::
   PandocBuilder t m =>
+  Theme ->
   (ZettelGraph, ZettelC) ->
+  Maybe Text ->
   NeuronWebT t m ()
-renderZettel (graph, zc@(sansContent -> z)) = do
+renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
+  whenStaticallyGenerated $ do
+    el "script" $ do
+      text "document.onkeyup = function(e) { if (e.key == \"/\") { document.location.href = \"impulse.html\"; } }"
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
-      Q.renderZettelLink Nothing (fmap fst $ G.getConnection z z2 graph) def z2
+      Q.renderZettelLink Nothing (fst <$> G.getConnection z z2 graph) def z2
   -- Main content
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     whenStaticallyGenerated $ do
@@ -71,6 +80,7 @@ renderZettel (graph, zc@(sansContent -> z)) = do
     divClass "zettel-view" $ do
       renderZettelContentCard (graph, zc)
       renderZettelBottomPane graph z
+      renderBottomMenu theme graph mEditUrl z
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
   whenStaticallyGenerated $ do
@@ -88,12 +98,18 @@ renderZettelContentCard (graph, zc) =
     Left z -> do
       renderZettelRawContent z
 
-renderZettelBottomPane :: forall t m. PandocBuilder t m => ZettelGraph -> Zettel -> NeuronWebT t m ()
+renderZettelBottomPane ::
+  forall t m.
+  PandocBuilder t m =>
+  ZettelGraph ->
+  Zettel ->
+  NeuronWebT t m ()
 renderZettelBottomPane graph z@Zettel {..} = do
   let backlinks = nonEmpty $ G.backlinks isJust z graph
       tags = nonEmpty zettelTags
-  when (isJust backlinks || isJust tags) $
-    elClass "nav" "ui bottom attached segment deemphasized backlinks-container" $ do
+  whenJust (() <$ backlinks <|> () <$ tags) $ \() -> do
+    elClass "nav" "ui attached segment deemphasized bottomPane" $ do
+      -- Backlinks
       whenJust backlinks $ \links -> do
         elClass "h3" "ui header" $ text "Backlinks"
         elClass "ul" "backlinks" $ do
@@ -104,8 +120,26 @@ renderZettelBottomPane graph z@Zettel {..} = do
                 forM_ ctxList $ \ctx -> do
                   elClass "li" "item" $ do
                     void $ elPandoc (mkPandocRenderConfig graph) $ Pandoc mempty [ctx]
-      whenJust tags $
-        renderTags
+      -- Tags
+      whenJust tags renderTags
+
+renderBottomMenu :: (DomBuilder t m) => Theme -> ZettelGraph -> Maybe Text -> Zettel -> NeuronWebT t m ()
+renderBottomMenu theme graph mEditUrl Zettel {..} = do
+  divClass ("ui bottom attached icon compact inverted menu " <> Theme.semanticColor theme) $ do
+    -- Home
+    let mIndexZettel = G.getZettel indexZid graph
+    forM_ mIndexZettel $ \indexZettel ->
+      neuronRouteLink (Some $ Route_Zettel $ Z.zettelSlug indexZettel) ("class" =: "item" <> "title" =: "Home") $
+        semanticIcon "home"
+    -- Edit url
+    forM_ mEditUrl $ \editUrlBase -> do
+      let editUrl = editUrlBase <> toText zettelPath
+      let attrs = "href" =: editUrl <> "title" =: "Edit this page"
+      elAttr "a" ("class" =: "item" <> attrs) $ do
+        semanticIcon "edit"
+    -- Impulse
+    neuronRouteLink (Some $ Route_Impulse Nothing) ("class" =: "right item" <> "title" =: "Open Impulse (press /)") $ do
+      semanticIcon "wave square"
 
 mkPandocRenderConfig ::
   PandocBuilder t m =>
@@ -160,13 +194,14 @@ renderZettelParseError err =
 
 renderTags :: DomBuilder t m => NonEmpty Tag -> NeuronWebT t m ()
 renderTags tags = do
-  forM_ tags $ \t -> do
-    -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
-    -- the top pushes the zettel content down, introducing unnecessary white
-    -- space below the title. So we put it at the bottom for now.
-    neuronRouteLink
-      (Some $ Route_Search $ Just t)
-      ( "class" =: "ui basic label zettel-tag"
-          <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
-      )
-      $ text $ unTag t
+  el "div" $ do
+    forM_ tags $ \t -> do
+      -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
+      -- the top pushes the zettel content down, introducing unnecessary white
+      -- space below the title. So we put it at the bottom for now.
+      neuronRouteLink
+        (Some $ Route_Impulse $ Just t)
+        ( "class" =: "ui basic label zettel-tag"
+            <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
+        )
+        $ text $ unTag t

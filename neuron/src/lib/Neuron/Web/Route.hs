@@ -13,24 +13,29 @@ import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some)
 import Data.TagTree (Tag)
-import Neuron.Zettelkasten.ID (Slug, ZettelID)
+import Neuron.Web.Cache.Type (NeuronCache)
+import Neuron.Zettelkasten.ID (Slug)
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
-    ZettelError,
     ZettelT (zettelTitle),
   )
 import Reflex.Dom.Core (DomBuilder)
 import Relude
 
+-- TODO: Do we even need a route GADT? Re-evaluate this when doing the rib->reflex-headless migration.
 data Route a where
-  -- ZIndex takes a report of all errors in the zettelkasten.
-  -- `Left` is skipped zettels; and Right is valid zettels with invalid query links.
-  Route_ZIndex :: Route (Map ZettelID (NonEmpty ZettelError))
-  -- | Takes search JS code as render data
+  Route_Zettel :: Slug -> Route ZettelC
+  -- | Impulse is implemented in github.com/srid/rememorate
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
-  Route_Search :: Maybe Tag -> Route Text
-  Route_Zettel :: Slug -> Route ZettelC
+  Route_Impulse :: Maybe Tag -> Route (NeuronCache, Text)
+
+routeHtmlPath :: Route a -> FilePath
+routeHtmlPath = \case
+  Route_Impulse _mtag ->
+    "impulse.html"
+  Route_Zettel slug ->
+    toString slug <> ".html"
 
 data RouteConfig t m = RouteConfig
   { -- | Whether the view is being rendered for static HTML generation
@@ -63,9 +68,7 @@ neuronRouteURL someR = do
 
 routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
-  -- Route_Redirect _ -> "Redirecting..."
-  Route_ZIndex -> "Zettel Index"
-  Route_Search _mtag -> "Search"
+  Route_Impulse _mtag -> "Impulse"
   Route_Zettel _ ->
     either zettelTitle zettelTitle v
 

@@ -79,7 +79,7 @@ neuron rib -wS
 * The `-S` option runs a HTTP server serving the generated HTML files. 
   * You can ignore it, and use `neuron open` instead.
 
-Access it at [localhost:8080](http://localhost:8080) (or use `neuron open`). You should expect to see the contents of your overview zettel, which should link to the first zettel created. Clicking the tree icon in the nav bar should take you to the [[2011503]] of your Zettelkasten. 
+Access it at [localhost:8080](http://localhost:8080) (or use `neuron open`). You should expect to see the contents of your overview zettel, which should link to the first zettel created. Clicking the tree icon in the nav bar should take you to the [[graph-visualize]] of your Zettelkasten. 
 
 ## Growing your Zettelkasten
 
