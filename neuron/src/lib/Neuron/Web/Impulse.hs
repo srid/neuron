@@ -131,7 +131,7 @@ renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} mqDyn = do
       el "ul" $
         void $
           simpleList pinned $ \zDyn ->
-            dyn_ $ ffor zDyn zettelLink
+            dyn_ $ ffor zDyn $ \z -> zettelLink z blank
     let orphans = ffor mqDyn $ \mq -> filter (matchZettel mq) impulseOrphans
     divClassVisible (not . null <$> orphans) "ui segment" $ do
       elClass "p" "info" $ do
@@ -141,7 +141,7 @@ renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} mqDyn = do
       el "ul" $
         void $
           simpleList orphans $ \zDyn ->
-            dyn_ $ ffor zDyn zettelLink
+            dyn_ $ ffor zDyn $ \z -> zettelLink z blank
     let clusters = ffor mqDyn $ \mq ->
           ffor impulseClusters $ \forest ->
             fforMaybe forest $ \tree -> do
@@ -231,17 +231,19 @@ renderForest treesDyn = do
       elDynClass "span" (ffor mDyn $ \m -> if m == TreeMatch_Root then "q root" else "q under") $ do
         dyn_ $
           ffor zup $ \(zettel, uplinks) -> do
-            zettelLink zettel
-            when (length uplinks >= 2) $ do
-              elClass "span" "uplinks" $ do
-                forM_ uplinks $ \z2 -> do
-                  el "small" $
-                    elAttr "i" ("class" =: "linkify icon" <> "title" =: zettelTitle z2) blank
+            zettelLink zettel $ do
+              when (length uplinks >= 2) $ do
+                elClass "span" "uplinks" $ do
+                  forM_ uplinks $ \z2 -> do
+                    el "small" $
+                      elAttr "i" ("class" =: "linkify icon" <> "title" =: zettelTitle z2) blank
         el "ul" $ renderForest subtreesDyn
 
-zettelLink :: DomBuilder t m => Zettel -> NeuronWebT t m ()
-zettelLink z = do
-  el "li" $ QueryView.renderZettelLink Nothing Nothing def z
+zettelLink :: DomBuilder t m => Zettel -> NeuronWebT t m () -> NeuronWebT t m ()
+zettelLink z w = do
+  el "li" $ do
+    QueryView.renderZettelLink Nothing Nothing def z
+    w
 
 style :: Css
 style = do
