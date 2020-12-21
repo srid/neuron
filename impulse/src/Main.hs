@@ -30,7 +30,7 @@ import Text.URI.Util (getQueryParam)
 main :: IO ()
 main =
   Run.run "cache.json" 3003 $
-    Run.mainWidgetWithHeadOnJsaddleOnly (V.headTemplate $ text "Impulse (dev)") bodyWidget
+    Run.mainWidgetWithHeadOnJsaddleOnly (V.headTemplate (text "Impulse (dev)") blank) bodyWidget
 
 bodyWidget ::
   forall t m.

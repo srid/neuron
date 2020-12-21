@@ -63,8 +63,7 @@ renderRoutePage config headHtml manifest r val = do
   el "!DOCTYPE html" blank
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
-      headTemplate $ do
-        text $ routeTitle config (snd val) r
+      headTemplate (text $ routeTitle config (snd val) r) $ do
         case r of
           Route_Zettel _ -> do
             renderHeadHtml headHtml
