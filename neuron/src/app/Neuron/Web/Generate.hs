@@ -22,7 +22,6 @@ import Data.FileEmbed (embedOneStringFileOf)
 import qualified Data.Map.Strict as Map
 import Data.Tagged (untag)
 import qualified Data.Text as T
-import Data.Traversable (for)
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as C
@@ -76,8 +75,8 @@ generateSite config writeHtmlRoute' = do
   -- Generate search page
   writeHtmlRoute (cache, impulseJS) $ Z.Route_Impulse Nothing
   -- Report all errors
-  forM_ (Map.toList _neuronCache_errors) $ \(zid, errs) -> do
-    for errs $ \err -> reportError zid $
+  forM_ (Map.toList _neuronCache_errors) $ \(zid, err) -> do
+    reportError zid $
       case err of
         ZettelError_ParseError (untag . snd -> parseErr) ->
           parseErr :| []
@@ -116,7 +115,6 @@ loadZettelkastenGraph =
 
 loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
 loadZettelkasten config = do
-  -- Experimental feature; see https://github.com/srid/neuron/issues/309
   let pat = bool "*.md" "**/*.md" $ C.recurseDir config
   files <- forEvery [pat] pure
   (g, zs, errs) <- loadZettelkastenFrom files
@@ -131,7 +129,7 @@ loadZettelkastenFrom ::
   Action
     ( ZettelGraph,
       [ZettelC],
-      Map ZettelID (NonEmpty ZettelError)
+      Map ZettelID ZettelError
     )
 loadZettelkastenFrom files = do
   notesDir <- ribInputDir
@@ -168,5 +166,6 @@ loadZettelkastenFrom files = do
             [(zid, path, s)]
       zs = parseZettels extractQueriesWithContext fs
       (g, gerrs) = G.buildZettelkasten zs
-      errs = Map.unionsWith (<>) [one <$> dups, one <$> gerrs]
+      -- There will not be a union conflict, as the two map's keys are disjoint.
+      errs = Map.union dups gerrs
   pure (g, zs, errs)

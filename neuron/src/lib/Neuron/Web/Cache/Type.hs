@@ -21,7 +21,7 @@ data ReadMode
 
 data NeuronCache = NeuronCache
   { _neuronCache_graph :: ZettelGraph,
-    _neuronCache_errors :: Map ZettelID (NonEmpty ZettelError),
+    _neuronCache_errors :: Map ZettelID ZettelError,
     _neuronCache_config :: Config,
     _neuronCache_neuronVersion :: Text
   }

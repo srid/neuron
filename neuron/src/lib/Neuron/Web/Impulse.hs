@@ -52,7 +52,7 @@ data Impulse = Impulse
     impulseClusters :: [Forest (Zettel, [Zettel])],
     impulseOrphans :: [Zettel],
     -- | All zettel errors
-    impulseErrors :: Map ZettelID (NonEmpty ZettelError),
+    impulseErrors :: Map ZettelID ZettelError,
     impulseStats :: Stats,
     impulsePinned :: [Zettel]
   }
@@ -83,7 +83,7 @@ searchTree f (Node x children) = do
   m <- tm
   pure $ Node (m, x) children'
 
-buildImpulse :: ZettelGraph -> Map ZettelID (NonEmpty ZettelError) -> Impulse
+buildImpulse :: ZettelGraph -> Map ZettelID ZettelError -> Impulse
 buildImpulse graph errors =
   let (orphans, clusters) = partitionEithers $
         flip fmap (G.categoryClusters graph) $ \case
@@ -176,7 +176,7 @@ renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} mqDyn = do
             guard $ ztag `notElem` fmap unTag (zettelTags z)
           else guard $ not $ T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
 
-renderErrors :: DomBuilder t m => Map ZettelID (NonEmpty ZettelError) -> NeuronWebT t m ()
+renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
 renderErrors errors = do
   let severity = \case
         ZettelError_ParseError _ -> "negative"
@@ -199,24 +199,23 @@ renderErrors errors = do
               <> "):"
         ZettelError_AmbiguousSlug _slug -> do
           text $ "Zettel '" <> unZettelID zid <> "' ignored; has ambiguous slug"
-  forM_ (Map.toList errors) $ \(zid, zErrors) ->
-    forM_ zErrors $ \zError -> do
-      divClass ("ui tiny message " <> severity zError) $ do
-        divClass "header" $ errorMessageHeader zid zError
-        el "p" $ do
-          case zError of
-            ZettelError_ParseError (_slug, parseError) ->
-              renderZettelParseError parseError
-            ZettelError_QueryResultErrors queryErrors ->
-              el "ol" $ do
-                forM_ (snd queryErrors) $ \qe ->
-                  el "li" $ elPreOverflowing $ text $ showQueryResultError qe
-            ZettelError_AmbiguousID filePaths ->
-              el "ul" $ do
-                forM_ filePaths $ \fp ->
-                  el "li" $ el "tt" $ text $ toText fp
-            ZettelError_AmbiguousSlug slug ->
-              el "p" $ text $ "Slug '" <> slug <> "' is used by another zettel"
+  forM_ (Map.toList errors) $ \(zid, zError) ->
+    divClass ("ui tiny message " <> severity zError) $ do
+      divClass "header" $ errorMessageHeader zid zError
+      el "p" $ do
+        case zError of
+          ZettelError_ParseError (_slug, parseError) ->
+            renderZettelParseError parseError
+          ZettelError_QueryResultErrors queryErrors ->
+            el "ol" $ do
+              forM_ (snd queryErrors) $ \qe ->
+                el "li" $ elPreOverflowing $ text $ showQueryResultError qe
+          ZettelError_AmbiguousID filePaths ->
+            el "ul" $ do
+              forM_ filePaths $ \fp ->
+                el "li" $ el "tt" $ text $ toText fp
+          ZettelError_AmbiguousSlug slug ->
+            el "p" $ text $ "Slug '" <> slug <> "' is used by another zettel"
 
 renderForest ::
   (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) =>
