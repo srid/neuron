@@ -64,11 +64,11 @@ renderRoutePage config headHtml manifest r val = do
   elAttr "html" ("lang" =: "en") $ do
     el "head" $ do
       headTemplate (text $ routeTitle config (snd val) r) $ do
+        renderHeadHtml headHtml
+        renderManifest manifest
+        renderStructuredData config r val
         case r of
           Route_Zettel _ -> do
-            renderHeadHtml headHtml
-            renderManifest manifest
-            renderStructuredData config r val
             elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
           _ -> blank
     el "body" $ do
