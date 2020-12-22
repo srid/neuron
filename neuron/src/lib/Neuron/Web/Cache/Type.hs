@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -8,11 +9,15 @@
 module Neuron.Web.Cache.Type where
 
 import Data.Aeson (FromJSON, ToJSON)
+import qualified Data.Aeson as Aeson
 import Neuron.Config.Type (Config)
+import Neuron.Web.Widget (LoadableData)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Zettel (ZettelError)
+import Reflex.Dom.Core
 import Relude
+import qualified Relude.String as BL
 
 data ReadMode
   = ReadMode_Direct Config
@@ -26,3 +31,33 @@ data NeuronCache = NeuronCache
     _neuronCache_neuronVersion :: Text
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
+
+reflexDomGetCache ::
+  ( DomBuilder t m,
+    Prerender js t m,
+    TriggerEvent t m,
+    PerformEvent t m,
+    PostBuild t m,
+    MonadHold t m
+  ) =>
+  LoadableData NeuronCache ->
+  m (Dynamic t (LoadableData NeuronCache))
+reflexDomGetCache staticCache = do
+  join <$> prerender (pure $ constDyn staticCache) getCacheRemote
+  where
+    getCacheRemote = do
+      -- TODO: refactor
+      pb <- getPostBuild
+      resp' <-
+        performRequestAsyncWithError $
+          XhrRequest "GET" "cache.json" def <$ pb
+      let resp = ffor resp' $ first show >=> decodeXhrResponseWithError
+      mresp <- holdDyn Nothing $ Just <$> resp
+      -- Workaround for thrice triggering bug?
+      holdUniqDyn mresp
+      where
+        decodeXhrResponseWithError :: FromJSON a => XhrResponse -> Either String a
+        decodeXhrResponseWithError =
+          fromMaybe (Left "Empty response") . sequence
+            . traverse (Aeson.eitherDecode . BL.fromStrict . encodeUtf8)
+            . _xhrResponse_responseText

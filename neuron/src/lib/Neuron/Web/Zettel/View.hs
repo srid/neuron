@@ -26,7 +26,6 @@ import Neuron.Web.Route
   ( NeuronWebT,
     Route (..),
     neuronRouteLink,
-    whenStaticallyGenerated,
   )
 import Neuron.Web.Theme (Theme)
 import qualified Neuron.Web.Theme as Theme
@@ -64,28 +63,25 @@ renderZettel ::
   Maybe Text ->
   NeuronWebT t m ()
 renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
-  whenStaticallyGenerated $ do
-    el "script" $ do
-      text "document.onkeyup = function(e) { if (e.key == \"/\") { document.location.href = \"impulse.html\"; } }"
+  el "script" $ do
+    text "document.onkeyup = function(e) { if (e.key == \"/\") { document.location.href = \"impulse.html\"; } }"
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
       Q.renderZettelLink Nothing (fst <$> G.getConnection z z2 graph) def z2
   -- Main content
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-    whenStaticallyGenerated $ do
-      -- We use -24px (instead of -14px) here so as to not scroll all the way to
-      -- title, and as to leave some of the tree visible as "hint" to the user.
-      lift $ AS.marker "zettel-container-anchor" (-24)
+    -- We use -24px (instead of -14px) here so as to not scroll all the way to
+    -- title, and as to leave some of the tree visible as "hint" to the user.
+    lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
       renderZettelContentCard (graph, zc)
       renderZettelBottomPane graph z
       renderBottomMenu theme graph mEditUrl z
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
-  whenStaticallyGenerated $ do
-    unless (null upTree) $ do
-      AS.script "zettel-container-anchor"
+  unless (null upTree) $ do
+    AS.script "zettel-container-anchor"
 
 renderZettelContentCard ::
   PandocBuilder t m =>

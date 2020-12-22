@@ -10,6 +10,7 @@
 module Impulse.Run
   ( run,
     mainWidgetWithHeadOnJsaddleOnly,
+    onGHCJS,
   )
 where
 
@@ -66,9 +67,17 @@ run dataPath port f =
 mainWidgetWithHeadOnJsaddleOnly :: (forall x. Widget x ()) -> (forall x. Widget x ()) -> JSM ()
 mainWidgetWithHeadOnJsaddleOnly _headWidget bodyWidget = do
   Main.mainWidget bodyWidget
+
+onGHCJS :: Bool
+onGHCJS = True
+
 #else
 {-# INLINABLE mainWidgetWithHeadOnJsaddleOnly #-}
 mainWidgetWithHeadOnJsaddleOnly :: (forall x. Widget x ()) -> (forall x. Widget x ()) -> JSM ()
 mainWidgetWithHeadOnJsaddleOnly headWidget bodyWidget = do
   Main.mainWidgetWithHead headWidget bodyWidget
+
+onGHCJS :: Bool
+onGHCJS = False
+
 #endif

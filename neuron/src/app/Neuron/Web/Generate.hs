@@ -4,7 +4,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -18,7 +17,6 @@ module Neuron.Web.Generate
   )
 where
 
-import Data.FileEmbed (embedOneStringFileOf)
 import qualified Data.Map.Strict as Map
 import Data.Tagged (untag)
 import qualified Data.Text as T
@@ -46,17 +44,10 @@ import Relude
 import Rib.Shake (forEvery, ribInputDir)
 import System.FilePath ((</>))
 
--- | The contents of GHCJS compiled JS.
---
--- We specify an alternate path, that is relative to project root, so that
--- ghcide will be able to compile this module.
-impulseJS :: Text
-impulseJS = $(embedOneStringFileOf ["./ghcjs/impulse.js", "./neuron/ghcjs/impulse.js"])
-
 -- | Generate the Zettelkasten site
 generateSite ::
   Config ->
-  (forall a. Z.Route a -> (ZettelGraph, a) -> Action ()) ->
+  (forall a. NeuronCache -> Z.Route a -> a -> Action ()) ->
   Action ZettelGraph
 generateSite config writeHtmlRoute' = do
   when (olderThan $ C.minVersion config) $ do
@@ -68,12 +59,12 @@ generateSite config writeHtmlRoute' = do
           <> neuronVersion
   (cache@Cache.NeuronCache {..}, zettelContents) <- loadZettelkasten config
   let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
-      writeHtmlRoute v r = writeHtmlRoute' r (_neuronCache_graph, v)
+      writeHtmlRoute v r = writeHtmlRoute' cache r v
   -- Generate HTML for every zettel
   forM_ zettelContents $ \val@(sansContent -> z) ->
     writeHtmlRoute val $ Z.Route_Zettel (zettelSlug z)
   -- Generate search page
-  writeHtmlRoute (cache, impulseJS) $ Z.Route_Impulse Nothing
+  writeHtmlRoute () $ Z.Route_Impulse Nothing
   -- Report all errors
   forM_ (Map.toList _neuronCache_errors) $ \(zid, err) -> do
     reportError zid $

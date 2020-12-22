@@ -14,11 +14,8 @@
 module Neuron.Web.Generate.Route where
 
 import Control.Monad.Except (liftEither, runExcept)
-import Data.Some (Some, withSome)
-import Data.TagTree (unTag)
 import qualified Network.URI.Encode as E
-import Neuron.Web.Route (Route (..), RouteConfig (..), routeHtmlPath)
-import Reflex.Dom.Core
+import Neuron.Web.Route (Route (..), routeHtmlPath)
 import Relude
 import Rib.Route (IsRoute (..), routeUrlRel)
 import Text.URI (URI, mkURI)
@@ -26,24 +23,6 @@ import qualified Text.URI as URI
 
 instance IsRoute Route where
   routeFile = pure . routeHtmlPath
-
-staticRouteConfig :: RouteConfig t m
-staticRouteConfig =
-  RouteConfig True renderStaticRoute staticRouteUrl
-  where
-    renderStaticRoute :: DomBuilder t m => Some Route -> Map Text Text -> m a -> m a
-    renderStaticRoute someR attrs w =
-      withSome someR $ \r -> do
-        let hrefAttr :: Map Text Text = "href" =: routeFor r
-        elAttr "a" (attrs <> hrefAttr) w
-    staticRouteUrl someR =
-      withSome someR $ \r -> do
-        routeFor r
-    -- Using relative URLs enables the site work in file:/// URLs
-    routeFor = \case
-      -- HACK: Hack around Rib.Route's limitation in dealing with query arguments
-      r@(Route_Impulse (Just t)) -> routeUrlRel r <> "?q=tag:" <> unTag t
-      r -> routeUrlRel r
 
 data BaseUrlError
   = BaseUrlNotAbsolute

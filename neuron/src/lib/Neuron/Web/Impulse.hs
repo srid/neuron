@@ -1,5 +1,7 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -40,8 +42,11 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (zettelTitle),
     zettelTags,
   )
-import Reflex.Dom.Core hiding (mapMaybe, (&))
+import Reflex.Dom.Core
 import Relude hiding ((&))
+import qualified Text.URI as URI
+import Text.URI.QQ (queryKey)
+import Text.URI.Util (getQueryParam)
 
 -- | The value needed to render the z-index
 --
@@ -106,20 +111,22 @@ buildImpulse graph errors =
     sortZettelForest = sortOn (Down . maximum)
 
 renderImpulse ::
-  (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
+  (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
   Theme.Theme ->
   Impulse ->
-  -- | Search query to filter
-  Dynamic t (Maybe Text) ->
   NeuronWebT t m ()
-renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} mqDyn = do
+renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} = do
+  mqDyn <- fmap join $
+    prerender (pure $ constDyn Nothing) $ do
+      searchInput =<< urlQueryVal [queryKey|q|]
   elClass "h1" "header" $ do
     text "Impulse"
-    dyn_ $
-      ffor mqDyn $ \mq -> forM_ mq $ \q -> do
-        text " ["
-        el "tt" $ text q
-        text "]"
+    el "span" $
+      dyn_ $
+        ffor mqDyn $ \mq -> forM_ mq $ \q -> do
+          text " ["
+          el "tt" $ text q
+          text "]"
   elVisible (ffor mqDyn $ \mq -> isNothing mq && not (null impulseErrors)) $
     elClass "details" "ui tiny errors message" $ do
       el "summary" $ text "Errors"
@@ -161,6 +168,11 @@ renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} mqDyn = do
       elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"
       text " is rendered as a forest."
   where
+    -- Return the value for given query key (eg: ?q=???) from the URL location.
+    -- urlQueryVal :: MonadJSM m => URI.RText 'URI.QueryKey -> m (Maybe Text)
+    urlQueryVal key = do
+      uri <- URI.mkURI @Maybe <$> getLocationUrl
+      pure $ getQueryParam key =<< uri
     countNounBe noun nounPlural = \case
       1 -> "1 " <> noun
       n -> show n <> " " <> nounPlural
@@ -243,6 +255,29 @@ zettelLink z w = do
   el "li" $ do
     QueryView.renderZettelLink Nothing Nothing def z
     w
+
+searchInput ::
+  ( DomBuilder t m,
+    PerformEvent t m,
+    TriggerEvent t m,
+    MonadIO (Performable m),
+    MonadHold t m,
+    MonadFix m
+  ) =>
+  Maybe Text ->
+  m (Dynamic t (Maybe Text))
+searchInput mquery0 = do
+  divClass "ui fluid icon input search" $ do
+    qDyn <-
+      fmap value $
+        inputElement $
+          def
+            & initialAttributes
+              .~ ("placeholder" =: "Search here ..." <> "autofocus" =: "")
+            & inputElementConfig_initialValue .~ fromMaybe "" mquery0
+    elClass "i" "search icon fas fa-search" blank
+    qSlow <- debounce 0.5 $ updated qDyn
+    holdDyn mquery0 $ fmap (\q -> if q == "" then Nothing else Just q) qSlow
 
 style :: Css
 style = do

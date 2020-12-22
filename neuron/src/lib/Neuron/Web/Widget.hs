@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -5,6 +6,7 @@
 
 module Neuron.Web.Widget where
 
+import Control.Monad.Fix (MonadFix)
 import qualified Data.Text as T
 import Data.Time.DateMayTime (DateMayTime, formatDateMayTime, formatDay, getDay)
 import Reflex.Dom.Core
@@ -19,8 +21,7 @@ elTime t = do
 
 -- | A pre element with scrollbar
 elPreOverflowing :: DomBuilder t m => m a -> m a
-elPreOverflowing w =
-  elAttr "pre" ("style" =: "overflow: auto") w
+elPreOverflowing = elAttr "pre" ("style" =: "overflow: auto")
 
 semanticIcon :: DomBuilder t m => Text -> m ()
 semanticIcon name = elClass "i" (name <> " icon") blank
@@ -43,3 +44,48 @@ elVisible visible w = do
 divClassVisible :: (DomBuilder t m, PostBuild t m) => Dynamic t Bool -> Text -> m a -> m a
 divClassVisible visible cls w = do
   elDynAttr "div" (ffor visible $ (<> "class" =: cls) . bool ("style" =: "display: none;") mempty) w
+
+-- | Data that can be loaded.
+--
+-- Outter Maybe represents if the data is still loading (==Nothing).
+-- Inner Either signals JSON decoding errors (==Left) if any.
+type LoadableData a = Maybe (Either String a)
+
+availableData :: a -> LoadableData a
+availableData = Just . Right
+
+loadingWidget ::
+  (DomBuilder t m, MonadFix m, MonadHold t m, PostBuild t m) =>
+  Dynamic t (LoadableData a) ->
+  (a -> m ()) ->
+  m ()
+loadingWidget valDyn w = do
+  mresp <- maybeDyn valDyn
+  dyn_ $
+    ffor mresp $ \case
+      Nothing -> loader
+      Just resp -> do
+        eresp <- eitherDyn resp
+        dyn_ $
+          ffor eresp $ \case
+            Left errDyn -> do
+              text "ERROR: "
+              dynText $ T.pack <$> errDyn
+            Right aDyn -> do
+              -- Display a loader during hydration. This loader should appear on
+              -- top of prerendered content, while the JSON gets loaded. This
+              -- just to workaround `loader` being effective only on jsaddle
+              -- (because on static prerender, the Dynamic will never be a
+              -- `Nothing`)
+              -- widgetHold_ inlineLoader $ ffor (updated aDyn) $ const blank
+              dyn_ $ w <$> aDyn
+  where
+    loader :: DomBuilder t m => m ()
+    loader = do
+      divClass "ui text container" $ do
+        divClass "ui active dimmer" $ do
+          divClass "ui medium text loader" $ text "Fetching JSON cache"
+        el "p" blank
+    _inlineLoader :: DomBuilder t m => m ()
+    _inlineLoader = do
+      divClass "ui active centered inline loader" blank
