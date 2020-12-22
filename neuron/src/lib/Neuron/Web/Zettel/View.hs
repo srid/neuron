@@ -20,7 +20,7 @@ where
 import Data.Some
 import Data.TagTree
 import Data.Tagged (untag)
-import Neuron.Reader.Type (ZettelParseError)
+import Neuron.Markdown (ZettelParseError)
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route
   ( NeuronWebT,

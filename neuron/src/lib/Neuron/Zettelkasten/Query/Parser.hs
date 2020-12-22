@@ -21,7 +21,6 @@ where
 import Data.Default (Default (def))
 import Data.Some (Some (..))
 import Data.TagTree (TagNode (..), TagPattern, constructTag, mkTagPattern)
-import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Markdown))
 import Neuron.Zettelkasten.Connection (Connection (..))
 import Neuron.Zettelkasten.ID (getZettelID, parseZettelID)
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
@@ -37,9 +36,8 @@ parseQueryLink :: URI -> Maybe (Some ZettelQuery)
 parseQueryLink uri =
   case bareFileUrlPath uri of
     Just path -> do
-      -- Allow raw filename (ending with ".md"). HACK: hardcoding format, but we
-      -- shouldn't.
-      zid <- getZettelID ZettelFormat_Markdown (toString path)
+      -- Allow raw filename (ending with ".md").
+      zid <- getZettelID (toString path)
       pure $ Some $ ZettelQuery_ZettelByID zid def
     Nothing -> do
       (URI.unRText -> "z") <- URI.uriScheme uri

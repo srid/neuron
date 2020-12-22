@@ -29,7 +29,6 @@ import Data.Aeson
     ToJSONKey (toJSONKey),
   )
 import Data.Aeson.Types (toJSONKeyText)
-import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Relude
 import System.FilePath (splitExtension, takeFileName)
 import qualified Text.Megaparsec as M
@@ -64,11 +63,9 @@ instance FromJSONKey ZettelID where
       Right v -> pure v
       Left e -> fail $ show e
 
-zettelIDSourceFileName :: ZettelID -> ZettelFormat -> FilePath
-zettelIDSourceFileName zid fmt =
-  toString (unZettelID zid <> ext)
-  where
-    ext = zettelFormatToExtension fmt
+zettelIDSourceFileName :: ZettelID -> FilePath
+zettelIDSourceFileName zid =
+  toString (unZettelID zid <> ".md")
 
 ---------
 -- Parser
@@ -109,8 +106,8 @@ idParser' cs = do
   pure $ ZettelID $ toText s
 
 -- | Parse the ZettelID if the given filepath is a zettel.
-getZettelID :: ZettelFormat -> FilePath -> Maybe ZettelID
-getZettelID fmt fp = do
+getZettelID :: FilePath -> Maybe ZettelID
+getZettelID fp = do
   let (name, ext) = splitExtension $ takeFileName fp
-  guard $ zettelFormatToExtension fmt == toText ext
+  guard $ ".md" == toText ext
   rightToMaybe $ parseZettelID $ toText name

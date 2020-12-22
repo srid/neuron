@@ -12,7 +12,6 @@ You may configure the parameters of your web interface by adding an optional con
 | **`theme`**       | Color scheme to use for your site. Value must be [one of the color names](https://semantic-ui.com/usage/theming.html#sitewide-defaults) supported by SemanticUI.                           |
 | **`editUrl`**     | The URL (without the zettel filename) to edit zettels. To remove the edit button from the navbar, remove this entry from your configuration.                                               |
 | **`minVersion`**  | The minimum neuron version your site must be generated with.                                                                                                                               |
-| **`formats`**     | [[org]]                                                                                                                                                                                    |
 
 
 ## Example 

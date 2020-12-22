@@ -42,7 +42,7 @@ buildZettelkasten ::
 buildZettelkasten (fmap sansContent &&& lefts -> (zs', zsEParse)) =
   let slugMap :: Map Slug (NonEmpty Zettel) =
         Map.fromListWith (<>) $
-          zs' <&> (zettelSlug &&& one . id)
+          zs' <&> (zettelSlug &&& one)
       (zs, zsESlug) =
         (lefts &&& rights) $
           Map.toList slugMap <&> \(slug, zettels) ->

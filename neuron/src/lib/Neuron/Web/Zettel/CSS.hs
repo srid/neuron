@@ -9,7 +9,7 @@ where
 import Clay hiding (id, ms, not, object, reverse, s, style, type_)
 import qualified Clay as C
 import qualified Clay.Media as CM
-import qualified Neuron.Reader.Markdown as Markdown
+import qualified Neuron.Markdown as Markdown
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget.InvertedTree as IT (style)
 import Relude hiding ((&))

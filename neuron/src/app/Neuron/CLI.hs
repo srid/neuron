@@ -83,4 +83,4 @@ runWith act App {..} =
               putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result _neuronCache_errors
     Search searchCmd -> do
       runRibOnceQuietly notesDir $ do
-        interactiveSearch notesDir searchCmd =<< getConfig
+        interactiveSearch notesDir searchCmd

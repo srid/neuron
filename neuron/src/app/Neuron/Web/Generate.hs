@@ -26,8 +26,6 @@ import Data.Traversable (for)
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as C
-import Neuron.Reader (readerForZettelFormat)
-import Neuron.Reader.Type (ZettelFormat, zettelFormatToExtension)
 import Neuron.Version (neuronVersion, olderThan)
 import qualified Neuron.Web.Cache as Cache
 import Neuron.Web.Cache.Type (NeuronCache, _neuronCache_graph)
@@ -118,14 +116,10 @@ loadZettelkastenGraph =
 
 loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
 loadZettelkasten config = do
-  formats <- C.getZettelFormats config
   -- Experimental feature; see https://github.com/srid/neuron/issues/309
-  let patternPrefix = bool "*" "**/*" $ C.recurseDir config
-  zettelFiles <- forM formats $ \fmt -> do
-    let pat = toString $ patternPrefix <> zettelFormatToExtension fmt
-    files <- forEvery [pat] pure
-    pure (fmt, files)
-  (g, zs, errs) <- loadZettelkastenFrom zettelFiles
+  let pat = bool "*.md" "**/*.md" $ C.recurseDir config
+  files <- forEvery [pat] pure
+  (g, zs, errs) <- loadZettelkastenFrom files
   let cache = Cache.NeuronCache g errs config neuronVersion
       cacheSmall = cache {_neuronCache_graph = stripSurroundingContext g}
   Cache.updateCache cacheSmall
@@ -133,50 +127,46 @@ loadZettelkasten config = do
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFrom ::
-  NonEmpty (ZettelFormat, [FilePath]) ->
+  [FilePath] ->
   Action
     ( ZettelGraph,
       [ZettelC],
       Map ZettelID (NonEmpty ZettelError)
     )
-loadZettelkastenFrom fs = do
+loadZettelkastenFrom files = do
   notesDir <- ribInputDir
   -- Use State monad to "gather" duplicate zettel files using same IDs, in the
   -- `Right` of the Either state value; with the `Left` collecting the actual
   -- zettel files to load into the graph.
-  zidMap :: Map ZettelID (Either (ZettelFormat, (FilePath, Text)) (NonEmpty FilePath)) <-
+  zidMap :: Map ZettelID (Either (FilePath, Text) (NonEmpty FilePath)) <-
     fmap snd $
       flip runStateT Map.empty $ do
-        forM_ fs $ \(format, files) -> do
-          forM_ files $ \relPath -> do
-            case getZettelID format relPath of
-              Nothing ->
-                pure ()
-              Just zid -> do
-                get
-                  >>= ( \case
-                          Just (Left (_f, (oldPath, _s))) -> do
-                            -- The zettel ID is already used by `oldPath`. Mark it as a dup.
-                            modify $ Map.insert zid (Right $ relPath :| [oldPath])
-                          Just (Right (toList -> ambiguities)) -> do
-                            -- Third or later duplicate file with the same Zettel ID
-                            modify $ Map.insert zid (Right $ relPath :| ambiguities)
-                          Nothing -> do
-                            let absPath = notesDir </> relPath
-                            lift $ need [absPath]
-                            s <- decodeUtf8With lenientDecode <$> readFileBS absPath
-                            modify $ Map.insert zid (Left (format, (relPath, s)))
-                      )
-                    . Map.lookup zid
+        forM_ files $ \relPath -> do
+          case getZettelID relPath of
+            Nothing ->
+              pure ()
+            Just zid -> do
+              get
+                >>= ( \case
+                        Just (Left (oldPath, _s)) -> do
+                          -- The zettel ID is already used by `oldPath`. Mark it as a dup.
+                          modify $ Map.insert zid (Right $ relPath :| [oldPath])
+                        Just (Right (toList -> ambiguities)) -> do
+                          -- Third or later duplicate file with the same Zettel ID
+                          modify $ Map.insert zid (Right $ relPath :| ambiguities)
+                        Nothing -> do
+                          let absPath = notesDir </> relPath
+                          lift $ need [absPath]
+                          s <- decodeUtf8With lenientDecode <$> readFileBS absPath
+                          modify $ Map.insert zid (Left (relPath, s))
+                    )
+                  . Map.lookup zid
   let dups = ZettelError_AmbiguousID <$> Map.mapMaybe rightToMaybe zidMap
-      files =
-        fmap (first (id &&& readerForZettelFormat)) $
-          Map.toList $
-            Map.fromListWith (<>) $
-              flip fmap (Map.toList $ Map.mapMaybe leftToMaybe zidMap) $
-                \(zid, (fmt, (path, s))) ->
-                  (fmt, [(zid, path, s)])
-      zs = parseZettels extractQueriesWithContext files
+      fs =
+        flip concatMap (Map.toList $ Map.mapMaybe leftToMaybe zidMap) $
+          \(zid, (path, s)) ->
+            [(zid, path, s)]
+      zs = parseZettels extractQueriesWithContext fs
       (g, gerrs) = G.buildZettelkasten zs
       errs = Map.unionsWith (<>) [one <$> dups, one <$> gerrs]
   pure (g, zs, errs)

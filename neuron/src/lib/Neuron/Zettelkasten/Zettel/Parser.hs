@@ -14,7 +14,7 @@ import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))
 import Data.TagTree (Tag, unTagPattern)
 import qualified Data.Text as T
-import Neuron.Reader.Type (ZettelFormat, ZettelReader)
+import Neuron.Markdown (parseMarkdown)
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
@@ -32,18 +32,16 @@ import qualified Text.URI as URI
 type QueryExtractor = Pandoc -> [(Some ZettelQuery, [Block])]
 
 parseZettel ::
-  ZettelFormat ->
-  ZettelReader ->
   QueryExtractor ->
   FilePath ->
   ZettelID ->
   Text ->
   ZettelC
-parseZettel format zreader queryExtractor fn zid s = do
-  case zreader fn s of
+parseZettel queryExtractor fn zid s = do
+  case parseMarkdown fn s of
     Left parseErr ->
       let slug = mkDefaultSlug $ unZettelID zid
-       in Left $ Zettel zid slug format fn "Unknown" False [] Nothing False [] (Just parseErr) s
+       in Left $ Zettel zid slug fn "Unknown" False [] Nothing False [] (Just parseErr) s
     Right (meta, doc) ->
       let -- Determine zettel title
           (title, titleInBody) = case Meta.title =<< meta of
@@ -60,7 +58,7 @@ parseZettel format zreader queryExtractor fn zid s = do
           date = Meta.date =<< meta
           slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
           unlisted = Just True == (Meta.unlisted =<< meta)
-       in Right $ Zettel zid slug format fn title titleInBody tags date unlisted queries Nothing doc
+       in Right $ Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc
   where
     getInlineTag :: Some ZettelQuery -> Maybe Tag
     getInlineTag = \case
@@ -76,12 +74,11 @@ parseZettel format zreader queryExtractor fn zid s = do
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
   QueryExtractor ->
-  [((ZettelFormat, ZettelReader), [(ZettelID, FilePath, Text)])] ->
+  [(ZettelID, FilePath, Text)] ->
   [ZettelC]
-parseZettels queryExtractor filesPerFormat =
-  flip concatMap filesPerFormat $ \((format, zreader), files) ->
-    flip fmap files $ \(zid, path, s) ->
-      parseZettel format zreader queryExtractor path zid s
+parseZettels queryExtractor files =
+  flip fmap files $ \(zid, path, s) ->
+    parseZettel queryExtractor path zid s
 
 extractQueriesWithContext :: QueryExtractor
 extractQueriesWithContext doc =

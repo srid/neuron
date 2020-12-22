@@ -27,7 +27,7 @@ import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
 import Data.TagTree (Tag, TagPattern (..))
 import Data.Time.DateMayTime (DateMayTime)
-import Neuron.Reader.Type (ZettelFormat, ZettelParseError)
+import Neuron.Markdown (ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Query.Error (QueryResultError)
@@ -52,7 +52,6 @@ data ZettelQuery r where
 data ZettelT content = Zettel
   { zettelID :: ZettelID,
     zettelSlug :: Slug,
-    zettelFormat :: ZettelFormat,
     -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
     zettelTitle :: Text,

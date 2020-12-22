@@ -11,14 +11,11 @@ module Neuron.CLI.Search
   )
 where
 
-import qualified Data.Text as Text
 import Development.Shake (Action)
 import Neuron.CLI.Rib
   ( SearchBy (SearchByContent, SearchByTitle),
     SearchCommand (..),
   )
-import Neuron.Config.Type (Config, getZettelFormats)
-import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Org), zettelFormatToExtension)
 import Relude
 import System.Posix.Process (executeFile)
 import System.Which (staticWhich)
@@ -26,9 +23,9 @@ import System.Which (staticWhich)
 neuronSearchScript :: FilePath
 neuronSearchScript = $(staticWhich "neuron-search")
 
-searchScriptArgs :: NonEmpty ZettelFormat -> SearchCommand -> [String]
-searchScriptArgs formats SearchCommand {..} =
-  let extensionPattern = "/*{" <> Text.unpack (Text.intercalate "," $ toList $ zettelFormatToExtension <$> formats) <> "}"
+searchScriptArgs :: SearchCommand -> [String]
+searchScriptArgs SearchCommand {..} =
+  let extensionPattern = "/*{.md}"
       searchByArgs =
         case searchBy of
           SearchByTitle -> ["(^# )|(^title: )", "2", extensionPattern]
@@ -37,13 +34,9 @@ searchScriptArgs formats SearchCommand {..} =
         bool "echo" "$EDITOR" searchEdit
    in searchByArgs <> [editArg]
 
-interactiveSearch :: FilePath -> SearchCommand -> Config -> Action ()
-interactiveSearch notesDir searchCmd config =
-  do
-    zettelFormats <- getZettelFormats config
-    if searchBy searchCmd == SearchByTitle && ZettelFormat_Org `elem` toList zettelFormats
-      then fail "search is not supported for .org files"
-      else liftIO $ execScript neuronSearchScript $ notesDir : searchScriptArgs zettelFormats searchCmd
+interactiveSearch :: FilePath -> SearchCommand -> Action ()
+interactiveSearch notesDir searchCmd =
+  liftIO $ execScript neuronSearchScript $ notesDir : searchScriptArgs searchCmd
   where
     execScript scriptPath args =
       -- We must use the low-level execvp (via the unix package's `executeFile`)

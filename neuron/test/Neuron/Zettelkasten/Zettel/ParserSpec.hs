@@ -8,8 +8,6 @@ module Neuron.Zettelkasten.Zettel.ParserSpec
 where
 
 import Data.TagTree (Tag (Tag))
-import Neuron.Reader.Markdown (parseMarkdown)
-import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Markdown))
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
@@ -26,8 +24,6 @@ spec = do
     let parseSomeZettel =
           sansContent
             . parseZettel
-              ZettelFormat_Markdown
-              parseMarkdown
               extractQueriesWithContext
               "<test>"
               (ZettelID "test")

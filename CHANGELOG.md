@@ -24,6 +24,7 @@
     - Fix pipe character (`|`) messing up Markdown parsing (#469, #465)
     - Recognize plain links are hyperlinks, aka. autolinks (#471)
     - Add Markdown highlighting extension (#453)
+  - Drop (experimental) support for org-mode
 - Unicode-aware in inline tags (#446)
 - CLI:
   - `neuron open --id` is replaced by `neuron open --slug` (#483)

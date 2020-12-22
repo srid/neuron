@@ -28,8 +28,8 @@ spec = do
       "0.4" `isLesserOrEqual` olderThan
     it "full versions" $ do
       "1.2.1.2" `isGreater` olderThan
-      "1.1.15" `isGreater` olderThan
-      "1.1.14.8" `isGreater` olderThan
+      "1.1.17" `isGreater` olderThan
+      "1.1.16.8" `isGreater` olderThan
       "1.1.0.0" `isLesserOrEqual` olderThan -- This is current version
       "0.6.1.0" `isLesserOrEqual` olderThan
     it "within same major version" $ do

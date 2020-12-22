@@ -18,8 +18,7 @@ import qualified Data.Text as T
 import Data.Time.DateMayTime (DateMayTime, formatDateMayTime)
 import Development.Shake (Action)
 import Neuron.CLI.Types (NewCommand (..))
-import Neuron.Config.Type (Config (..), getZettelFormats)
-import Neuron.Reader.Type (ZettelFormat (..))
+import Neuron.Config.Type (Config (..))
 import Neuron.Web.Generate as Gen (loadZettelkasten)
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
@@ -48,13 +47,11 @@ newZettelFile NewCommand {..} config = do
     Left e -> die $ show e
     Right zid -> do
       notesDir <- ribInputDir
-      defaultFormat <- head <$> getZettelFormats config
-      let zettelFormat = fromMaybe defaultFormat format
-          zettelFile = zettelIDSourceFileName zid zettelFormat
+      let zettelFile = zettelIDSourceFileName zid
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-
           bool (pure showAction) mkEditActionFromEnv edit
-        writeFileText (notesDir </> zettelFile) $ defaultZettelContent zettelFormat date
+        writeFileText (notesDir </> zettelFile) $ defaultZettelContent date
         fileAction notesDir zettelFile
   where
     mkEditActionFromEnv :: IO (FilePath -> FilePath -> IO ())
@@ -80,22 +77,12 @@ newZettelFile NewCommand {..} config = do
         Just (toString . strip . toText -> v) ->
           if null v then pure Nothing else pure (Just v)
 
-defaultZettelContent :: ZettelFormat -> DateMayTime -> Text
-defaultZettelContent format (formatDateMayTime -> date) = case format of
-  ZettelFormat_Markdown ->
-    T.intercalate
-      "\n"
-      [ "---",
-        "date: " <> date,
-        "---",
-        ""
-      ]
-  ZettelFormat_Org ->
-    T.intercalate
-      "\n"
-      [ "* " <> "Untitled", -- Leaving a title here, only because org seems to require one
-        "    :PROPERTIES:",
-        "    :Date: " <> date,
-        "    :END:",
-        "\n"
-      ]
+defaultZettelContent :: DateMayTime -> Text
+defaultZettelContent (formatDateMayTime -> date) =
+  T.intercalate
+    "\n"
+    [ "---",
+      "date: " <> date,
+      "---",
+      ""
+    ]

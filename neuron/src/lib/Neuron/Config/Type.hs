@@ -12,15 +12,12 @@ module Neuron.Config.Type
     configFile,
     defaultConfig,
     mergeWithDefault,
-    getZettelFormats,
     getSiteBaseUrl,
   )
 where
 
 import Data.Aeson
-import Neuron.Reader.Type (ZettelFormat)
 import Relude hiding (readEither)
-import Text.Read (readEither)
 import Text.URI (URI, mkURI)
 
 configFile :: FilePath
@@ -34,8 +31,6 @@ configFile = "neuron.dhall"
 data Config = Config
   { author :: Maybe Text,
     editUrl :: Maybe Text,
-    -- TODO: This should use `NonEmpty`.
-    formats :: [Text],
     minVersion :: Text,
     siteBaseUrl :: Maybe Text,
     siteTitle :: Text,
@@ -44,11 +39,6 @@ data Config = Config
     recurseDir :: Bool
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
-
-getZettelFormats :: MonadFail m => Config -> m (NonEmpty ZettelFormat)
-getZettelFormats Config {..} = do
-  formats' <- maybe (fail "Empty formats") pure $ nonEmpty formats
-  traverse (either (fail . toString) pure . readEither . toString) formats'
 
 getSiteBaseUrl :: MonadFail m => Config -> m (Maybe URI)
 getSiteBaseUrl Config {..} =
@@ -72,8 +62,6 @@ defaultConfig =
   \   None Text\
   \, theme =\
   \   \"blue\"\
-  \, formats =\
-  \   [ \"markdown\" ]\
   \, recurseDir =\
   \   False \
   \, minVersion =\

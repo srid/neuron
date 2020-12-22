@@ -29,7 +29,6 @@ import Data.Time.DateMayTime
     mkDateMayTime,
     parseDateMayTime,
   )
-import Neuron.Reader.Type (ZettelFormat)
 import qualified Neuron.Web.Route as R
 import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
@@ -50,8 +49,7 @@ data App = App
   }
 
 data NewCommand = NewCommand
-  { format :: Maybe ZettelFormat,
-    date :: DateMayTime,
+  { date :: DateMayTime,
     idScheme :: Some IDScheme,
     edit :: Bool
   }
@@ -127,13 +125,6 @@ commandParser defaultNotesDir now = do
         fmap (maybe (Some IDSchemeHash) (Some . IDSchemeCustom)) $
           optional $
             strArgument (metavar "TITLEID" <> help "Custom (title) ID to use; otherwise random ID will be generated")
-      format <-
-        optional $
-          option auto $
-            metavar "FORMAT"
-              <> short 'f'
-              <> long "format"
-              <> help "The document format of the new zettel"
       edit <- switch (long "edit" <> short 'e' <> help "Open the newly-created zettel in $EDITOR")
       dateParam <-
         option dateReader $
@@ -142,7 +133,7 @@ commandParser defaultNotesDir now = do
             <> value (mkDateMayTime $ Right now)
             <> showDefaultWith (toString . formatDateMayTime)
             <> help "Zettel date/time"
-      pure $ New $ NewCommand format dateParam idScheme edit
+      pure $ New $ NewCommand dateParam idScheme edit
     openCommand = do
       fmap Open $
         fmap

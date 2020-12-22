@@ -14,8 +14,7 @@ import Data.Time.LocalTime
   ( LocalTime (LocalTime),
     TimeOfDay (TimeOfDay),
   )
-import Neuron.Reader.Markdown (parseMarkdown)
-import Neuron.Reader.Type (ZettelFormat (ZettelFormat_Markdown))
+import Neuron.Markdown (parseMarkdown)
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import Neuron.Zettelkasten.Zettel
   ( MetadataOnly (MetadataOnly),
@@ -44,7 +43,6 @@ spec = do
           Zettel
             (ZettelID s)
             s
-            ZettelFormat_Markdown
             "<spec>.md"
             "Some title"
             False
