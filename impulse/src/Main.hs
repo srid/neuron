@@ -1,3 +1,4 @@
+{-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Main where
@@ -16,12 +17,14 @@ main :: IO ()
 main =
   Run.run "cache.json" 3003 $ do
     let w appendHead appendBody = do
-          cacheDyn <-
-            appendHead $ do
-              cacheDyn <- C.reflexDomGetCache Nothing
-              let cfgDyn = fmap (fmap C._neuronCache_config) <$> cacheDyn
-              V.headTemplate cfgDyn (Route_Impulse Nothing) ()
-              pure cacheDyn
-          appendBody $ do
-            runNeuronWeb routeConfig $ V.renderRouteImpulse cacheDyn
+          -- The shape of this matches `renderRoutePage`, hoping hydration works
+          -- (not yet)
+          rec () <- appendHead $ do
+                let cfgDyn = fmap (fmap C._neuronCache_config) <$> cacheDyn
+                V.headTemplate cfgDyn (Route_Impulse Nothing) ()
+              cacheDyn <- appendBody $ do
+                c <- C.reflexDomGetCache Nothing
+                runNeuronWeb routeConfig $ V.renderRouteImpulse c
+                pure c
+          pure ()
     Main.runHydrationWidgetWithHeadAndBody (pure ()) w

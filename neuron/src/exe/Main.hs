@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -86,29 +87,32 @@ renderRoutePage ::
   m ()
 renderRoutePage cache@NeuronCache {..} headHtml manifest r val = do
   el "html" $ do
-    cacheDyn <- Cache.reflexDomGetCache $ W.availableData cache
-    el "head" $ do
-      V.headTemplate (fmap (fmap Cache._neuronCache_config) <$> cacheDyn) r val
-      -- These three common elements could impact hydration; however, even
-      -- without them, hydration doesn't work in ghcjs for some reason. That
-      -- needs to be investigated.
-      renderHeadHtml headHtml
-      renderManifest manifest
-      renderStructuredData _neuronCache_config r (_neuronCache_graph, val)
-      () <- case r of
-        Route_Zettel _ -> do
-          elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
-        Route_Impulse {} ->
-          elImpulseJS
-      pure ()
-    el "body" $ do
-      case r of
-        Route_Impulse {} -> do
-          runNeuronWeb routeConfig $
-            V.renderRouteImpulse cacheDyn
-        Route_Zettel {} -> do
-          runNeuronWeb routeConfig $
-            V.renderRouteZettel val cacheDyn
+    rec el "head" $ do
+          V.headTemplate (fmap (fmap Cache._neuronCache_config) <$> cacheDyn) r val
+          () <- case r of
+            Route_Zettel _ -> do
+              -- These three common elements could impact hydration; however, even
+              -- without them, hydration doesn't work in ghcjs for some reason. That
+              -- needs to be investigated.
+              -- TODO: Move to common again?
+              renderHeadHtml headHtml
+              renderManifest manifest
+              renderStructuredData _neuronCache_config r (_neuronCache_graph, val)
+              elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
+            Route_Impulse {} ->
+              elImpulseJS
+          pure ()
+        cacheDyn <- el "body" $ do
+          c <- Cache.reflexDomGetCache $ W.availableData cache
+          () <- case r of
+            Route_Impulse {} -> do
+              runNeuronWeb routeConfig $
+                V.renderRouteImpulse c
+            Route_Zettel {} -> do
+              runNeuronWeb routeConfig $
+                V.renderRouteZettel val c
+          pure c
+    pure ()
 
 elImpulseJS :: DomBuilder t m => m ()
 elImpulseJS = do
