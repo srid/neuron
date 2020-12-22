@@ -16,6 +16,7 @@ executable impulse
   -- works, but that breaks ghcid's -T flag.
   exposed-modules:
     Impulse.Run
+    Impulse.Cache
   build-depends:
       base
     , reflex

@@ -111,6 +111,11 @@ library
     Data.Graph.Labelled.Build
     Data.Time.DateMayTime
 
+-- Everything below this marker should be deleted when using neuron.cabal in
+-- GHCJS as a library.
+-- ---------
+-- LIBMARKER
+
 common app-common
   import: library-common
   default-language: Haskell2010

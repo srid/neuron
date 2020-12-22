@@ -27,7 +27,8 @@ let
           cp -r -p ${neuronSrc}/{ghcjs,src-bash,test} $out/
           cp -r -p ${neuronSrc}/src/lib $out/src/
           # Remove non-library stanzas (expected to be at the end)
-          head -n -116 ${neuronSrc}/neuron.cabal > $out/neuron.cabal
+          LINE=`grep -n LIBMARKER ${neuronSrc}/neuron.cabal | cut -f1 -d:`
+          head -n $LINE ${neuronSrc}/neuron.cabal > $out/neuron.cabal
           '';
         reflex-dom-pandoc = import ../dep/reflex-dom-pandoc/thunk.nix;
         pandoc-link-context = import ../dep/pandoc-link-context/thunk.nix;
