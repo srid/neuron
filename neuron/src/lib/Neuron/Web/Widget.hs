@@ -63,29 +63,27 @@ loadingWidget valDyn w = do
   mresp <- maybeDyn valDyn
   dyn_ $
     ffor mresp $ \case
-      Nothing -> loader
+      Nothing ->
+        divClass "ui text container" inlineLoader
       Just resp -> do
         eresp <- eitherDyn resp
         dyn_ $
           ffor eresp $ \case
             Left errDyn -> do
-              text "ERROR: "
-              dynText $ T.pack <$> errDyn
+              divClass "ui text container" $
+                divClass "ui negative message" $ do
+                  divClass "header" $ text "Unable to parse neuron cache"
+                  el "p" $ dynText $ T.pack <$> errDyn
             Right aDyn -> do
-              -- Display a loader during hydration. This loader should appear on
-              -- top of prerendered content, while the JSON gets loaded. This
-              -- just to workaround `loader` being effective only on jsaddle
-              -- (because on static prerender, the Dynamic will never be a
-              -- `Nothing`)
-              -- widgetHold_ inlineLoader $ ffor (updated aDyn) $ const blank
               dyn_ $ w <$> aDyn
   where
-    loader :: DomBuilder t m => m ()
-    loader = do
+    _loader :: DomBuilder t m => m ()
+    _loader = do
       divClass "ui text container" $ do
         divClass "ui active dimmer" $ do
-          divClass "ui medium text loader" $ text "Fetching JSON cache"
+          divClass "ui medium text loader" $ text "Loading JSON cache"
         el "p" blank
-    _inlineLoader :: DomBuilder t m => m ()
-    _inlineLoader = do
-      divClass "ui active centered inline loader" blank
+    inlineLoader :: DomBuilder t m => m ()
+    inlineLoader = do
+      divClass "ui basic segment" $ do
+        divClass "ui active centered inline loader" blank

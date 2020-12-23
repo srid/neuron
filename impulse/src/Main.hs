@@ -1,5 +1,4 @@
 {-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Main where
 
