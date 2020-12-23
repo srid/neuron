@@ -1,6 +1,11 @@
 # Change Log for neuron
 
-## Unreleased
+## Unreleased (v2)
+
+- Introducing *impulse* -- foundation for upcoming advanced search, replacing both z-index and legacy JS search (#108)
+- Remove (experimental) support for org-mode in v2 (use `v1` branch if you need org-mode)
+
+## Unreleased (v1 + v2)
 
 - Fix search.html to handle zettels with title IDs (with whitespace) (#438)
 - `neuron search`
@@ -15,7 +20,6 @@
     - Fix internal z:/ URIs appearing in OpenGraph previews (#482)
     - Fix blockquote paragraph order in footnotes (#350)
     - Fix unnecessary horizontal scrolling on mobile (#468)
-  - Introducing *impulse* -- foundation for upcoming advanced search, replacing both z-index and legacy JS search (#108)
 - Zettel format
   - Ignore punctuation in inline tags (#443)
   - Remove support for autolinks (`<..>`) (#449) (see [migration script](https://github.com/srid/neuron/issues/449#issuecomment-719062302))
@@ -24,7 +28,6 @@
     - Fix pipe character (`|`) messing up Markdown parsing (#469, #465)
     - Recognize plain links are hyperlinks, aka. autolinks (#471)
     - Add Markdown highlighting extension (#453)
-  - Drop (experimental) support for org-mode
 - Unicode-aware in inline tags (#446)
 - CLI:
   - `neuron open --id` is replaced by `neuron open --slug` (#483)
