@@ -78,15 +78,18 @@ data TreeMatch
     TreeMatch_Under
   deriving (Eq, Show)
 
-searchTree :: (a -> Bool) -> Tree a -> Maybe (Tree (TreeMatch, a))
-searchTree f (Node x children) = do
-  let children' = catMaybes $ searchTree f <$> children
+searchTree :: (a -> Bool) -> Tree a -> Tree (Maybe TreeMatch, a)
+searchTree f (Node x xs) =
+  let children = searchTree f <$> xs
       tm
         | f x = Just TreeMatch_Root
-        | null children' = Nothing
-        | otherwise = Just TreeMatch_Under
-  m <- tm
-  pure $ Node (m, x) children'
+        | any treeMatches children = Just TreeMatch_Under
+        | otherwise = Nothing
+   in Node (tm, x) children
+  where
+
+treeMatches :: Tree (Maybe a, b) -> Bool
+treeMatches (Node (mm, _) _) = isJust mm
 
 buildImpulse :: ZettelGraph -> Map ZettelID ZettelError -> Impulse
 buildImpulse graph errors =
@@ -152,11 +155,12 @@ renderImpulse (fmap Theme.semanticColor -> themeColor) impulseDyn = do
     clusters <- holdUniqDyn $
       ffor2 (impulseClusters <$> impulseDyn) mqDyn $ \cs mq ->
         ffor cs $ \forest ->
-          fforMaybe forest $ \tree -> do
+          ffor forest $ \tree -> do
             searchTree (matchZettel mq . fst) tree
     void $
-      simpleList clusters $ \forestDyn ->
-        divClassVisible (not . null <$> forestDyn) ("ui " <> themeColor <> " segment") $ do
+      simpleList clusters $ \forestDyn -> do
+        let visible = any treeMatches <$> forestDyn
+        divClassVisible visible ("ui " <> themeColor <> " segment") $ do
           el "ul" $ renderForest forestDyn
     el "p" $ do
       let stats = impulseStats <$> impulseDyn
@@ -237,7 +241,7 @@ renderErrors errors = do
 
 renderForest ::
   (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) =>
-  Dynamic t [Tree (TreeMatch, (Zettel, [Zettel]))] ->
+  Dynamic t [Tree (Maybe TreeMatch, (Zettel, [Zettel]))] ->
   NeuronWebT t m ()
 renderForest treesDyn = do
   void $
@@ -245,7 +249,11 @@ renderForest treesDyn = do
       mDyn <- holdUniqDyn $ ffor treeDyn $ \(Node (m, _) _) -> m
       subtreesDyn <- holdUniqDyn $ ffor treeDyn $ \(Node _ subtrees) -> subtrees
       zup <- holdUniqDyn $ ffor treeDyn $ \(Node (_, x) _) -> x
-      elDynClass "span" (ffor mDyn $ \m -> if m == TreeMatch_Root then "q root" else "q under") $ do
+      let treeClass = ffor mDyn $ \case
+            Just TreeMatch_Root -> "q root"
+            Just TreeMatch_Under -> "q under"
+            Nothing -> "q unmatched"
+      elDynClass "span" treeClass $ do
         dyn_ $
           ffor zup $ \(zettel, uplinks) -> do
             zettelLink zettel $ do
@@ -282,7 +290,7 @@ searchInput mquery0 = do
               .~ ("placeholder" =: "Search here ..." <> "autofocus" =: "")
             & inputElementConfig_initialValue .~ fromMaybe "" mquery0
     elClass "i" "search icon fas fa-search" blank
-    qSlow <- debounce 0.5 $ updated qDyn
+    qSlow <- debounce 0.3 $ updated qDyn
     holdDyn mquery0 $ fmap (\q -> if q == "" then Nothing else Just q) qSlow
 
 style :: Css
@@ -300,3 +308,5 @@ style = do
   -- Display non-matching parents of matching nodes deemphasized
   ".q.under > li > span.zettel-link-container span.zettel-link a" ? do
     C.important $ C.color C.gray
+  ".q.unmatched" ? do
+    C.display C.none
