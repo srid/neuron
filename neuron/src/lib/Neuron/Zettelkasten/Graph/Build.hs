@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -8,7 +9,7 @@ module Neuron.Zettelkasten.Graph.Build
   )
 where
 
-import Control.Monad.Writer (runWriterT)
+import Control.Monad.Writer.Strict
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
 import Neuron.Zettelkasten.Connection (Connection)
@@ -32,46 +33,36 @@ import Text.Pandoc.Definition (Block)
 --   - Parse errors (already in function input)
 --   - Slug errors
 --   - Query errors
--- The errors are gathered in the `snd` of the tuple. This should probably be
--- refactored to use some Haskell idiom (Writer monad?).
+-- The errors are gathered in the `snd` of the tuple.
 buildZettelkasten ::
   [ZettelC] ->
-  ( ZettelGraph,
-    Map ZettelID ZettelError
-  )
-buildZettelkasten (fmap sansContent &&& lefts -> (zs', zsEParse)) =
+  Writer (Map ZettelID ZettelError) ZettelGraph
+buildZettelkasten parsedZettels = do
+  -- Tell parse errors that are recorded in `zettelParseError` field.
+  tell $
+    Map.fromList $
+      flip mapMaybe (lefts parsedZettels) $ \z -> do
+        zerr <- zettelParseError z
+        pure (zettelID z, ZettelError_ParseError (zettelSlug z, zerr))
+  -- Build a slug map to determined ambiguities in "slug" fields
   let slugMap :: Map Slug (NonEmpty Zettel) =
         Map.fromListWith (<>) $
-          zs' <&> (zettelSlug &&& one)
-      (zs, zsESlug) =
-        (lefts &&& rights) $
-          Map.toList slugMap <&> \(slug, zettels) ->
-            case zettels of
-              z :| [] ->
-                -- Unique slug; accept this Zettel
-                Left z
-              _ ->
-                -- Duplicate slugs
-                Right (slug, zettels)
-      (g, qErrs) = mkZettelGraph $ filter (not . zettelUnlisted) zs
-      errors =
-        Map.unions
-          [ fmap ZettelError_ParseError $
-              Map.fromList $
-                flip mapMaybe zsEParse $ \z ->
-                  case zettelParseError z of
-                    Just zerr ->
-                      Just (zettelID z, (zettelSlug z, zerr))
-                    _ ->
-                      Nothing,
-            fmap ZettelError_QueryResultErrors qErrs,
-            fmap ZettelError_AmbiguousSlug $
-              Map.fromList $
-                concat $
-                  zsESlug <&> \(slug, zettels) ->
-                    (,slug) . zettelID <$> toList zettels
-          ]
-   in (g, errors)
+          fmap sansContent parsedZettels <&> (zettelSlug &&& one)
+  -- Pull out zettels with unambigous slugs
+  zs <- fmap concat $
+    forM (Map.toList slugMap) $ \case
+      (_slug, z :| []) ->
+        pure [z]
+      (slug, zettels) -> do
+        -- Duplicate slugs
+        tell $
+          Map.fromList $
+            flip fmap (toList zettels) $ \z ->
+              (zettelID z, ZettelError_AmbiguousSlug slug)
+        pure []
+  -- Build a graph from the final zettels list
+  mapWriter (second $ fmap ZettelError_QueryResultErrors) $
+    mkZettelGraph $ filter (not . zettelUnlisted) zs
 
 -- | Build the Zettelkasten graph from a list of zettels
 --
@@ -79,20 +70,19 @@ buildZettelkasten (fmap sansContent &&& lefts -> (zs', zsEParse)) =
 -- return them as well.
 mkZettelGraph ::
   [Zettel] ->
-  ( ZettelGraph,
-    Map ZettelID (Slug, NonEmpty QueryResultError)
-  )
-mkZettelGraph zettels =
+  Writer (Map ZettelID (Slug, NonEmpty QueryResultError)) ZettelGraph
+mkZettelGraph zettels = do
   let res :: [(Zettel, ([((Connection, [Block]), Zettel)], [QueryResultError]))] =
         flip fmap zettels $ \z ->
           (z, runQueryConnections zettels z)
-      g :: ZettelGraph = G.mkGraphFrom zettels $
-        flip concatMap res $ \(z1, fst -> conns) ->
-          edgeFromConnection z1 <$> conns
-      errors = Map.fromList $
-        flip mapMaybe res $ \(z, nonEmpty . snd -> merrs) ->
-          (zettelID z,) . (zettelSlug z,) <$> merrs
-   in (g, errors)
+  tell $
+    Map.fromList $
+      flip mapMaybe res $ \(z, nonEmpty . snd -> merrs) ->
+        (zettelID z,) . (zettelSlug z,) <$> merrs
+  pure $
+    G.mkGraphFrom zettels $
+      flip concatMap res $ \(z1, fst -> conns) ->
+        edgeFromConnection z1 <$> conns
 
 runQueryConnections :: [Zettel] -> Zettel -> ([((Connection, [Block]), Zettel)], [QueryResultError])
 runQueryConnections zettels z =

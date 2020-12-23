@@ -17,6 +17,7 @@ module Neuron.Web.Generate
   )
 where
 
+import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.Map.Strict as Map
 import Data.Tagged (untag)
 import qualified Data.Text as T
@@ -108,7 +109,7 @@ loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
 loadZettelkasten config = do
   let pat = bool "*.md" "**/*.md" $ C.recurseDir config
   files <- forEvery [pat] pure
-  (g, zs, errs) <- loadZettelkastenFrom files
+  ((g, zs), errs) <- loadZettelkastenFrom files
   let cache = Cache.NeuronCache g errs config neuronVersion
       cacheSmall = cache {_neuronCache_graph = stripSurroundingContext g}
   Cache.updateCache cacheSmall
@@ -118,19 +119,26 @@ loadZettelkasten config = do
 loadZettelkastenFrom ::
   [FilePath] ->
   Action
-    ( ZettelGraph,
-      [ZettelC],
+    ( ( ZettelGraph,
+        [ZettelC]
+      ),
       Map ZettelID ZettelError
     )
 loadZettelkastenFrom files = do
   zidRefs <- resolveZidRefs files
-  let dups = Map.mapMaybe zidRefAmbiguous zidRefs
-      fsResolved = Map.mapMaybe zidRefAvailable zidRefs
-      zs = parseZettels extractQueriesWithContext (Map.toList fsResolved)
-      (g, gerrs) = G.buildZettelkasten zs
-      -- There will not be a union conflict, as the two map's keys are disjoint.
-      errs = Map.union (ZettelError_AmbiguousID <$> dups) gerrs
-  pure (g, zs, errs)
+  pure $
+    runWriter $ do
+      filesWithContent <-
+        flip Map.traverseMaybeWithKey zidRefs $ \zid zidRef ->
+          case zidRef of
+            ZIDRef_Ambiguous fps -> do
+              tell $ one (zid, ZettelError_AmbiguousID fps)
+              pure Nothing
+            ZIDRef_Available fp s ->
+              pure $ Just (fp, s)
+      let zs = parseZettels extractQueriesWithContext $ Map.toList filesWithContent
+      g <- G.buildZettelkasten zs
+      pure (g, zs)
 
 -- | What does a Zettel ID refer to?
 data ZIDRef
@@ -139,16 +147,6 @@ data ZIDRef
   | -- | The ZID maps to more than one file, hence ambiguous.
     ZIDRef_Ambiguous (NonEmpty FilePath)
   deriving (Eq, Show)
-
-zidRefAmbiguous :: ZIDRef -> Maybe (NonEmpty FilePath)
-zidRefAmbiguous = \case
-  ZIDRef_Ambiguous fp -> Just fp
-  _ -> Nothing
-
-zidRefAvailable :: ZIDRef -> Maybe (FilePath, Text)
-zidRefAvailable = \case
-  ZIDRef_Available fp s -> Just (fp, s)
-  _ -> Nothing
 
 resolveZidRefs :: [FilePath] -> Action (Map ZettelID ZIDRef)
 resolveZidRefs files = do
