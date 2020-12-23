@@ -103,15 +103,18 @@ renderRoutePage cache@NeuronCache {..} headHtml manifest r val = do
               elImpulseJS
           pure ()
         cacheDyn <- el "body" $ do
-          c <- Cache.reflexDomGetCache $ W.availableData cache
-          () <- case r of
+          case r of
             Route_Impulse {} -> do
+              -- FIXME: Injecting initial value here will break hydration.
+              c <- Cache.reflexDomGetCache Nothing -- (W.availableData cache)
               runNeuronWeb routeConfig $
                 V.renderRouteImpulse c
+              pure c
             Route_Zettel {} -> do
+              c <- Cache.reflexDomGetCache $ W.availableData cache
               runNeuronWeb routeConfig $
                 V.renderRouteZettel val c
-          pure c
+              pure c
     pure ()
 
 elImpulseJS :: DomBuilder t m => m ()
