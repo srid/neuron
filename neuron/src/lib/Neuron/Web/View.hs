@@ -20,7 +20,7 @@ import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Neuron.Config.Type (Config (..))
 import qualified Neuron.Config.Type as Config
-import Neuron.Web.Cache.Type (NeuronCache)
+import Neuron.Web.Cache.Type (NeuronCache (..))
 import qualified Neuron.Web.Cache.Type as NeuronCache
 import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
 import qualified Neuron.Web.Impulse as Impulse
@@ -32,7 +32,8 @@ import Neuron.Web.Route
   )
 import Neuron.Web.Theme (Theme)
 import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Widget (LoadableData, elLinkGoogleFonts, loadingWidget)
+import Neuron.Web.Widget (LoadableData, elLinkGoogleFonts)
+import qualified Neuron.Web.Widget as W
 import qualified Neuron.Web.Zettel.CSS as ZettelCSS
 import qualified Neuron.Web.Zettel.View as ZettelView
 import Neuron.Zettelkasten.Zettel (ZettelC)
@@ -65,16 +66,17 @@ routeTitle r v Config {..} =
 
 bodyTemplate ::
   (DomBuilder t m, PostBuild t m) =>
-  Dynamic t Text ->
-  Dynamic t Theme ->
+  Dynamic t (Maybe Text) ->
+  Dynamic t (Maybe Theme) ->
   m () ->
   m ()
-bodyTemplate neuronVersion neuronTheme w = do
-  let themeSelector = toText . Theme.themeIdentifier <$> neuronTheme
-      attrs = ffor themeSelector $ \themeId -> "class" =: "ui fluid container universe" <> "id" =: themeId
+bodyTemplate neuronVersionM neuronThemeM w = do
+  let attrs = ffor neuronThemeM $ \(fmap (toText . Theme.themeIdentifier) -> mId) ->
+        "class" =: "ui fluid container universe"
+          <> maybe mempty ("id" =:) mId
   elDynAttr "div" attrs $ do
     w
-    renderBrandFooter neuronVersion
+    renderBrandFooter neuronVersionM
 
 renderRouteImpulse ::
   forall t m js.
@@ -82,17 +84,18 @@ renderRouteImpulse ::
   Dynamic t (LoadableData NeuronCache) ->
   NeuronWebT t m ()
 renderRouteImpulse cacheLDyn = do
-  loadingWidget cacheLDyn $ \cacheDyn -> do
-    let neuronTheme = Theme.mkTheme . Config.theme . NeuronCache._neuronCache_config <$> cacheDyn
-        neuronVer = NeuronCache._neuronCache_neuronVersion <$> cacheDyn
-    -- HTML for this route is all handled in JavaScript (compiled from
-    -- impulse's sources).
-    bodyTemplate neuronVer neuronTheme $ do
-      divClass "ui text container" $ do
-        let graph = NeuronCache._neuronCache_graph <$> cacheDyn
-            errors = NeuronCache._neuronCache_errors <$> cacheDyn
-        let impulse = Impulse.buildImpulse <$> graph <*> errors
-        Impulse.renderImpulse neuronTheme impulse
+  let neuronTheme =
+        fmap (Theme.mkTheme . Config.theme . NeuronCache._neuronCache_config) . W.getData <$> cacheLDyn
+      neuronVer =
+        fmap NeuronCache._neuronCache_neuronVersion . W.getData <$> cacheLDyn
+  -- HTML for this route is all handled in JavaScript (compiled from
+  -- impulse's sources).
+  bodyTemplate neuronVer neuronTheme $ do
+    divClass "ui text container" $ do
+      let impulseL =
+            ffor cacheLDyn $
+              fmap (fmap $ \NeuronCache {..} -> Impulse.buildImpulse _neuronCache_graph _neuronCache_errors)
+      Impulse.renderImpulse neuronTheme impulseL
 
 renderRouteZettel ::
   forall t m js.
@@ -101,29 +104,31 @@ renderRouteZettel ::
   Dynamic t (LoadableData NeuronCache) ->
   NeuronWebT t m ()
 renderRouteZettel z cacheLDyn = do
-  loadingWidget cacheLDyn $ \cacheDyn -> do
-    let neuronTheme = Theme.mkTheme . Config.theme . NeuronCache._neuronCache_config <$> cacheDyn
-        editUrl = Config.editUrl . NeuronCache._neuronCache_config <$> cacheDyn
-        neuronVer = NeuronCache._neuronCache_neuronVersion <$> cacheDyn
-    bodyTemplate neuronVer neuronTheme $ do
-      let graph = NeuronCache._neuronCache_graph <$> cacheDyn
+  let neuronThemeM =
+        fmap (Theme.mkTheme . Config.theme . NeuronCache._neuronCache_config) . W.getData <$> cacheLDyn
+      neuronVerM =
+        fmap NeuronCache._neuronCache_neuronVersion . W.getData <$> cacheLDyn
+  bodyTemplate neuronVerM neuronThemeM $ do
+    W.loadingWidget cacheLDyn $ \cacheDyn -> do
+      let neuronTheme =
+            Theme.mkTheme . Config.theme . NeuronCache._neuronCache_config <$> cacheDyn
+          editUrl =
+            Config.editUrl . NeuronCache._neuronCache_config <$> cacheDyn
+          graph = NeuronCache._neuronCache_graph <$> cacheDyn
       dyn_ $
         ffor3 neuronTheme graph editUrl $ \t g eu ->
           ZettelView.renderZettel t (g, z) eu
 
-renderBrandFooter :: (DomBuilder t m, PostBuild t m) => Dynamic t Text -> m ()
+renderBrandFooter :: (DomBuilder t m, PostBuild t m) => Dynamic t (Maybe Text) -> m ()
 renderBrandFooter ver =
   divClass "ui center aligned container footer-version" $ do
     divClass "ui tiny image" $ do
       elAttr "a" ("href" =: "https://neuron.zettel.page") $ do
-        elDynAttr
-          "img"
-          ( ffor ver $ \v ->
-              "src" =: "https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg"
+        let attr = ffor ver $ \mver ->
+              "title" =: ("Generated by Neuron " <> fromMaybe "" mver)
+                <> "src" =: "https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg"
                 <> "alt" =: "logo"
-                <> "title" =: ("Generated by Neuron (" <> v <> ")")
-          )
-          blank
+        elDynAttr "img" attr blank
 
 style :: Css
 style = do

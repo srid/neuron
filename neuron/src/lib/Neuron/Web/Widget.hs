@@ -53,6 +53,9 @@ divClassVisible visible clsDyn w = do
 -- Inner Either signals JSON decoding errors (==Left) if any.
 type LoadableData a = Maybe (Either String a)
 
+getData :: LoadableData a -> Maybe a
+getData = (rightToMaybe =<<)
+
 availableData :: a -> LoadableData a
 availableData = Just . Right
 

@@ -28,7 +28,8 @@ import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route (NeuronWebT)
 import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Widget (divClassVisible, elPreOverflowing, elVisible)
+import Neuron.Web.Widget (LoadableData, divClassVisible, elPreOverflowing, elVisible)
+import qualified Neuron.Web.Widget as W
 import Neuron.Web.Zettel.View (renderZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
@@ -115,10 +116,10 @@ buildImpulse graph errors =
 
 renderImpulse ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
-  Dynamic t Theme.Theme ->
-  Dynamic t Impulse ->
+  Dynamic t (Maybe Theme.Theme) ->
+  Dynamic t (LoadableData Impulse) ->
   NeuronWebT t m ()
-renderImpulse (fmap Theme.semanticColor -> themeColor) impulseDyn = do
+renderImpulse (fmap (fmap Theme.semanticColor) -> themeColor) impulseLDyn = do
   mqDyn <- fmap join $
     prerender (pure $ constDyn Nothing) $ do
       searchInput =<< urlQueryVal [queryKey|q|]
@@ -130,50 +131,51 @@ renderImpulse (fmap Theme.semanticColor -> themeColor) impulseDyn = do
           text " ["
           el "tt" $ text q
           text "]"
-  elVisible (ffor2 (impulseErrors <$> impulseDyn) mqDyn $ \errs mq -> isNothing mq && not (null errs)) $
-    elClass "details" "ui tiny errors message" $ do
-      el "summary" $ text "Errors"
-      renderErrors $ impulseErrors <$> impulseDyn
-  divClass "z-index" $ do
-    pinned <- holdUniqDyn $ ffor2 (impulsePinned <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
-    divClassVisible (not . null <$> pinned) "ui pinned raised segment" $ do
-      elClass "h3" "ui header" $ text "Pinned"
-      el "ul" $
-        void $
-          simpleList pinned $ \zDyn ->
-            dyn_ $ ffor zDyn $ \z -> zettelLink z blank
-    orphans <- holdUniqDyn $ ffor2 (impulseOrphans <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
-    divClassVisible (not . null <$> orphans) "ui segment" $ do
-      elClass "p" "info" $ do
-        text "Notes without any "
-        elAttr "a" ("href" =: "https://neuron.zettel.page/linking.html") $ text "folgezettel"
-        text " relationships"
-      el "ul" $
-        void $
-          simpleList orphans $ \zDyn ->
-            dyn_ $ ffor zDyn $ \z -> zettelLink z blank
-    clusters <- holdUniqDyn $
-      ffor2 (impulseClusters <$> impulseDyn) mqDyn $ \cs mq ->
-        ffor cs $ \forest ->
-          ffor forest $ \tree -> do
-            searchTree (matchZettel mq . fst) tree
-    void $
-      simpleList clusters $ \forestDyn -> do
-        let visible = any treeMatches <$> forestDyn
-        divClassVisible visible ("ui " <> themeColor <> " segment") $ do
-          el "ul" $ renderForest forestDyn
-    el "p" $ do
-      let stats = impulseStats <$> impulseDyn
-      text "The zettelkasten has "
-      dynText $ countNounBe "zettel" "zettels" . statsZettelCount <$> stats
-      text " and "
-      dynText $ countNounBe "link" "links" . statsZettelConnectionCount <$> stats
-      text ". It has "
-      dynText $ countNounBe "cluster" "clusters" . length . impulseClusters <$> impulseDyn
-      text " in its folgezettel graph. "
-      text "Each cluster's "
-      elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"
-      text " is rendered as a forest."
+  W.loadingWidget impulseLDyn $ \impulseDyn -> do
+    elVisible (ffor2 (impulseErrors <$> impulseDyn) mqDyn $ \errs mq -> isNothing mq && not (null errs)) $
+      elClass "details" "ui tiny errors message" $ do
+        el "summary" $ text "Errors"
+        renderErrors $ impulseErrors <$> impulseDyn
+    divClass "z-index" $ do
+      pinned <- holdUniqDyn $ ffor2 (impulsePinned <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
+      divClassVisible (not . null <$> pinned) "ui pinned raised segment" $ do
+        elClass "h3" "ui header" $ text "Pinned"
+        el "ul" $
+          void $
+            simpleList pinned $ \zDyn ->
+              dyn_ $ ffor zDyn $ \z -> zettelLink z blank
+      orphans <- holdUniqDyn $ ffor2 (impulseOrphans <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
+      divClassVisible (not . null <$> orphans) "ui segment" $ do
+        elClass "p" "info" $ do
+          text "Notes without any "
+          elAttr "a" ("href" =: "https://neuron.zettel.page/linking.html") $ text "folgezettel"
+          text " relationships"
+        el "ul" $
+          void $
+            simpleList orphans $ \zDyn ->
+              dyn_ $ ffor zDyn $ \z -> zettelLink z blank
+      clusters <- holdUniqDyn $
+        ffor2 (impulseClusters <$> impulseDyn) mqDyn $ \cs mq ->
+          ffor cs $ \forest ->
+            ffor forest $ \tree -> do
+              searchTree (matchZettel mq . fst) tree
+      void $
+        simpleList clusters $ \forestDyn -> do
+          let visible = any treeMatches <$> forestDyn
+          divClassVisible visible ("ui " <> (fromMaybe "" <$> themeColor) <> " segment") $ do
+            el "ul" $ renderForest forestDyn
+      el "p" $ do
+        let stats = impulseStats <$> impulseDyn
+        text "The zettelkasten has "
+        dynText $ countNounBe "zettel" "zettels" . statsZettelCount <$> stats
+        text " and "
+        dynText $ countNounBe "link" "links" . statsZettelConnectionCount <$> stats
+        text ". It has "
+        dynText $ countNounBe "cluster" "clusters" . length . impulseClusters <$> impulseDyn
+        text " in its folgezettel graph. "
+        text "Each cluster's "
+        elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"
+        text " is rendered as a forest."
   where
     -- Return the value for given query key (eg: ?q=???) from the URL location.
     -- urlQueryVal :: MonadJSM m => URI.RText 'URI.QueryKey -> m (Maybe Text)
