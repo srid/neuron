@@ -41,9 +41,11 @@ elVisible :: (DomBuilder t m, PostBuild t m) => Dynamic t Bool -> m a -> m a
 elVisible visible w = do
   elDynAttr "span" (ffor visible $ bool ("style" =: "display: none;") mempty) w
 
-divClassVisible :: (DomBuilder t m, PostBuild t m) => Dynamic t Bool -> Text -> m a -> m a
-divClassVisible visible cls w = do
-  elDynAttr "div" (ffor visible $ (<> "class" =: cls) . bool ("style" =: "display: none;") mempty) w
+divClassVisible :: (DomBuilder t m, PostBuild t m) => Dynamic t Bool -> Dynamic t Text -> m a -> m a
+divClassVisible visible clsDyn w = do
+  let attrs = ffor2 visible clsDyn $ \vis cls ->
+        "class" =: cls <> bool ("style" =: "display: none;") mempty vis
+  elDynAttr "div" attrs w
 
 -- | Data that can be loaded.
 --
@@ -57,7 +59,7 @@ availableData = Just . Right
 loadingWidget ::
   (DomBuilder t m, MonadFix m, MonadHold t m, PostBuild t m) =>
   Dynamic t (LoadableData a) ->
-  (a -> m ()) ->
+  (Dynamic t a -> m ()) ->
   m ()
 loadingWidget valDyn w = do
   mresp <- maybeDyn valDyn
@@ -75,7 +77,7 @@ loadingWidget valDyn w = do
                   divClass "header" $ text "Unable to parse neuron cache"
                   el "p" $ dynText $ T.pack <$> errDyn
             Right aDyn -> do
-              dyn_ $ w <$> aDyn
+              w aDyn
   where
     _loader :: DomBuilder t m => m ()
     _loader = do

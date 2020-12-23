@@ -112,10 +112,10 @@ buildImpulse graph errors =
 
 renderImpulse ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
-  Theme.Theme ->
-  Impulse ->
+  Dynamic t Theme.Theme ->
+  Dynamic t Impulse ->
   NeuronWebT t m ()
-renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} = do
+renderImpulse (fmap Theme.semanticColor -> themeColor) impulseDyn = do
   mqDyn <- fmap join $
     prerender (pure $ constDyn Nothing) $ do
       searchInput =<< urlQueryVal [queryKey|q|]
@@ -127,19 +127,19 @@ renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} = do
           text " ["
           el "tt" $ text q
           text "]"
-  elVisible (ffor mqDyn $ \mq -> isNothing mq && not (null impulseErrors)) $
+  elVisible (ffor2 (impulseErrors <$> impulseDyn) mqDyn $ \errs mq -> isNothing mq && not (null errs)) $
     elClass "details" "ui tiny errors message" $ do
       el "summary" $ text "Errors"
-      renderErrors impulseErrors
+      renderErrors $ impulseErrors <$> impulseDyn
   divClass "z-index" $ do
-    let pinned = ffor mqDyn $ \mq -> filter (matchZettel mq) impulsePinned
+    pinned <- holdUniqDyn $ ffor2 (impulsePinned <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
     divClassVisible (not . null <$> pinned) "ui pinned raised segment" $ do
       elClass "h3" "ui header" $ text "Pinned"
       el "ul" $
         void $
           simpleList pinned $ \zDyn ->
             dyn_ $ ffor zDyn $ \z -> zettelLink z blank
-    let orphans = ffor mqDyn $ \mq -> filter (matchZettel mq) impulseOrphans
+    orphans <- holdUniqDyn $ ffor2 (impulseOrphans <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
     divClassVisible (not . null <$> orphans) "ui segment" $ do
       elClass "p" "info" $ do
         text "Notes without any "
@@ -149,21 +149,24 @@ renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} = do
         void $
           simpleList orphans $ \zDyn ->
             dyn_ $ ffor zDyn $ \z -> zettelLink z blank
-    let clusters = ffor mqDyn $ \mq ->
-          ffor impulseClusters $ \forest ->
-            fforMaybe forest $ \tree -> do
-              searchTree (matchZettel mq . fst) tree
+    clusters <- holdUniqDyn $
+      ffor2 (impulseClusters <$> impulseDyn) mqDyn $ \cs mq ->
+        ffor cs $ \forest ->
+          fforMaybe forest $ \tree -> do
+            searchTree (matchZettel mq . fst) tree
     void $
       simpleList clusters $ \forestDyn ->
         divClassVisible (not . null <$> forestDyn) ("ui " <> themeColor <> " segment") $ do
           el "ul" $ renderForest forestDyn
     el "p" $ do
-      text $
-        "The zettelkasten has "
-          <> countNounBe "zettel" "zettels" (statsZettelCount impulseStats)
-          <> " and "
-          <> countNounBe "link" "links" (statsZettelConnectionCount impulseStats)
-      text $ ". It has " <> countNounBe "cluster" "clusters" (length impulseClusters) <> " in its folgezettel graph. "
+      let stats = impulseStats <$> impulseDyn
+      text "The zettelkasten has "
+      dynText $ countNounBe "zettel" "zettels" . statsZettelCount <$> stats
+      text " and "
+      dynText $ countNounBe "link" "links" . statsZettelConnectionCount <$> stats
+      text ". It has "
+      dynText $ countNounBe "cluster" "clusters" . length . impulseClusters <$> impulseDyn
+      text " in its folgezettel graph. "
       text "Each cluster's "
       elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"
       text " is rendered as a forest."
@@ -188,7 +191,7 @@ renderImpulse (Theme.semanticColor -> themeColor) Impulse {..} = do
             guard $ ztag `notElem` fmap unTag (zettelTags z)
           else guard $ not $ T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
 
-renderErrors :: DomBuilder t m => Map ZettelID ZettelError -> NeuronWebT t m ()
+renderErrors :: (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) => Dynamic t (Map ZettelID ZettelError) -> NeuronWebT t m ()
 renderErrors errors = do
   let severity = \case
         ZettelError_ParseError _ -> "negative"
@@ -211,23 +214,26 @@ renderErrors errors = do
               <> "):"
         ZettelError_AmbiguousSlug _slug -> do
           text $ "Zettel '" <> unZettelID zid <> "' ignored; has ambiguous slug"
-  forM_ (Map.toList errors) $ \(zid, zError) ->
-    divClass ("ui tiny message " <> severity zError) $ do
-      divClass "header" $ errorMessageHeader zid zError
-      el "p" $ do
-        case zError of
-          ZettelError_ParseError (_slug, parseError) ->
-            renderZettelParseError parseError
-          ZettelError_QueryResultErrors queryErrors ->
-            el "ol" $ do
-              forM_ (snd queryErrors) $ \qe ->
-                el "li" $ elPreOverflowing $ text $ showQueryResultError qe
-          ZettelError_AmbiguousID filePaths ->
-            el "ul" $ do
-              forM_ filePaths $ \fp ->
-                el "li" $ el "tt" $ text $ toText fp
-          ZettelError_AmbiguousSlug slug ->
-            el "p" $ text $ "Slug '" <> slug <> "' is used by another zettel"
+  void $
+    simpleList (Map.toList <$> errors) $ \errorDyn -> do
+      dyn_ $
+        ffor errorDyn $ \(zid, zError) -> do
+          divClass ("ui tiny message " <> severity zError) $ do
+            divClass "header" $ errorMessageHeader zid zError
+            el "p" $ do
+              case zError of
+                ZettelError_ParseError (_slug, parseError) ->
+                  renderZettelParseError parseError
+                ZettelError_QueryResultErrors queryErrors ->
+                  el "ol" $ do
+                    forM_ (snd queryErrors) $ \qe ->
+                      el "li" $ elPreOverflowing $ text $ showQueryResultError qe
+                ZettelError_AmbiguousID filePaths ->
+                  el "ul" $ do
+                    forM_ filePaths $ \fp ->
+                      el "li" $ el "tt" $ text $ toText fp
+                ZettelError_AmbiguousSlug slug ->
+                  el "p" $ text $ "Slug '" <> slug <> "' is used by another zettel"
 
 renderForest ::
   (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) =>
