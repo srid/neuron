@@ -123,40 +123,52 @@ loadZettelkastenFrom ::
       Map ZettelID ZettelError
     )
 loadZettelkastenFrom files = do
+  zidRefs <- resolveZidRefs files
+  let dups = Map.mapMaybe zidRefAmbiguous zidRefs
+      fsResolved = Map.mapMaybe zidRefAvailable zidRefs
+      zs = parseZettels extractQueriesWithContext (Map.toList fsResolved)
+      (g, gerrs) = G.buildZettelkasten zs
+      -- There will not be a union conflict, as the two map's keys are disjoint.
+      errs = Map.union (ZettelError_AmbiguousID <$> dups) gerrs
+  pure (g, zs, errs)
+
+-- | What does a Zettel ID refer to?
+data ZIDRef
+  = -- | The ZID maps to a file on disk with the given contents
+    ZIDRef_Available FilePath Text
+  | -- | The ZID maps to more than one file, hence ambiguous.
+    ZIDRef_Ambiguous (NonEmpty FilePath)
+  deriving (Eq, Show)
+
+zidRefAmbiguous :: ZIDRef -> Maybe (NonEmpty FilePath)
+zidRefAmbiguous = \case
+  ZIDRef_Ambiguous fp -> Just fp
+  _ -> Nothing
+
+zidRefAvailable :: ZIDRef -> Maybe (FilePath, Text)
+zidRefAvailable = \case
+  ZIDRef_Available fp s -> Just (fp, s)
+  _ -> Nothing
+
+resolveZidRefs :: [FilePath] -> Action (Map ZettelID ZIDRef)
+resolveZidRefs files = do
   notesDir <- ribInputDir
   -- Use State monad to "gather" duplicate zettel files using same IDs, in the
   -- `Right` of the Either state value; with the `Left` collecting the actual
   -- zettel files to load into the graph.
-  zidMap :: Map ZettelID (Either (FilePath, Text) (NonEmpty FilePath)) <-
-    fmap snd $
-      flip runStateT Map.empty $ do
-        forM_ files $ \relPath -> do
-          case getZettelID relPath of
-            Nothing ->
-              pure ()
-            Just zid -> do
-              get
-                >>= ( \case
-                        Just (Left (oldPath, _s)) -> do
-                          -- The zettel ID is already used by `oldPath`. Mark it as a dup.
-                          modify $ Map.insert zid (Right $ relPath :| [oldPath])
-                        Just (Right (toList -> ambiguities)) -> do
-                          -- Third or later duplicate file with the same Zettel ID
-                          modify $ Map.insert zid (Right $ relPath :| ambiguities)
-                        Nothing -> do
-                          let absPath = notesDir </> relPath
-                          lift $ need [absPath]
-                          s <- decodeUtf8With lenientDecode <$> readFileBS absPath
-                          modify $ Map.insert zid (Left (relPath, s))
-                    )
-                  . Map.lookup zid
-  let dups = ZettelError_AmbiguousID <$> Map.mapMaybe rightToMaybe zidMap
-      fs =
-        flip concatMap (Map.toList $ Map.mapMaybe leftToMaybe zidMap) $
-          \(zid, (path, s)) ->
-            [(zid, path, s)]
-      zs = parseZettels extractQueriesWithContext fs
-      (g, gerrs) = G.buildZettelkasten zs
-      -- There will not be a union conflict, as the two map's keys are disjoint.
-      errs = Map.union dups gerrs
-  pure (g, zs, errs)
+  fmap snd $
+    flip runStateT (Map.empty :: Map ZettelID ZIDRef) $ do
+      forM_ files $ \relPath -> do
+        whenJust (getZettelID relPath) $ \zid -> do
+          gets (Map.lookup zid) >>= \case
+            Just (ZIDRef_Available oldPath _s) -> do
+              -- The zettel ID is already used by `oldPath`. Mark it as a dup.
+              modify $ Map.insert zid (ZIDRef_Ambiguous $ relPath :| [oldPath])
+            Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
+              -- Third or later duplicate file with the same Zettel ID
+              modify $ Map.insert zid (ZIDRef_Ambiguous $ relPath :| ambiguities)
+            Nothing -> do
+              let absPath = notesDir </> relPath
+              lift $ need [absPath]
+              s <- decodeUtf8With lenientDecode <$> readFileBS absPath
+              modify $ Map.insert zid (ZIDRef_Available relPath s)

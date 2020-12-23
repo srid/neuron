@@ -74,10 +74,10 @@ parseZettel queryExtractor fn zid s = do
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
   QueryExtractor ->
-  [(ZettelID, FilePath, Text)] ->
+  [(ZettelID, (FilePath, Text))] ->
   [ZettelC]
 parseZettels queryExtractor files =
-  flip fmap files $ \(zid, path, s) ->
+  flip fmap files $ \(zid, (path, s)) ->
     parseZettel queryExtractor path zid s
 
 extractQueriesWithContext :: QueryExtractor
