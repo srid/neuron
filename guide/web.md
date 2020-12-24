@@ -30,6 +30,10 @@ neuron rib -w
 
 Leave this command running in one terminal, and then use `neuron open` to directly open the locally generated HTML site.
 
+:::{.ui .warning .message}
+When using `neuron open` to access the generated site locally, do note that [[impulse-feature]] will not function, due to web browser security restrictions. In this case, you should use the server interface, or access your generated site through a standard http server like nginx.
+:::
+
 ## Publishing to the web
 
 See [[[778816d3]]]
