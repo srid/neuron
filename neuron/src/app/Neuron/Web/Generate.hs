@@ -13,17 +13,16 @@
 module Neuron.Web.Generate
   ( generateSite,
     loadZettelkasten,
-    loadZettelkastenGraph,
   )
 where
 
 import Control.Monad.Writer.Strict (runWriter, tell)
+import qualified Data.List
 import qualified Data.Map.Strict as Map
 import Data.Tagged (untag)
 import qualified Data.Text as T
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
-import qualified Neuron.Config.Type as C
 import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
 import Neuron.Web.Cache.Type (NeuronCache, _neuronCache_graph)
@@ -41,9 +40,10 @@ import Neuron.Zettelkasten.Zettel
     sansContent,
   )
 import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
-import Relude
-import Rib.Shake (forEvery, ribInputDir)
-import System.FilePath ((</>))
+import Relude hiding (traceShowId)
+import Rib.Shake (ribInputDir)
+import qualified System.Directory.Contents as DC
+import System.FilePath (takeExtension)
 
 -- | Generate the Zettelkasten site
 generateSite ::
@@ -55,11 +55,12 @@ generateSite config writeHtmlRoute' = do
   let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
       writeHtmlRoute v r = writeHtmlRoute' cache r v
   -- Generate HTML for every zettel
-  forM_ zettelContents $ \val@(sansContent -> z) ->
-    writeHtmlRoute val $ Z.Route_Zettel (zettelSlug z)
+  forM_ zettelContents $ \val@(zettelSlug . sansContent -> slug) ->
+    writeHtmlRoute val $ Z.Route_Zettel slug
   -- Generate search page
   writeHtmlRoute () $ Z.Route_Impulse Nothing
   -- Report all errors
+  -- TODO: Report only new errors in this run, to avoid spamming the terminal.
   forM_ (Map.toList _neuronCache_errors) $ \(zid, err) -> do
     reportError zid $
       case err of
@@ -73,52 +74,54 @@ generateSite config writeHtmlRoute' = do
         ZettelError_AmbiguousSlug slug ->
           "Slug '" <> slug <> "' is already used by another zettel" :| []
   pure _neuronCache_graph
-
--- | Report an error in the terminal
-reportError :: MonadIO m => ZettelID -> NonEmpty Text -> m ()
-reportError zid errors = do
-  putTextLn $ "E " <> unZettelID zid
-  forM_ errors $ \err ->
-    putText $ "  - " <> indentAllButFirstLine 4 err
   where
-    indentAllButFirstLine :: Int -> Text -> Text
-    indentAllButFirstLine n = unlines . go . lines
+    -- Report an error in the terminal
+    reportError :: MonadIO m => ZettelID -> NonEmpty Text -> m ()
+    reportError zid errors = do
+      putTextLn $ "E " <> unZettelID zid
+      forM_ errors $ \err ->
+        putText $ "  - " <> indentAllButFirstLine 4 err
       where
-        go [] = []
-        go [x] = [x]
-        go (x : xs) =
-          x : fmap (toText . (replicate n ' ' <>) . toString) xs
-
--- | Like `loadZettelkasten` but without the content
---
--- Also allows retrieving the cached data for faster execution.
-loadZettelkastenGraph ::
-  Config ->
-  Action NeuronCache
-loadZettelkastenGraph =
-  fmap fst . loadZettelkasten
+        indentAllButFirstLine :: Int -> Text -> Text
+        indentAllButFirstLine n = unlines . go . lines
+          where
+            go [] = []
+            go [x] = [x]
+            go (x : xs) =
+              x : fmap (toText . (replicate n ' ' <>) . toString) xs
 
 loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
 loadZettelkasten config = do
-  let pat = bool "*.md" "**/*.md" $ C.recurseDir config
-  files <- forEvery [pat] pure
-  ((g, zs), errs) <- loadZettelkastenFrom files
+  ((g, zs), errs) <- loadZettelkastenFromFiles =<< locateZettelFiles
   let cache = Cache.NeuronCache g errs config neuronVersion
       cacheSmall = cache {_neuronCache_graph = stripSurroundingContext g}
   Cache.updateCache cacheSmall
   pure (cache, zs)
+  where
+    -- TODO:
+    -- If making recurseDir the default,
+    -- - [ ] Allow blacklist (eg: not "README.md"; default being ".*"; always ignore .neuron)
+    locateZettelFiles = do
+      notesDir <- ribInputDir
+      liftIO (DC.buildDirTree notesDir) >>= \case
+        Just t@(DC.DirTree_Dir _notesDir' _toplevel) -> do
+          let mt' = DC.pruneDirTree =<< DC.filterDirTree ((== ".md") . takeExtension) t
+          maybe (fail "No markdown files?") pure mt'
+        _ -> fail "Directory error?"
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
-loadZettelkastenFrom ::
-  [FilePath] ->
+loadZettelkastenFromFiles ::
+  DC.DirTree FilePath ->
   Action
     ( ( ZettelGraph,
         [ZettelC]
       ),
       Map ZettelID ZettelError
     )
-loadZettelkastenFrom files = do
-  zidRefs <- resolveZidRefs files
+loadZettelkastenFromFiles fileTree = do
+  zidRefs <-
+    fmap snd $
+      flip runStateT Map.empty $ resolveZidRefsFromDirTree fileTree
   pure $
     runWriter $ do
       filesWithContent <-
@@ -141,25 +144,30 @@ data ZIDRef
     ZIDRef_Ambiguous (NonEmpty FilePath)
   deriving (Eq, Show)
 
-resolveZidRefs :: [FilePath] -> Action (Map ZettelID ZIDRef)
-resolveZidRefs files = do
-  notesDir <- ribInputDir
-  -- Use State monad to "gather" duplicate zettel files using same IDs, in the
-  -- `Right` of the Either state value; with the `Left` collecting the actual
-  -- zettel files to load into the graph.
-  fmap snd $
-    flip runStateT (Map.empty :: Map ZettelID ZIDRef) $ do
-      forM_ files $ \relPath -> do
-        whenJust (getZettelID relPath) $ \zid -> do
-          gets (Map.lookup zid) >>= \case
-            Just (ZIDRef_Available oldPath _s) -> do
-              -- The zettel ID is already used by `oldPath`. Mark it as a dup.
-              modify $ Map.insert zid (ZIDRef_Ambiguous $ relPath :| [oldPath])
-            Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
-              -- Third or later duplicate file with the same Zettel ID
-              modify $ Map.insert zid (ZIDRef_Ambiguous $ relPath :| ambiguities)
-            Nothing -> do
-              let absPath = notesDir </> relPath
-              lift $ need [absPath]
-              s <- decodeUtf8With lenientDecode <$> readFileBS absPath
-              modify $ Map.insert zid (ZIDRef_Available relPath s)
+resolveZidRefsFromDirTree :: DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef) Action ()
+resolveZidRefsFromDirTree = \case
+  DC.DirTree_File absPath relPath -> do
+    whenJust (getZettelID relPath) $ \zid -> do
+      gets (Map.lookup zid) >>= \case
+        Just (ZIDRef_Available oldPath _s) -> do
+          -- The zettel ID is already used by `oldPath`. Mark it as a dup.
+          modify $ Map.insert zid (ZIDRef_Ambiguous $ relPath :| [oldPath])
+        Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
+          -- Third or later duplicate file with the same Zettel ID
+          modify $ Map.insert zid (ZIDRef_Ambiguous $ relPath :| ambiguities)
+        Nothing -> do
+          s <- lift $ do
+            -- NOTE: This is the only place where Shake is being used (for
+            -- posterity)
+            -- absPath <- fmap (</> relPath) ribInputDir
+            need [absPath]
+            decodeUtf8With lenientDecode <$> readFileBS absPath
+          modify $ Map.insert zid (ZIDRef_Available relPath s)
+  DC.DirTree_Dir _absPath contents ->
+    forM_ (Map.toList contents) $ \(cn, ct) ->
+      unless (excludeFileName cn) $
+        resolveZidRefsFromDirTree ct
+  _ -> pure ()
+  where
+    excludeFileName name =
+      "." `Data.List.isPrefixOf` name

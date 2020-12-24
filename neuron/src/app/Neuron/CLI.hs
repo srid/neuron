@@ -71,7 +71,7 @@ runWith act App {..} =
         Cache.NeuronCache {..} <-
           if cached
             then Cache.getCache
-            else Gen.loadZettelkastenGraph =<< getConfig
+            else fmap fst . Gen.loadZettelkasten =<< getConfig
         case query of
           Left someQ ->
             withSome someQ $ \q -> do
