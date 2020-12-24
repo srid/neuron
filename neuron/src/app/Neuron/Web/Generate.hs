@@ -122,6 +122,7 @@ loadZettelkasten config = do
       "." `Data.List.isPrefixOf` name
         && not ("./" `Data.List.isPrefixOf` name)
 
+-- TODO: Move to Plugin/Neuron/*
 makeDirectoryFolgezettels :: DC.DirTree FilePath -> DC.DirTree FilePath
 makeDirectoryFolgezettels =
   -- TODO

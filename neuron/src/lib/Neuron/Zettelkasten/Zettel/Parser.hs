@@ -12,9 +12,10 @@ module Neuron.Zettelkasten.Zettel.Parser where
 import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))
-import Data.TagTree (Tag (Tag), unTag, unTagPattern)
+import Data.TagTree (Tag, unTag, unTagPattern)
 import qualified Data.Text as T
 import Neuron.Markdown (parseMarkdown)
+import qualified Neuron.Plugin.DirectoryFolgezettel as DF
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
@@ -24,7 +25,6 @@ import Neuron.Zettelkasten.Zettel
   )
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude
-import System.FilePath (takeDirectory)
 import Text.Pandoc.Definition (Block (Plain), Inline (Code, Str), Pandoc, nullAttr)
 import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
@@ -39,7 +39,6 @@ parseZettel ::
   Text ->
   ZettelC
 parseZettel queryExtractor fn zid s = do
-  let dirFolgeTag = parentDirTag fn
   case parseMarkdown fn s of
     Left parseErr ->
       let slug = mkDefaultSlug $ unZettelID zid
@@ -55,29 +54,17 @@ parseZettel queryExtractor fn zid s = do
           -- Determine zettel tags
           metaTags = fromMaybe [] $ Meta.tags =<< meta
           queryTags = (getInlineTag . fst) `mapMaybe` queries
-          autoTags = [dirFolgeTag]
-          tags = nub $ metaTags <> queryTags <> autoTags
+          tags = nub $ metaTags <> queryTags
           -- Determine other metadata
           date = Meta.date =<< meta
           slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
           unlisted = Just True == (Meta.unlisted =<< meta)
-       in Right $ Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc
+       in Right $
+            DF.postZettelParseHook fn $
+              Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc
   where
-    -- Associate a hierarchical tag, based on the zettel's parent directory.
-    parentDirTag :: HasCallStack => FilePath -> Tag
-    parentDirTag = \case
-      (takeDirectory -> ".") ->
-        -- Root file
-        Tag indexZettelName
-      (takeDirectory -> '.' : '/' : dirPath) ->
-        Tag $ indexZettelName <> "/" <> toText dirPath
-      relPath ->
-        error $ "Invalid relPath passed to parseZettel: " <> toText relPath
-      where
-        indexZettelName = "index"
     _dirFolgezettelMarkdown (unTag -> tag) =
       "\n\n" <> "[[[z:zettels?tag=" <> tag <> "/*]]]"
-
     getInlineTag :: Some ZettelQuery -> Maybe Tag
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag

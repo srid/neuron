@@ -72,6 +72,7 @@ library
   exposed-modules:
     Neuron.Config.Type
     Neuron.Markdown
+    Neuron.Plugin.DirectoryFolgezettel
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Meta
