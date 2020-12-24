@@ -42,8 +42,9 @@ import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
 import Relude hiding (traceShowId)
 import Rib.Shake (ribInputDir)
+import System.Directory (withCurrentDirectory)
 import qualified System.Directory.Contents as DC
-import System.FilePath (takeExtension)
+import System.FilePath (takeExtension, (</>))
 
 -- | Generate the Zettelkasten site
 generateSite ::
@@ -102,12 +103,18 @@ loadZettelkasten config = do
     -- If making recurseDir the default,
     -- - [ ] Allow blacklist (eg: not "README.md"; default being ".*"; always ignore .neuron)
     locateZettelFiles = do
-      notesDir <- ribInputDir
-      liftIO (DC.buildDirTree notesDir) >>= \case
-        Just t@(DC.DirTree_Dir _notesDir' _toplevel) -> do
-          let mt' = DC.pruneDirTree =<< DC.filterDirTree ((== ".md") . takeExtension) t
-          maybe (fail "No markdown files?") pure mt'
-        _ -> fail "Directory error?"
+      -- Run with notes dir as PWD, so that DirTree uses relative paths throughout.
+      inNotesDir $
+        DC.buildDirTree "." >>= \case
+          Just t@(DC.DirTree_Dir _notesDir' _toplevel) -> do
+            let mt' = DC.pruneDirTree =<< DC.filterDirTree ((== ".md") . takeExtension) t
+            maybe (fail "No markdown files?") pure mt'
+          _ -> fail "Directory error?"
+
+inNotesDir :: IO b -> Action b
+inNotesDir a = do
+  d <- ribInputDir
+  liftIO $ withCurrentDirectory d a
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFromFiles ::
@@ -119,19 +126,21 @@ loadZettelkastenFromFiles ::
       Map ZettelID ZettelError
     )
 loadZettelkastenFromFiles fileTree = do
+  let total = getSum @Int $ foldMap (const $ Sum 1) fileTree
+  -- TODO: Would be nice to show a progressbar here
+  liftIO $ putStrLn $ "Loading directory tree (" <> show total <> " files) ..."
   zidRefs <-
     fmap snd $
       flip runStateT Map.empty $ resolveZidRefsFromDirTree fileTree
   pure $
     runWriter $ do
       filesWithContent <-
-        flip Map.traverseMaybeWithKey zidRefs $ \zid zidRef ->
-          case zidRef of
-            ZIDRef_Ambiguous fps -> do
-              tell $ one (zid, ZettelError_AmbiguousID fps)
-              pure Nothing
-            ZIDRef_Available fp s ->
-              pure $ Just (fp, s)
+        flip Map.traverseMaybeWithKey zidRefs $ \zid -> \case
+          ZIDRef_Ambiguous fps -> do
+            tell $ one (zid, ZettelError_AmbiguousID fps)
+            pure Nothing
+          ZIDRef_Available fp s ->
+            pure $ Just (fp, s)
       let zs = parseZettels extractQueriesWithContext $ Map.toList filesWithContent
       g <- G.buildZettelkasten zs
       pure (g, zs)
@@ -146,7 +155,7 @@ data ZIDRef
 
 resolveZidRefsFromDirTree :: DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef) Action ()
 resolveZidRefsFromDirTree = \case
-  DC.DirTree_File absPath relPath -> do
+  DC.DirTree_File relPath _ -> do
     whenJust (getZettelID relPath) $ \zid -> do
       gets (Map.lookup zid) >>= \case
         Just (ZIDRef_Available oldPath _s) -> do
@@ -159,15 +168,18 @@ resolveZidRefsFromDirTree = \case
           s <- lift $ do
             -- NOTE: This is the only place where Shake is being used (for
             -- posterity)
-            -- absPath <- fmap (</> relPath) ribInputDir
+            absPath <- fmap (</> relPath) ribInputDir
             need [absPath]
             decodeUtf8With lenientDecode <$> readFileBS absPath
           modify $ Map.insert zid (ZIDRef_Available relPath s)
   DC.DirTree_Dir _absPath contents ->
     forM_ (Map.toList contents) $ \(cn, ct) ->
+      -- TODO: This should happen in the filterDirTree step above
       unless (excludeFileName cn) $
         resolveZidRefsFromDirTree ct
-  _ -> pure ()
+  _ ->
+    -- We ignore symlinks, and paths configured to be excluded.
+    pure ()
   where
     excludeFileName name =
       "." `Data.List.isPrefixOf` name

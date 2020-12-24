@@ -12,7 +12,7 @@ module Neuron.Zettelkasten.Zettel.Parser where
 import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))
-import Data.TagTree (Tag, unTagPattern)
+import Data.TagTree (Tag (Tag), unTagPattern)
 import qualified Data.Text as T
 import Neuron.Markdown (parseMarkdown)
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
@@ -24,6 +24,7 @@ import Neuron.Zettelkasten.Zettel
   )
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude
+import System.FilePath (takeDirectory)
 import Text.Pandoc.Definition (Block (Plain), Inline (Code, Str), Pandoc, nullAttr)
 import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
@@ -53,13 +54,25 @@ parseZettel queryExtractor fn zid s = do
           -- Determine zettel tags
           metaTags = fromMaybe [] $ Meta.tags =<< meta
           queryTags = (getInlineTag . fst) `mapMaybe` queries
-          tags = nub $ metaTags <> queryTags
+          autoTags = [parentDirTag fn]
+          tags = nub $ metaTags <> queryTags <> autoTags
           -- Determine other metadata
           date = Meta.date =<< meta
           slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
           unlisted = Just True == (Meta.unlisted =<< meta)
        in Right $ Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc
   where
+    -- Associate a hierarchical tag, based on the zettel's parent directory.
+    parentDirTag :: HasCallStack => FilePath -> Tag
+    parentDirTag = \case
+      (takeDirectory -> ".") ->
+        -- Root file
+        Tag "root/"
+      (takeDirectory -> '.' : '/' : dirPath) ->
+        Tag $ "root/" <> toText dirPath
+      relPath ->
+        error $ "Invalid relPath passed to parseZettel: " <> toText relPath
+
     getInlineTag :: Some ZettelQuery -> Maybe Tag
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag
