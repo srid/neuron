@@ -5,13 +5,12 @@ You may configure the parameters of your web interface by adding an optional con
 ## Supported fields
 
 | Field name        | Description                                                                                                                                                                                |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **`siteTitle`**   | Your Neuron site's title                                                                                                                                                                   |
 | **`author`**      | Author name                                                                                                                                                                                |
 | **`siteBaseUrl`** | The base URL of your published Neuron site. Setting the base URL will enable [breadcrumbs](https://developers.google.com/search/docs/data-types/breadcrumb) in your site's structured data |
 | **`theme`**       | Color scheme to use for your site. Value must be [one of the color names](https://semantic-ui.com/usage/theming.html#sitewide-defaults) supported by SemanticUI.                           |
 | **`editUrl`**     | The URL (without the zettel filename) to edit zettels. To remove the edit button from the navbar, remove this entry from your configuration.                                               |
-| **`minVersion`**  | The minimum neuron version your site must be generated with.                                                                                                                               |
 
 
 ## Example 

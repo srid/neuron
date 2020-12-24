@@ -31,7 +31,6 @@ configFile = "neuron.dhall"
 data Config = Config
   { author :: Maybe Text,
     editUrl :: Maybe Text,
-    minVersion :: Text,
     siteBaseUrl :: Maybe Text,
     siteTitle :: Text,
     theme :: Text,
@@ -64,8 +63,6 @@ defaultConfig =
   \   \"blue\"\
   \, recurseDir =\
   \   False \
-  \, minVersion =\
-  \   \"0.5\" \
   \}"
 
 -- Dhall's combine operator (`//`) allows us to merge two records,

@@ -24,7 +24,7 @@ import qualified Data.Text as T
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as C
-import Neuron.Version (neuronVersion, olderThan)
+import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
 import Neuron.Web.Cache.Type (NeuronCache, _neuronCache_graph)
 import qualified Neuron.Web.Cache.Type as Cache
@@ -51,13 +51,6 @@ generateSite ::
   (forall a. NeuronCache -> Z.Route a -> a -> Action ()) ->
   Action ZettelGraph
 generateSite config writeHtmlRoute' = do
-  when (olderThan $ C.minVersion config) $ do
-    fail $
-      toString $
-        "Require neuron mininum version "
-          <> C.minVersion config
-          <> ", but your neuron version is "
-          <> neuronVersion
   (cache@Cache.NeuronCache {..}, zettelContents) <- loadZettelkasten config
   let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
       writeHtmlRoute v r = writeHtmlRoute' cache r v
