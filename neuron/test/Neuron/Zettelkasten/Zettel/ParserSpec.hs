@@ -27,18 +27,20 @@ spec = do
               extractQueriesWithContext
               "<test>"
               (ZettelID "test")
+        -- This is automatically included for top-level zettels
+        indexTag = Tag "index"
     it "simple" $ do
       let z :: Zettel = parseSomeZettel "An #inline tag"
-      zettelTags z `shouldBe` [Tag "inline"]
+      zettelTags z `shouldBe` [Tag "inline", indexTag]
     it "hierarchical" $ do
       let z :: Zettel = parseSomeZettel "An #foo/bar/baz tag"
-      zettelTags z `shouldBe` [Tag "foo/bar/baz"]
+      zettelTags z `shouldBe` [Tag "foo/bar/baz", indexTag]
     it "followed by punctuation" $ do
       let z :: Zettel = parseSomeZettel "A #tag; with content"
-      zettelTags z `shouldBe` [Tag "tag"]
+      zettelTags z `shouldBe` [Tag "tag", indexTag]
     it "followed by different punctuation" $ do
       let z :: Zettel = parseSomeZettel "A #tag? With content"
-      zettelTags z `shouldBe` [Tag "tag"]
+      zettelTags z `shouldBe` [Tag "tag", indexTag]
     it "allows URLs with a hash" $ do
       pendingWith "#397"
       let z :: Zettel = parseSomeZettel "Some http://www.google.com/#foo url"

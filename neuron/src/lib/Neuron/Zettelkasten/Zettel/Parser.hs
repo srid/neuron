@@ -12,7 +12,7 @@ module Neuron.Zettelkasten.Zettel.Parser where
 import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))
-import Data.TagTree (Tag (Tag), unTagPattern)
+import Data.TagTree (Tag (Tag), unTag, unTagPattern)
 import qualified Data.Text as T
 import Neuron.Markdown (parseMarkdown)
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
@@ -39,6 +39,7 @@ parseZettel ::
   Text ->
   ZettelC
 parseZettel queryExtractor fn zid s = do
+  let dirFolgeTag = parentDirTag fn
   case parseMarkdown fn s of
     Left parseErr ->
       let slug = mkDefaultSlug $ unZettelID zid
@@ -54,7 +55,7 @@ parseZettel queryExtractor fn zid s = do
           -- Determine zettel tags
           metaTags = fromMaybe [] $ Meta.tags =<< meta
           queryTags = (getInlineTag . fst) `mapMaybe` queries
-          autoTags = [parentDirTag fn]
+          autoTags = [dirFolgeTag]
           tags = nub $ metaTags <> queryTags <> autoTags
           -- Determine other metadata
           date = Meta.date =<< meta
@@ -67,11 +68,15 @@ parseZettel queryExtractor fn zid s = do
     parentDirTag = \case
       (takeDirectory -> ".") ->
         -- Root file
-        Tag "root/"
+        Tag indexZettelName
       (takeDirectory -> '.' : '/' : dirPath) ->
-        Tag $ "root/" <> toText dirPath
+        Tag $ indexZettelName <> "/" <> toText dirPath
       relPath ->
         error $ "Invalid relPath passed to parseZettel: " <> toText relPath
+      where
+        indexZettelName = "index"
+    _dirFolgezettelMarkdown (unTag -> tag) =
+      "\n\n" <> "[[[z:zettels?tag=" <> tag <> "/*]]]"
 
     getInlineTag :: Some ZettelQuery -> Maybe Tag
     getInlineTag = \case

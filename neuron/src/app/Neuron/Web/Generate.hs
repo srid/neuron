@@ -93,7 +93,8 @@ generateSite config writeHtmlRoute' = do
 
 loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
 loadZettelkasten config = do
-  ((g, zs), errs) <- loadZettelkastenFromFiles =<< locateZettelFiles
+  ((g, zs), errs) <-
+    loadZettelkastenFromFiles . makeDirectoryFolgezettels =<< locateZettelFiles
   let cache = Cache.NeuronCache g errs config neuronVersion
       cacheSmall = cache {_neuronCache_graph = stripSurroundingContext g}
   Cache.updateCache cacheSmall
@@ -107,9 +108,24 @@ loadZettelkasten config = do
       inNotesDir $
         DC.buildDirTree "." >>= \case
           Just t@(DC.DirTree_Dir _notesDir' _toplevel) -> do
-            let mt' = DC.pruneDirTree =<< DC.filterDirTree ((== ".md") . takeExtension) t
+            let mt' = DC.pruneDirTree =<< DC.filterDirTree includeDirEntry t
             maybe (fail "No markdown files?") pure mt'
           _ -> fail "Directory error?"
+    includeDirEntry name =
+      Just True
+        == ( do
+               guard $ not $ isDotfile name
+               guard $ takeExtension name == ".md"
+               pure True
+           )
+    isDotfile name =
+      "." `Data.List.isPrefixOf` name
+        && not ("./" `Data.List.isPrefixOf` name)
+
+makeDirectoryFolgezettels :: DC.DirTree FilePath -> DC.DirTree FilePath
+makeDirectoryFolgezettels =
+  -- TODO
+  id
 
 inNotesDir :: IO b -> Action b
 inNotesDir a = do
@@ -173,13 +189,8 @@ resolveZidRefsFromDirTree = \case
             decodeUtf8With lenientDecode <$> readFileBS absPath
           modify $ Map.insert zid (ZIDRef_Available relPath s)
   DC.DirTree_Dir _absPath contents ->
-    forM_ (Map.toList contents) $ \(cn, ct) ->
-      -- TODO: This should happen in the filterDirTree step above
-      unless (excludeFileName cn) $
-        resolveZidRefsFromDirTree ct
+    forM_ (Map.toList contents) $ \(_, ct) ->
+      resolveZidRefsFromDirTree ct
   _ ->
     -- We ignore symlinks, and paths configured to be excluded.
     pure ()
-  where
-    excludeFileName name =
-      "." `Data.List.isPrefixOf` name
