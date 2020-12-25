@@ -151,7 +151,9 @@ loadZettelkastenFromFiles fileTree = do
   liftIO $ putStrLn $ "Loading directory tree (" <> show total <> " files) ..."
   zidRefs <-
     fmap snd $
-      flip runStateT Map.empty $ resolveZidRefsFromDirTree fileTree
+      flip runStateT Map.empty $ do
+        resolveZidRefsFromDirTree fileTree
+        injectDirectoryFolgezettels fileTree
   pure $
     runWriter $ do
       filesWithContent <-
@@ -183,41 +185,63 @@ resolveZidRefsFromDirTree = \case
           -- posterity)
           absPath <- fmap (</> relPath) ribInputDir
           need [absPath]
-          s <- decodeUtf8With lenientDecode <$> readFileBS absPath
-          let dirname = takeDirectory relPath
-          if takeFileName dirname <> ".md" == takeFileName relPath
-            then pure $ s <> "\n\n[[[z:zettels?tag=" <> unTag (DF.tagFromPath dirname) <> "]]]\n"
-            else
-              if relPath == "./index.md"
-                then pure $ s <> "\n\n[[[z:zettels?tag=index]]]\n"
-                else pure s
-  DC.DirTree_Dir absPath contents -> do
-    let dirName = takeFileName absPath
-    unless (absPath == "." || Map.member (dirName <> ".md") contents) $ do
-      addZettel "<dirfolge:autogen>" (ZettelID $ ("DIR-" <>) $ T.replace "/" "-" $ toText absPath) $ do
-        let thisTag = case takeDirectory absPath of
-              "." -> "index"
-              x -> unTag $ DF.tagFromPath x
-        let yaml = "tags: [dirfolge, " <> thisTag <> "]"
-            md = "# DIR " <> toText absPath <> "\n\n[[[z:zettels?tag=" <> unTag (DF.tagFromPath absPath) <> "]]]\n"
-        pure $ "---\n" <> yaml <> "\n---\n" <> md
+          decodeUtf8With lenientDecode <$> readFileBS absPath
+  DC.DirTree_Dir _absPath contents -> do
     forM_ (Map.toList contents) $ \(_, ct) ->
       resolveZidRefsFromDirTree ct
   _ ->
     -- We ignore symlinks, and paths configured to be excluded.
     pure ()
+
+-- TODO: move to plugin module
+injectDirectoryFolgezettels :: DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef) Action ()
+injectDirectoryFolgezettels = \case
+  DC.DirTree_File _relPath _ -> do
+    pure ()
+  DC.DirTree_Dir absPath contents -> do
+    let dirName = takeFileName absPath
+    let dirZettelId = ZettelID $ toText $ if dirName == "." then "index" else dirName
+    gets (Map.lookup dirZettelId) >>= \case
+      Just ref -> do
+        case ref of
+          ZIDRef_Available p s -> do
+            let s' = s <> directoryZettelContents absPath
+            modify $ Map.update (const $ Just $ ZIDRef_Available p s') dirZettelId
+          ZIDRef_Ambiguous {} ->
+            -- TODO: What do do here?
+            pure ()
+      Nothing -> do
+        addZettel ("<dirfolge:autogen:" <> absPath <> ">") dirZettelId $ do
+          let header = "# " <> toText (takeFileName absPath) <> "/\n\n"
+          pure $ header <> directoryZettelContents absPath
+    forM_ (Map.toList contents) $ \(_, ct) ->
+      injectDirectoryFolgezettels ct
+  _ ->
+    -- We ignore symlinks, and paths configured to be excluded.
+    pure ()
   where
-    addZettel zpath zid ms = do
-      gets (Map.lookup zid) >>= \case
-        Just (ZIDRef_Available oldPath _s) -> do
-          -- The zettel ID is already used by `oldPath`. Mark it as a dup.
-          modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| [oldPath])
-        Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
-          -- Third or later duplicate file with the same Zettel ID
-          modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| ambiguities)
-        Nothing -> do
-          s <- ms
-          modify $ Map.insert zid (ZIDRef_Available zpath s)
+    directoryZettelContents absPath =
+      let thisTag = case takeDirectory absPath of
+            "." -> "index"
+            x -> unTag $ DF.tagFromPath x
+          inlineTags = "#dirfolge #" <> thisTag
+          -- TODO: don't inject h1 title inline!
+          -- should just do arbitrary type?
+          md = "[[[z:zettels?tag=" <> unTag (DF.tagFromPath absPath) <> "]]]\n"
+       in md <> "\n\n" <> inlineTags
+
+addZettel :: MonadState (Map ZettelID ZIDRef) m => FilePath -> ZettelID -> m Text -> m ()
+addZettel zpath zid ms = do
+  gets (Map.lookup zid) >>= \case
+    Just (ZIDRef_Available oldPath _s) -> do
+      -- The zettel ID is already used by `oldPath`. Mark it as a dup.
+      modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| [oldPath])
+    Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
+      -- Third or later duplicate file with the same Zettel ID
+      modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| ambiguities)
+    Nothing -> do
+      s <- ms
+      modify $ Map.insert zid (ZIDRef_Available zpath s)
 
 -- TODO: remove
 _ignore :: forall a. Show a => a -> a
