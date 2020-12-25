@@ -57,6 +57,7 @@ main = withUtf8 $ run generateMainSite
 generateMainSite :: Config -> Action ()
 generateMainSite config = do
   notesDir <- ribInputDir
+  -- TODO: Make "static/*" configurable in .dhall; `{ staticIncludes = "static/*"; }`
   buildStaticFiles ["static/**", ".nojekyll"]
   manifest <- Manifest.mkManifest <$> getDirectoryFiles notesDir Manifest.manifestPatterns
   headHtml <- getHeadHtml

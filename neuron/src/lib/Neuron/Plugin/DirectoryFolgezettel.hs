@@ -19,18 +19,20 @@ import System.FilePath (takeDirectory)
 -- tagged.
 postZettelParseHook :: HasCallStack => FilePath -> ZettelT c -> ZettelT c
 postZettelParseHook fn z =
-  z {zettelTags = zettelTags z <> [parentDirTag fn]}
+  if Tag "dirfolge" `elem` zettelTags z
+    then z
+    else z {zettelTags = zettelTags z <> [parentDirTag fn]}
+
+parentDirTag :: HasCallStack => FilePath -> Tag
+parentDirTag = \case
+  "./index.md" ->
+    Tag "undefined" -- should be Nothing
+  (takeDirectory -> ".") ->
+    -- Root file
+    Tag indexZettelName
+  (takeDirectory -> '.' : '/' : dirPath) ->
+    Tag $ indexZettelName <> "/" <> toText dirPath
+  relPath ->
+    error $ "Invalid relPath passed to parseZettel: " <> toText relPath
   where
-    parentDirTag :: HasCallStack => FilePath -> Tag
-    parentDirTag = \case
-      "./index.md" ->
-        Tag "undefined" -- should be Nothing
-      (takeDirectory -> ".") ->
-        -- Root file
-        Tag indexZettelName
-      (takeDirectory -> '.' : '/' : dirPath) ->
-        Tag $ indexZettelName <> "/" <> toText dirPath
-      relPath ->
-        error $ "Invalid relPath passed to parseZettel: " <> toText relPath
-      where
-        indexZettelName = "index"
+    indexZettelName = "index"

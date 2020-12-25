@@ -21,6 +21,7 @@ import qualified Data.List
 import qualified Data.Map.Strict as Map
 import Data.Tagged (untag)
 import qualified Data.Text as T
+import Debug.Trace (traceShowId)
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
 import Neuron.Version (neuronVersion)
@@ -31,7 +32,7 @@ import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
-import Neuron.Zettelkasten.ID (ZettelID, getZettelID, unZettelID)
+import Neuron.Zettelkasten.ID (ZettelID (ZettelID), getZettelID, unZettelID)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
@@ -44,7 +45,7 @@ import Relude hiding (traceShowId)
 import Rib.Shake (ribInputDir)
 import System.Directory (withCurrentDirectory)
 import qualified System.Directory.Contents as DC
-import System.FilePath (takeExtension, (</>))
+import System.FilePath (takeDirectory, takeExtension, takeFileName, (</>))
 
 -- | Generate the Zettelkasten site
 generateSite ::
@@ -174,24 +175,54 @@ resolveZidRefsFromDirTree :: DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef)
 resolveZidRefsFromDirTree = \case
   DC.DirTree_File relPath _ -> do
     whenJust (getZettelID relPath) $ \zid -> do
-      gets (Map.lookup zid) >>= \case
-        Just (ZIDRef_Available oldPath _s) -> do
-          -- The zettel ID is already used by `oldPath`. Mark it as a dup.
-          modify $ Map.insert zid (ZIDRef_Ambiguous $ relPath :| [oldPath])
-        Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
-          -- Third or later duplicate file with the same Zettel ID
-          modify $ Map.insert zid (ZIDRef_Ambiguous $ relPath :| ambiguities)
-        Nothing -> do
-          s <- lift $ do
-            -- NOTE: This is the only place where Shake is being used (for
-            -- posterity)
-            absPath <- fmap (</> relPath) ribInputDir
-            need [absPath]
-            decodeUtf8With lenientDecode <$> readFileBS absPath
-          modify $ Map.insert zid (ZIDRef_Available relPath s)
-  DC.DirTree_Dir _absPath contents ->
+      addZettel relPath zid $
+        lift $ do
+          -- NOTE: This is the only place where Shake is being used (for
+          -- posterity)
+          absPath <- fmap (</> relPath) ribInputDir
+          need [absPath]
+          s <- decodeUtf8With lenientDecode <$> readFileBS absPath
+          let dirname = takeDirectory relPath
+          if takeFileName dirname <> ".md" == takeFileName relPath
+            then pure $ s <> "\n\n[[[z:zettels?tag=" <> tagFromPath dirname <> "]]]\n"
+            else
+              if relPath == "./index.md"
+                then pure $ s <> "\n\n[[[z:zettels?tag=index]]]\n"
+                else pure s
+  DC.DirTree_Dir absPath contents -> do
+    let dirName = takeFileName absPath
+    unless (absPath == "." || Map.member (dirName <> ".md") contents) $ do
+      addZettel "<dirfolge:autogen>" (ZettelID $ ("DIR-" <>) $ T.replace "/" "-" $ toText absPath) $ do
+        let thisTag = case takeDirectory absPath of
+              "." -> "index"
+              x -> tagFromPath x
+        let yaml = "tags: [dirfolge, " <> thisTag <> "]"
+            md = "# DIR " <> toText absPath <> "\n\n[[[z:zettels?tag=" <> tagFromPath absPath <> "]]]\n"
+        pure $ "---\n" <> yaml <> "\n---\n" <> md
     forM_ (Map.toList contents) $ \(_, ct) ->
       resolveZidRefsFromDirTree ct
   _ ->
     -- We ignore symlinks, and paths configured to be excluded.
     pure ()
+  where
+    tagFromPath =
+      toText . \case
+        ('.' : '/' : relPath) ->
+          "index/" <> T.replace " " "-" (toText relPath)
+        x ->
+          error $ "err: " <> toText x
+    addZettel zpath zid ms = do
+      gets (Map.lookup zid) >>= \case
+        Just (ZIDRef_Available oldPath _s) -> do
+          -- The zettel ID is already used by `oldPath`. Mark it as a dup.
+          modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| [oldPath])
+        Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
+          -- Third or later duplicate file with the same Zettel ID
+          modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| ambiguities)
+        Nothing -> do
+          s <- ms
+          modify $ Map.insert zid (ZIDRef_Available zpath s)
+
+-- TODO: remove
+_ignore :: forall a. Show a => a -> a
+_ignore = traceShowId
