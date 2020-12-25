@@ -51,7 +51,9 @@ let
     # https://github.com/hslua/hslua/issues/67
     hslua = if disableHsLuaTests then (dontCheck super.hslua) else super.hslua;
 
-    directory-contents = self.callCabal2nix "directory-contents" sources.directory-contents {};
+    # Tests fail on macOS builder of GitHub actions
+    # https://github.com/obsidiansystems/directory-contents/issues/1
+    directory-contents = dontCheck (self.callCabal2nix "directory-contents" sources.directory-contents {});
 
     neuron = appendConfigureFlags ((justStaticExecutables
       (overrideCabal (self.callCabal2nix "neuron" sources.neuron { })
