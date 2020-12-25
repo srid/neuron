@@ -40,6 +40,9 @@ import Text.Show (Show (show))
 -- | ZettelQuery queries individual zettels.
 --
 -- It does not care about the relationship *between* those zettels; for that use `GraphQuery`.
+--
+-- NOTE: This type is defined in this module, rather than Zettel.Query, because
+-- of the mutual dependency with the `ZettelT` type.
 data ZettelQuery r where
   ZettelQuery_ZettelByID :: ZettelID -> Connection -> ZettelQuery Zettel
   ZettelQuery_ZettelsByTag :: [TagPattern] -> Connection -> ZettelsView -> ZettelQuery [Zettel]

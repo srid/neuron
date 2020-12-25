@@ -15,7 +15,6 @@ import Data.Some (Some (..))
 import Data.TagTree (Tag, unTag, unTagPattern)
 import qualified Data.Text as T
 import Neuron.Markdown (parseMarkdown)
-import qualified Neuron.Plugin.DirectoryFolgezettel as DF
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
@@ -60,8 +59,7 @@ parseZettel queryExtractor fn zid s = do
           slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
           unlisted = Just True == (Meta.unlisted =<< meta)
        in Right $
-            DF.postZettelParseHook fn $
-              Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc
+            Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc
   where
     _dirFolgezettelMarkdown (unTag -> tag) =
       "\n\n" <> "[[[z:zettels?tag=" <> tag <> "/*]]]"

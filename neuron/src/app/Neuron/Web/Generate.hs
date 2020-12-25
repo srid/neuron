@@ -19,11 +19,9 @@ where
 import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.List
 import qualified Data.Map.Strict as Map
-import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
 import qualified Data.Text as T
-import Debug.Trace (traceShowId)
-import Development.Shake (Action, need)
+import Development.Shake (Action)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Plugin.DirectoryFolgezettel as DF
 import Neuron.Version (neuronVersion)
@@ -34,8 +32,9 @@ import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
-import Neuron.Zettelkasten.ID (ZettelID (ZettelID), getZettelID, unZettelID)
+import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
+import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
     ZettelError (..),
@@ -47,7 +46,7 @@ import Relude hiding (traceShowId)
 import Rib.Shake (ribInputDir)
 import System.Directory (withCurrentDirectory)
 import qualified System.Directory.Contents as DC
-import System.FilePath (takeDirectory, takeExtension, takeFileName, (</>))
+import System.FilePath (takeExtension)
 
 -- | Generate the Zettelkasten site
 generateSite ::
@@ -97,7 +96,7 @@ generateSite config writeHtmlRoute' = do
 loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
 loadZettelkasten config = do
   ((g, zs), errs) <-
-    loadZettelkastenFromFiles . makeDirectoryFolgezettels =<< locateZettelFiles
+    loadZettelkastenFromFiles =<< locateZettelFiles
   let cache = Cache.NeuronCache g errs config neuronVersion
       cacheSmall = cache {_neuronCache_graph = stripSurroundingContext g}
   Cache.updateCache cacheSmall
@@ -124,17 +123,10 @@ loadZettelkasten config = do
     isDotfile name =
       "." `Data.List.isPrefixOf` name
         && not ("./" `Data.List.isPrefixOf` name)
-
--- TODO: Move to Plugin/Neuron/*
-makeDirectoryFolgezettels :: DC.DirTree FilePath -> DC.DirTree FilePath
-makeDirectoryFolgezettels =
-  -- TODO
-  id
-
-inNotesDir :: IO b -> Action b
-inNotesDir a = do
-  d <- ribInputDir
-  liftIO $ withCurrentDirectory d a
+    inNotesDir :: IO b -> Action b
+    inNotesDir a = do
+      d <- ribInputDir
+      liftIO $ withCurrentDirectory d a
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFromFiles ::
@@ -152,97 +144,19 @@ loadZettelkastenFromFiles fileTree = do
   zidRefs <-
     fmap snd $
       flip runStateT Map.empty $ do
-        resolveZidRefsFromDirTree fileTree
-        injectDirectoryFolgezettels fileTree
+        R.resolveZidRefsFromDirTree fileTree
+        DF.injectDirectoryFolgezettels fileTree
   pure $
     runWriter $ do
       filesWithContent <-
         flip Map.traverseMaybeWithKey zidRefs $ \zid -> \case
-          ZIDRef_Ambiguous fps -> do
+          R.ZIDRef_Ambiguous fps -> do
             tell $ one (zid, ZettelError_AmbiguousID fps)
             pure Nothing
-          ZIDRef_Available fp s ->
+          R.ZIDRef_Available fp s ->
             pure $ Just (fp, s)
-      let zs = parseZettels extractQueriesWithContext $ Map.toList filesWithContent
+      let zs =
+            fmap (bimap DF.postZettelParseHook DF.postZettelParseHook) $
+              parseZettels extractQueriesWithContext $ Map.toList filesWithContent
       g <- G.buildZettelkasten zs
       pure (g, zs)
-
--- | What does a Zettel ID refer to?
-data ZIDRef
-  = -- | The ZID maps to a file on disk with the given contents
-    ZIDRef_Available FilePath Text
-  | -- | The ZID maps to more than one file, hence ambiguous.
-    ZIDRef_Ambiguous (NonEmpty FilePath)
-  deriving (Eq, Show)
-
-resolveZidRefsFromDirTree :: DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef) Action ()
-resolveZidRefsFromDirTree = \case
-  DC.DirTree_File relPath _ -> do
-    whenJust (getZettelID relPath) $ \zid -> do
-      addZettel relPath zid $
-        lift $ do
-          -- NOTE: This is the only place where Shake is being used (for
-          -- posterity)
-          absPath <- fmap (</> relPath) ribInputDir
-          need [absPath]
-          decodeUtf8With lenientDecode <$> readFileBS absPath
-  DC.DirTree_Dir _absPath contents -> do
-    forM_ (Map.toList contents) $ \(_, ct) ->
-      resolveZidRefsFromDirTree ct
-  _ ->
-    -- We ignore symlinks, and paths configured to be excluded.
-    pure ()
-
--- TODO: move to plugin module
-injectDirectoryFolgezettels :: DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef) Action ()
-injectDirectoryFolgezettels = \case
-  DC.DirTree_File _relPath _ -> do
-    pure ()
-  DC.DirTree_Dir absPath contents -> do
-    let dirName = takeFileName absPath
-    let dirZettelId = ZettelID $ toText $ if dirName == "." then "index" else dirName
-    gets (Map.lookup dirZettelId) >>= \case
-      Just ref -> do
-        case ref of
-          ZIDRef_Available p s -> do
-            let s' = s <> directoryZettelContents absPath
-            modify $ Map.update (const $ Just $ ZIDRef_Available p s') dirZettelId
-          ZIDRef_Ambiguous {} ->
-            -- TODO: What do do here?
-            pure ()
-      Nothing -> do
-        addZettel ("<dirfolge:autogen:" <> absPath <> ">") dirZettelId $ do
-          let header = "# " <> toText (takeFileName absPath) <> "/\n\n"
-          pure $ header <> directoryZettelContents absPath
-    forM_ (Map.toList contents) $ \(_, ct) ->
-      injectDirectoryFolgezettels ct
-  _ ->
-    -- We ignore symlinks, and paths configured to be excluded.
-    pure ()
-  where
-    directoryZettelContents absPath =
-      let thisTag = case takeDirectory absPath of
-            "." -> "index"
-            x -> unTag $ DF.tagFromPath x
-          inlineTags = "#dirfolge #" <> thisTag
-          -- TODO: don't inject h1 title inline!
-          -- should just do arbitrary type?
-          md = "[[[z:zettels?tag=" <> unTag (DF.tagFromPath absPath) <> "]]]\n"
-       in md <> "\n\n" <> inlineTags
-
-addZettel :: MonadState (Map ZettelID ZIDRef) m => FilePath -> ZettelID -> m Text -> m ()
-addZettel zpath zid ms = do
-  gets (Map.lookup zid) >>= \case
-    Just (ZIDRef_Available oldPath _s) -> do
-      -- The zettel ID is already used by `oldPath`. Mark it as a dup.
-      modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| [oldPath])
-    Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
-      -- Third or later duplicate file with the same Zettel ID
-      modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| ambiguities)
-    Nothing -> do
-      s <- ms
-      modify $ Map.insert zid (ZIDRef_Available zpath s)
-
--- TODO: remove
-_ignore :: forall a. Show a => a -> a
-_ignore = traceShowId
