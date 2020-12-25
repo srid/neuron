@@ -153,7 +153,7 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
         -- The extra space is so that double clicking on this extra text
         -- doesn't select the title next.
         text " "
-    elAttr "span" ("class" =: "zettel-link" <> withTooltip linkTooltip) $ do
+    elAttr "span" ("class" =: "zettel-link" <> maybe mempty ("title" =:) linkTooltip) $ do
       let linkInnerHtml = fromMaybe (text zettelTitle) mInner
       neuronRouteLink (Some $ Route_Zettel zettelSlug) mempty linkInnerHtml
       elConnSuffix conn
@@ -164,14 +164,6 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
       | isJust mInner = Just $ "Zettel: " <> zettelTitle
       | null zettelTags = Nothing
       | otherwise = Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
-    withTooltip :: Maybe Text -> Map Text Text
-    withTooltip = \case
-      Nothing -> mempty
-      Just s ->
-        ( "data-tooltip" =: s
-            <> "data-inverted" =: ""
-            <> "data-position" =: "right center"
-        )
 
 elConnSuffix :: DomBuilder t m => Maybe Connection -> m ()
 elConnSuffix mconn =
