@@ -8,6 +8,7 @@
 module Neuron.Plugin.DirectoryFolgezettel where
 
 import Data.TagTree (Tag (Tag))
+import qualified Data.Text as T
 import Neuron.Zettelkasten.Zettel (ZettelT (zettelTags))
 import Relude
 import System.FilePath (takeDirectory)
@@ -21,17 +22,22 @@ postZettelParseHook :: HasCallStack => FilePath -> ZettelT c -> ZettelT c
 postZettelParseHook fn z =
   if Tag "dirfolge" `elem` zettelTags z
     then z
-    else z {zettelTags = zettelTags z <> [parentDirTag fn]}
+    else z {zettelTags = zettelTags z <> maybeToList (parentDirTag fn)}
 
-parentDirTag :: HasCallStack => FilePath -> Tag
+parentDirTag :: HasCallStack => FilePath -> Maybe Tag
 parentDirTag = \case
   "./index.md" ->
-    Tag "undefined" -- should be Nothing
-  (takeDirectory -> ".") ->
+    Nothing
+  relPath ->
+    Just $ tagFromPath $ takeDirectory relPath
+
+tagFromPath :: HasCallStack => FilePath -> Tag
+tagFromPath = \case
+  "." ->
     -- Root file
     Tag indexZettelName
-  (takeDirectory -> '.' : '/' : dirPath) ->
-    Tag $ indexZettelName <> "/" <> toText dirPath
+  ('.' : '/' : dirPath) ->
+    Tag $ indexZettelName <> "/" <> T.replace " " "-" (toText dirPath)
   relPath ->
     error $ "Invalid relPath passed to parseZettel: " <> toText relPath
   where

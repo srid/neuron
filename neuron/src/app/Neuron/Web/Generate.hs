@@ -19,11 +19,13 @@ where
 import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.List
 import qualified Data.Map.Strict as Map
+import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
 import qualified Data.Text as T
 import Debug.Trace (traceShowId)
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
+import qualified Neuron.Plugin.DirectoryFolgezettel as DF
 import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
 import Neuron.Web.Cache.Type (NeuronCache, _neuronCache_graph)
@@ -184,7 +186,7 @@ resolveZidRefsFromDirTree = \case
           s <- decodeUtf8With lenientDecode <$> readFileBS absPath
           let dirname = takeDirectory relPath
           if takeFileName dirname <> ".md" == takeFileName relPath
-            then pure $ s <> "\n\n[[[z:zettels?tag=" <> tagFromPath dirname <> "]]]\n"
+            then pure $ s <> "\n\n[[[z:zettels?tag=" <> unTag (DF.tagFromPath dirname) <> "]]]\n"
             else
               if relPath == "./index.md"
                 then pure $ s <> "\n\n[[[z:zettels?tag=index]]]\n"
@@ -195,9 +197,9 @@ resolveZidRefsFromDirTree = \case
       addZettel "<dirfolge:autogen>" (ZettelID $ ("DIR-" <>) $ T.replace "/" "-" $ toText absPath) $ do
         let thisTag = case takeDirectory absPath of
               "." -> "index"
-              x -> tagFromPath x
+              x -> unTag $ DF.tagFromPath x
         let yaml = "tags: [dirfolge, " <> thisTag <> "]"
-            md = "# DIR " <> toText absPath <> "\n\n[[[z:zettels?tag=" <> tagFromPath absPath <> "]]]\n"
+            md = "# DIR " <> toText absPath <> "\n\n[[[z:zettels?tag=" <> unTag (DF.tagFromPath absPath) <> "]]]\n"
         pure $ "---\n" <> yaml <> "\n---\n" <> md
     forM_ (Map.toList contents) $ \(_, ct) ->
       resolveZidRefsFromDirTree ct
@@ -205,12 +207,6 @@ resolveZidRefsFromDirTree = \case
     -- We ignore symlinks, and paths configured to be excluded.
     pure ()
   where
-    tagFromPath =
-      toText . \case
-        ('.' : '/' : relPath) ->
-          "index/" <> T.replace " " "-" (toText relPath)
-        x ->
-          error $ "err: " <> toText x
     addZettel zpath zid ms = do
       gets (Map.lookup zid) >>= \case
         Just (ZIDRef_Available oldPath _s) -> do
