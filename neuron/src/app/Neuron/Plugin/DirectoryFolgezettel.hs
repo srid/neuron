@@ -26,9 +26,10 @@ import System.FilePath (takeDirectory, takeFileName)
 -- tagged.
 postZettelParseHook :: forall c. HasCallStack => ZettelT c -> ZettelT c
 postZettelParseHook z =
-  if Tag "dirfolge" `elem` zettelTags z
-    then z
-    else z {zettelTags = zettelTags z <> maybeToList (parentDirTag $ zettelPath z)}
+  -- REVIEW: weird behaviour? ala. ./2020.md vs ./Memory/2020/ -- not totally bad though.
+  z
+    { zettelTags = zettelTags z <> maybeToList (parentDirTag $ zettelPath z)
+    }
 
 parentDirTag :: HasCallStack => FilePath -> Maybe Tag
 parentDirTag = \case
@@ -66,7 +67,7 @@ injectDirectoryFolgezettels = \case
             -- TODO: What do do here?
             pure ()
       Nothing -> do
-        R.addZettel ("<dirfolge:autogen:" <> absPath <> ">") dirZettelId $ do
+        R.addZettel (absPath <> ".md.dirfolge") dirZettelId $ do
           let header = "# " <> toText (takeFileName absPath) <> "/"
           pure $ header <> directoryZettelContents absPath
     forM_ (Map.toList contents) $ \(_, ct) ->
@@ -76,10 +77,4 @@ injectDirectoryFolgezettels = \case
     pure ()
   where
     directoryZettelContents absPath =
-      let thisTag = case takeDirectory absPath of
-            "." -> "index"
-            x -> unTag $ tagFromPath x
-          inlineTags = "#dirfolge #" <> thisTag
-          -- TODO: should just do arbitrary zettel `content` type? (`ZettelT DirZettel`)
-          md = "## Directory contents\n\n[[[z:zettels?tag=" <> unTag (tagFromPath absPath) <> "]]]\n"
-       in "\n\n" <> md <> "\n" <> inlineTags
+      "\n\n:::{.ui .deemphasized .segment}\nYou are viewing a directory zettel which branches off to the following:\n\n[[[z:zettels?tag=" <> unTag (tagFromPath absPath) <> "]]]\n:::\n"
