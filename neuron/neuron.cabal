@@ -185,6 +185,7 @@ library neuron-app-lib
     Neuron.Web.StructuredData
     Neuron.Zettelkasten.ID.Scheme
     Neuron.Zettelkasten.Resolver
+    Neuron.Plugin.Type
     Neuron.Plugin.DirectoryFolgezettel
   autogen-modules:
     Paths_neuron

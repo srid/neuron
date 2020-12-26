@@ -24,6 +24,7 @@ import qualified Data.Text as T
 import Development.Shake (Action)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Plugin.DirectoryFolgezettel as DF
+import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
 import Neuron.Web.Cache.Type (NeuronCache, _neuronCache_graph)
@@ -42,11 +43,19 @@ import Neuron.Zettelkasten.Zettel
     sansContent,
   )
 import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
+import Reflex (ffor)
 import Relude hiding (traceShowId)
 import Rib.Shake (ribInputDir)
 import System.Directory (withCurrentDirectory)
 import qualified System.Directory.Contents as DC
 import System.FilePath (takeExtension)
+
+-- | Enabled neuron plugins
+-- TODO: allow it to be specified in neuron.dhall
+plugins :: [Plugin]
+plugins =
+  [ DF.plugin
+  ]
 
 -- | Generate the Zettelkasten site
 generateSite ::
@@ -145,7 +154,7 @@ loadZettelkastenFromFiles fileTree = do
     fmap snd $
       flip runStateT Map.empty $ do
         R.resolveZidRefsFromDirTree fileTree
-        DF.injectDirectoryFolgezettels fileTree
+        forM_ (_plugin_afterZettelRead <$> plugins) $ \f -> f fileTree
   pure $
     runWriter $ do
       filesWithContent <-
@@ -156,7 +165,7 @@ loadZettelkastenFromFiles fileTree = do
           R.ZIDRef_Available fp s ->
             pure $ Just (fp, s)
       let zs =
-            fmap (bimap DF.postZettelParseHook DF.postZettelParseHook) $
-              parseZettels extractQueriesWithContext $ Map.toList filesWithContent
+            ffor (parseZettels extractQueriesWithContext $ Map.toList filesWithContent) $ \z ->
+              foldl' (\z1 f -> f z1) z (_plugin_afterZettelParse <$> plugins)
       g <- G.buildZettelkasten zs
       pure (g, zs)

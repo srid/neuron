@@ -4,13 +4,13 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- TODO: plugin system
-module Neuron.Plugin.DirectoryFolgezettel where
+module Neuron.Plugin.DirectoryFolgezettel (plugin) where
 
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag (..))
 import qualified Data.Text as T
 import Development.Shake (Action)
+import Neuron.Plugin.Type
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
@@ -18,6 +18,9 @@ import Neuron.Zettelkasten.Zettel (ZettelT (zettelPath, zettelTags))
 import Relude
 import qualified System.Directory.Contents as DC
 import System.FilePath (takeDirectory, takeFileName)
+
+plugin :: Plugin
+plugin = Plugin "dirfolge" injectDirectoryFolgezettels (bimap postZettelParseHook postZettelParseHook)
 
 -- | Add a hierarchical tag based on the directory the zettel is in.
 --
@@ -30,25 +33,6 @@ postZettelParseHook z =
   z
     { zettelTags = zettelTags z <> maybeToList (parentDirTag $ zettelPath z)
     }
-
-parentDirTag :: HasCallStack => FilePath -> Maybe Tag
-parentDirTag = \case
-  "./index.md" ->
-    Nothing
-  relPath ->
-    Just $ tagFromPath $ takeDirectory relPath
-
-tagFromPath :: HasCallStack => FilePath -> Tag
-tagFromPath = \case
-  "." ->
-    -- Root file
-    Tag indexZettelName
-  ('.' : '/' : dirPath) ->
-    Tag $ indexZettelName <> "/" <> T.replace " " "-" (toText dirPath)
-  relPath ->
-    error $ "Invalid relPath passed to parseZettel: " <> toText relPath
-  where
-    indexZettelName = "index"
 
 injectDirectoryFolgezettels :: DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef) Action ()
 injectDirectoryFolgezettels = \case
@@ -86,3 +70,22 @@ injectDirectoryFolgezettels = \case
     directoryZettelContents absPath =
       let dirName = takeFileName absPath
        in "\n\n:::{.ui .deemphasized .small .segment}\nNotes under the *" <> toText dirName <> "/* directory:\n\n[[[z:zettels?tag=" <> unTag (tagFromPath absPath) <> "]]]\n:::\n"
+
+parentDirTag :: HasCallStack => FilePath -> Maybe Tag
+parentDirTag = \case
+  "./index.md" ->
+    Nothing
+  relPath ->
+    Just $ tagFromPath $ takeDirectory relPath
+
+tagFromPath :: HasCallStack => FilePath -> Tag
+tagFromPath = \case
+  "." ->
+    -- Root file
+    Tag indexZettelName
+  ('.' : '/' : dirPath) ->
+    Tag $ indexZettelName <> "/" <> T.replace " " "-" (toText dirPath)
+  relPath ->
+    error $ "Invalid relPath passed to parseZettel: " <> toText relPath
+  where
+    indexZettelName = "index"
