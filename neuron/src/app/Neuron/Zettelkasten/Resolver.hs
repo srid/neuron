@@ -3,6 +3,8 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- TODO: Move to N.Z.ID.Ref.Type
+
 -- | Transform a directory of Markdown files to Zettelkasten-strict zettel texts.
 --
 -- This module is responsible only for "resolving" the filename IDs. It will
@@ -11,12 +13,9 @@
 module Neuron.Zettelkasten.Resolver where
 
 import qualified Data.Map.Strict as Map
-import Development.Shake (Action, need)
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
 import Relude
-import Rib.Shake (ribInputDir)
 import qualified System.Directory.Contents.Types as DC
-import System.FilePath ((</>))
 
 -- | What does a Zettel ID refer to?
 data ZIDRef
@@ -26,20 +25,15 @@ data ZIDRef
     ZIDRef_Ambiguous (NonEmpty FilePath)
   deriving (Eq, Show)
 
-resolveZidRefsFromDirTree :: DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef) Action ()
-resolveZidRefsFromDirTree = \case
+resolveZidRefsFromDirTree :: Monad m => (FilePath -> m Text) -> DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef) m ()
+resolveZidRefsFromDirTree readFileF = \case
   DC.DirTree_File relPath _ -> do
     whenJust (getZettelID relPath) $ \zid -> do
       addZettel relPath zid $
-        lift $ do
-          -- NOTE: This is the only place where Shake is being used (for
-          -- posterity)
-          absPath <- fmap (</> relPath) ribInputDir
-          need [absPath]
-          decodeUtf8With lenientDecode <$> readFileBS absPath
+        lift $ readFileF relPath
   DC.DirTree_Dir _absPath contents -> do
     forM_ (Map.toList contents) $ \(_, ct) ->
-      resolveZidRefsFromDirTree ct
+      resolveZidRefsFromDirTree readFileF ct
   _ ->
     -- We ignore symlinks, and paths configured to be excluded.
     pure ()

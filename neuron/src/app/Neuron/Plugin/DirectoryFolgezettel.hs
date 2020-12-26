@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -9,8 +10,7 @@ module Neuron.Plugin.DirectoryFolgezettel (plugin) where
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag (..))
 import qualified Data.Text as T
-import Development.Shake (Action)
-import Neuron.Plugin.Type
+import Neuron.Plugin.Type (Plugin (Plugin))
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
@@ -34,7 +34,7 @@ postZettelParseHook z =
     { zettelTags = zettelTags z <> maybeToList (parentDirTag $ zettelPath z)
     }
 
-injectDirectoryFolgezettels :: DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef) Action ()
+injectDirectoryFolgezettels :: MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m ()
 injectDirectoryFolgezettels = \case
   DC.DirTree_File _relPath _ -> do
     pure ()
@@ -55,7 +55,7 @@ injectDirectoryFolgezettels = \case
               let s' = s <> directoryZettelContents absPath
               modify $ Map.update (const $ Just $ ZIDRef_Available p s') dirZettelId
             ZIDRef_Ambiguous {} ->
-              -- TODO: What do do here?
+              -- TODO: What to do here?
               pure ()
         Nothing -> do
           R.addZettel (absPath <> ".md.dirfolge") dirZettelId $ do
@@ -64,7 +64,6 @@ injectDirectoryFolgezettels = \case
     forM_ (Map.toList contents) $ \(_, ct) ->
       injectDirectoryFolgezettels ct
   _ ->
-    -- We ignore symlinks, and paths configured to be excluded.
     pure ()
   where
     directoryZettelContents absPath =

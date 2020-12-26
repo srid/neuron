@@ -19,7 +19,7 @@ where
 import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.List
 import qualified Data.Map.Strict as Map
-import Development.Shake (Action)
+import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Plugin.DirectoryFolgezettel as DF
 import Neuron.Plugin.Type (Plugin (..))
@@ -48,7 +48,7 @@ import Relude hiding (traceShowId)
 import Rib.Shake (ribInputDir)
 import System.Directory (withCurrentDirectory)
 import qualified System.Directory.Contents as DC
-import System.FilePath (takeExtension)
+import System.FilePath (takeExtension, (</>))
 
 -- | Enabled neuron plugins
 -- TODO: allow it to be specified in neuron.dhall
@@ -143,7 +143,12 @@ loadZettelkastenFromFiles fileTree = do
   zidRefs <-
     fmap snd $
       flip runStateT Map.empty $ do
-        R.resolveZidRefsFromDirTree fileTree
+        flip R.resolveZidRefsFromDirTree fileTree $ \relPath -> do
+          -- NOTE: This is the only place where Shake is being used (for
+          -- posterity)
+          absPath <- fmap (</> relPath) ribInputDir
+          need [absPath]
+          decodeUtf8With lenientDecode <$> readFileBS absPath
         forM_ (_plugin_afterZettelRead <$> plugins) $ \f -> f fileTree
   pure $
     runWriter $ do
