@@ -20,10 +20,10 @@ import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelC,
-    ZettelError (..),
     ZettelT (..),
     sansContent,
   )
+import Neuron.Zettelkasten.Zettel.Error (ZettelError (..))
 import Relude
 import Text.Pandoc.Definition (Block)
 

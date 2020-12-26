@@ -19,8 +19,6 @@ where
 import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.List
 import qualified Data.Map.Strict as Map
-import Data.Tagged (untag)
-import qualified Data.Text as T
 import Development.Shake (Action)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Plugin.DirectoryFolgezettel as DF
@@ -34,13 +32,15 @@ import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
 import Neuron.Zettelkasten.ID (ZettelID (..))
-import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
-    ZettelError (..),
     ZettelT (zettelSlug),
     sansContent,
+  )
+import Neuron.Zettelkasten.Zettel.Error
+  ( ZettelError (ZettelError_AmbiguousID),
+    zettelErrorList,
   )
 import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
 import Reflex (ffor)
@@ -74,17 +74,7 @@ generateSite config writeHtmlRoute' = do
   -- Report all errors
   -- TODO: Report only new errors in this run, to avoid spamming the terminal.
   forM_ (Map.toList _neuronCache_errors) $ \(zid, err) -> do
-    reportError zid $
-      case err of
-        ZettelError_ParseError (untag . snd -> parseErr) ->
-          parseErr :| []
-        ZettelError_QueryResultErrors queryErrs ->
-          showQueryResultError <$> snd queryErrs
-        ZettelError_AmbiguousID filePaths ->
-          ("Multiple zettels have the same ID: " <> T.intercalate ", " (toText <$> toList filePaths))
-            :| []
-        ZettelError_AmbiguousSlug slug ->
-          "Slug '" <> slug <> "' is already used by another zettel" :| []
+    reportError zid $ zettelErrorList err
   pure _neuronCache_graph
   where
     -- Report an error in the terminal

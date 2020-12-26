@@ -74,6 +74,7 @@ library
     Neuron.Markdown
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
+    Neuron.Zettelkasten.Zettel.Error
     Neuron.Zettelkasten.Zettel.Meta
     Neuron.Zettelkasten.Zettel.Parser
     Neuron.Zettelkasten.Connection

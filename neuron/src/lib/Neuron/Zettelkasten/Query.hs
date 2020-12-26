@@ -28,6 +28,12 @@ import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Graph (GraphQuery (..))
 import Neuron.Zettelkasten.Zettel
+  ( Zettel,
+    ZettelQuery (..),
+    ZettelT (..),
+    sortZettelsReverseChronological,
+  )
+import Neuron.Zettelkasten.Zettel.Error (ZettelError (..))
 import Relude
 
 runZettelQuery :: [Zettel] -> ZettelQuery r -> Either QueryResultError r

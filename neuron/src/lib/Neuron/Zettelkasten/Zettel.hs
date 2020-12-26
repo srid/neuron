@@ -30,7 +30,6 @@ import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
-import Neuron.Zettelkasten.Query.Error (QueryResultError)
 import Neuron.Zettelkasten.Query.Theme (ZettelsView)
 import Relude hiding (show)
 import Text.Pandoc.Builder (Block)
@@ -73,18 +72,6 @@ data ZettelT content = Zettel
 
 newtype MetadataOnly = MetadataOnly ()
   deriving (Generic, ToJSON, FromJSON)
-
--- | All possible errors for a given zettel ID
-data ZettelError
-  = -- | The zettel file content is malformed
-    ZettelError_ParseError (Slug, ZettelParseError)
-  | -- | Some queries in zettel file are incorrect
-    ZettelError_QueryResultErrors (Slug, NonEmpty QueryResultError)
-  | -- | A zettel ID may refer one of several zettel files
-    ZettelError_AmbiguousID (NonEmpty FilePath)
-  | -- | A slug is shared more than one zettel file
-    ZettelError_AmbiguousSlug Slug
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- | Zettel without its content
 type Zettel = ZettelT MetadataOnly

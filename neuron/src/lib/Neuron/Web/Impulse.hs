@@ -39,10 +39,10 @@ import Neuron.Zettelkasten.Query (zettelsByTag)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
-    ZettelError (..),
     ZettelT (zettelTitle),
     zettelTags,
   )
+import Neuron.Zettelkasten.Zettel.Error (ZettelError (..))
 import Reflex.Dom.Core
 import Relude hiding ((&))
 import qualified Text.URI as URI

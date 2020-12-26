@@ -14,7 +14,7 @@ import Neuron.Config.Type (Config)
 import Neuron.Web.Widget (LoadableData)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
-import Neuron.Zettelkasten.Zettel (ZettelError)
+import Neuron.Zettelkasten.Zettel.Error (ZettelError)
 import Reflex.Dom.Core
 import Relude
 import qualified Relude.String as BL
