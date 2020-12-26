@@ -56,20 +56,27 @@ injectDirectoryFolgezettels = \case
     pure ()
   DC.DirTree_Dir absPath contents -> do
     let dirName = takeFileName absPath
-    let dirZettelId = ZettelID $ toText $ if dirName == "." then "index" else dirName
-    gets (Map.lookup dirZettelId) >>= \case
-      Just ref -> do
-        case ref of
-          ZIDRef_Available p s -> do
-            let s' = s <> directoryZettelContents absPath
-            modify $ Map.update (const $ Just $ ZIDRef_Available p s') dirZettelId
-          ZIDRef_Ambiguous {} ->
-            -- TODO: What do do here?
-            pure ()
-      Nothing -> do
-        R.addZettel (absPath <> ".md.dirfolge") dirZettelId $ do
-          let header = "# " <> toText (takeFileName absPath) <> "/"
-          pure $ header <> directoryZettelContents absPath
+        dirZettelId = ZettelID $ toText $ if dirName == "." then "index" else dirName
+    -- Don't create folgezettel from index zettel. Why?
+    -- - To avoid surprise when legacy notebooks with innuermous top level
+    -- zettels use this feature.
+    -- - Facilitate multiple clusters that don't "stick" because of index-folgezettel.
+    -- If the user wants to make index branch to these top-level zettels,
+    -- they can add `[[[z:zettels?tag=index]]]` to do that.
+    unless (dirZettelId == ZettelID "index") $ do
+      gets (Map.lookup dirZettelId) >>= \case
+        Just ref -> do
+          case ref of
+            ZIDRef_Available p s -> do
+              let s' = s <> directoryZettelContents absPath
+              modify $ Map.update (const $ Just $ ZIDRef_Available p s') dirZettelId
+            ZIDRef_Ambiguous {} ->
+              -- TODO: What do do here?
+              pure ()
+        Nothing -> do
+          R.addZettel (absPath <> ".md.dirfolge") dirZettelId $ do
+            let header = "# " <> toText (takeFileName absPath) <> "/"
+            pure $ header <> directoryZettelContents absPath
     forM_ (Map.toList contents) $ \(_, ct) ->
       injectDirectoryFolgezettels ct
   _ ->
@@ -77,4 +84,5 @@ injectDirectoryFolgezettels = \case
     pure ()
   where
     directoryZettelContents absPath =
-      "\n\n:::{.ui .deemphasized .segment}\nYou are viewing a directory zettel which branches off to the following:\n\n[[[z:zettels?tag=" <> unTag (tagFromPath absPath) <> "]]]\n:::\n"
+      let dirName = takeFileName absPath
+       in "\n\n:::{.ui .deemphasized .small .segment}\nNotes under the *" <> toText dirName <> "/* directory:\n\n[[[z:zettels?tag=" <> unTag (tagFromPath absPath) <> "]]]\n:::\n"
