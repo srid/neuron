@@ -72,6 +72,7 @@ mkZettelGraph ::
   [Zettel] ->
   Writer (Map ZettelID (Slug, NonEmpty QueryResultError)) ZettelGraph
 mkZettelGraph zettels = do
+  -- TODO: Also get connections via PluginData
   let res :: [(Zettel, ([((Connection, [Block]), Zettel)], [QueryResultError]))] =
         flip fmap zettels $ \z ->
           (z, runQueryConnections zettels z)

@@ -94,24 +94,25 @@ generateSite config writeHtmlRoute' = do
 
 loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
 loadZettelkasten config = do
-  ((g, zs), errs) <-
-    loadZettelkastenFromFiles =<< locateZettelFiles
+  ((g, zs), errs) <- loadZettelkastenFromFiles =<< locateZettelFiles
   let cache = Cache.NeuronCache g errs config neuronVersion
       cacheSmall = cache {_neuronCache_graph = stripSurroundingContext g}
   Cache.updateCache cacheSmall
   pure (cache, zs)
+
+-- TODO:
+-- If making recurseDir the default,
+-- - [ ] Allow blacklist (eg: not "README.md"; default being ".*"; always ignore .neuron)
+locateZettelFiles :: Action (DC.DirTree FilePath)
+locateZettelFiles = do
+  -- Run with notes dir as PWD, so that DirTree uses relative paths throughout.
+  inNotesDir $
+    DC.buildDirTree "." >>= \case
+      Just t -> do
+        let mt' = DC.pruneDirTree =<< DC.filterDirTree includeDirEntry t
+        maybe (fail "No markdown files?") pure mt'
+      _ -> fail "Directory error?"
   where
-    -- TODO:
-    -- If making recurseDir the default,
-    -- - [ ] Allow blacklist (eg: not "README.md"; default being ".*"; always ignore .neuron)
-    locateZettelFiles = do
-      -- Run with notes dir as PWD, so that DirTree uses relative paths throughout.
-      inNotesDir $
-        DC.buildDirTree "." >>= \case
-          Just t@(DC.DirTree_Dir _notesDir' _toplevel) -> do
-            let mt' = DC.pruneDirTree =<< DC.filterDirTree includeDirEntry t
-            maybe (fail "No markdown files?") pure mt'
-          _ -> fail "Directory error?"
     includeDirEntry name =
       Just True
         == ( do
@@ -157,8 +158,8 @@ loadZettelkastenFromFiles fileTree = do
           R.ZIDRef_Ambiguous fps -> do
             tell $ one (zid, ZettelError_AmbiguousID fps)
             pure Nothing
-          R.ZIDRef_Available fp s ->
-            pure $ Just (fp, s)
+          R.ZIDRef_Available fp s pluginData ->
+            pure $ Just (fp, (s, pluginData))
       let zs =
             ffor (parseZettels extractQueriesWithContext $ Map.toList filesWithContent) $ \z ->
               foldl' (\z1 f -> f z1) z (_plugin_afterZettelParse <$> plugins)

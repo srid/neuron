@@ -9,6 +9,7 @@ module Data.TagTree
     TagPattern (unTagPattern),
     TagNode (..),
     mkTagPattern,
+    mkTagPatternFromTag,
     tagMatch,
     tagMatchAny,
     tagTree,
@@ -56,6 +57,10 @@ newtype TagPattern = TagPattern {unTagPattern :: FilePattern}
 mkTagPattern :: Text -> TagPattern
 mkTagPattern =
   TagPattern . toString
+
+mkTagPatternFromTag :: Tag -> TagPattern
+mkTagPatternFromTag (Tag t) =
+  TagPattern $ toString t
 
 tagMatch :: TagPattern -> Tag -> Bool
 tagMatch (TagPattern pat) (Tag tag) =

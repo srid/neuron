@@ -2,42 +2,50 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Plugin.DirectoryFolgezettel (plugin) where
 
+import Data.Default (Default (def))
+import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
-import Data.TagTree (Tag (..))
+import Data.Some (Some (Some))
+import Data.TagTree (Tag (Tag), mkTagPatternFromTag)
 import qualified Data.Text as T
 import Neuron.Plugin.Type (Plugin (Plugin))
+import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
-import Neuron.Zettelkasten.Zettel (ZettelT (zettelPath, zettelTags))
+import Neuron.Zettelkasten.Zettel (ZettelPluginData (..), ZettelQuery (..), ZettelT (..))
 import Relude
 import qualified System.Directory.Contents as DC
 import System.FilePath (takeDirectory, takeFileName)
 
 plugin :: Plugin
-plugin = Plugin "dirfolge" injectDirectoryFolgezettels (bimap postZettelParseHook postZettelParseHook)
+plugin =
+  Plugin "dirfolge" injectDirectoryZettels (bimap addTagAndQuery addTagAndQuery)
 
--- | Add a hierarchical tag based on the directory the zettel is in.
---
--- For example, the zettel @foo/bar/qux.md@ gets tagged with @root/foo/bar@.
--- And @note.md@ gets tagged with @root@. @index.md@, however, will not be
--- tagged.
-postZettelParseHook :: forall c. HasCallStack => ZettelT c -> ZettelT c
-postZettelParseHook z =
-  -- REVIEW: weird behaviour? ala. ./2020.md vs ./Memory/2020/ -- not totally bad though.
+addTagAndQuery :: forall c. HasCallStack => ZettelT c -> ZettelT c
+addTagAndQuery z =
   z
-    { zettelTags = zettelTags z <> maybeToList (parentDirTag $ zettelPath z)
+    { zettelTags =
+        zettelTags z <> maybeToList (parentDirTag $ zettelPath z),
+      -- Add the tag query for building graph connections.
+      zettelQueries =
+        -- TODO: Surrounding context
+        zettelQueries z <> fmap (,mempty) (maybeToList tagQuery)
     }
+  where
+    tagQuery :: Maybe (Some ZettelQuery)
+    tagQuery = do
+      t <- join $ join $ DMap.lookup ZettelPluginData_DirectoryZettel (zettelPluginData z)
+      pure $ Some $ ZettelQuery_ZettelsByTag [mkTagPatternFromTag t] Folgezettel def
 
-injectDirectoryFolgezettels :: MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m ()
-injectDirectoryFolgezettels = \case
-  DC.DirTree_File _relPath _ -> do
-    pure ()
+injectDirectoryZettels :: MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m ()
+injectDirectoryZettels = \case
   DC.DirTree_Dir absPath contents -> do
     let dirName = takeFileName absPath
         dirZettelId = ZettelID $ toText $ if dirName == "." then "index" else dirName
@@ -48,27 +56,29 @@ injectDirectoryFolgezettels = \case
     -- If the user wants to make index branch to these top-level zettels,
     -- they can add `[[[z:zettels?tag=index]]]` to do that.
     unless (dirZettelId == ZettelID "index") $ do
+      let dirTag = tagFromPath absPath
       gets (Map.lookup dirZettelId) >>= \case
         Just ref -> do
           case ref of
-            ZIDRef_Available p s -> do
-              let s' = s <> directoryZettelContents absPath
-              modify $ Map.update (const $ Just $ ZIDRef_Available p s') dirZettelId
+            ZIDRef_Available p s pluginData -> do
+              -- If a zettel with the same name as the directory already exists,
+              -- treat that zettel as the directory zettel, by adding this
+              -- plugin's data to it.
+              let pluginData' = DMap.insert ZettelPluginData_DirectoryZettel (Just $ Just dirTag) pluginData
+              modify $ Map.update (const $ Just $ ZIDRef_Available p s pluginData') dirZettelId
             ZIDRef_Ambiguous {} ->
               -- TODO: What to do here?
               pure ()
         Nothing -> do
-          R.addZettel (absPath <> ".md.dirfolge") dirZettelId $ do
-            let header = "# " <> toText (takeFileName absPath) <> "/"
-            pure $ header <> directoryZettelContents absPath
+          -- Inject a new zettel corresponding to this directory.
+          let pluginData = DMap.singleton ZettelPluginData_DirectoryZettel (Just $ Just dirTag)
+          R.addZettel absPath dirZettelId pluginData $ do
+            -- Set an appropriate title (same as directory name)
+            pure $ "# " <> toText (takeFileName absPath) <> "/"
     forM_ (Map.toList contents) $ \(_, ct) ->
-      injectDirectoryFolgezettels ct
+      injectDirectoryZettels ct
   _ ->
     pure ()
-  where
-    directoryZettelContents absPath =
-      let dirName = takeFileName absPath
-       in "\n\n:::{.ui .deemphasized .small .segment}\nNotes under the *" <> toText dirName <> "/* directory:\n\n[[[z:zettels?tag=" <> unTag (tagFromPath absPath) <> "]]]\n:::\n"
 
 parentDirTag :: HasCallStack => FilePath -> Maybe Tag
 parentDirTag = \case

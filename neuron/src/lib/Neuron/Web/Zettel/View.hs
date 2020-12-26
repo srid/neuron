@@ -17,8 +17,10 @@ module Neuron.Web.Zettel.View
   )
 where
 
-import Data.Some
-import Data.TagTree
+import qualified Data.Dependent.Map as DMap
+import Data.Dependent.Sum (DSum ((:=>)))
+import Data.Some (Some (Some))
+import Data.TagTree (Tag (unTag), mkTagPatternFromTag)
 import Data.Tagged (untag)
 import Neuron.Markdown (ZettelParseError)
 import qualified Neuron.Web.Query.View as Q
@@ -36,12 +38,14 @@ import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (indexZid)
+import qualified Neuron.Zettelkasten.Query as Q
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import qualified Neuron.Zettelkasten.Query.Eval as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelC,
+    ZettelPluginData (..),
     ZettelT (..),
     sansContent,
   )
@@ -57,12 +61,14 @@ import Text.Pandoc.Definition (Pandoc (Pandoc))
 import qualified Text.URI as URI
 
 renderZettel ::
+  forall t m.
   PandocBuilder t m =>
   Theme ->
   (ZettelGraph, ZettelC) ->
   Maybe Text ->
   NeuronWebT t m ()
 renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
+  -- Open impulse on pressing the forward slash key.
   el "script" $ do
     text "document.onkeyup = function(e) { if (e.key == \"/\") { document.location.href = \"impulse.html\"; } }"
   let upTree = G.backlinkForest Folgezettel z graph
@@ -76,12 +82,36 @@ renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
     lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
       renderZettelContentCard (graph, zc)
+      forM_ (DMap.toList $ zettelPluginData z) $ \pluginData ->
+        renderPluginData pluginData
       renderZettelBottomPane graph z
       renderBottomMenu theme graph mEditUrl z
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
   unless (null upTree) $ do
     AS.script "zettel-container-anchor"
+  where
+    -- TODO: move to library
+    renderPluginData :: DSum ZettelPluginData Maybe -> NeuronWebT t m ()
+    renderPluginData = \case
+      ZettelPluginData_DirectoryZettel :=> Just (Just t :: Maybe Tag) ->
+        divClass "ui attached deemphasized segment" $ do
+          el "h3" $ text "Directory contents:"
+          divClass "ui list" $ do
+            let children = Q.zettelsByTag (G.getZettels graph) [mkTagPatternFromTag t]
+            forM_ children $ \cz ->
+              divClass "item" $ do
+                let ico = bool "file outline icon" "folder icon" $ isDirectoryZettel cz
+                elClass "i" ico blank
+                -- TODO: Fix link styling (should apply on this segment as well)
+                -- Or, have the plugin override
+                divClass "content" $ divClass "description" $ Q.renderZettelLink Nothing (Just Folgezettel) Nothing cz
+      ZettelPluginData_DirectoryZettel :=> _ ->
+        blank
+    isDirectoryZettel (zettelPluginData -> pluginData) =
+      case DMap.lookup ZettelPluginData_DirectoryZettel pluginData of
+        Just (Just _) -> True
+        _ -> False
 
 renderZettelContentCard ::
   PandocBuilder t m =>

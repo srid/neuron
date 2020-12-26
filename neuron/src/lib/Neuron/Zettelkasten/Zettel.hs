@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -20,8 +21,13 @@ module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson
 import Data.Aeson.GADT.TH (deriveJSONGADT)
+import Data.Constraint.Extras.TH (deriveArgDict)
+import Data.Dependent.Map (DMap)
 import Data.Dependent.Sum.Orphans ()
-import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
+import Data.GADT.Compare.TH
+  ( DeriveGCompare (deriveGCompare),
+    DeriveGEQ (deriveGEq),
+  )
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
@@ -48,6 +54,10 @@ data ZettelQuery r where
   ZettelQuery_Tags :: [TagPattern] -> ZettelQuery (Map Tag Natural)
   ZettelQuery_TagZettel :: Tag -> ZettelQuery ()
 
+-- TODO: Move this to Plugin package, after moving that to library.
+data ZettelPluginData a where
+  ZettelPluginData_DirectoryZettel :: ZettelPluginData (Maybe Tag)
+
 -- | A zettel note
 --
 -- The metadata could have been inferred from the content.
@@ -66,7 +76,8 @@ data ZettelT content = Zettel
     -- | List of all queries in the zettel
     zettelQueries :: [(Some ZettelQuery, [Block])],
     zettelParseError :: Maybe ZettelParseError,
-    zettelContent :: content
+    zettelContent :: content,
+    zettelPluginData :: DMap ZettelPluginData Maybe
   }
   deriving (Generic)
 
@@ -128,3 +139,9 @@ deriving instance Eq (ZettelQuery (Map Tag Natural))
 deriving instance ToJSON Zettel
 
 deriving instance FromJSON Zettel
+
+deriveArgDict ''ZettelPluginData
+deriveJSONGADT ''ZettelPluginData
+deriveGEq ''ZettelPluginData
+deriveGShow ''ZettelPluginData
+deriveGCompare ''ZettelPluginData

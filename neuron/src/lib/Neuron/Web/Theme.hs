@@ -75,9 +75,6 @@ themeCss = do
       "span.zettel-link-container span.zettel-link a:hover" ? do
         C.color C.white
         C.backgroundColor textColor
-      -- Deemphasized items in uptree; restore link colors
-      ".deemphasized:hover" ? do
-        "div.item a:hover" ? C.important (C.color textColor)
       -- Bottom stuff
       "nav.bottomPane" ? do
         C.backgroundColor backgroundColorLighter

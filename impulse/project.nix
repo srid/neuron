@@ -21,6 +21,7 @@ let
         impulse = pkgs.lib.cleanSource (gitignoreSource ./.);
 
         # neuron & its dependencies (not already in reflex-platform)
+        # TODO: Use hackGet for direct/no-reload development?
         neuron = pkgs.runCommand "neuron" { buildInputs = [ ]; }
           ''
           mkdir -p $out/src

@@ -21,12 +21,14 @@ import Test.Hspec
 spec :: Spec
 spec = do
   describe "inline tags" $ do
-    let parseSomeZettel =
-          sansContent
-            . parseZettel
+    let parseSomeZettel s =
+          sansContent $
+            parseZettel
               extractQueriesWithContext
               "<test>"
               (ZettelID "test")
+              s
+              mempty
     it "simple" $ do
       let z :: Zettel = parseSomeZettel "An #inline tag"
       zettelTags z `shouldBe` [Tag "inline"]

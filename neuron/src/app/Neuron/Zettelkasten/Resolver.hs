@@ -12,15 +12,17 @@
 -- It can also be used by plugins.
 module Neuron.Zettelkasten.Resolver where
 
+import Data.Dependent.Map (DMap)
 import qualified Data.Map.Strict as Map
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
+import Neuron.Zettelkasten.Zettel (ZettelPluginData)
 import Relude
 import qualified System.Directory.Contents.Types as DC
 
 -- | What does a Zettel ID refer to?
 data ZIDRef
   = -- | The ZID maps to a file on disk with the given contents
-    ZIDRef_Available FilePath Text
+    ZIDRef_Available FilePath Text (DMap ZettelPluginData Maybe)
   | -- | The ZID maps to more than one file, hence ambiguous.
     ZIDRef_Ambiguous (NonEmpty FilePath)
   deriving (Eq, Show)
@@ -29,7 +31,7 @@ resolveZidRefsFromDirTree :: Monad m => (FilePath -> m Text) -> DC.DirTree FileP
 resolveZidRefsFromDirTree readFileF = \case
   DC.DirTree_File relPath _ -> do
     whenJust (getZettelID relPath) $ \zid -> do
-      addZettel relPath zid $
+      addZettel relPath zid mempty $
         lift $ readFileF relPath
   DC.DirTree_Dir _absPath contents -> do
     forM_ (Map.toList contents) $ \(_, ct) ->
@@ -38,10 +40,10 @@ resolveZidRefsFromDirTree readFileF = \case
     -- We ignore symlinks, and paths configured to be excluded.
     pure ()
 
-addZettel :: MonadState (Map ZettelID ZIDRef) m => FilePath -> ZettelID -> m Text -> m ()
-addZettel zpath zid ms = do
+addZettel :: MonadState (Map ZettelID ZIDRef) m => FilePath -> ZettelID -> DMap ZettelPluginData Maybe -> m Text -> m ()
+addZettel zpath zid pluginData ms = do
   gets (Map.lookup zid) >>= \case
-    Just (ZIDRef_Available oldPath _s) -> do
+    Just (ZIDRef_Available oldPath _s _m) -> do
       -- The zettel ID is already used by `oldPath`. Mark it as a dup.
       modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| [oldPath])
     Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
@@ -49,4 +51,4 @@ addZettel zpath zid ms = do
       modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| ambiguities)
     Nothing -> do
       s <- ms
-      modify $ Map.insert zid (ZIDRef_Available zpath s)
+      modify $ Map.insert zid (ZIDRef_Available zpath s pluginData)

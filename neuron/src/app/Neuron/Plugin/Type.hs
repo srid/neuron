@@ -8,7 +8,7 @@ import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
 import Neuron.Zettelkasten.Zettel (ZettelC)
 import Relude
-import qualified System.Directory.Contents as DC
+import qualified System.Directory.Contents.Types as DC
 
 -- TODO: Move to lib, after discarding shake Action dependency.
 data Plugin = Plugin

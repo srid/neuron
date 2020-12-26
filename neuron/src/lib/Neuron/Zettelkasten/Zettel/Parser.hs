@@ -9,6 +9,7 @@
 
 module Neuron.Zettelkasten.Zettel.Parser where
 
+import Data.Dependent.Map (DMap)
 import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))
@@ -19,6 +20,7 @@ import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
+    ZettelPluginData,
     ZettelQuery (..),
     ZettelT (Zettel),
   )
@@ -36,12 +38,13 @@ parseZettel ::
   FilePath ->
   ZettelID ->
   Text ->
+  DMap ZettelPluginData Maybe ->
   ZettelC
-parseZettel queryExtractor fn zid s = do
+parseZettel queryExtractor fn zid s pluginData = do
   case parseMarkdown fn s of
     Left parseErr ->
       let slug = mkDefaultSlug $ unZettelID zid
-       in Left $ Zettel zid slug fn "Unknown" False [] Nothing False [] (Just parseErr) s
+       in Left $ Zettel zid slug fn "Unknown" False [] Nothing False [] (Just parseErr) s pluginData
     Right (meta, doc) ->
       let -- Determine zettel title
           (title, titleInBody) = case Meta.title =<< meta of
@@ -59,7 +62,7 @@ parseZettel queryExtractor fn zid s = do
           slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
           unlisted = Just True == (Meta.unlisted =<< meta)
        in Right $
-            Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc
+            Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc pluginData
   where
     _dirFolgezettelMarkdown (unTag -> tag) =
       "\n\n" <> "[[[z:zettels?tag=" <> tag <> "/*]]]"
@@ -77,11 +80,11 @@ parseZettel queryExtractor fn zid s = do
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
   QueryExtractor ->
-  [(ZettelID, (FilePath, Text))] ->
+  [(ZettelID, (FilePath, (Text, DMap ZettelPluginData Maybe)))] ->
   [ZettelC]
 parseZettels queryExtractor files =
-  flip fmap files $ \(zid, (path, s)) ->
-    parseZettel queryExtractor path zid s
+  flip fmap files $ \(zid, (path, (s, pluginData))) ->
+    parseZettel queryExtractor path zid s pluginData
 
 extractQueriesWithContext :: QueryExtractor
 extractQueriesWithContext doc =

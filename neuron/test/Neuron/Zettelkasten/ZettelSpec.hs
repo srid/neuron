@@ -52,6 +52,7 @@ spec = do
             noQueries
             noError
             noContent
+            mempty
 
     it "sorts correctly with day" $ do
       let zs =

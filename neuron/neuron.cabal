@@ -59,6 +59,8 @@ common library-common
     dependent-sum,
     dependent-sum-template,
     dependent-sum-aeson-orphans >= 0.2.1.0,
+    dependent-map,
+    constraints-extras,
     data-default,
     reflex,
     reflex-dom-core,
