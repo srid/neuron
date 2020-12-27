@@ -1,7 +1,8 @@
 {
-  "owner": "obsidiansystems",
+  "owner": "srid",
   "repo": "directory-contents",
+  "branch": "sans-tests",
   "private": false,
-  "rev": "59f7e274648e4bb9ded4bf3d8698480af38a1bb8",
-  "sha256": "1f68n1m6p2nvgranj1j6r2hx5j3cvxg3rlspq5ajf7yx5mpgz6p4"
+  "rev": "43025f4739590c82cbfc8dcf15d0ff17b1f37324",
+  "sha256": "1ianv9y4gzb1835bw7xbjn94wpbm6znq006hdayya0ih1iqz2csq"
 }
