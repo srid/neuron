@@ -56,7 +56,7 @@ data ZettelQuery r where
 
 -- TODO: Consolidate with the `a` of `Plugin a`, and move it there
 data ZettelPluginData a where
-  ZettelPluginData_DirectoryZettel :: ZettelPluginData Tag
+  ZettelPluginData_DirectoryZettel :: ZettelPluginData (Tag, Maybe ZettelID)
 
 -- | A zettel note
 --

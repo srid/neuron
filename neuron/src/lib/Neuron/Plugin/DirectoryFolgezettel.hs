@@ -31,19 +31,24 @@ import System.FilePath (takeDirectory, takeFileName)
 
 -- Directory zettels using this plugin are associated with a `Tag` that
 -- corresponds to the directory contents.
--- TODO: This should use `NonEmpty TagNode` via deconstructTag
-plugin :: Plugin Tag
+plugin :: Plugin (Tag, Maybe ZettelID)
 plugin =
   Plugin "dirfolge" injectDirectoryZettels (bimap addTagAndQuery addTagAndQuery) renderPanel
 
-renderPanel :: DomBuilder t m => ZettelGraph -> Tag -> NeuronWebT t m ()
-renderPanel graph t = do
+renderPanel :: DomBuilder t m => ZettelGraph -> (Tag, Maybe ZettelID) -> NeuronWebT t m ()
+renderPanel graph (t, mpar) = do
   elClass "nav" "ui attached deemphasized segment dirfolge" $ do
     el "h3" $ text "Directory contents:"
-    -- TODO: Add ".." for going to parent directory
-    -- ... all the way to index (even without folgezettel)
+    -- XXX: Display ".." link even on ordinary zettels? Probably not; that's
+    -- what uplink tree is for.
     divClass "ui list" $ do
       let children = Q.zettelsByTag (G.getZettels graph) [mkTagPatternFromTag t]
+      whenJust (mpar >>= flip G.getZettel graph) $ \parZ ->
+        divClass "item" $ do
+          elClass "i" "folder icon" blank
+          divClass "content" $
+            divClass "description" $
+              Q.renderZettelLink (Just $ text "..") Nothing Nothing parZ
       forM_ children $ \cz ->
         divClass "item" $ do
           let ico = bool "file outline icon" "folder icon" $ isDirectoryZettel cz
@@ -67,7 +72,7 @@ addTagAndQuery z =
   where
     tagQuery :: Maybe (Some ZettelQuery)
     tagQuery = do
-      t <- runIdentity <$> DMap.lookup ZettelPluginData_DirectoryZettel (zettelPluginData z)
+      (t, _mpar) <- runIdentity <$> DMap.lookup ZettelPluginData_DirectoryZettel (zettelPluginData z)
       pure $ Some $ ZettelQuery_ZettelsByTag [mkTagPatternFromTag t] Folgezettel def
 
 injectDirectoryZettels :: MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m ()
@@ -75,6 +80,8 @@ injectDirectoryZettels = \case
   DC.DirTree_Dir absPath contents -> do
     let dirName = takeFileName absPath
         dirZettelId = ZettelID $ toText $ if dirName == "." then "index" else dirName
+        parDirName = takeFileName (takeDirectory absPath)
+        parDirZettelId = ZettelID $ toText $ if parDirName == "." then "index" else parDirName
     -- Don't create folgezettel from index zettel. Why?
     -- - To avoid surprise when legacy notebooks with innuermous top level
     -- zettels use this feature.
@@ -83,24 +90,25 @@ injectDirectoryZettels = \case
     -- they can add `[[[z:zettels?tag=index]]]` to do that.
     unless (dirZettelId == ZettelID "index") $ do
       let dirTag = tagFromPath absPath
+          pluginData = DMap.singleton ZettelPluginData_DirectoryZettel (Identity (dirTag, Just parDirZettelId))
       gets (Map.lookup dirZettelId) >>= \case
         Just ref -> do
           case ref of
-            ZIDRef_Available p s pluginData -> do
+            ZIDRef_Available p s pluginData' -> do
               -- If a zettel with the same name as the directory already exists,
               -- treat that zettel as the directory zettel, by adding this
               -- plugin's data to it.
-              let pluginData' = DMap.insert ZettelPluginData_DirectoryZettel (Identity dirTag) pluginData
-              modify $ Map.update (const $ Just $ ZIDRef_Available p s pluginData') dirZettelId
+              let newRef = ZIDRef_Available p s (DMap.union pluginData' pluginData)
+              modify $ Map.update (const $ Just newRef) dirZettelId
             ZIDRef_Ambiguous {} ->
               -- TODO: What to do here?
               pure ()
         Nothing -> do
           -- Inject a new zettel corresponding to this directory.
-          let pluginData = DMap.singleton ZettelPluginData_DirectoryZettel (Identity dirTag)
           R.addZettel absPath dirZettelId pluginData $ do
             -- Set an appropriate title (same as directory name)
-            pure $ "# " <> toText (takeFileName absPath) <> "/"
+            let heading = toText (takeFileName absPath) <> "/"
+            pure $ "# " <> heading
     forM_ (Map.toList contents) $ \(_, ct) ->
       injectDirectoryZettels ct
   _ ->
