@@ -13,13 +13,13 @@ import Development.Shake (Action)
 import Neuron.Config.Type (Config)
 import Neuron.Web.Cache.Type (NeuronCache, ReadMode (..))
 import Relude
-import Rib.Shake (ribInputDir)
+import Rib.Shake (ribOutputDir)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))
 
 cacheFile :: Action FilePath
 cacheFile = do
-  outputDir <- (</> ".neuron" </> "output") <$> ribInputDir
+  outputDir <- ribOutputDir
   liftIO $ createDirectoryIfMissing True outputDir
   pure $ outputDir </> "cache.json"
 
