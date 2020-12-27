@@ -6,13 +6,14 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Plugin.DirectoryFolgezettel (plugin, renderPanel) where
+module Neuron.Plugin.Plugins.DirectoryFolgezettel (plugin, renderPanel) where
 
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (Some))
 import Data.TagTree (Tag (Tag), mkTagPatternFromTag)
 import qualified Data.Text as T
+import Neuron.Plugin.PluginData
 import Neuron.Plugin.Type (Plugin (Plugin))
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route (NeuronWebT)
@@ -23,7 +24,7 @@ import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import qualified Neuron.Zettelkasten.Query as Q
 import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
-import Neuron.Zettelkasten.Zettel (ZettelPluginData (..), ZettelQuery (..), ZettelT (..))
+import Neuron.Zettelkasten.Zettel (ZettelQuery (..), ZettelT (..))
 import Reflex.Dom.Core
 import Relude
 import qualified System.Directory.Contents.Types as DC
@@ -72,7 +73,7 @@ addTagAndQuery z =
   where
     tagQuery :: Maybe (Some ZettelQuery)
     tagQuery = do
-      (t, _mpar) <- runIdentity <$> DMap.lookup ZettelPluginData_DirectoryZettel (zettelPluginData z)
+      (t, _mpar) <- runIdentity <$> DMap.lookup PluginData_DirectoryZettel (zettelPluginData z)
       pure $ Some $ ZettelQuery_ZettelsByTag [mkTagPatternFromTag t] Folgezettel def
 
 injectDirectoryZettels :: MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m ()
@@ -90,7 +91,7 @@ injectDirectoryZettels = \case
     -- they can add `[[[z:zettels?tag=index]]]` to do that.
     unless (dirZettelId == ZettelID "index") $ do
       let dirTag = tagFromPath absPath
-          pluginData = DMap.singleton ZettelPluginData_DirectoryZettel (Identity (dirTag, Just parDirZettelId))
+          pluginData = DMap.singleton PluginData_DirectoryZettel (Identity (dirTag, Just parDirZettelId))
       gets (Map.lookup dirZettelId) >>= \case
         Just ref -> do
           case ref of
@@ -135,6 +136,6 @@ tagFromPath = \case
 
 isDirectoryZettel :: ZettelT content -> Bool
 isDirectoryZettel (zettelPluginData -> pluginData) =
-  case DMap.lookup ZettelPluginData_DirectoryZettel pluginData of
+  case DMap.lookup PluginData_DirectoryZettel pluginData of
     Just _ -> True
     _ -> False

@@ -21,12 +21,10 @@ module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson
 import Data.Aeson.GADT.TH (deriveJSONGADT)
-import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Dependent.Map (DMap)
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
-  ( DeriveGCompare (deriveGCompare),
-    DeriveGEQ (deriveGEq),
+  ( DeriveGEQ (deriveGEq),
   )
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
@@ -34,6 +32,7 @@ import Data.Some (Some)
 import Data.TagTree (Tag, TagPattern (..))
 import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Markdown (ZettelParseError)
+import Neuron.Plugin.PluginData (PluginData)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Query.Theme (ZettelsView)
@@ -54,10 +53,6 @@ data ZettelQuery r where
   ZettelQuery_Tags :: [TagPattern] -> ZettelQuery (Map Tag Natural)
   ZettelQuery_TagZettel :: Tag -> ZettelQuery ()
 
--- TODO: Consolidate with the `a` of `Plugin a`, and move it there
-data ZettelPluginData a where
-  ZettelPluginData_DirectoryZettel :: ZettelPluginData (Tag, Maybe ZettelID)
-
 -- | A zettel note
 --
 -- The metadata could have been inferred from the content.
@@ -77,7 +72,7 @@ data ZettelT content = Zettel
     zettelQueries :: [(Some ZettelQuery, [Block])],
     zettelParseError :: Maybe ZettelParseError,
     zettelContent :: content,
-    zettelPluginData :: DMap ZettelPluginData Identity
+    zettelPluginData :: DMap PluginData Identity
   }
   deriving (Generic)
 
@@ -139,9 +134,3 @@ deriving instance Eq (ZettelQuery (Map Tag Natural))
 deriving instance ToJSON Zettel
 
 deriving instance FromJSON Zettel
-
-deriveArgDict ''ZettelPluginData
-deriveJSONGADT ''ZettelPluginData
-deriveGEq ''ZettelPluginData
-deriveGShow ''ZettelPluginData
-deriveGCompare ''ZettelPluginData

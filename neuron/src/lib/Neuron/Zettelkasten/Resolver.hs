@@ -14,15 +14,15 @@ module Neuron.Zettelkasten.Resolver where
 
 import Data.Dependent.Map (DMap)
 import qualified Data.Map.Strict as Map
+import Neuron.Plugin.PluginData (PluginData)
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
-import Neuron.Zettelkasten.Zettel (ZettelPluginData)
 import Relude
 import qualified System.Directory.Contents.Types as DC
 
 -- | What does a Zettel ID refer to?
 data ZIDRef
   = -- | The ZID maps to a file on disk with the given contents
-    ZIDRef_Available FilePath Text (DMap ZettelPluginData Identity)
+    ZIDRef_Available FilePath Text (DMap PluginData Identity)
   | -- | The ZID maps to more than one file, hence ambiguous.
     ZIDRef_Ambiguous (NonEmpty FilePath)
   deriving (Eq, Show)
@@ -40,7 +40,7 @@ resolveZidRefsFromDirTree readFileF = \case
     -- We ignore symlinks, and paths configured to be excluded.
     pure ()
 
-addZettel :: MonadState (Map ZettelID ZIDRef) m => FilePath -> ZettelID -> DMap ZettelPluginData Identity -> m Text -> m ()
+addZettel :: MonadState (Map ZettelID ZIDRef) m => FilePath -> ZettelID -> DMap PluginData Identity -> m Text -> m ()
 addZettel zpath zid pluginData ms = do
   gets (Map.lookup zid) >>= \case
     Just (ZIDRef_Available oldPath _s _m) -> do
