@@ -11,10 +11,12 @@ import qualified Data.Map.Strict as Map
 import Data.Some (Some (..), withSome)
 import Neuron.Plugin.PluginData (PluginData (..))
 import qualified Neuron.Plugin.Plugins.DirTree as DirTree
+import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Web.Route (NeuronWebT)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Reflex.Dom.Core (DomBuilder)
+import Reflex.Dom.Widget (blank)
 import Relude
 import qualified System.Directory.Contents.Types as DC
 
@@ -26,6 +28,7 @@ lookupPlugins = Map.fromList . mapMaybe lookupPlugin
     lookupPlugin :: Text -> Maybe (Some PluginData, Some Plugin)
     lookupPlugin = \case
       "dirtree" -> Just (Some PluginData_DirTree, Some DirTree.plugin)
+      "neuronignore" -> Just (Some PluginData_NeuronIgnore, Some NeuronIgnore.plugin)
       _ -> Nothing
 
 filterSources :: PluginRegistry -> DC.DirTree FilePath -> IO (Maybe (DC.DirTree FilePath))
@@ -39,3 +42,5 @@ renderPluginPanel :: DomBuilder t m => ZettelGraph -> DSum PluginData Identity -
 renderPluginPanel graph = \case
   PluginData_DirTree :=> Identity t ->
     DirTree.renderPanel graph t
+  PluginData_NeuronIgnore :=> Identity () ->
+    blank

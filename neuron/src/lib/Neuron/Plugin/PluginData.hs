@@ -25,6 +25,7 @@ import Relude
 data PluginData a where
   -- | Tag and parent zettel associated with a directory zettel
   PluginData_DirTree :: PluginData (Tag, Maybe ZettelID)
+  PluginData_NeuronIgnore :: PluginData ()
 
 deriveArgDict ''PluginData
 deriveJSONGADT ''PluginData

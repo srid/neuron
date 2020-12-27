@@ -11,8 +11,6 @@
 
 module Neuron.Plugin.Plugins.DirTree (plugin, renderPanel) where
 
-import Control.Monad.Writer (runWriter)
-import Control.Monad.Writer.Strict (MonadWriter (tell))
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (Some))
@@ -34,63 +32,16 @@ import Reflex.Dom.Core
 import Relude hiding (trace, traceShow, traceShowId)
 import qualified System.Directory.Contents as DC
 import System.FilePath (takeDirectory, takeFileName)
-import System.FilePath.Posix (takeExtension)
-import System.FilePattern (FilePattern, (?==))
 
 -- Directory zettels using this plugin are associated with a `Tag` that
 -- corresponds to the directory contents.
 plugin :: Plugin (Tag, Maybe ZettelID)
 plugin =
-  Plugin
-    { _plugin_filterSources = applyNeuronIgnore,
-      _plugin_afterZettelRead = injectDirectoryZettels,
+  def
+    { _plugin_afterZettelRead = injectDirectoryZettels,
       _plugin_afterZettelParse = bimap addTagAndQuery addTagAndQuery,
       _plugin_renderPanel = renderPanel
     }
-
--- | Ignore files based on the top-level .neuronignore file. If the file does
--- not exist, apply the default patterns.
-applyNeuronIgnore :: DC.DirTree FilePath -> IO (Maybe (DC.DirTree FilePath))
-applyNeuronIgnore t = do
-  -- Note that filterDirTree invokes the function only files, not directory paths
-  -- FIXME: `filterADirTree` unfortunately won't filter directories; so
-  -- even if a top-level directory is configured to be ignored, this
-  -- filter will traverse that entire directory tree to apply the glob
-  -- pattern filter.
-  -- TODO: neuron should detect changes to this file, and reload.
-  ignorePats :: [FilePattern] <- case DC.walkDirTree "./.neuronignore" t of
-    Just (DC.DirTree_File _ fp) -> do
-      ls <- T.lines <$> readFileText fp
-      pure $
-        fforMaybe ls $ \(T.strip -> s) -> do
-          guard $ not $ T.null s
-          -- Ignore line comments
-          guard $ not $ "#" `T.isPrefixOf` s
-          pure $ toString s
-    _ ->
-      pure defaultIgnorePats
-  putTextLn $ "Ignore patterns: " <> show ignorePats
-  let (mTreeFiltered, _nExcluded) = runWriter @[FilePath] $ DC.filterADirTree (includeDirEntry ignorePats) t
-  -- Not printing, because this includesd all non-Markdown files, including static files. Hence, not really accurate.
-  -- liftIO $ putStrLn $ "Excluded " <> show nExcluded <> " filepaths"
-  pure $ DC.pruneDirTree =<< mTreeFiltered
-  where
-    defaultIgnorePats =
-      [ -- Ignore top-level dotfiles and dotdirs
-        "./.*/**"
-        -- Ignore everything under sub directories
-        -- "./*/*/**"
-      ]
-    includeDirEntry pats name = do
-      let included =
-            Just True
-              == ( do
-                     guard $ not $ any (?== name) pats
-                     guard $ takeExtension name == ".md"
-                     pure True
-                 )
-      unless included $ tell [name]
-      pure included
 
 renderPanel :: DomBuilder t m => ZettelGraph -> (Tag, Maybe ZettelID) -> NeuronWebT t m ()
 renderPanel graph (t, mpar) = do
