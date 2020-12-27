@@ -56,7 +56,7 @@ data ZettelQuery r where
 
 -- TODO: Consolidate with the `a` of `Plugin a`, and move it there
 data ZettelPluginData a where
-  ZettelPluginData_DirectoryZettel :: ZettelPluginData (Maybe Tag)
+  ZettelPluginData_DirectoryZettel :: ZettelPluginData Tag
 
 -- | A zettel note
 --
@@ -77,7 +77,7 @@ data ZettelT content = Zettel
     zettelQueries :: [(Some ZettelQuery, [Block])],
     zettelParseError :: Maybe ZettelParseError,
     zettelContent :: content,
-    zettelPluginData :: DMap ZettelPluginData Maybe
+    zettelPluginData :: DMap ZettelPluginData Identity
   }
   deriving (Generic)
 

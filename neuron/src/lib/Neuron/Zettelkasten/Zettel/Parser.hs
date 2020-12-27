@@ -38,7 +38,7 @@ parseZettel ::
   FilePath ->
   ZettelID ->
   Text ->
-  DMap ZettelPluginData Maybe ->
+  DMap ZettelPluginData Identity ->
   ZettelC
 parseZettel queryExtractor fn zid s pluginData = do
   case parseMarkdown fn s of
@@ -80,7 +80,7 @@ parseZettel queryExtractor fn zid s pluginData = do
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
   QueryExtractor ->
-  [(ZettelID, (FilePath, (Text, DMap ZettelPluginData Maybe)))] ->
+  [(ZettelID, (FilePath, (Text, DMap ZettelPluginData Identity)))] ->
   [ZettelC]
 parseZettels queryExtractor files =
   flip fmap files $ \(zid, (path, (s, pluginData))) ->

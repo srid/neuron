@@ -22,7 +22,7 @@ import qualified System.Directory.Contents.Types as DC
 -- | What does a Zettel ID refer to?
 data ZIDRef
   = -- | The ZID maps to a file on disk with the given contents
-    ZIDRef_Available FilePath Text (DMap ZettelPluginData Maybe)
+    ZIDRef_Available FilePath Text (DMap ZettelPluginData Identity)
   | -- | The ZID maps to more than one file, hence ambiguous.
     ZIDRef_Ambiguous (NonEmpty FilePath)
   deriving (Eq, Show)
@@ -40,7 +40,7 @@ resolveZidRefsFromDirTree readFileF = \case
     -- We ignore symlinks, and paths configured to be excluded.
     pure ()
 
-addZettel :: MonadState (Map ZettelID ZIDRef) m => FilePath -> ZettelID -> DMap ZettelPluginData Maybe -> m Text -> m ()
+addZettel :: MonadState (Map ZettelID ZIDRef) m => FilePath -> ZettelID -> DMap ZettelPluginData Identity -> m Text -> m ()
 addZettel zpath zid pluginData ms = do
   gets (Map.lookup zid) >>= \case
     Just (ZIDRef_Available oldPath _s _m) -> do

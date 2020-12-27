@@ -29,25 +29,28 @@ import Relude
 import qualified System.Directory.Contents.Types as DC
 import System.FilePath (takeDirectory, takeFileName)
 
-plugin :: Plugin (Maybe Tag)
+-- Directory zettels using this plugin are associated with a `Tag` that
+-- corresponds to the directory contents.
+-- TODO: This should use `NonEmpty TagNode` via deconstructTag
+plugin :: Plugin Tag
 plugin =
   Plugin "dirfolge" injectDirectoryZettels (bimap addTagAndQuery addTagAndQuery) renderPanel
 
-renderPanel :: DomBuilder t m => ZettelGraph -> Maybe Tag -> NeuronWebT t m ()
-renderPanel graph = \case
-  Nothing -> blank
-  Just t -> do
-    elClass "nav" "ui attached deemphasized segment dirfolge" $ do
-      el "h3" $ text "Directory contents:"
-      -- TODO: Add ".." for going to parent directory
-      -- ... all the way to index (even without folgezettel)
-      divClass "ui list" $ do
-        let children = Q.zettelsByTag (G.getZettels graph) [mkTagPatternFromTag t]
-        forM_ children $ \cz ->
-          divClass "item" $ do
-            let ico = bool "file outline icon" "folder icon" $ isDirectoryZettel cz
-            elClass "i" ico blank
-            divClass "content" $ divClass "description" $ Q.renderZettelLink Nothing (Just Folgezettel) Nothing cz
+renderPanel :: DomBuilder t m => ZettelGraph -> Tag -> NeuronWebT t m ()
+renderPanel graph t = do
+  elClass "nav" "ui attached deemphasized segment dirfolge" $ do
+    el "h3" $ text "Directory contents:"
+    -- TODO: Add ".." for going to parent directory
+    -- ... all the way to index (even without folgezettel)
+    divClass "ui list" $ do
+      let children = Q.zettelsByTag (G.getZettels graph) [mkTagPatternFromTag t]
+      forM_ children $ \cz ->
+        divClass "item" $ do
+          let ico = bool "file outline icon" "folder icon" $ isDirectoryZettel cz
+          elClass "i" ico blank
+          divClass "content" $
+            divClass "description" $
+              Q.renderZettelLink Nothing (Just Folgezettel) Nothing cz
 
 addTagAndQuery :: forall c. HasCallStack => ZettelT c -> ZettelT c
 addTagAndQuery z =
@@ -64,7 +67,7 @@ addTagAndQuery z =
   where
     tagQuery :: Maybe (Some ZettelQuery)
     tagQuery = do
-      t <- join $ join $ DMap.lookup ZettelPluginData_DirectoryZettel (zettelPluginData z)
+      t <- runIdentity <$> DMap.lookup ZettelPluginData_DirectoryZettel (zettelPluginData z)
       pure $ Some $ ZettelQuery_ZettelsByTag [mkTagPatternFromTag t] Folgezettel def
 
 injectDirectoryZettels :: MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m ()
@@ -87,14 +90,14 @@ injectDirectoryZettels = \case
               -- If a zettel with the same name as the directory already exists,
               -- treat that zettel as the directory zettel, by adding this
               -- plugin's data to it.
-              let pluginData' = DMap.insert ZettelPluginData_DirectoryZettel (Just $ Just dirTag) pluginData
+              let pluginData' = DMap.insert ZettelPluginData_DirectoryZettel (Identity dirTag) pluginData
               modify $ Map.update (const $ Just $ ZIDRef_Available p s pluginData') dirZettelId
             ZIDRef_Ambiguous {} ->
               -- TODO: What to do here?
               pure ()
         Nothing -> do
           -- Inject a new zettel corresponding to this directory.
-          let pluginData = DMap.singleton ZettelPluginData_DirectoryZettel (Just $ Just dirTag)
+          let pluginData = DMap.singleton ZettelPluginData_DirectoryZettel (Identity dirTag)
           R.addZettel absPath dirZettelId pluginData $ do
             -- Set an appropriate title (same as directory name)
             pure $ "# " <> toText (takeFileName absPath) <> "/"
@@ -125,5 +128,5 @@ tagFromPath = \case
 isDirectoryZettel :: ZettelT content -> Bool
 isDirectoryZettel (zettelPluginData -> pluginData) =
   case DMap.lookup ZettelPluginData_DirectoryZettel pluginData of
-    Just (Just _) -> True
+    Just _ -> True
     _ -> False
