@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -6,6 +7,7 @@
 
 module Neuron.Plugin where
 
+import Data.Dependent.Map (DMap)
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (..), withSome)
@@ -15,6 +17,10 @@ import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Web.Route (NeuronWebT)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
+import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.Resolver (ZIDRef)
+import Neuron.Zettelkasten.Zettel (ZettelC)
+import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
 import Reflex.Dom.Core (DomBuilder)
 import Reflex.Dom.Widget (blank)
 import Relude
@@ -37,6 +43,15 @@ filterSources plugins t = do
       combiner :: (Traversable m, Monad m) => IO (m a) -> (a -> IO (m b)) -> IO (m b)
       combiner = \ima f -> (fmap join . traverse f) =<< ima
   foldl' combiner (pure $ Just t) applyF
+
+afterZettelParse :: PluginRegistry -> [(ZettelID, (FilePath, (Text, DMap PluginData Identity)))] -> [ZettelC]
+afterZettelParse plugins fs = do
+  parseZettels extractQueriesWithContext fs <&> \z ->
+    foldl' (\z1 f -> f z1) z (plugins <&> \sp -> withSome sp _plugin_afterZettelParse)
+
+afterZettelRead :: MonadState (Map ZettelID ZIDRef) m => PluginRegistry -> DC.DirTree FilePath -> m ()
+afterZettelRead plugins fileTree = do
+  forM_ (plugins <&> \sp -> withSome sp _plugin_afterZettelRead) $ \f -> f fileTree
 
 renderPluginPanel :: DomBuilder t m => ZettelGraph -> DSum PluginData Identity -> NeuronWebT t m ()
 renderPluginPanel graph = \case

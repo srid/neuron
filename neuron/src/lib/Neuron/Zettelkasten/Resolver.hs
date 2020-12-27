@@ -3,8 +3,6 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- TODO: Move to N.Z.ID.Ref.Type
-
 -- | Transform a directory of Markdown files to Zettelkasten-strict zettel texts.
 --
 -- This module is responsible only for "resolving" the filename IDs. It will

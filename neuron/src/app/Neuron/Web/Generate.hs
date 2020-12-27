@@ -18,13 +18,11 @@ where
 
 import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.Map.Strict as Map
-import Data.Some (withSome)
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
 import Neuron.Plugin (PluginRegistry)
 import qualified Neuron.Plugin as Plugin
-import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
 import Neuron.Web.Cache.Type (NeuronCache, _neuronCache_graph)
@@ -44,8 +42,6 @@ import Neuron.Zettelkasten.Zettel.Error
   ( ZettelError (ZettelError_AmbiguousID),
     zettelErrorList,
   )
-import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
-import Reflex (ffor)
 import Relude hiding (traceShowId)
 import Rib.Shake (ribInputDir)
 import System.Directory (withCurrentDirectory)
@@ -140,7 +136,7 @@ loadZettelkastenFromFiles plugins fileTree = do
           absPath <- fmap (</> relPath) ribInputDir
           need [absPath]
           decodeUtf8With lenientDecode <$> readFileBS absPath
-        forM_ (ffor plugins $ \sp -> withSome sp _plugin_afterZettelRead) $ \f -> f fileTree
+        Plugin.afterZettelRead plugins fileTree
   pure $
     runWriter $ do
       filesWithContent <-
@@ -150,8 +146,6 @@ loadZettelkastenFromFiles plugins fileTree = do
             pure Nothing
           R.ZIDRef_Available fp s pluginData ->
             pure $ Just (fp, (s, pluginData))
-      let zs =
-            ffor (parseZettels extractQueriesWithContext $ Map.toList filesWithContent) $ \z ->
-              foldl' (\z1 f -> f z1) z (ffor plugins $ \sp -> withSome sp _plugin_afterZettelParse)
+      let zs = Plugin.afterZettelParse plugins (Map.toList filesWithContent)
       g <- G.buildZettelkasten zs
       pure (g, zs)
