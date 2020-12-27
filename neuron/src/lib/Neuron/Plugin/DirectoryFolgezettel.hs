@@ -21,7 +21,7 @@ import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel (ZettelPluginData (..), ZettelQuery (..), ZettelT (..))
 import Relude
-import qualified System.Directory.Contents as DC
+import qualified System.Directory.Contents.Types as DC
 import System.FilePath (takeDirectory, takeFileName)
 
 plugin :: Plugin
@@ -31,7 +31,9 @@ plugin =
 addTagAndQuery :: forall c. HasCallStack => ZettelT c -> ZettelT c
 addTagAndQuery z =
   z
-    { zettelTags =
+    { -- TODO: There should be multiple tags, for other parents. cf. my
+      -- "iDrinkCoffee" folder placed elsewhere.
+      zettelTags =
         zettelTags z <> maybeToList (parentDirTag $ zettelPath z),
       -- Add the tag query for building graph connections.
       zettelQueries =

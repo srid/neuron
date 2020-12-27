@@ -66,7 +66,8 @@ common library-common
     reflex-dom-core,
     reflex-dom-pandoc >= 0.7.0.1,
     clay,
-    tagged
+    tagged,
+    directory-contents
 
 library
   import: library-common
@@ -74,6 +75,8 @@ library
   exposed-modules:
     Neuron.Config.Type
     Neuron.Markdown
+    Neuron.Plugin.Type
+    Neuron.Plugin.DirectoryFolgezettel
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Error
@@ -89,6 +92,7 @@ library
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
     Neuron.Zettelkasten.Graph.Build
+    Neuron.Zettelkasten.Resolver
     Neuron.Web.Route
     Neuron.Web.Manifest
     Neuron.Web.Cache.Type
@@ -156,8 +160,7 @@ common app-common
     with-utf8,
     shower,
     either,
-    uri-encode,
-    directory-contents
+    uri-encode
 
 -- Everything below will have to be stripped away, if whoever uses this repo
 -- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
@@ -187,9 +190,6 @@ library neuron-app-lib
     Neuron.Web.Generate.Route
     Neuron.Web.StructuredData
     Neuron.Zettelkasten.ID.Scheme
-    Neuron.Zettelkasten.Resolver
-    Neuron.Plugin.Type
-    Neuron.Plugin.DirectoryFolgezettel
   autogen-modules:
     Paths_neuron
   other-modules:

@@ -31,6 +31,7 @@ let
           LINE=`grep -n LIBMARKER ${neuronSrc}/neuron.cabal | cut -f1 -d:`
           head -n $LINE ${neuronSrc}/neuron.cabal > $out/neuron.cabal
           '';
+        directory-contents = import ../dep/directory-contents/thunk.nix;
         reflex-dom-pandoc = import ../dep/reflex-dom-pandoc/thunk.nix;
         pandoc-link-context = import ../dep/pandoc-link-context/thunk.nix;
         commonmark = cm + "/commonmark";

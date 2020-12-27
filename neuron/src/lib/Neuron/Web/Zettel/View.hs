@@ -97,6 +97,8 @@ renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
       ZettelPluginData_DirectoryZettel :=> Just (Just t :: Maybe Tag) ->
         divClass "ui attached deemphasized segment" $ do
           el "h3" $ text "Directory contents:"
+          -- TODO: Add ".." for going to parent directory
+          -- ... all the way to index (even without folgezettel)
           divClass "ui list" $ do
             let children = Q.zettelsByTag (G.getZettels graph) [mkTagPatternFromTag t]
             forM_ children $ \cz ->
