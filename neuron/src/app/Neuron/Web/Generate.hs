@@ -19,10 +19,11 @@ where
 import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.List
 import qualified Data.Map.Strict as Map
-import Data.Some
+import Data.Some (withSome)
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
-import qualified Neuron.Plugin as Plugin
+import qualified Neuron.Config.Type as Config
+import Neuron.Plugin (PluginRegistry)
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
@@ -88,7 +89,9 @@ generateSite config writeHtmlRoute' = do
 
 loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
 loadZettelkasten config = do
-  ((g, zs), errs) <- loadZettelkastenFromFiles =<< locateZettelFiles
+  let plugins = Config.getPlugins config
+  liftIO $ putStrLn $ "Plugins enabled: " <> show (Map.keys plugins)
+  ((g, zs), errs) <- loadZettelkastenFromFiles plugins =<< locateZettelFiles
   let cache = Cache.NeuronCache g errs config neuronVersion
       cacheSmall = cache {_neuronCache_graph = stripSurroundingContext g}
   Cache.updateCache cacheSmall
@@ -124,6 +127,7 @@ locateZettelFiles = do
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFromFiles ::
+  PluginRegistry ->
   DC.DirTree FilePath ->
   Action
     ( ( ZettelGraph,
@@ -131,7 +135,7 @@ loadZettelkastenFromFiles ::
       ),
       Map ZettelID ZettelError
     )
-loadZettelkastenFromFiles fileTree = do
+loadZettelkastenFromFiles plugins fileTree = do
   let total = getSum @Int $ foldMap (const $ Sum 1) fileTree
   -- TODO: Would be nice to show a progressbar here
   liftIO $ putStrLn $ "Loading directory tree (" <> show total <> " files) ..."
@@ -144,7 +148,7 @@ loadZettelkastenFromFiles fileTree = do
           absPath <- fmap (</> relPath) ribInputDir
           need [absPath]
           decodeUtf8With lenientDecode <$> readFileBS absPath
-        forM_ (ffor Plugin.plugins $ \sp -> withSome sp _plugin_afterZettelRead) $ \f -> f fileTree
+        forM_ (ffor plugins $ \sp -> withSome sp _plugin_afterZettelRead) $ \f -> f fileTree
   pure $
     runWriter $ do
       filesWithContent <-
@@ -156,6 +160,6 @@ loadZettelkastenFromFiles fileTree = do
             pure $ Just (fp, (s, pluginData))
       let zs =
             ffor (parseZettels extractQueriesWithContext $ Map.toList filesWithContent) $ \z ->
-              foldl' (\z1 f -> f z1) z (ffor Plugin.plugins $ \sp -> withSome sp _plugin_afterZettelParse)
+              foldl' (\z1 f -> f z1) z (ffor plugins $ \sp -> withSome sp _plugin_afterZettelParse)
       g <- G.buildZettelkasten zs
       pure (g, zs)

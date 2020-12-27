@@ -5,9 +5,9 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- | This module should be remain as independent as possible, as it is imported
+-- by Zettel.hs, and we want to avoid cyclic dependencies.
 module Neuron.Plugin.PluginData where
-
--- TODO: Consolidate with the `a` of `Plugin a`, and move it there
 
 import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Constraint.Extras.TH (deriveArgDict)
@@ -21,8 +21,10 @@ import Data.TagTree (Tag)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Relude
 
+-- Every zettel is associated with custom data for each plugin.
 data PluginData a where
-  PluginData_DirectoryZettel :: PluginData (Tag, Maybe ZettelID)
+  -- | Tag and parent zettel associated with a directory zettel
+  PluginData_DirTree :: PluginData (Tag, Maybe ZettelID)
 
 deriveArgDict ''PluginData
 deriveJSONGADT ''PluginData

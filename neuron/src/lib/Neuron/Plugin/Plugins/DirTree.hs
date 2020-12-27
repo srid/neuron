@@ -6,7 +6,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Plugin.Plugins.DirectoryFolgezettel (plugin, renderPanel) where
+module Neuron.Plugin.Plugins.DirTree (plugin, renderPanel) where
 
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
@@ -14,7 +14,7 @@ import Data.Some (Some (Some))
 import Data.TagTree (Tag (Tag), mkTagPatternFromTag)
 import qualified Data.Text as T
 import Neuron.Plugin.PluginData
-import Neuron.Plugin.Type (Plugin (Plugin))
+import Neuron.Plugin.Type (Plugin (..))
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route (NeuronWebT)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
@@ -34,7 +34,11 @@ import System.FilePath (takeDirectory, takeFileName)
 -- corresponds to the directory contents.
 plugin :: Plugin (Tag, Maybe ZettelID)
 plugin =
-  Plugin "dirfolge" injectDirectoryZettels (bimap addTagAndQuery addTagAndQuery) renderPanel
+  Plugin
+    { _plugin_afterZettelRead = injectDirectoryZettels,
+      _plugin_afterZettelParse = bimap addTagAndQuery addTagAndQuery,
+      _plugin_renderPanel = renderPanel
+    }
 
 renderPanel :: DomBuilder t m => ZettelGraph -> (Tag, Maybe ZettelID) -> NeuronWebT t m ()
 renderPanel graph (t, mpar) = do
@@ -67,13 +71,12 @@ addTagAndQuery z =
         zettelTags z <> maybeToList (parentDirTag $ zettelPath z),
       -- Add the tag query for building graph connections.
       zettelQueries =
-        -- TODO: Surrounding context
         zettelQueries z <> fmap (,mempty) (maybeToList tagQuery)
     }
   where
     tagQuery :: Maybe (Some ZettelQuery)
     tagQuery = do
-      (t, _mpar) <- runIdentity <$> DMap.lookup PluginData_DirectoryZettel (zettelPluginData z)
+      (t, _mpar) <- runIdentity <$> DMap.lookup PluginData_DirTree (zettelPluginData z)
       pure $ Some $ ZettelQuery_ZettelsByTag [mkTagPatternFromTag t] Folgezettel def
 
 injectDirectoryZettels :: MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m ()
@@ -91,7 +94,7 @@ injectDirectoryZettels = \case
     -- they can add `[[[z:zettels?tag=index]]]` to do that.
     unless (dirZettelId == ZettelID "index") $ do
       let dirTag = tagFromPath absPath
-          pluginData = DMap.singleton PluginData_DirectoryZettel (Identity (dirTag, Just parDirZettelId))
+          pluginData = DMap.singleton PluginData_DirTree (Identity (dirTag, Just parDirZettelId))
       gets (Map.lookup dirZettelId) >>= \case
         Just ref -> do
           case ref of
@@ -136,6 +139,6 @@ tagFromPath = \case
 
 isDirectoryZettel :: ZettelT content -> Bool
 isDirectoryZettel (zettelPluginData -> pluginData) =
-  case DMap.lookup PluginData_DirectoryZettel pluginData of
+  case DMap.lookup PluginData_DirTree pluginData of
     Just _ -> True
     _ -> False
