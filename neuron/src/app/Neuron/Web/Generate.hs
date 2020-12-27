@@ -17,13 +17,13 @@ module Neuron.Web.Generate
 where
 
 import Control.Monad.Writer.Strict (runWriter, tell)
-import qualified Data.List
 import qualified Data.Map.Strict as Map
 import Data.Some (withSome)
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
 import Neuron.Plugin (PluginRegistry)
+import qualified Neuron.Plugin as Plugin
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
@@ -50,7 +50,7 @@ import Relude hiding (traceShowId)
 import Rib.Shake (ribInputDir)
 import System.Directory (withCurrentDirectory)
 import qualified System.Directory.Contents as DC
-import System.FilePath (takeExtension, (</>))
+import System.FilePath ((</>))
 
 -- | Generate the Zettelkasten site
 generateSite ::
@@ -91,39 +91,30 @@ loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
 loadZettelkasten config = do
   let plugins = Config.getPlugins config
   liftIO $ putStrLn $ "Plugins enabled: " <> show (Map.keys plugins)
-  ((g, zs), errs) <- loadZettelkastenFromFiles plugins =<< locateZettelFiles
+  ((g, zs), errs) <- loadZettelkastenFromFiles plugins =<< locateZettelFiles plugins
   let cache = Cache.NeuronCache g errs config neuronVersion
       cacheSmall = cache {_neuronCache_graph = stripSurroundingContext g}
   Cache.updateCache cacheSmall
   pure (cache, zs)
 
--- TODO:
--- If making recurseDir the default,
--- - [ ] Allow blacklist (eg: not "README.md"; default being ".*"; always ignore .neuron)
-locateZettelFiles :: Action (DC.DirTree FilePath)
-locateZettelFiles = do
+locateZettelFiles :: PluginRegistry -> Action (DC.DirTree FilePath)
+locateZettelFiles plugins = do
   -- Run with notes dir as PWD, so that DirTree uses relative paths throughout.
-  inNotesDir $
-    DC.buildDirTree "." >>= \case
-      Just t -> do
-        let mt' = DC.pruneDirTree =<< DC.filterDirTree includeDirEntry t
-        maybe (fail "No markdown files?") pure mt'
-      _ -> fail "Directory error?"
-  where
-    includeDirEntry name =
-      Just True
-        == ( do
-               guard $ not $ isDotfile name
-               guard $ takeExtension name == ".md"
-               pure True
-           )
-    isDotfile name =
-      "." `Data.List.isPrefixOf` name
-        && not ("./" `Data.List.isPrefixOf` name)
-    inNotesDir :: IO b -> Action b
-    inNotesDir a = do
-      d <- ribInputDir
-      liftIO $ withCurrentDirectory d a
+  d <- ribInputDir
+  liftIO $
+    withCurrentDirectory d $
+      -- Building with "." as root directory ensures that the returned tree
+      -- structure consistently uses the "./" prefix for all paths. This
+      -- assumption then holds elsewhere in neuron.
+      DC.buildDirTree "." >>= \case
+        Just t -> do
+          Plugin.filterSources plugins t >>= \case
+            Nothing ->
+              fail "No source files to process"
+            Just tF ->
+              pure tF
+        Nothing ->
+          fail "No sources"
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFromFiles ::
@@ -138,6 +129,7 @@ loadZettelkastenFromFiles ::
 loadZettelkastenFromFiles plugins fileTree = do
   let total = getSum @Int $ foldMap (const $ Sum 1) fileTree
   -- TODO: Would be nice to show a progressbar here
+  -- liftIO $ DC.printDirTree fileTree
   liftIO $ putStrLn $ "Loading directory tree (" <> show total <> " files) ..."
   zidRefs <-
     fmap snd $

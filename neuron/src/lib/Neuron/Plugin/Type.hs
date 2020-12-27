@@ -19,7 +19,8 @@ type PluginName = Tagged "PluginName" Text
 
 -- | `pluginData` must be unified with `Neuron.Plugin.PluginData.PluginData`
 data Plugin pluginData = Plugin
-  { -- | Called after zettel files read in memory
+  { _plugin_filterSources :: DC.DirTree FilePath -> IO (Maybe (DC.DirTree FilePath)),
+    -- | Called after zettel files read in memory
     _plugin_afterZettelRead :: forall m. MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m (),
     -- | Called after zettel files are parsed
     _plugin_afterZettelParse :: ZettelC -> ZettelC,
