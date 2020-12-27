@@ -6,27 +6,48 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Plugin.DirectoryFolgezettel (plugin) where
+module Neuron.Plugin.DirectoryFolgezettel (plugin, renderPanel) where
 
-import Data.Default (Default (def))
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (Some))
 import Data.TagTree (Tag (Tag), mkTagPatternFromTag)
 import qualified Data.Text as T
 import Neuron.Plugin.Type (Plugin (Plugin))
+import qualified Neuron.Web.Query.View as Q
+import Neuron.Web.Route (NeuronWebT)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
+import qualified Neuron.Zettelkasten.Graph as G
+import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
+import qualified Neuron.Zettelkasten.Query as Q
 import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel (ZettelPluginData (..), ZettelQuery (..), ZettelT (..))
+import Reflex.Dom.Core
 import Relude
 import qualified System.Directory.Contents.Types as DC
 import System.FilePath (takeDirectory, takeFileName)
 
-plugin :: Plugin
+plugin :: Plugin (Maybe Tag)
 plugin =
-  Plugin "dirfolge" injectDirectoryZettels (bimap addTagAndQuery addTagAndQuery)
+  Plugin "dirfolge" injectDirectoryZettels (bimap addTagAndQuery addTagAndQuery) renderPanel
+
+renderPanel :: DomBuilder t m => ZettelGraph -> Maybe Tag -> NeuronWebT t m ()
+renderPanel graph = \case
+  Nothing -> blank
+  Just t -> do
+    elClass "nav" "ui attached deemphasized segment dirfolge" $ do
+      el "h3" $ text "Directory contents:"
+      -- TODO: Add ".." for going to parent directory
+      -- ... all the way to index (even without folgezettel)
+      divClass "ui list" $ do
+        let children = Q.zettelsByTag (G.getZettels graph) [mkTagPatternFromTag t]
+        forM_ children $ \cz ->
+          divClass "item" $ do
+            let ico = bool "file outline icon" "folder icon" $ isDirectoryZettel cz
+            elClass "i" ico blank
+            divClass "content" $ divClass "description" $ Q.renderZettelLink Nothing (Just Folgezettel) Nothing cz
 
 addTagAndQuery :: forall c. HasCallStack => ZettelT c -> ZettelT c
 addTagAndQuery z =
@@ -100,3 +121,9 @@ tagFromPath = \case
     error $ "Invalid relPath passed to parseZettel: " <> toText relPath
   where
     indexZettelName = "index"
+
+isDirectoryZettel :: ZettelT content -> Bool
+isDirectoryZettel (zettelPluginData -> pluginData) =
+  case DMap.lookup ZettelPluginData_DirectoryZettel pluginData of
+    Just (Just _) -> True
+    _ -> False

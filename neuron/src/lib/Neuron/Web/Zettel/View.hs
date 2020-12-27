@@ -18,11 +18,11 @@ module Neuron.Web.Zettel.View
 where
 
 import qualified Data.Dependent.Map as DMap
-import Data.Dependent.Sum (DSum ((:=>)))
 import Data.Some (Some (Some))
-import Data.TagTree (Tag (unTag), mkTagPatternFromTag)
+import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
 import Neuron.Markdown (ZettelParseError)
+import Neuron.Plugin (renderPluginPanel)
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route
   ( NeuronWebT,
@@ -38,14 +38,12 @@ import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (indexZid)
-import qualified Neuron.Zettelkasten.Query as Q
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import qualified Neuron.Zettelkasten.Query.Eval as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelC,
-    ZettelPluginData (..),
     ZettelT (..),
     sansContent,
   )
@@ -83,37 +81,13 @@ renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
     divClass "zettel-view" $ do
       renderZettelContentCard (graph, zc)
       forM_ (DMap.toList $ zettelPluginData z) $ \pluginData ->
-        renderPluginData pluginData
+        renderPluginPanel graph pluginData
       renderZettelBottomPane graph z
       renderBottomMenu theme graph mEditUrl z
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
   unless (null upTree) $ do
     AS.script "zettel-container-anchor"
-  where
-    -- TODO: move to library
-    renderPluginData :: DSum ZettelPluginData Maybe -> NeuronWebT t m ()
-    renderPluginData = \case
-      ZettelPluginData_DirectoryZettel :=> Just (Just t :: Maybe Tag) ->
-        divClass "ui attached deemphasized segment" $ do
-          el "h3" $ text "Directory contents:"
-          -- TODO: Add ".." for going to parent directory
-          -- ... all the way to index (even without folgezettel)
-          divClass "ui list" $ do
-            let children = Q.zettelsByTag (G.getZettels graph) [mkTagPatternFromTag t]
-            forM_ children $ \cz ->
-              divClass "item" $ do
-                let ico = bool "file outline icon" "folder icon" $ isDirectoryZettel cz
-                elClass "i" ico blank
-                -- TODO: Fix link styling (should apply on this segment as well)
-                -- Or, have the plugin override
-                divClass "content" $ divClass "description" $ Q.renderZettelLink Nothing (Just Folgezettel) Nothing cz
-      ZettelPluginData_DirectoryZettel :=> _ ->
-        blank
-    isDirectoryZettel (zettelPluginData -> pluginData) =
-      case DMap.lookup ZettelPluginData_DirectoryZettel pluginData of
-        Just (Just _) -> True
-        _ -> False
 
 renderZettelContentCard ::
   PandocBuilder t m =>

@@ -19,9 +19,10 @@ where
 import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.List
 import qualified Data.Map.Strict as Map
+import Data.Some
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
-import qualified Neuron.Plugin.DirectoryFolgezettel as DF
+import qualified Neuron.Plugin as Plugin
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
@@ -49,13 +50,6 @@ import Rib.Shake (ribInputDir)
 import System.Directory (withCurrentDirectory)
 import qualified System.Directory.Contents as DC
 import System.FilePath (takeExtension, (</>))
-
--- | Enabled neuron plugins
--- TODO: allow it to be specified in neuron.dhall
-plugins :: [Plugin]
-plugins =
-  [ DF.plugin
-  ]
 
 -- | Generate the Zettelkasten site
 generateSite ::
@@ -150,7 +144,7 @@ loadZettelkastenFromFiles fileTree = do
           absPath <- fmap (</> relPath) ribInputDir
           need [absPath]
           decodeUtf8With lenientDecode <$> readFileBS absPath
-        forM_ (_plugin_afterZettelRead <$> plugins) $ \f -> f fileTree
+        forM_ (ffor Plugin.plugins $ \sp -> withSome sp _plugin_afterZettelRead) $ \f -> f fileTree
   pure $
     runWriter $ do
       filesWithContent <-
@@ -162,6 +156,6 @@ loadZettelkastenFromFiles fileTree = do
             pure $ Just (fp, (s, pluginData))
       let zs =
             ffor (parseZettels extractQueriesWithContext $ Map.toList filesWithContent) $ \z ->
-              foldl' (\z1 f -> f z1) z (_plugin_afterZettelParse <$> plugins)
+              foldl' (\z1 f -> f z1) z (ffor Plugin.plugins $ \sp -> withSome sp _plugin_afterZettelParse)
       g <- G.buildZettelkasten zs
       pure (g, zs)

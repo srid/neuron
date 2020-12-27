@@ -54,7 +54,7 @@ data ZettelQuery r where
   ZettelQuery_Tags :: [TagPattern] -> ZettelQuery (Map Tag Natural)
   ZettelQuery_TagZettel :: Tag -> ZettelQuery ()
 
--- TODO: Move this to Plugin package, after moving that to library.
+-- TODO: Consolidate with the `a` of `Plugin a`, and move it there
 data ZettelPluginData a where
   ZettelPluginData_DirectoryZettel :: ZettelPluginData (Maybe Tag)
 
