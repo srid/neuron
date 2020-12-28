@@ -19,6 +19,7 @@ where
 
 import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.Map.Strict as Map
+import Data.Text.IO (hPutStrLn, hPutStr)
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
@@ -60,7 +61,7 @@ generateSite ::
 generateSite config writeHtmlRoute' = do
   reportPerf <- liftIO $ isJust <$> lookupEnv "NEURON_PERF"
   (buildDur, (cache@Cache.NeuronCache {..}, !zettelContents)) <- timeItT $ loadZettelkasten config
-  when reportPerf $ liftIO $ putStrLn $ printf "Took %.2fs to build the graph" buildDur
+  when reportPerf $ liftIO $ hPutStrLn stderr $ toText @String $ printf "Took %.2fs to build the graph" buildDur
   let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
       writeHtmlRoute v r = writeHtmlRoute' cache r v
   (writeDur, ()) <- timeItT $ do
@@ -75,15 +76,15 @@ generateSite config writeHtmlRoute' = do
   -- TODO: Report only new errors in this run, to avoid spamming the terminal.
   forM_ (Map.toList _neuronCache_errors) $ \(zid, err) -> do
     reportError zid $ zettelErrorList err
-  when reportPerf $ liftIO $ putStrLn $ printf "Took %.2fs to generate html" writeDur
+  when reportPerf $ liftIO $ hPutStrLn stderr $ toText @String $ printf "Took %.2fs to generate html" writeDur
   pure _neuronCache_graph
   where
     -- Report an error in the terminal
     reportError :: MonadIO m => ZettelID -> NonEmpty Text -> m ()
     reportError zid errors = do
-      putTextLn $ "E " <> unZettelID zid
+      liftIO $ hPutStrLn stderr $ "E " <> unZettelID zid
       forM_ errors $ \err ->
-        putText $ "  - " <> indentAllButFirstLine 4 err
+        liftIO $ hPutStr stderr $ "  - " <> indentAllButFirstLine 4 err
       where
         indentAllButFirstLine :: Int -> Text -> Text
         indentAllButFirstLine n = unlines . go . lines
@@ -96,7 +97,7 @@ generateSite config writeHtmlRoute' = do
 loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
 loadZettelkasten config = do
   let plugins = Config.getPlugins config
-  liftIO $ putStrLn $ "Plugins enabled: " <> show (Map.keys plugins)
+  liftIO $ hPutStrLn stderr $ "Plugins enabled: " <> show (Map.keys plugins)
   ((g, zs), errs) <- loadZettelkastenFromFiles plugins =<< locateZettelFiles plugins
   let cache = Cache.NeuronCache g errs config neuronVersion
       cacheSmall = cache {_neuronCache_graph = stripSurroundingContext g}
@@ -136,7 +137,7 @@ loadZettelkastenFromFiles plugins fileTree = do
   let total = getSum @Int $ foldMap (const $ Sum 1) fileTree
   -- TODO: Would be nice to show a progressbar here
   -- liftIO $ DC.printDirTree fileTree
-  liftIO $ putStrLn $ "Loading directory tree (" <> show total <> " files) ..."
+  liftIO $ hPutStrLn stderr $ "Loading directory tree (" <> show total <> " files) ..."
   zidRefs <-
     fmap snd $
       flip runStateT Map.empty $ do

@@ -14,6 +14,7 @@ import Control.Monad.Writer (runWriter)
 import Control.Monad.Writer.Strict (MonadWriter (tell))
 import Data.Default (Default (def))
 import qualified Data.Text as T
+import Data.Text.IO (hPutStrLn)
 import Neuron.Plugin.Type (Plugin (..))
 import Reflex.Dom.Core (fforMaybe)
 import Relude hiding (trace, traceShow, traceShowId)
@@ -48,10 +49,10 @@ applyNeuronIgnore t = do
           pure $ toString s
     _ ->
       pure defaultIgnorePats
-  putTextLn $ "Ignore patterns: " <> show ignorePats
+  hPutStrLn stderr $ "Ignore patterns: " <> show ignorePats
   let (mTreeFiltered, _nExcluded) = runWriter @[FilePath] $ DC.filterADirTree (includeDirEntry ignorePats) t
   -- Not printing, because this includesd all non-Markdown files, including static files. Hence, not really accurate.
-  -- liftIO $ putStrLn $ "Excluded " <> show nExcluded <> " filepaths"
+  -- liftIO $ hPutStrLn stderr $ "Excluded " <> show nExcluded <> " filepaths"
   pure $ DC.pruneDirTree =<< mTreeFiltered
   where
     defaultIgnorePats =
