@@ -56,11 +56,11 @@ applyNeuronIgnore t = do
   where
     defaultIgnorePats =
       [ -- Ignore top-level dotfiles and dotdirs
-        "./.*/**"
+        ".*/**"
         -- Ignore everything under sub directories
         -- "./*/*/**"
       ]
-    includeDirEntry pats name = do
+    includeDirEntry (fmap ("./" <>) -> pats) name = do
       let included =
             Just True
               == ( do
