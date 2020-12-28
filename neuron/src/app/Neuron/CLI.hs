@@ -32,6 +32,7 @@ import qualified Neuron.Web.Cache.Type as Cache
 import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
+import Neuron.Zettelkasten.Zettel
 import Options.Applicative
 import Relude
 import System.Directory (getCurrentDirectory)
@@ -75,7 +76,8 @@ runWith act App {..} =
         case query of
           Left someQ ->
             withSome someQ $ \q -> do
-              let result = Q.runZettelQuery (G.getZettels _neuronCache_graph) q
+              let zsSmall = sansLinkContext <$> G.getZettels _neuronCache_graph
+                  result = Q.runZettelQuery zsSmall q
               putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson q result _neuronCache_errors
           Right someQ ->
             withSome someQ $ \q -> do

@@ -96,6 +96,15 @@ sansContent = \case
       { zettelContent = MetadataOnly ()
       }
 
+-- | Strip out the link context data
+--
+-- Useful to to minimize the impending JSON dump.
+sansLinkContext :: ZettelT c -> ZettelT c
+sansLinkContext z =
+  z {zettelQueries = stripContextFromZettelQuery <$> zettelQueries z}
+  where
+    stripContextFromZettelQuery (someQ, _ctx) = (someQ, mempty)
+
 instance Eq (ZettelT c) where
   (==) = (==) `on` zettelID
 
