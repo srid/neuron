@@ -140,7 +140,7 @@ matchTagQueryMulti tags = \case
 -- has three tag nodes: @foo@, @bar@ and @baz@
 newtype TagNode = TagNode {unTagNode :: Text}
   deriving (Eq, Show, Ord, Generic)
-  deriving anyclass (ToJSON)
+  deriving newtype (ToJSON)
 
 deconstructTag :: HasCallStack => Tag -> NonEmpty TagNode
 deconstructTag (Tag s) =
