@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 1.9.0.1
+version: 1.9.1.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -59,12 +59,15 @@ common library-common
     dependent-sum,
     dependent-sum-template,
     dependent-sum-aeson-orphans >= 0.2.1.0,
+    dependent-map,
+    constraints-extras,
     data-default,
     reflex,
     reflex-dom-core,
     reflex-dom-pandoc >= 0.7.0.1,
     clay,
-    tagged
+    tagged,
+    directory-contents
 
 library
   import: library-common
@@ -72,8 +75,14 @@ library
   exposed-modules:
     Neuron.Config.Type
     Neuron.Markdown
+    Neuron.Plugin
+    Neuron.Plugin.Type
+    Neuron.Plugin.PluginData
+    Neuron.Plugin.Plugins.DirTree
+    Neuron.Plugin.Plugins.NeuronIgnore
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
+    Neuron.Zettelkasten.Zettel.Error
     Neuron.Zettelkasten.Zettel.Meta
     Neuron.Zettelkasten.Zettel.Parser
     Neuron.Zettelkasten.Connection
@@ -86,6 +95,7 @@ library
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
     Neuron.Zettelkasten.Graph.Build
+    Neuron.Zettelkasten.Resolver
     Neuron.Web.Route
     Neuron.Web.Manifest
     Neuron.Web.Cache.Type
@@ -153,7 +163,8 @@ common app-common
     with-utf8,
     shower,
     either,
-    uri-encode
+    uri-encode,
+    timeit
 
 -- Everything below will have to be stripped away, if whoever uses this repo
 -- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way

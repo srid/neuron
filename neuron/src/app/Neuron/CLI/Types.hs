@@ -21,7 +21,7 @@ where
 
 import Data.Default (def)
 import Data.Some (Some (..))
-import Data.TagTree (mkTagPattern)
+import Data.TagTree (mkDefaultTagQuery, mkTagPattern)
 import Data.Time (LocalTime)
 import Data.Time.DateMayTime
   ( DateMayTime,
@@ -151,7 +151,7 @@ commandParser defaultNotesDir now = do
               (Some . flip Q.ZettelQuery_ZettelByID connDummy)
               (option zettelIDReader (long "id"))
               <|> fmap
-                (\x -> Some $ Q.ZettelQuery_ZettelsByTag x connDummy def)
+                (\x -> Some $ Q.ZettelQuery_ZettelsByTag (mkDefaultTagQuery x) connDummy def)
                 (many (mkTagPattern <$> option str (long "tag" <> short 't')))
               <|> option queryReader (long "uri" <> short 'u')
           )

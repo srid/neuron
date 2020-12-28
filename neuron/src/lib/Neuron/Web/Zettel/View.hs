@@ -17,10 +17,12 @@ module Neuron.Web.Zettel.View
   )
 where
 
-import Data.Some
-import Data.TagTree
+import qualified Data.Dependent.Map as DMap
+import Data.Some (Some (Some))
+import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
 import Neuron.Markdown (ZettelParseError)
+import Neuron.Plugin (renderPluginPanel)
 import qualified Neuron.Web.Query.View as Q
 import Neuron.Web.Route
   ( NeuronWebT,
@@ -57,12 +59,14 @@ import Text.Pandoc.Definition (Pandoc (Pandoc))
 import qualified Text.URI as URI
 
 renderZettel ::
+  forall t m.
   PandocBuilder t m =>
   Theme ->
   (ZettelGraph, ZettelC) ->
   Maybe Text ->
   NeuronWebT t m ()
 renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
+  -- Open impulse on pressing the forward slash key.
   el "script" $ do
     text "document.onkeyup = function(e) { if (e.key == \"/\") { document.location.href = \"impulse.html\"; } }"
   let upTree = G.backlinkForest Folgezettel z graph
@@ -76,6 +80,8 @@ renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
     lift $ AS.marker "zettel-container-anchor" (-24)
     divClass "zettel-view" $ do
       renderZettelContentCard (graph, zc)
+      forM_ (DMap.toList $ zettelPluginData z) $ \pluginData ->
+        renderPluginPanel graph pluginData
       renderZettelBottomPane graph z
       renderBottomMenu theme graph mEditUrl z
   -- Because the tree above can be pretty large, we scroll past it

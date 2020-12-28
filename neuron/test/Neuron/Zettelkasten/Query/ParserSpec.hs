@@ -10,12 +10,12 @@ where
 
 import Data.Default (def)
 import Data.Some (Some (Some))
-import Data.TagTree (Tag (Tag), mkTagPattern)
+import Data.TagTree (Tag (Tag), mkDefaultTagQuery, mkTagPattern)
 import qualified Network.URI.Encode as E
 import Neuron.Zettelkasten.Connection (Connection (..))
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
-import Neuron.Zettelkasten.Query.Theme (LinkView(LinkView_ShowDate), ZettelsView(ZettelsView))
+import Neuron.Zettelkasten.Query.Theme (LinkView (LinkView_ShowDate), ZettelsView (ZettelsView))
 import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
 import Relude
 import Test.Hspec
@@ -24,6 +24,8 @@ import Text.URI (URI, mkURI)
 spec :: Spec
 spec = do
   -- The Markdown parser converts wiki-links to z: links, which should work.
+  let mkTagQ q = mkDefaultTagQuery [mkTagPattern q]
+      allTagQ = mkDefaultTagQuery []
   describe "z: links" $ do
     it "parses custom/hash ID" $ do
       parseQueryLink (asURI "z:/foo-bar")
@@ -39,28 +41,28 @@ spec = do
         `shouldBe` (Just $ Some $ ZettelQuery_ZettelByID (ZettelID "tags") OrdinaryConnection)
     it "z:zettels" $ do
       parseQueryLink (asURI "z:zettels")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] OrdinaryConnection def)
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag allTagQ OrdinaryConnection def)
     it "z:zettels?tag=foo" $ do
       parseQueryLink (asURI "z:zettels?tag=foo")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [mkTagPattern "foo"] OrdinaryConnection def)
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag (mkTagQ "foo") OrdinaryConnection def)
     it "z:zettels?type=branch" $ do
       parseQueryLink (asURI "z:zettels?type=branch")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] Folgezettel def)
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag allTagQ Folgezettel def)
     it "z:zettels?limit=10" $ do
       parseQueryLink (asURI "z:zettels?limit=10")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] OrdinaryConnection (ZettelsView def False $ Just 10))
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag allTagQ OrdinaryConnection (ZettelsView def False $ Just 10))
     it "z:zettels?timeline&limit=10" $ do
       parseQueryLink (asURI "z:zettels?timeline&limit=10")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] OrdinaryConnection (ZettelsView LinkView_ShowDate False $ Just 10))
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag allTagQ OrdinaryConnection (ZettelsView LinkView_ShowDate False $ Just 10))
     it "z:zettels?limit=10&limit=20" $ do
       parseQueryLink (asURI "z:zettels?limit=10&limit=20")
-        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag [] OrdinaryConnection (ZettelsView def False $ Just 10))
+        `shouldBe` (Just $ Some $ ZettelQuery_ZettelsByTag allTagQ OrdinaryConnection (ZettelsView def False $ Just 10))
     it "z:tags" $ do
       parseQueryLink (asURI "z:tags")
-        `shouldBe` (Just $ Some $ ZettelQuery_Tags [])
+        `shouldBe` (Just $ Some $ ZettelQuery_Tags allTagQ)
     it "z:tags?filter=foo" $ do
       parseQueryLink (asURI "z:tags?filter=foo")
-        `shouldBe` (Just $ Some $ ZettelQuery_Tags [mkTagPattern "foo"])
+        `shouldBe` (Just $ Some $ ZettelQuery_Tags $ mkTagQ "foo")
     it "z:tag/foo" $ do
       parseQueryLink (asURI "z:tag/foo")
         `shouldBe` (Just $ Some $ ZettelQuery_TagZettel (Tag "foo"))

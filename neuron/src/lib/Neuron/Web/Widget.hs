@@ -47,6 +47,23 @@ divClassVisible visible clsDyn w = do
         "class" =: cls <> bool ("style" =: "display: none;") mempty vis
   elDynAttr "div" attrs w
 
+data ListItem
+  = ListItem_File
+  | ListItem_Folder
+  deriving (Eq)
+
+listItemIconClass :: ListItem -> Text
+listItemIconClass = \case
+  ListItem_File -> "file outline icon"
+  ListItem_Folder -> "folder icon"
+
+listItem :: DomBuilder t m => ListItem -> m a -> m a
+listItem x w = do
+  divClass "item" $ do
+    elClass "i" (listItemIconClass x) blank
+    divClass "content" $
+      divClass "description" w
+
 -- | Data that can be loaded.
 --
 -- Outter Maybe represents if the data is still loading (==Nothing).

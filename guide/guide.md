@@ -8,6 +8,7 @@ Core concepts:
 
 - [[[id]]]
 - [[[markdown]]]
+- [[[Plugins]]]
 
 For generating static sites:
 

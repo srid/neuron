@@ -20,10 +20,10 @@ import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelC,
-    ZettelError (..),
     ZettelT (..),
     sansContent,
   )
+import Neuron.Zettelkasten.Zettel.Error (ZettelError (..))
 import Relude
 import Text.Pandoc.Definition (Block)
 
@@ -72,6 +72,7 @@ mkZettelGraph ::
   [Zettel] ->
   Writer (Map ZettelID (Slug, NonEmpty QueryResultError)) ZettelGraph
 mkZettelGraph zettels = do
+  -- TODO: Also get connections via PluginData
   let res :: [(Zettel, ([((Connection, [Block]), Zettel)], [QueryResultError]))] =
         flip fmap zettels $ \z ->
           (z, runQueryConnections zettels z)

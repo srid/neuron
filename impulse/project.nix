@@ -21,6 +21,7 @@ let
         impulse = pkgs.lib.cleanSource (gitignoreSource ./.);
 
         # neuron & its dependencies (not already in reflex-platform)
+        # TODO: Use hackGet for direct/no-reload development?
         neuron = pkgs.runCommand "neuron" { buildInputs = [ ]; }
           ''
           mkdir -p $out/src
@@ -30,6 +31,7 @@ let
           LINE=`grep -n LIBMARKER ${neuronSrc}/neuron.cabal | cut -f1 -d:`
           head -n $LINE ${neuronSrc}/neuron.cabal > $out/neuron.cabal
           '';
+        directory-contents = import ../dep/directory-contents/thunk.nix;
         reflex-dom-pandoc = import ../dep/reflex-dom-pandoc/thunk.nix;
         pandoc-link-context = import ../dep/pandoc-link-context/thunk.nix;
         commonmark = cm + "/commonmark";

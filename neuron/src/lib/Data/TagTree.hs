@@ -1,6 +1,11 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -8,7 +13,10 @@ module Data.TagTree
   ( Tag (..),
     TagPattern (unTagPattern),
     TagNode (..),
+    TagQuery (..),
+    mkDefaultTagQuery,
     mkTagPattern,
+    mkTagPatternFromTag,
     tagMatch,
     tagMatchAny,
     tagTree,
@@ -29,12 +37,21 @@ import System.FilePattern (FilePattern, (?==))
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple (Parser, parse)
+import Text.Show (Show (show))
 
 -- | A hierarchical tag
 --
 -- Tag nodes are separated by @/@
 newtype Tag = Tag {unTag :: Text}
-  deriving (Eq, Ord, Show, ToJSON, FromJSON, FromYAML, ToYAML)
+  deriving (Eq, Ord, Show, Generic)
+  deriving newtype
+    ( ToJSON,
+      FromJSON
+    )
+  deriving newtype
+    ( ToYAML,
+      FromYAML
+    )
 
 --------------
 -- Tag Pattern
@@ -51,21 +68,56 @@ newtype Tag = Tag {unTag :: Text}
 -- > foo/bar/baz
 -- > foo/baz
 newtype TagPattern = TagPattern {unTagPattern :: FilePattern}
-  deriving (Eq, Show, ToJSON, FromJSON)
+  deriving
+    ( Eq,
+      Show,
+      Generic
+    )
+  deriving newtype
+    ( ToJSON,
+      FromJSON
+    )
 
 mkTagPattern :: Text -> TagPattern
 mkTagPattern =
   TagPattern . toString
 
+mkTagPatternFromTag :: Tag -> TagPattern
+mkTagPatternFromTag (Tag t) =
+  TagPattern $ toString t
+
+data TagQuery
+  = TagQuery_And [TagPattern]
+  | TagQuery_Or [TagPattern]
+  deriving (Eq, Generic)
+  deriving anyclass
+    ( ToJSON,
+      FromJSON
+    )
+
+mkDefaultTagQuery :: [TagPattern] -> TagQuery
+mkDefaultTagQuery = TagQuery_Or
+
+instance Show TagQuery where
+  show = \case
+    TagQuery_And pats ->
+      toString $ T.intercalate ", and " (fmap (toText . unTagPattern) pats)
+    TagQuery_Or pats ->
+      toString $ T.intercalate ", or " (fmap (toText . unTagPattern) pats)
+
 tagMatch :: TagPattern -> Tag -> Bool
 tagMatch (TagPattern pat) (Tag tag) =
   pat ?== toString tag
 
-tagMatchAny :: [TagPattern] -> Tag -> Bool
-tagMatchAny pats tag =
-  -- TODO: Use step from https://hackage.haskell.org/package/filepattern-0.1.2/docs/System-FilePattern.html#v:step
-  -- for efficient matching.
-  any (`tagMatch` tag) pats
+-- TODO: Use step from https://hackage.haskell.org/package/filepattern-0.1.2/docs/System-FilePattern.html#v:step
+-- for efficient matching.
+tagMatchAny :: TagQuery -> Tag -> Bool
+tagMatchAny = flip matchTagQuery
+
+matchTagQuery :: Tag -> TagQuery -> Bool
+matchTagQuery t = \case
+  TagQuery_And pats -> all (`tagMatch` t) pats
+  TagQuery_Or pats -> any (`tagMatch` t) pats
 
 -----------
 -- Tag Tree
@@ -79,7 +131,8 @@ tagMatchAny pats tag =
 --
 -- has three tag nodes: @foo@, @bar@ and @baz@
 newtype TagNode = TagNode {unTagNode :: Text}
-  deriving (Eq, Show, Ord, ToJSON)
+  deriving (Eq, Show, Ord, Generic)
+  deriving anyclass (ToJSON)
 
 deconstructTag :: HasCallStack => Tag -> NonEmpty TagNode
 deconstructTag (Tag s) =

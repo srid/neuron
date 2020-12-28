@@ -13,10 +13,13 @@ module Neuron.Config.Type
     defaultConfig,
     mergeWithDefault,
     getSiteBaseUrl,
+    getPlugins,
   )
 where
 
 import Data.Aeson
+import Neuron.Plugin (PluginRegistry)
+import qualified Neuron.Plugin as Plugin
 import Relude hiding (readEither)
 import Text.URI (URI, mkURI)
 
@@ -31,12 +34,10 @@ configFile = "neuron.dhall"
 data Config = Config
   { author :: Maybe Text,
     editUrl :: Maybe Text,
-    minVersion :: Text,
     siteBaseUrl :: Maybe Text,
     siteTitle :: Text,
     theme :: Text,
-    -- EXPERIMENTAL: may go way, or be changed
-    recurseDir :: Bool
+    plugins :: [Text]
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
@@ -50,6 +51,9 @@ getSiteBaseUrl Config {..} =
       Right uri ->
         pure uri
 
+getPlugins :: Config -> PluginRegistry
+getPlugins = Plugin.lookupPlugins . plugins
+
 defaultConfig :: Text
 defaultConfig =
   "{ siteTitle =\
@@ -62,10 +66,8 @@ defaultConfig =
   \   None Text\
   \, theme =\
   \   \"blue\"\
-  \, recurseDir =\
-  \   False \
-  \, minVersion =\
-  \   \"0.5\" \
+  \, plugins =\
+  \   [\"neuronignore\", \"dirtree\"] \
   \}"
 
 -- Dhall's combine operator (`//`) allows us to merge two records,

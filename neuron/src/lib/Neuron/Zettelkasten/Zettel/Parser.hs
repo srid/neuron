@@ -9,12 +9,14 @@
 
 module Neuron.Zettelkasten.Zettel.Parser where
 
+import Data.Dependent.Map (DMap)
 import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))
-import Data.TagTree (Tag, unTagPattern)
+import Data.TagTree (Tag, unTag)
 import qualified Data.Text as T
 import Neuron.Markdown (parseMarkdown)
+import Neuron.Plugin.PluginData (PluginData)
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
@@ -24,6 +26,31 @@ import Neuron.Zettelkasten.Zettel
   )
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude
+  ( Applicative (pure),
+    Bool (False, True),
+    Either (Left, Right),
+    Eq ((==)),
+    FilePath,
+    Foldable (foldl'),
+    Functor (fmap),
+    Identity,
+    Maybe (..),
+    Monoid (mempty),
+    One (one),
+    Semigroup ((<>)),
+    Text,
+    flip,
+    fromMaybe,
+    fst,
+    mapMaybe,
+    show,
+    snd,
+    uncurry,
+    ($),
+    (.),
+    (<$>),
+    (=<<),
+  )
 import Text.Pandoc.Definition (Block (Plain), Inline (Code, Str), Pandoc, nullAttr)
 import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
@@ -36,12 +63,13 @@ parseZettel ::
   FilePath ->
   ZettelID ->
   Text ->
+  DMap PluginData Identity ->
   ZettelC
-parseZettel queryExtractor fn zid s = do
+parseZettel queryExtractor fn zid s pluginData = do
   case parseMarkdown fn s of
     Left parseErr ->
       let slug = mkDefaultSlug $ unZettelID zid
-       in Left $ Zettel zid slug fn "Unknown" False [] Nothing False [] (Just parseErr) s
+       in Left $ Zettel zid slug fn "Unknown" False [] Nothing False [] (Just parseErr) s pluginData
     Right (meta, doc) ->
       let -- Determine zettel title
           (title, titleInBody) = case Meta.title =<< meta of
@@ -58,8 +86,11 @@ parseZettel queryExtractor fn zid s = do
           date = Meta.date =<< meta
           slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
           unlisted = Just True == (Meta.unlisted =<< meta)
-       in Right $ Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc
+       in Right $
+            Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc pluginData
   where
+    _dirFolgezettelMarkdown (unTag -> tag) =
+      "\n\n" <> "[[[z:zettels?tag=" <> tag <> "/*]]]"
     getInlineTag :: Some ZettelQuery -> Maybe Tag
     getInlineTag = \case
       Some (ZettelQuery_TagZettel tag) -> Just tag
@@ -74,11 +105,11 @@ parseZettel queryExtractor fn zid s = do
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
   QueryExtractor ->
-  [(ZettelID, (FilePath, Text))] ->
+  [(ZettelID, (FilePath, (Text, DMap PluginData Identity)))] ->
   [ZettelC]
 parseZettels queryExtractor files =
-  flip fmap files $ \(zid, (path, s)) ->
-    parseZettel queryExtractor path zid s
+  flip fmap files $ \(zid, (path, (s, pluginData))) ->
+    parseZettel queryExtractor path zid s pluginData
 
 extractQueriesWithContext :: QueryExtractor
 extractQueriesWithContext doc =
@@ -93,11 +124,8 @@ extractQueriesWithContext doc =
     convertCtx ctx = \case
       Some (ZettelQuery_ZettelByID _ _) ->
         ctx
-      Some (ZettelQuery_ZettelsByTag (nonEmpty -> Nothing) _ _) ->
-        one $ Plain [Str "All zettels query"]
-      Some (ZettelQuery_ZettelsByTag (nonEmpty -> Just pats) _ _) ->
-        let tagsStr = T.intercalate ", " $ toText . unTagPattern <$> toList pats
-         in one $ Plain [Str "Linking by tag: ", Code nullAttr tagsStr]
+      Some (ZettelQuery_ZettelsByTag (show -> qs) _ _) ->
+        one $ Plain [Str "Linking by tag: ", Code nullAttr qs]
       _ ->
         mempty
 

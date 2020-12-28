@@ -22,7 +22,7 @@ import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
-import Data.TagTree (mkTagPattern, unTag)
+import Data.TagTree (mkDefaultTagQuery, mkTagPattern, unTag)
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Web.Query.View as QueryView
@@ -39,10 +39,10 @@ import Neuron.Zettelkasten.Query (zettelsByTag)
 import Neuron.Zettelkasten.Query.Error (showQueryResultError)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
-    ZettelError (..),
     ZettelT (zettelTitle),
     zettelTags,
   )
+import Neuron.Zettelkasten.Zettel.Error (ZettelError (..))
 import Reflex.Dom.Core
 import Relude hiding ((&))
 import qualified Text.URI as URI
@@ -103,7 +103,7 @@ buildImpulse graph errors =
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
-      pinnedZettels = zettelsByTag (G.getZettels graph) [mkTagPattern "pinned"]
+      pinnedZettels = zettelsByTag (G.getZettels graph) $ mkDefaultTagQuery [mkTagPattern "pinned"]
    in Impulse (fmap sortCluster clustersWithUplinks) orphans errors stats pinnedZettels
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
@@ -215,7 +215,7 @@ renderErrors errors = do
           text " has missing wiki-links"
         ZettelError_AmbiguousID _files -> do
           text $
-            "More than one file define the same zettel ID ("
+            "More than one path is associated with the same zettel ID ("
               <> unZettelID zid
               <> "):"
         ZettelError_AmbiguousSlug _slug -> do

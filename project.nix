@@ -22,6 +22,7 @@ let
     rib = thunkSource ./dep/rib;
     reflex-dom-pandoc = thunkSource ./dep/reflex-dom-pandoc;
     pandoc-link-context = thunkSource ./dep/pandoc-link-context;
+    directory-contents = thunkSource ./dep/directory-contents;
   };
 
   searchBuilder = ''
@@ -49,6 +50,8 @@ let
     # Test fails on pkgsMusl
     # https://github.com/hslua/hslua/issues/67
     hslua = if disableHsLuaTests then (dontCheck super.hslua) else super.hslua;
+
+    directory-contents = self.callCabal2nix "directory-contents" sources.directory-contents {};
 
     neuron = appendConfigureFlags ((justStaticExecutables
       (overrideCabal (self.callCabal2nix "neuron" sources.neuron { })
