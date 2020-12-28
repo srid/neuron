@@ -27,6 +27,6 @@ Note that advanced features of neuron like [[link-query]] will not be supported 
 
 ## Online
 
-[[cerveau]] can be used to edit your notes online using a web browser. Here's a small demo of the Cerveau editor in action, demonstrating the link autocomplete feature.
+[[cerveau]] can be used to edit your neuron v1 notes online using a web browser. Here's a small demo of the Cerveau editor in action, demonstrating the link autocomplete feature.
 
 ![demo](./static/cerveau-autocompl.gif)

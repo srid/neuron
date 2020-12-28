@@ -22,6 +22,12 @@ import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Open (openLocallyGeneratedFile)
 import Neuron.CLI.Rib
+  ( App (..),
+    Command (..),
+    commandParser,
+    runRib,
+    runRibOnceQuietly,
+  )
 import Neuron.CLI.Search (interactiveSearch)
 import Neuron.CLI.Types (QueryCommand (..))
 import Neuron.Config (getConfig)
@@ -32,7 +38,7 @@ import qualified Neuron.Web.Cache.Type as Cache
 import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
-import Neuron.Zettelkasten.Zettel
+import Neuron.Zettelkasten.Zettel (sansLinkContext)
 import Options.Applicative
 import Relude
 import System.Directory (getCurrentDirectory)

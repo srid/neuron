@@ -29,4 +29,4 @@ See [[[editor]]]
 
 ## Web Interface
 
-[[[cerveau]]] provides a web interface to browse and edit your Neuron notes.
+[[[cerveau]]] provides a web interface to browse and edit your Neuron v1 notes.
