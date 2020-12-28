@@ -18,7 +18,8 @@ module Data.TagTree
     mkTagPattern,
     mkTagPatternFromTag,
     tagMatch,
-    tagMatchAny,
+    matchTagQuery,
+    matchTagQueryMulti,
     tagTree,
     foldTagTree,
     constructTag,
@@ -87,8 +88,9 @@ mkTagPatternFromTag (Tag t) =
   TagPattern $ toString t
 
 data TagQuery
-  = TagQuery_And [TagPattern]
-  | TagQuery_Or [TagPattern]
+  = TagQuery_And (NonEmpty TagPattern)
+  | TagQuery_Or (NonEmpty TagPattern)
+  | TagQuery_All
   deriving (Eq, Generic)
   deriving anyclass
     ( ToJSON,
@@ -96,14 +98,16 @@ data TagQuery
     )
 
 mkDefaultTagQuery :: [TagPattern] -> TagQuery
-mkDefaultTagQuery = TagQuery_Or
+mkDefaultTagQuery = maybe TagQuery_All TagQuery_Or . nonEmpty
 
 instance Show TagQuery where
   show = \case
-    TagQuery_And pats ->
+    TagQuery_And (toList -> pats) ->
       toString $ T.intercalate ", and " (fmap (toText . unTagPattern) pats)
-    TagQuery_Or pats ->
+    TagQuery_Or (toList -> pats) ->
       toString $ T.intercalate ", or " (fmap (toText . unTagPattern) pats)
+    TagQuery_All ->
+      "No particular tag"
 
 tagMatch :: TagPattern -> Tag -> Bool
 tagMatch (TagPattern pat) (Tag tag) =
@@ -111,13 +115,17 @@ tagMatch (TagPattern pat) (Tag tag) =
 
 -- TODO: Use step from https://hackage.haskell.org/package/filepattern-0.1.2/docs/System-FilePattern.html#v:step
 -- for efficient matching.
-tagMatchAny :: TagQuery -> Tag -> Bool
-tagMatchAny = flip matchTagQuery
-
 matchTagQuery :: Tag -> TagQuery -> Bool
 matchTagQuery t = \case
   TagQuery_And pats -> all (`tagMatch` t) pats
   TagQuery_Or pats -> any (`tagMatch` t) pats
+  TagQuery_All -> True
+
+matchTagQueryMulti :: [Tag] -> TagQuery -> Bool
+matchTagQueryMulti tags = \case
+  TagQuery_And pats -> any (\t -> all (`tagMatch` t) pats) tags
+  TagQuery_Or pats -> any (\t -> any (`tagMatch` t) pats) tags
+  TagQuery_All -> True
 
 -----------
 -- Tag Tree

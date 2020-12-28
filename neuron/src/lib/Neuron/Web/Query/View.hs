@@ -27,7 +27,7 @@ import Data.TagTree
     TagNode (..),
     constructTag,
     foldTagTree,
-    tagMatchAny,
+    matchTagQuery,
     tagTree,
   )
 import qualified Data.Text as T
@@ -98,7 +98,7 @@ renderQueryResult minner = \case
       fmap sortZettelsReverseChronological $
         Map.fromListWith (<>) $
           flip concatMap matches $ \z ->
-            flip concatMap (zettelTags z) $ \t -> [(t, [z]) | tagMatchAny pats t]
+            flip concatMap (zettelTags z) $ \t -> [(t, [z]) | matchTagQuery t pats]
 
 renderQuery :: DomBuilder t m => Some ZettelQuery -> m ()
 renderQuery someQ =
