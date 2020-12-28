@@ -20,7 +20,7 @@ where
 
 import Data.Aeson (KeyValue ((.=)), ToJSON (toJSON), Value, object)
 import qualified Data.Map.Strict as Map
-import Data.TagTree (Tag, TagPattern, tagMatch, tagMatchAny, tagTree)
+import Data.TagTree (Tag, TagQuery (..), tagMatch, tagMatchAny, tagTree)
 import Data.Tree (Tree (..))
 import Neuron.Zettelkasten.Graph (backlinks, getZettel)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
@@ -46,8 +46,6 @@ runZettelQuery zs = \case
         Right z
   ZettelQuery_ZettelsByTag pats _mconn _mview ->
     Right $ zettelsByTag zs pats
-  ZettelQuery_Tags [] ->
-    Right allTags
   ZettelQuery_Tags pats ->
     Right $ Map.filterWithKey (const . tagMatchAny pats) allTags
   ZettelQuery_TagZettel _tag ->
@@ -58,13 +56,16 @@ runZettelQuery zs = \case
       Map.fromListWith (+) $
         concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
 
-zettelsByTag :: [Zettel] -> [TagPattern] -> [Zettel]
-zettelsByTag zs pats =
-  sortZettelsReverseChronological $
-    flip filter zs $ \Zettel {..} ->
-      and $
-        flip fmap pats $ \pat ->
-          any (tagMatch pat) zettelTags
+zettelsByTag :: [Zettel] -> TagQuery -> [Zettel]
+zettelsByTag zs q =
+  let (comb, pats) = case q of
+        TagQuery_And ps -> (and, ps)
+        TagQuery_Or ps -> (or, ps)
+   in sortZettelsReverseChronological $
+        flip filter zs $ \Zettel {..} ->
+          comb $
+            flip fmap pats $ \pat ->
+              any (tagMatch pat) zettelTags
 
 runGraphQuery :: ZettelGraph -> GraphQuery r -> Either QueryResultError r
 runGraphQuery g = \case

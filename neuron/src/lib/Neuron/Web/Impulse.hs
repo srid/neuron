@@ -22,7 +22,7 @@ import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Data.Foldable (maximum)
 import qualified Data.Map.Strict as Map
-import Data.TagTree (mkTagPattern, unTag)
+import Data.TagTree (mkDefaultTagQuery, mkTagPattern, unTag)
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Web.Query.View as QueryView
@@ -103,7 +103,7 @@ buildImpulse graph errors =
         flip fmap clusters $ \(zs :: [Tree Zettel]) ->
           G.backlinksMulti Folgezettel zs graph
       stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
-      pinnedZettels = zettelsByTag (G.getZettels graph) [mkTagPattern "pinned"]
+      pinnedZettels = zettelsByTag (G.getZettels graph) $ mkDefaultTagQuery [mkTagPattern "pinned"]
    in Impulse (fmap sortCluster clustersWithUplinks) orphans errors stats pinnedZettels
   where
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)

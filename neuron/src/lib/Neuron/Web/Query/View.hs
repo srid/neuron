@@ -25,7 +25,6 @@ import Data.Some (Some (..))
 import Data.TagTree
   ( Tag (..),
     TagNode (..),
-    TagPattern (..),
     constructTag,
     foldTagTree,
     tagMatchAny,
@@ -107,18 +106,14 @@ renderQuery someQ =
     case someQ of
       Some (ZettelQuery_ZettelByID _ _) ->
         blank
-      Some (ZettelQuery_ZettelsByTag [] _mconn _mview) ->
-        text "All zettels"
-      Some (ZettelQuery_ZettelsByTag (fmap unTagPattern -> pats) _mconn _mview) -> do
-        let qs = toText $ intercalate ", " pats
+      Some (ZettelQuery_ZettelsByTag q _mconn _mview) -> do
+        let qs = show q
             desc = toText $ "Zettels tagged '" <> qs <> "'"
         elAttr "span" ("class" =: "ui basic pointing below black label" <> "title" =: desc) $ do
           semanticIcon "tags"
           text qs
-      Some (ZettelQuery_Tags []) ->
-        text "All tags"
-      Some (ZettelQuery_Tags (fmap unTagPattern -> pats)) -> do
-        let qs = toText $ intercalate ", " pats
+      Some (ZettelQuery_Tags q) -> do
+        let qs = show q
         text $ "Tags matching '" <> qs <> "'"
       Some (ZettelQuery_TagZettel _tag) -> do
         blank

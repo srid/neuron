@@ -20,7 +20,7 @@ where
 
 import Data.Default (Default (def))
 import Data.Some (Some (..))
-import Data.TagTree (TagNode (..), TagPattern, constructTag, mkTagPattern)
+import Data.TagTree (TagNode (..), TagPattern, constructTag, mkDefaultTagQuery, mkTagPattern)
 import Neuron.Zettelkasten.Connection (Connection (..))
 import Neuron.Zettelkasten.ID (getZettelID, parseZettelID)
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
@@ -67,11 +67,11 @@ parseQueryLink uri =
         -- Parse z:zettels?...
         (URI.unRText -> "zettels") :| []
           | noSlash -> do
-            pure $ Some $ ZettelQuery_ZettelsByTag (tagPatterns uri "tag") conn (queryView uri)
+            pure $ Some $ ZettelQuery_ZettelsByTag (mkDefaultTagQuery $ tagPatterns uri "tag") conn (queryView uri)
         -- Parse z:tags?...
         (URI.unRText -> "tags") :| []
           | noSlash -> do
-            pure $ Some $ ZettelQuery_Tags (tagPatterns uri "filter")
+            pure $ Some $ ZettelQuery_Tags (mkDefaultTagQuery $ tagPatterns uri "filter")
         -- Parse z:tag/foo
         (URI.unRText -> "tag") :| (nonEmpty . fmap (TagNode . URI.unRText) -> Just tagNodes)
           | noSlash -> do

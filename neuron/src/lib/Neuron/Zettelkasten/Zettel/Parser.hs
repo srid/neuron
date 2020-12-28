@@ -13,7 +13,7 @@ import Data.Dependent.Map (DMap)
 import Data.List (nub)
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))
-import Data.TagTree (Tag, unTag, unTagPattern)
+import Data.TagTree (Tag, unTag)
 import qualified Data.Text as T
 import Neuron.Markdown (parseMarkdown)
 import Neuron.Plugin.PluginData (PluginData)
@@ -26,6 +26,31 @@ import Neuron.Zettelkasten.Zettel
   )
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude
+  ( Applicative (pure),
+    Bool (False, True),
+    Either (Left, Right),
+    Eq ((==)),
+    FilePath,
+    Foldable (foldl'),
+    Functor (fmap),
+    Identity,
+    Maybe (..),
+    Monoid (mempty),
+    One (one),
+    Semigroup ((<>)),
+    Text,
+    flip,
+    fromMaybe,
+    fst,
+    mapMaybe,
+    show,
+    snd,
+    uncurry,
+    ($),
+    (.),
+    (<$>),
+    (=<<),
+  )
 import Text.Pandoc.Definition (Block (Plain), Inline (Code, Str), Pandoc, nullAttr)
 import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
@@ -99,11 +124,8 @@ extractQueriesWithContext doc =
     convertCtx ctx = \case
       Some (ZettelQuery_ZettelByID _ _) ->
         ctx
-      Some (ZettelQuery_ZettelsByTag (nonEmpty -> Nothing) _ _) ->
-        one $ Plain [Str "All zettels query"]
-      Some (ZettelQuery_ZettelsByTag (nonEmpty -> Just pats) _ _) ->
-        let tagsStr = T.intercalate ", " $ toText . unTagPattern <$> toList pats
-         in one $ Plain [Str "Linking by tag: ", Code nullAttr tagsStr]
+      Some (ZettelQuery_ZettelsByTag (show -> qs) _ _) ->
+        one $ Plain [Str "Linking by tag: ", Code nullAttr qs]
       _ ->
         mempty
 

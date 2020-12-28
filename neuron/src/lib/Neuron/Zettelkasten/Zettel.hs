@@ -29,7 +29,7 @@ import Data.GADT.Compare.TH
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
-import Data.TagTree (Tag, TagPattern (..))
+import Data.TagTree (Tag, TagQuery)
 import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Plugin.PluginData (PluginData)
@@ -49,8 +49,8 @@ import Text.Show (Show (show))
 -- of the mutual dependency with the `ZettelT` type.
 data ZettelQuery r where
   ZettelQuery_ZettelByID :: ZettelID -> Connection -> ZettelQuery Zettel
-  ZettelQuery_ZettelsByTag :: [TagPattern] -> Connection -> ZettelsView -> ZettelQuery [Zettel]
-  ZettelQuery_Tags :: [TagPattern] -> ZettelQuery (Map Tag Natural)
+  ZettelQuery_ZettelsByTag :: TagQuery -> Connection -> ZettelsView -> ZettelQuery [Zettel]
+  ZettelQuery_Tags :: TagQuery -> ZettelQuery (Map Tag Natural)
   ZettelQuery_TagZettel :: Tag -> ZettelQuery ()
 
 -- | A zettel note
