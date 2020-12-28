@@ -163,7 +163,8 @@ common app-common
     with-utf8,
     shower,
     either,
-    uri-encode
+    uri-encode,
+    timeit
 
 -- Everything below will have to be stripped away, if whoever uses this repo
 -- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way

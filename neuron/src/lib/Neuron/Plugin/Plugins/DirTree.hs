@@ -91,7 +91,7 @@ injectDirectoryZettels = \case
         dirZettelId = ZettelID $ toText $ if dirName == "." then "index" else dirName
         parDirName = takeFileName (takeDirectory absPath)
         parDirZettelId = ZettelID $ toText $ if parDirName == "." then "index" else parDirName
-        pluginData tags = DMap.singleton PluginData_DirTree $ Identity $ DirZettel tags (tagFromPath absPath) (Just parDirZettelId)
+        mkPluginData tags = DMap.singleton PluginData_DirTree $ Identity $ DirZettel tags (tagFromPath absPath) (Just parDirZettelId)
     -- Don't create folgezettel from index zettel. Why?
     -- - To avoid surprise when legacy notebooks with innuermous top level
     -- zettels use this feature.
@@ -100,28 +100,26 @@ injectDirectoryZettels = \case
     -- they can add `[[[z:zettels?tag=index]]]` to do that.
     unless (dirZettelId == ZettelID "index") $ do
       gets (Map.lookup dirZettelId) >>= \case
-        Just ref -> do
-          case ref of
-            ZIDRef_Available p s pluginData' -> do
-              -- A zettel with this directory name was already registered. Deal with it.
-              case runIdentity <$> DMap.lookup PluginData_DirTree pluginData' of
-                Just _ -> do
-                  -- A *directory* zettel of this name was already added.
-                  -- Ambiguous directories disallowed! For eg., you can't have
-                  -- Foo/Qux and Bar/Qux.
-                  modify $ Map.insert dirZettelId (ZIDRef_Ambiguous $ absPath :| [p])
-                Nothing -> do
-                  -- A file zettel (DIRNAME.md) already exists on disk. Merge with it.
-                  let tags = catMaybes [parentDirTag absPath, parentDirTag p]
-                      newRef = ZIDRef_Available p s (DMap.union (pluginData tags) pluginData')
-                  modify $ Map.update (const $ Just newRef) dirZettelId
-            ZIDRef_Ambiguous {} ->
-              -- TODO: What to do here?
-              pure ()
+        Just (ZIDRef_Available p s pluginDataPrev) -> do
+          -- A zettel with this directory name was already registered. Deal with it.
+          case runIdentity <$> DMap.lookup PluginData_DirTree pluginDataPrev of
+            Just _ -> do
+              -- A *directory* zettel of this name was already added.
+              -- Ambiguous directories disallowed! For eg., you can't have
+              -- Foo/Qux and Bar/Qux.
+              R.markAmbiguous dirZettelId $ absPath :| [p]
+            Nothing -> do
+              -- A file zettel (DIRNAME.md) already exists on disk. Merge with it.
+              let pluginData = mkPluginData $ catMaybes [parentDirTag absPath, parentDirTag p]
+                  newRef = ZIDRef_Available p s (DMap.union pluginData pluginDataPrev)
+              modify $ Map.update (const $ Just newRef) dirZettelId
+        Just ZIDRef_Ambiguous {} ->
+          -- TODO: What to do here?
+          pure ()
         Nothing -> do
           -- Inject a new zettel corresponding to this directory, that is uniquely named.
-          let tags = maybeToList $ parentDirTag absPath
-          R.addZettel absPath dirZettelId (pluginData tags) $ do
+          let pluginData = mkPluginData $ maybeToList $ parentDirTag absPath
+          R.addZettel absPath dirZettelId pluginData $ do
             -- Set an appropriate title (same as directory name)
             let heading = toText (takeFileName absPath) <> "/"
             pure $ "# " <> heading

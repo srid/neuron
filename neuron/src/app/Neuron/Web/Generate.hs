@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -46,7 +47,10 @@ import Relude hiding (traceShowId)
 import Rib.Shake (ribInputDir)
 import System.Directory (withCurrentDirectory)
 import qualified System.Directory.Contents as DC
+import System.Environment (lookupEnv)
 import System.FilePath ((</>))
+import System.TimeIt (timeItT)
+import Text.Printf (printf)
 
 -- | Generate the Zettelkasten site
 generateSite ::
@@ -54,18 +58,22 @@ generateSite ::
   (forall a. NeuronCache -> Z.Route a -> a -> Action ()) ->
   Action ZettelGraph
 generateSite config writeHtmlRoute' = do
-  (cache@Cache.NeuronCache {..}, zettelContents) <- loadZettelkasten config
+  reportPerf <- liftIO $ isJust <$> lookupEnv "NEURON_PERF"
+  (buildDur, (!cache@Cache.NeuronCache {..}, !zettelContents)) <- timeItT $ loadZettelkasten config
+  when reportPerf $ liftIO $ putStrLn $ printf "Took %.2fs to build the graph" buildDur
   let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
       writeHtmlRoute v r = writeHtmlRoute' cache r v
-  -- Generate HTML for every zettel
-  forM_ zettelContents $ \val@(zettelSlug . sansContent -> slug) ->
-    writeHtmlRoute val $ Z.Route_Zettel slug
-  -- Generate search page
-  writeHtmlRoute () $ Z.Route_Impulse Nothing
+  (writeDur, ()) <- timeItT $ do
+    -- Generate HTML for every zettel
+    forM_ zettelContents $ \val@(zettelSlug . sansContent -> slug) ->
+      writeHtmlRoute val $ Z.Route_Zettel slug
+    -- Generate search page
+    writeHtmlRoute () $ Z.Route_Impulse Nothing
   -- Report all errors
   -- TODO: Report only new errors in this run, to avoid spamming the terminal.
   forM_ (Map.toList _neuronCache_errors) $ \(zid, err) -> do
     reportError zid $ zettelErrorList err
+  when reportPerf $ liftIO $ putStrLn $ printf "Took %.2fs to generate html" writeDur
   pure _neuronCache_graph
   where
     -- Report an error in the terminal

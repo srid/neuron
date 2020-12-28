@@ -46,7 +46,11 @@ addZettel zpath zid pluginData ms = do
       modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| [oldPath])
     Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
       -- Third or later duplicate file with the same Zettel ID
-      modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| ambiguities)
+      markAmbiguous zid $ zpath :| ambiguities
     Nothing -> do
       s <- ms
       modify $ Map.insert zid (ZIDRef_Available zpath s pluginData)
+
+markAmbiguous :: (MonadState (Map ZettelID ZIDRef) m) => ZettelID -> NonEmpty FilePath -> m ()
+markAmbiguous zid fs =
+  modify $ Map.insert zid (ZIDRef_Ambiguous fs)

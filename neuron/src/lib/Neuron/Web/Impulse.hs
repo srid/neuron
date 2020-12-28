@@ -215,7 +215,7 @@ renderErrors errors = do
           text " has missing wiki-links"
         ZettelError_AmbiguousID _files -> do
           text $
-            "More than one file define the same zettel ID ("
+            "More than one path is associated with the same zettel ID ("
               <> unZettelID zid
               <> "):"
         ZettelError_AmbiguousSlug _slug -> do
