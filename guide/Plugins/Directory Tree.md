@@ -15,6 +15,6 @@ The zettel content for directory zettels are by default empty. However, you may 
 
 ## Links & tags created
 
-A [[folgezettel-heterarchy]] is formed, reflecting the directory tree on disk, with the exception of the `index` zettel[^man]. The forming of links is based on hierarchical [[[tags]]] (reflecting the relative path), that every normal zettel and directory zettel is automatically tagged with.
+A [[folgezettel-heterarchy]] is formed, reflecting the directory tree on disk, with the exception of the `index` zettel[^man]. The forming of links is based on hierarchical [[tags]] (reflecting the relative path), that every normal zettel and directory zettel is automatically tagged with.
 
 [^man]: You may manually form these relationships by adding `[[[z:zettels?tag=index]]]` to the top-level `index.md`

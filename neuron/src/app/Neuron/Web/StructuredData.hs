@@ -68,6 +68,7 @@ routeOpenGraph cfg@Config {siteTitle, author} g v r =
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
         (Route_Impulse _mtag) -> Just "Impulse"
+        Route_ImpulseStatic -> Just "Impulse (static)"
         Route_Zettel _ -> do
           doc <- getPandocDoc v
           para <- getFirstParagraphText doc

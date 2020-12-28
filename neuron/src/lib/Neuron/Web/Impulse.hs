@@ -26,7 +26,7 @@ import Data.TagTree (mkDefaultTagQuery, mkTagPattern, unTag)
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Web.Query.View as QueryView
-import Neuron.Web.Route (NeuronWebT)
+import Neuron.Web.Route (NeuronWebT, Route (..), routeHtmlPath)
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget (LoadableData, divClassVisible, elPreOverflowing, elVisible)
 import qualified Neuron.Web.Widget as W
@@ -87,7 +87,6 @@ searchTree f (Node x xs) =
         | any treeMatches children = Just TreeMatch_Under
         | otherwise = Nothing
    in Node (tm, x) children
-  where
 
 treeMatches :: Tree (Maybe a, b) -> Bool
 treeMatches (Node (mm, _) _) = isJust mm
@@ -131,6 +130,9 @@ renderImpulse (fmap (fmap Theme.semanticColor) -> themeColor) impulseLDyn = do
           text " ["
           el "tt" $ text q
           text "]"
+  -- Don't put static note in the static part of prerender; else it will appear on
+  -- the static version as well, which is confusing.
+  prerender_ blank staticVersionNote
   W.loadingWidget impulseLDyn $ \impulseDyn -> do
     elVisible (ffor2 (impulseErrors <$> impulseDyn) mqDyn $ \errs mq -> isNothing mq && not (null errs)) $
       elClass "details" "ui tiny errors message" $ do
@@ -196,6 +198,11 @@ renderImpulse (fmap (fmap Theme.semanticColor) -> themeColor) impulseLDyn = do
             let ztag = T.drop 4 q
             guard $ ztag `notElem` fmap unTag (zettelTags z)
           else guard $ not $ T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
+    staticVersionNote = do
+      el "p" $ do
+        text "A static version of this page is available "
+        elAttr "a" ("href" =: toText (routeHtmlPath Route_ImpulseStatic)) $ text "here"
+        text "."
 
 renderErrors :: (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) => Dynamic t (Map ZettelID ZettelError) -> NeuronWebT t m ()
 renderErrors errors = do

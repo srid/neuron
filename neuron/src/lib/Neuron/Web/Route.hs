@@ -28,6 +28,7 @@ data Route a where
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
   Route_Impulse :: Maybe Tag -> Route ()
+  Route_ImpulseStatic :: Route ()
 
 routeHtmlPath :: Route a -> FilePath
 routeHtmlPath = \case
@@ -35,6 +36,8 @@ routeHtmlPath = \case
     "impulse.html?q=tag:" <> toString (unTag tag)
   Route_Impulse Nothing ->
     "impulse.html"
+  Route_ImpulseStatic ->
+    "impulse-static.html"
   Route_Zettel slug ->
     toString slug <> ".html"
 
@@ -73,6 +76,7 @@ neuronRouteURL someR = do
 routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
   Route_Impulse _mtag -> "Impulse"
+  Route_ImpulseStatic -> "Impulse (static)"
   Route_Zettel _ ->
     either zettelTitle zettelTitle v
 

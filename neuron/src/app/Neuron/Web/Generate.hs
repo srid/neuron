@@ -59,7 +59,7 @@ generateSite ::
   Action ZettelGraph
 generateSite config writeHtmlRoute' = do
   reportPerf <- liftIO $ isJust <$> lookupEnv "NEURON_PERF"
-  (buildDur, (!cache@Cache.NeuronCache {..}, !zettelContents)) <- timeItT $ loadZettelkasten config
+  (buildDur, (cache@Cache.NeuronCache {..}, !zettelContents)) <- timeItT $ loadZettelkasten config
   when reportPerf $ liftIO $ putStrLn $ printf "Took %.2fs to build the graph" buildDur
   let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
       writeHtmlRoute v r = writeHtmlRoute' cache r v
@@ -67,8 +67,10 @@ generateSite config writeHtmlRoute' = do
     -- Generate HTML for every zettel
     forM_ zettelContents $ \val@(zettelSlug . sansContent -> slug) ->
       writeHtmlRoute val $ Z.Route_Zettel slug
-    -- Generate search page
+    -- Generate Impulse
     writeHtmlRoute () $ Z.Route_Impulse Nothing
+    -- ... and its static version
+    writeHtmlRoute () Z.Route_ImpulseStatic
   -- Report all errors
   -- TODO: Report only new errors in this run, to avoid spamming the terminal.
   forM_ (Map.toList _neuronCache_errors) $ \(zid, err) -> do

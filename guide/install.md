@@ -2,10 +2,6 @@
 
 Neuron can be installed on Windows, Linux or macOS.
 
-:::{.ui .raised .medium .message .segment}
-If you want to give neuron a try before installing it, checkout [[cerveau]].
-:::
-
 ## Prerequisites
 
 ### Nix

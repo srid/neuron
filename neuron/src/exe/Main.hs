@@ -68,10 +68,10 @@ generateMainSite config = do
         -- We do this verbose dance to make sure hydration happens only on Impulse route.
         -- Ideally, this should be abstracted out, but polymorphic types are a bitch.
         html :: ByteString <- liftIO $ case r of
-          Route_Zettel {} ->
-            fmap snd . renderStatic $ w
           Route_Impulse {} ->
             fmap snd . renderStatic . runHydratableT $ w
+          _ ->
+            fmap snd . renderStatic $ w
         -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
         writeRoute r $ decodeUtf8 @Text $ "<!DOCTYPE html>" <> html
   void $ generateSite config writeHtmlRoute
@@ -90,24 +90,31 @@ renderRoutePage cache@NeuronCache {..} headHtml manifest r val = do
   el "html" $ do
     rec el "head" $ do
           V.headTemplate (fmap (fmap Cache._neuronCache_config) <$> cacheDyn) r val
+          -- These three common elements could impact hydration; however, even
+          -- without them, hydration doesn't work in ghcjs for some reason. That
+          -- needs to be investigated.
+          renderHeadHtml headHtml
+          renderManifest manifest
+          renderStructuredData _neuronCache_config r (_neuronCache_graph, val)
           () <- case r of
-            Route_Zettel _ -> do
-              -- These three common elements could impact hydration; however, even
-              -- without them, hydration doesn't work in ghcjs for some reason. That
-              -- needs to be investigated.
-              -- TODO: Move to common again?
-              renderHeadHtml headHtml
-              renderManifest manifest
-              renderStructuredData _neuronCache_config r (_neuronCache_graph, val)
-              elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
             Route_Impulse {} ->
               elImpulseJS
+            Route_ImpulseStatic ->
+              blank
+            Route_Zettel {} -> do
+              elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
           pure ()
         cacheDyn <- el "body" $ do
           case r of
             Route_Impulse {} -> do
               -- FIXME: Injecting initial value here will break hydration.
               c <- Cache.reflexDomGetCache Nothing -- (W.availableData cache)
+              runNeuronWeb routeConfig $
+                V.renderRouteImpulse c
+              pure c
+            Route_ImpulseStatic {} -> do
+              -- Inject initial value so the static html will render fully.
+              c <- Cache.reflexDomGetCache $ W.availableData cache
               runNeuronWeb routeConfig $
                 V.renderRouteImpulse c
               pure c

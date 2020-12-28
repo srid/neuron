@@ -137,7 +137,7 @@ commandParser defaultNotesDir now = do
     openCommand = do
       fmap Open $
         fmap
-          (const $ OpenCommand $ Some $ R.Route_Impulse Nothing)
+          (const $ OpenCommand $ Some R.Route_ImpulseStatic)
           (switch (long "search" <> help "Open the search page"))
           <|> fmap
             (OpenCommand . Some . R.Route_Zettel)
@@ -158,7 +158,7 @@ commandParser defaultNotesDir now = do
           <|> fmap
             Right
             ( fmap
-                (const $ Some $ Q.GraphQuery_Id)
+                (const $ Some Q.GraphQuery_Id)
                 ( switch $
                     long "graph" <> help "Get the entire zettelkasten graph as JSON"
                 )
