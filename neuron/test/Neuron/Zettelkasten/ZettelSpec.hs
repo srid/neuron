@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -8,8 +9,9 @@ module Neuron.Zettelkasten.ZettelSpec
 where
 
 import Data.TagTree (Tag (Tag))
+import Data.Tagged
 import Data.Time.Calendar (fromGregorian)
-import Data.Time.DateMayTime (mkDateMayTime)
+import Data.Time.DateMayTime (DateMayTime, mkDateMayTime)
 import Data.Time.LocalTime
   ( LocalTime (LocalTime),
     TimeOfDay (TimeOfDay),
@@ -17,7 +19,8 @@ import Data.Time.LocalTime
 import Neuron.Markdown (parseMarkdown)
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import Neuron.Zettelkasten.Zettel
-  ( MetadataOnly (MetadataOnly),
+  ( MetadataOnly,
+    Zettel,
     ZettelT (Zettel),
     sortZettelsReverseChronological,
   )
@@ -28,8 +31,7 @@ import Test.Hspec
 spec :: Spec
 spec = do
   let noQueries = mempty -- TODO: test queries
-      noError = Nothing
-      noContent = MetadataOnly ()
+      noContent :: MetadataOnly = Tagged Nothing
   describe "sortZettelsReverseChronological" $ do
     let mkDay = fromGregorian 2020 3
         mkZettelDay n =
@@ -39,6 +41,7 @@ spec = do
 
         (_ :: Maybe Meta, _dummyContent) = either (error . show) id $ parseMarkdown "<spec>" "Dummy"
 
+        mkZettel :: Text -> Maybe DateMayTime -> Zettel
         mkZettel s datetime =
           Zettel
             (ZettelID s)
@@ -50,7 +53,6 @@ spec = do
             datetime
             False
             noQueries
-            noError
             noContent
             mempty
 
