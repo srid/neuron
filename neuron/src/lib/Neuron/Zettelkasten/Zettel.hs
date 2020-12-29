@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -30,6 +31,7 @@ import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
 import Data.TagTree (Tag, TagQuery)
+import Data.Tagged (Tagged (Tagged))
 import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Plugin.PluginData (PluginData)
@@ -56,7 +58,7 @@ data ZettelQuery r where
 -- | A zettel note
 --
 -- The metadata could have been inferred from the content.
-data ZettelT content = Zettel
+data ZettelT c = Zettel
   { zettelID :: ZettelID,
     zettelSlug :: Slug,
     -- | Relative path to this zettel in the zettelkasten directory
@@ -70,30 +72,28 @@ data ZettelT content = Zettel
     zettelUnlisted :: Bool,
     -- | List of all queries in the zettel
     zettelQueries :: [(Some ZettelQuery, [Block])],
-    zettelParseError :: Maybe ZettelParseError,
-    zettelContent :: content,
+    zettelContent :: c,
     zettelPluginData :: DMap PluginData Identity
   }
   deriving (Generic)
 
-newtype MetadataOnly = MetadataOnly ()
-  deriving (Generic, ToJSON, FromJSON)
+type MetadataOnly = Tagged "MetadataOnly" (Maybe ZettelParseError)
 
 -- | Zettel without its content
 type Zettel = ZettelT MetadataOnly
 
--- | Zettel with its content (Pandoc or raw text)
-type ZettelC = Either (ZettelT Text) (ZettelT Pandoc)
+-- | Zettel that has either failed to parse, or has been parsed.
+type ZettelC = Either (ZettelT (Text, ZettelParseError)) (ZettelT Pandoc)
 
 sansContent :: ZettelC -> Zettel
 sansContent = \case
   Left z ->
     z
-      { zettelContent = MetadataOnly ()
+      { zettelContent = Tagged (Just $ snd $ zettelContent z)
       }
   Right z ->
     z
-      { zettelContent = MetadataOnly ()
+      { zettelContent = Tagged Nothing
       }
 
 -- | Strip out the link context data

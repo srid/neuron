@@ -30,6 +30,7 @@ import Data.TagTree
     matchTagQuery,
     tagTree,
   )
+import Data.Tagged (untag)
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
 import GHC.Natural (naturalToInt)
@@ -131,7 +132,7 @@ renderZettelLink ::
   NeuronWebT t m ()
 renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
   let connClass = show <$> conn
-      rawClass = const (Just "errors") =<< zettelParseError
+      rawClass = const (Just "errors") =<< untag zettelContent
       mextra =
         case linkView of
           LinkView_Default ->

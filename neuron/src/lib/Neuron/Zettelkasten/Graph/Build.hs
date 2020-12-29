@@ -42,7 +42,7 @@ buildZettelkasten parsedZettels = do
   tell $
     Map.fromList $
       flip mapMaybe (lefts parsedZettels) $ \z -> do
-        zerr <- zettelParseError z
+        let zerr = snd $ zettelContent z
         pure (zettelID z, ZettelError_ParseError (zettelSlug z, zerr))
   -- Build a slug map to determined ambiguities in "slug" fields
   let slugMap :: Map Slug (NonEmpty Zettel) =

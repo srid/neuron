@@ -182,13 +182,13 @@ renderZettelContent renderCfg Zettel {..} = do
         elAttr "div" ("class" =: "date" <> "title" =: "Zettel date") $ do
           elTime date
 
-renderZettelRawContent :: (DomBuilder t m) => ZettelT Text -> m ()
+renderZettelRawContent :: (DomBuilder t m) => ZettelT (Text, ZettelParseError) -> m ()
 renderZettelRawContent Zettel {..} = do
   divClass "ui error message" $ do
     elClass "h2" "header" $ text "Zettel failed to parse"
-    maybe blank renderZettelParseError zettelParseError
+    renderZettelParseError $ snd zettelContent
   elClass "article" "ui raised attached segment zettel-content raw" $ do
-    elPreOverflowing $ text $ zettelContent
+    elPreOverflowing $ text $ fst zettelContent
 
 renderZettelParseError :: DomBuilder t m => ZettelParseError -> m ()
 renderZettelParseError err =

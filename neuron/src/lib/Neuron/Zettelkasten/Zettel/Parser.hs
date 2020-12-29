@@ -26,31 +26,6 @@ import Neuron.Zettelkasten.Zettel
   )
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude
-  ( Applicative (pure),
-    Bool (False, True),
-    Either (Left, Right),
-    Eq ((==)),
-    FilePath,
-    Foldable (foldl'),
-    Functor (fmap),
-    Identity,
-    Maybe (..),
-    Monoid (mempty),
-    One (one),
-    Semigroup ((<>)),
-    Text,
-    flip,
-    fromMaybe,
-    fst,
-    mapMaybe,
-    show,
-    snd,
-    uncurry,
-    ($),
-    (.),
-    (<$>),
-    (=<<),
-  )
 import Text.Pandoc.Definition (Block (Plain), Inline (Code, Str), Pandoc, nullAttr)
 import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
@@ -69,7 +44,7 @@ parseZettel queryExtractor fn zid s pluginData = do
   case parseMarkdown fn s of
     Left parseErr ->
       let slug = mkDefaultSlug $ unZettelID zid
-       in Left $ Zettel zid slug fn "Unknown" False [] Nothing False [] (Just parseErr) s pluginData
+       in Left $ Zettel zid slug fn "Unknown" False [] Nothing False [] (s, parseErr) pluginData
     Right (meta, doc) ->
       let -- Determine zettel title
           (title, titleInBody) = case Meta.title =<< meta of
@@ -87,7 +62,7 @@ parseZettel queryExtractor fn zid s pluginData = do
           slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
           unlisted = Just True == (Meta.unlisted =<< meta)
        in Right $
-            Zettel zid slug fn title titleInBody tags date unlisted queries Nothing doc pluginData
+            Zettel zid slug fn title titleInBody tags date unlisted queries doc pluginData
   where
     _dirFolgezettelMarkdown (unTag -> tag) =
       "\n\n" <> "[[[z:zettels?tag=" <> tag <> "/*]]]"
