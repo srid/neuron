@@ -23,7 +23,7 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (..),
     sansContent,
   )
-import Neuron.Zettelkasten.Zettel.Error (ZettelError (..))
+import Neuron.Zettelkasten.Zettel.Error (ZettelError (..), ZettelIssue (..))
 import Relude
 import Text.Pandoc.Definition (Block)
 
@@ -36,14 +36,14 @@ import Text.Pandoc.Definition (Block)
 -- The errors are gathered in the `snd` of the tuple.
 buildZettelkasten ::
   [ZettelC] ->
-  Writer (Map ZettelID ZettelError) ZettelGraph
+  Writer (Map ZettelID ZettelIssue) ZettelGraph
 buildZettelkasten parsedZettels = do
   -- Tell parse errors that are recorded in `zettelParseError` field.
   tell $
     Map.fromList $
       flip mapMaybe (lefts parsedZettels) $ \z -> do
         let zerr = snd $ zettelContent z
-        pure (zettelID z, ZettelError_ParseError (zettelSlug z, zerr))
+        pure (zettelID z, ZettelIssue_Error $ ZettelError_ParseError (zettelSlug z, zerr))
   -- Build a slug map to determined ambiguities in "slug" fields
   let slugMap :: Map Slug (NonEmpty Zettel) =
         Map.fromListWith (<>) $
@@ -58,10 +58,10 @@ buildZettelkasten parsedZettels = do
         tell $
           Map.fromList $
             flip fmap (toList zettels) $ \z ->
-              (zettelID z, ZettelError_AmbiguousSlug slug)
+              (zettelID z, ZettelIssue_Error $ ZettelError_AmbiguousSlug slug)
         pure []
   -- Build a graph from the final zettels list
-  mapWriter (second $ fmap ZettelError_QueryResultErrors) $
+  mapWriter (second $ fmap ZettelIssue_MissingLinks) $
     mkZettelGraph $ filter (not . zettelUnlisted) zs
 
 -- | Build the Zettelkasten graph from a list of zettels

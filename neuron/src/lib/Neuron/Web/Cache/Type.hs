@@ -14,7 +14,7 @@ import Neuron.Config.Type (Config)
 import Neuron.Web.Widget (LoadableData)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
-import Neuron.Zettelkasten.Zettel.Error (ZettelError)
+import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Reflex.Dom.Core
 import Relude
 import qualified Relude.String as BL
@@ -26,7 +26,7 @@ data ReadMode
 
 data NeuronCache = NeuronCache
   { _neuronCache_graph :: ZettelGraph,
-    _neuronCache_errors :: Map ZettelID ZettelError,
+    _neuronCache_errors :: Map ZettelID ZettelIssue,
     _neuronCache_config :: Config,
     _neuronCache_neuronVersion :: Text
   }

@@ -21,7 +21,6 @@ import Clay (Css, em, (?))
 import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Data.Foldable (maximum)
-import qualified Data.Map.Strict as Map
 import Data.TagTree (mkDefaultTagQuery, mkTagPattern, unTag)
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (..))
@@ -42,7 +41,7 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (zettelTitle),
     zettelTags,
   )
-import Neuron.Zettelkasten.Zettel.Error (ZettelError (..))
+import Neuron.Zettelkasten.Zettel.Error (ZettelError (..), ZettelIssue (..), splitZettelIssues)
 import Reflex.Dom.Core
 import Relude hiding ((&))
 import qualified Text.URI as URI
@@ -58,7 +57,7 @@ data Impulse = Impulse
     impulseClusters :: [Forest (Zettel, [Zettel])],
     impulseOrphans :: [Zettel],
     -- | All zettel errors
-    impulseErrors :: Map ZettelID ZettelError,
+    impulseErrors :: Map ZettelID ZettelIssue,
     impulseStats :: Stats,
     impulsePinned :: [Zettel]
   }
@@ -91,7 +90,7 @@ searchTree f (Node x xs) =
 treeMatches :: Tree (Maybe a, b) -> Bool
 treeMatches (Node (mm, _) _) = isJust mm
 
-buildImpulse :: ZettelGraph -> Map ZettelID ZettelError -> Impulse
+buildImpulse :: ZettelGraph -> Map ZettelID ZettelIssue -> Impulse
 buildImpulse graph errors =
   let (orphans, clusters) = partitionEithers $
         flip fmap (G.categoryClusters graph) $ \case
@@ -206,19 +205,19 @@ renderImpulse (fmap (fmap Theme.semanticColor) -> themeColor) impulseLDyn = do
 
 renderErrors ::
   (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) =>
-  Dynamic t (Map ZettelID ZettelError) ->
+  Dynamic t (Map ZettelID ZettelIssue) ->
   NeuronWebT t m ()
-renderErrors errors = do
+renderErrors issues = do
+  let (errors, missing) = fmap fst &&& fmap snd $ fmap splitZettelIssues issues
   void $
-    simpleList (Map.toList <$> errors) $ \errorDyn -> do
+    simpleList errors $ \errorDyn -> do
       dyn_ $
-        ffor errorDyn $ \(zid, zError) -> do
-          renderError zid zError
-  mzs404 <- maybeDyn $ nonEmpty . zidsWithMissingLinks <$> errors
+        ffor errorDyn $ \(zid, err) -> do
+          renderError zid err
+  mzs404 <- maybeDyn $ nonEmpty <$> missing
   dyn_ $
-    ffor mzs404 $ \case
-      Nothing -> blank
-      Just zs404 -> do
+    ffor mzs404 $
+      flip whenJust $ \zs404 -> do
         divClass "ui tiny message warning" $ do
           divClass "header" $ text "Missing wiki-links detected in some zettels"
           el "p" $ do
@@ -227,17 +226,13 @@ renderErrors errors = do
                 simpleList (toList <$> zs404) $ \zDyn ->
                   divClass "item" $ do
                     dyn_ $
-                      ffor zDyn $ \(zid, slug, qErrors) -> do
-                        let tooltip = "Links in vain to: " <> T.intercalate ", " (toList $ unZettelID <$> Q.missingZids qErrors)
+                      ffor zDyn $ \(zid, (slug, qErrors)) -> do
+                        let tooltip =
+                              "Links in vain to: "
+                                <> T.intercalate ", " (toList $ unZettelID <$> Q.missingZids qErrors)
                         elAttr "span" ("title" =: tooltip) $ do
                           QueryView.renderZettelLinkIDOnly zid slug
   where
-    zidsWithMissingLinks errs =
-      fforMaybe (Map.toList errs) $ \(zid, zErr) -> case zErr of
-        ZettelError_QueryResultErrors (slug, qErrs) ->
-          Just (zid, slug, qErrs)
-        _ ->
-          Nothing
     renderError zid zError = do
       case zError of
         ZettelError_ParseError (_slug, parseError) -> errorDiv zid zError $ do
@@ -248,9 +243,6 @@ renderErrors errors = do
               el "li" $ el "tt" $ text $ toText fp
         ZettelError_AmbiguousSlug slug -> errorDiv zid zError $ do
           el "p" $ text $ "Slug '" <> slug <> "' is used by another zettel"
-        ZettelError_QueryResultErrors _queryErrors ->
-          -- HACK: won't be reached
-          blank
     errorDiv zid zError w = do
       divClass ("ui tiny message " <> severity zError) $ do
         divClass "header" $ errorMessageHeader zid zError
@@ -259,9 +251,6 @@ renderErrors errors = do
       ZettelError_ParseError _ -> "negative"
       ZettelError_AmbiguousID _ -> "negative"
       ZettelError_AmbiguousSlug _ -> "negative"
-      ZettelError_QueryResultErrors _ ->
-        -- HACK: won't be reached
-        "warning"
     errorMessageHeader zid = \case
       ZettelError_ParseError (slug, _) -> do
         text "Zettel "
@@ -274,9 +263,6 @@ renderErrors errors = do
             <> "):"
       ZettelError_AmbiguousSlug _slug -> do
         text $ "Zettel '" <> unZettelID zid <> "' ignored; has ambiguous slug"
-      ZettelError_QueryResultErrors (_slug, _) -> do
-        -- HACK: won't be reached
-        blank
 
 renderForest ::
   (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) =>

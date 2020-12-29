@@ -41,7 +41,8 @@ import Neuron.Zettelkasten.Zettel
     sansContent,
   )
 import Neuron.Zettelkasten.Zettel.Error
-  ( ZettelError (ZettelError_AmbiguousID),
+  ( ZettelError (..),
+    ZettelIssue (..),
     zettelErrorText,
   )
 import Relude hiding (traceShowId)
@@ -75,11 +76,11 @@ generateSite config writeHtmlRoute' = do
   -- Report all errors
   -- TODO: Report only new errors in this run, to avoid spamming the terminal.
   missingLinks <- fmap sum $
-    forM (Map.toList _neuronCache_errors) $ \(zid, err) -> do
-      case zettelErrorText err of
-        Left n ->
-          pure n
-        Right e -> do
+    forM (Map.toList _neuronCache_errors) $ \(zid, issue) -> do
+      case issue of
+        ZettelIssue_MissingLinks (_slug, qErrs) ->
+          pure (length qErrs)
+        ZettelIssue_Error e -> do
           reportError zid e
           pure 0
   when (missingLinks > 0) $
@@ -88,8 +89,8 @@ generateSite config writeHtmlRoute' = do
   pure _neuronCache_graph
   where
     -- Report an error in the terminal
-    reportError :: MonadIO m => ZettelID -> Text -> m ()
-    reportError zid err = do
+    reportError :: MonadIO m => ZettelID -> ZettelError -> m ()
+    reportError zid (zettelErrorText -> err) = do
       liftIO $ hPutStrLn stderr $ toText $ "E " <> zettelIDSourceFileName zid
       liftIO $ hPutStr stderr $ "  - " <> indentAllButFirstLine 4 err
       where
@@ -138,7 +139,7 @@ loadZettelkastenFromFiles ::
     ( ( ZettelGraph,
         [ZettelC]
       ),
-      Map ZettelID ZettelError
+      Map ZettelID ZettelIssue
     )
 loadZettelkastenFromFiles plugins fileTree = do
   let total = getSum @Int $ foldMap (const $ Sum 1) fileTree
@@ -160,7 +161,7 @@ loadZettelkastenFromFiles plugins fileTree = do
       filesWithContent <-
         flip Map.traverseMaybeWithKey zidRefs $ \zid -> \case
           R.ZIDRef_Ambiguous fps -> do
-            tell $ one (zid, ZettelError_AmbiguousID fps)
+            tell $ one (zid, ZettelIssue_Error $ ZettelError_AmbiguousID fps)
             pure Nothing
           R.ZIDRef_Available fp s pluginData ->
             pure $ Just (fp, (s, pluginData))

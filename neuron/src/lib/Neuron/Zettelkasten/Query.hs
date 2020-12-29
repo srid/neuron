@@ -33,7 +33,7 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (..),
     sortZettelsReverseChronological,
   )
-import Neuron.Zettelkasten.Zettel.Error (ZettelError (..))
+import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Relude
 
 runZettelQuery :: [Zettel] -> ZettelQuery r -> Either QueryResultError r
@@ -78,7 +78,7 @@ zettelQueryResultJson ::
   ZettelQuery r ->
   Either QueryResultError r ->
   -- Zettels that cannot be parsed by neuron
-  Map ZettelID ZettelError ->
+  Map ZettelID ZettelIssue ->
   Value
 zettelQueryResultJson q er skippedZettels =
   toJSON $
@@ -114,7 +114,7 @@ graphQueryResultJson ::
   GraphQuery r ->
   Either QueryResultError r ->
   -- Zettels that cannot be parsed by neuron (and as such are excluded from the graph)
-  Map ZettelID ZettelError ->
+  Map ZettelID ZettelIssue ->
   Value
 graphQueryResultJson q er skippedZettels =
   toJSON $

@@ -8,6 +8,7 @@
   - dirtree: Treat directories as zettels, forming automatic folgezettel connections to their children. (#497)
   - neuronignore: Exclude directories and markdown files via `.neuronignore`. (#499)
     - By default, recursively read Markdown files in notes directory. This behaviour can be disabled via the neuronignore plugin.
+- Reduce error verbosity (CLI & web) in the scenario of there being innumerous broken wiki-links.
 
 ## Unreleased (v1 + v2)
 
