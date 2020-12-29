@@ -22,3 +22,7 @@ data QueryResultError
 showQueryResultError :: QueryResultError -> Text
 showQueryResultError (QueryResultError_NoSuchZettel _conn zid) =
   "no such zettel: " <> unZettelID zid
+
+missingZids :: NonEmpty QueryResultError -> NonEmpty ZettelID
+missingZids = fmap $ \case
+  QueryResultError_NoSuchZettel _ zid -> zid

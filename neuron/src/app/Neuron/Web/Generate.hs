@@ -19,7 +19,7 @@ where
 
 import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.Map.Strict as Map
-import Data.Text.IO (hPutStrLn, hPutStr)
+import Data.Text.IO (hPutStr, hPutStrLn)
 import Development.Shake (Action, need)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
@@ -33,7 +33,7 @@ import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
-import Neuron.Zettelkasten.ID (ZettelID (..))
+import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
@@ -42,7 +42,7 @@ import Neuron.Zettelkasten.Zettel
   )
 import Neuron.Zettelkasten.Zettel.Error
   ( ZettelError (ZettelError_AmbiguousID),
-    zettelErrorList,
+    zettelErrorText,
   )
 import Relude hiding (traceShowId)
 import Rib.Shake (ribInputDir)
@@ -74,17 +74,24 @@ generateSite config writeHtmlRoute' = do
     writeHtmlRoute () Z.Route_ImpulseStatic
   -- Report all errors
   -- TODO: Report only new errors in this run, to avoid spamming the terminal.
-  forM_ (Map.toList _neuronCache_errors) $ \(zid, err) -> do
-    reportError zid $ zettelErrorList err
+  missingLinks <- fmap sum $
+    forM (Map.toList _neuronCache_errors) $ \(zid, err) -> do
+      case zettelErrorText err of
+        Left n ->
+          pure n
+        Right e -> do
+          reportError zid e
+          pure 0
+  when (missingLinks > 0) $
+    liftIO $ hPutStrLn stderr $ "E " <> show missingLinks <> " missing links found across zettels (see Impulse)"
   when reportPerf $ liftIO $ hPutStrLn stderr $ toText @String $ printf "Took %.2fs to generate html" writeDur
   pure _neuronCache_graph
   where
     -- Report an error in the terminal
-    reportError :: MonadIO m => ZettelID -> NonEmpty Text -> m ()
-    reportError zid errors = do
-      liftIO $ hPutStrLn stderr $ "E " <> unZettelID zid
-      forM_ errors $ \err ->
-        liftIO $ hPutStr stderr $ "  - " <> indentAllButFirstLine 4 err
+    reportError :: MonadIO m => ZettelID -> Text -> m ()
+    reportError zid err = do
+      liftIO $ hPutStrLn stderr $ toText $ "E " <> zettelIDSourceFileName zid
+      liftIO $ hPutStr stderr $ "  - " <> indentAllButFirstLine 4 err
       where
         indentAllButFirstLine :: Int -> Text -> Text
         indentAllButFirstLine n = unlines . go . lines

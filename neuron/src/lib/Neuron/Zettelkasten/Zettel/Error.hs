@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,7 +13,7 @@ import Data.Tagged (untag)
 import qualified Data.Text as T
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Zettelkasten.ID (Slug)
-import Neuron.Zettelkasten.Query.Error (QueryResultError, showQueryResultError)
+import Neuron.Zettelkasten.Query.Error (QueryResultError)
 import Relude
 
 -- | All possible errors for a given zettel ID
@@ -27,14 +28,13 @@ data ZettelError
     ZettelError_AmbiguousSlug Slug
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
-zettelErrorList :: ZettelError -> NonEmpty Text
-zettelErrorList = \case
+zettelErrorText :: ZettelError -> Either Int Text
+zettelErrorText = \case
   ZettelError_ParseError (untag . snd -> parseErr) ->
-    parseErr :| []
+    Right parseErr
   ZettelError_QueryResultErrors queryErrs ->
-    showQueryResultError <$> snd queryErrs
+    Left (length queryErrs)
   ZettelError_AmbiguousID filePaths ->
-    ("Multiple zettels have the same ID: " <> T.intercalate ", " (toText <$> toList filePaths))
-      :| []
+    Right $ "Multiple zettels have the same ID: " <> T.intercalate ", " (toText <$> toList filePaths)
   ZettelError_AmbiguousSlug slug ->
-    "Slug '" <> slug <> "' is already used by another zettel" :| []
+    Right $ "Slug '" <> slug <> "' is already used by another zettel"

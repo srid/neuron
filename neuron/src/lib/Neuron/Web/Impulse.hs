@@ -28,7 +28,7 @@ import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Web.Query.View as QueryView
 import Neuron.Web.Route (NeuronWebT, Route (..), routeHtmlPath)
 import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Widget (LoadableData, divClassVisible, elPreOverflowing, elVisible)
+import Neuron.Web.Widget (LoadableData, divClassVisible, elVisible)
 import qualified Neuron.Web.Widget as W
 import Neuron.Web.Zettel.View (renderZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
@@ -36,7 +36,7 @@ import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Query (zettelsByTag)
-import Neuron.Zettelkasten.Query.Error (showQueryResultError)
+import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelT (zettelTitle),
@@ -204,49 +204,79 @@ renderImpulse (fmap (fmap Theme.semanticColor) -> themeColor) impulseLDyn = do
         elAttr "a" ("href" =: toText (routeHtmlPath Route_ImpulseStatic)) $ text "here"
         text "."
 
-renderErrors :: (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) => Dynamic t (Map ZettelID ZettelError) -> NeuronWebT t m ()
+renderErrors ::
+  (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) =>
+  Dynamic t (Map ZettelID ZettelError) ->
+  NeuronWebT t m ()
 renderErrors errors = do
-  let severity = \case
-        ZettelError_ParseError _ -> "negative"
-        ZettelError_QueryResultErrors _ -> "warning"
-        ZettelError_AmbiguousID _ -> "negative"
-        ZettelError_AmbiguousSlug _ -> "negative"
-      errorMessageHeader zid = \case
-        ZettelError_ParseError (slug, _) -> do
-          text "Zettel "
-          QueryView.renderZettelLinkIDOnly zid slug
-          text " failed to parse"
-        ZettelError_QueryResultErrors (slug, _) -> do
-          text "Zettel "
-          QueryView.renderZettelLinkIDOnly zid slug
-          text " has missing wiki-links"
-        ZettelError_AmbiguousID _files -> do
-          text $
-            "More than one path is associated with the same zettel ID ("
-              <> unZettelID zid
-              <> "):"
-        ZettelError_AmbiguousSlug _slug -> do
-          text $ "Zettel '" <> unZettelID zid <> "' ignored; has ambiguous slug"
   void $
     simpleList (Map.toList <$> errors) $ \errorDyn -> do
       dyn_ $
         ffor errorDyn $ \(zid, zError) -> do
-          divClass ("ui tiny message " <> severity zError) $ do
-            divClass "header" $ errorMessageHeader zid zError
-            el "p" $ do
-              case zError of
-                ZettelError_ParseError (_slug, parseError) ->
-                  renderZettelParseError parseError
-                ZettelError_QueryResultErrors queryErrors ->
-                  el "ol" $ do
-                    forM_ (snd queryErrors) $ \qe ->
-                      el "li" $ elPreOverflowing $ text $ showQueryResultError qe
-                ZettelError_AmbiguousID filePaths ->
-                  el "ul" $ do
-                    forM_ filePaths $ \fp ->
-                      el "li" $ el "tt" $ text $ toText fp
-                ZettelError_AmbiguousSlug slug ->
-                  el "p" $ text $ "Slug '" <> slug <> "' is used by another zettel"
+          renderError zid zError
+  mzs404 <- maybeDyn $ nonEmpty . zidsWithMissingLinks <$> errors
+  dyn_ $
+    ffor mzs404 $ \case
+      Nothing -> blank
+      Just zs404 -> do
+        divClass "ui tiny message warning" $ do
+          divClass "header" $ text "Missing wiki-links detected in some zettels"
+          el "p" $ do
+            divClass "ui horizontal list" $ do
+              void $
+                simpleList (toList <$> zs404) $ \zDyn ->
+                  divClass "item" $ do
+                    dyn_ $
+                      ffor zDyn $ \(zid, slug, qErrors) -> do
+                        let tooltip = "Links in vain to: " <> T.intercalate ", " (toList $ unZettelID <$> Q.missingZids qErrors)
+                        elAttr "span" ("title" =: tooltip) $ do
+                          QueryView.renderZettelLinkIDOnly zid slug
+  where
+    zidsWithMissingLinks errs =
+      fforMaybe (Map.toList errs) $ \(zid, zErr) -> case zErr of
+        ZettelError_QueryResultErrors (slug, qErrs) ->
+          Just (zid, slug, qErrs)
+        _ ->
+          Nothing
+    renderError zid zError = do
+      case zError of
+        ZettelError_ParseError (_slug, parseError) -> errorDiv zid zError $ do
+          renderZettelParseError parseError
+        ZettelError_AmbiguousID filePaths -> errorDiv zid zError $ do
+          el "ul" $ do
+            forM_ filePaths $ \fp ->
+              el "li" $ el "tt" $ text $ toText fp
+        ZettelError_AmbiguousSlug slug -> errorDiv zid zError $ do
+          el "p" $ text $ "Slug '" <> slug <> "' is used by another zettel"
+        ZettelError_QueryResultErrors _queryErrors ->
+          -- HACK: won't be reached
+          blank
+    errorDiv zid zError w = do
+      divClass ("ui tiny message " <> severity zError) $ do
+        divClass "header" $ errorMessageHeader zid zError
+        el "p" w
+    severity = \case
+      ZettelError_ParseError _ -> "negative"
+      ZettelError_AmbiguousID _ -> "negative"
+      ZettelError_AmbiguousSlug _ -> "negative"
+      ZettelError_QueryResultErrors _ ->
+        -- HACK: won't be reached
+        "warning"
+    errorMessageHeader zid = \case
+      ZettelError_ParseError (slug, _) -> do
+        text "Zettel "
+        QueryView.renderZettelLinkIDOnly zid slug
+        text " failed to parse"
+      ZettelError_AmbiguousID _files -> do
+        text $
+          "More than one path is associated with the same zettel ID ("
+            <> unZettelID zid
+            <> "):"
+      ZettelError_AmbiguousSlug _slug -> do
+        text $ "Zettel '" <> unZettelID zid <> "' ignored; has ambiguous slug"
+      ZettelError_QueryResultErrors (_slug, _) -> do
+        -- HACK: won't be reached
+        blank
 
 renderForest ::
   (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) =>

@@ -83,7 +83,7 @@ renderQueryResult minner = \case
           when (length resToDisplay /= length res) $ do
             el "li" $
               elClass "span" "ui grey text" $ do
-                text $ "(displaying only " <> (show $ length resToDisplay) <> " out of " <> show (length res) <> " zettels)"
+                text $ "(displaying only " <> show (length resToDisplay) <> " out of " <> show (length res) <> " zettels)"
   q@(ZettelQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
