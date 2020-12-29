@@ -9,6 +9,7 @@ where
 
 import qualified Data.Text as T
 import Neuron.Version (neuronVersion)
+import Data.Tagged
 import Relude
 import Test.Hspec
 
@@ -16,4 +17,4 @@ spec :: Spec
 spec = do
   describe "Application version" $ do
     it "should have dots" $ do
-      neuronVersion `shouldSatisfy` T.isInfixOf "."
+      untag neuronVersion `shouldSatisfy` T.isInfixOf "."

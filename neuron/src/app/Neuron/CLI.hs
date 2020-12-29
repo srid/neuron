@@ -13,6 +13,7 @@ where
 
 import qualified Data.Aeson.Text as Aeson
 import Data.Some (withSome)
+import Data.Tagged
 import Data.Time
   ( getCurrentTime,
     getCurrentTimeZone,
@@ -56,7 +57,7 @@ run act = do
   where
     versionOption =
       infoOption
-        (toString Version.neuronVersion)
+        (toString $ untag Version.neuronVersion)
         (long "version" <> help "Show version")
     now = do
       tz <- getCurrentTimeZone

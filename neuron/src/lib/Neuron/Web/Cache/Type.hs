@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -10,7 +11,7 @@ module Neuron.Web.Cache.Type where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
-import Neuron.Config.Type (Config)
+import Neuron.Config.Type (Config, NeuronVersion)
 import Neuron.Web.Widget (LoadableData)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
@@ -28,7 +29,7 @@ data NeuronCache = NeuronCache
   { _neuronCache_graph :: ZettelGraph,
     _neuronCache_errors :: Map ZettelID ZettelIssue,
     _neuronCache_config :: Config,
-    _neuronCache_neuronVersion :: Text
+    _neuronCache_neuronVersion :: NeuronVersion
   }
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
