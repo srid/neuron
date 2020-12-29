@@ -31,14 +31,13 @@ import Neuron.Web.Cache.Type (NeuronCache, _neuronCache_graph)
 import qualified Neuron.Web.Cache.Type as Cache
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
+import qualified Neuron.Web.Route.Data as RD
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
-    ZettelT (zettelSlug),
-    sansContent,
   )
 import Neuron.Zettelkasten.Zettel.Error
   ( ZettelError (..),
@@ -57,22 +56,22 @@ import Text.Printf (printf)
 -- | Generate the Zettelkasten site
 generateSite ::
   Config ->
-  (forall a. NeuronCache -> Z.Route a -> a -> Action ()) ->
+  (forall a. NeuronCache -> RD.RouteDataCache -> Z.Route a -> Action ()) ->
   Action ZettelGraph
 generateSite config writeHtmlRoute' = do
   reportPerf <- liftIO $ isJust <$> lookupEnv "NEURON_PERF"
   (buildDur, (cache@Cache.NeuronCache {..}, !zettelContents)) <- timeItT $ loadZettelkasten config
   when reportPerf $ liftIO $ hPutStrLn stderr $ toText @String $ printf "Took %.2fs to build the graph" buildDur
-  let writeHtmlRoute :: forall a. a -> Z.Route a -> Action ()
-      writeHtmlRoute v r = writeHtmlRoute' cache r v
+  let rdCache = RD.mkRouteDataCache zettelContents
+      writeHtmlRoute :: forall a. Z.Route a -> Action ()
+      writeHtmlRoute = writeHtmlRoute' cache rdCache
   (writeDur, ()) <- timeItT $ do
     -- Generate HTML for every zettel
-    forM_ zettelContents $ \val@(zettelSlug . sansContent -> slug) ->
-      writeHtmlRoute val $ Z.Route_Zettel slug
+    (writeHtmlRoute . Z.Route_Zettel) `mapM_` RD.allSlugs rdCache
     -- Generate Impulse
-    writeHtmlRoute () $ Z.Route_Impulse Nothing
+    writeHtmlRoute $ Z.Route_Impulse Nothing
     -- ... and its static version
-    writeHtmlRoute () Z.Route_ImpulseStatic
+    writeHtmlRoute Z.Route_ImpulseStatic
   -- Report all errors
   -- TODO: Report only new errors in this run, to avoid spamming the terminal.
   missingLinks <- fmap sum $

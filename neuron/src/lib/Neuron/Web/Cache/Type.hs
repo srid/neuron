@@ -11,7 +11,8 @@ module Neuron.Web.Cache.Type where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
-import Neuron.Config.Type (Config, NeuronVersion)
+import Neuron.Config.Type (Config)
+import Neuron.Web.Route (NeuronVersion)
 import Neuron.Web.Widget (LoadableData)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)

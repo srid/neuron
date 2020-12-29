@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
@@ -15,12 +14,10 @@ module Neuron.Config.Type
     mergeWithDefault,
     getSiteBaseUrl,
     getPlugins,
-    NeuronVersion,
   )
 where
 
 import Data.Aeson
-import Data.Tagged
 import Neuron.Plugin (PluginRegistry)
 import qualified Neuron.Plugin as Plugin
 import Relude hiding (readEither)
@@ -28,8 +25,6 @@ import Text.URI (URI, mkURI)
 
 configFile :: FilePath
 configFile = "neuron.dhall"
-
-type NeuronVersion = Tagged "NeuronVersion" Text
 
 -- | Config type for @neuron.dhall@
 --

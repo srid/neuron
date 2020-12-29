@@ -6,9 +6,9 @@ module Neuron.Version where
 
 import Data.Tagged (Tagged (..))
 import Data.Version (showVersion)
-import Neuron.Config.Type
+import Neuron.Web.Route (NeuronVersion)
 import Paths_neuron (version)
-import Relude
+import Relude (ToText (toText), ($))
 
 -- | Neuron cabal library version
 neuronVersion :: NeuronVersion

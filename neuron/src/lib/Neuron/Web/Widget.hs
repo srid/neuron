@@ -81,31 +81,35 @@ loadingWidget ::
   Dynamic t (LoadableData a) ->
   (Dynamic t a -> m ()) ->
   m ()
-loadingWidget valDyn w = do
-  mresp <- maybeDyn valDyn
-  dyn_ $
-    ffor mresp $ \case
-      Nothing ->
-        divClass "ui text container" inlineLoader
-      Just resp -> do
-        eresp <- eitherDyn resp
-        dyn_ $
-          ffor eresp $ \case
-            Left errDyn -> do
-              divClass "ui text container" $
-                divClass "ui negative message" $ do
-                  divClass "header" $ text "Unable to parse neuron cache"
-                  el "p" $ dynText $ T.pack <$> errDyn
-            Right aDyn -> do
-              w aDyn
+loadingWidget valDyn = do
+  let loadingW = divClass "ui text container" inlineLoader
+      errorW errDyn = do
+        divClass "ui text container" $
+          divClass "ui negative message" $ do
+            divClass "header" $ text "Unable to parse neuron cache"
+            el "p" $ dynText $ T.pack <$> errDyn
+  loadingWidget' valDyn loadingW errorW
   where
-    _loader :: DomBuilder t m => m ()
-    _loader = do
-      divClass "ui text container" $ do
-        divClass "ui active dimmer" $ do
-          divClass "ui medium text loader" $ text "Loading JSON cache"
-        el "p" blank
     inlineLoader :: DomBuilder t m => m ()
     inlineLoader = do
       divClass "ui basic segment" $ do
         divClass "ui active centered inline loader" blank
+
+loadingWidget' ::
+  (Adjustable t m, NotReady t m, PostBuild t m, MonadHold t m, MonadFix m) =>
+  Dynamic t (LoadableData a) ->
+  m () ->
+  (Dynamic t String -> m ()) ->
+  (Dynamic t a -> m ()) ->
+  m ()
+loadingWidget' valDyn lW eW w = do
+  mresp <- maybeDyn valDyn
+  dyn_ $
+    ffor mresp $ \case
+      Nothing -> lW
+      Just resp -> do
+        eresp <- eitherDyn resp
+        dyn_ $
+          ffor eresp $ \case
+            Left errDyn -> eW errDyn
+            Right aDyn -> w aDyn

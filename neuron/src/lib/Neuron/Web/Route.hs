@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -13,13 +14,20 @@ import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some, withSome)
 import Data.TagTree (Tag, unTag)
-import Neuron.Zettelkasten.ID (Slug)
+import Data.Tagged (Tagged)
+import Data.Tree (Forest)
+import Neuron.Web.Theme (Theme)
+import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Zettel
-  ( ZettelC,
+  ( Zettel,
+    ZettelC,
     ZettelT (zettelTitle),
   )
+import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Reflex.Dom.Core (DomBuilder, elAttr, (=:))
 import Relude
+
+type NeuronVersion = Tagged "NeuronVersion" Text
 
 -- TODO: Do we even need a route GADT? Re-evaluate this when doing the rib->reflex-headless migration.
 data Route a where
@@ -27,8 +35,29 @@ data Route a where
   -- | Impulse is implemented in github.com/srid/rememorate
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
-  Route_Impulse :: Maybe Tag -> Route ()
-  Route_ImpulseStatic :: Route ()
+  Route_Impulse :: Maybe Tag -> Route ((Theme, NeuronVersion), Impulse)
+  Route_ImpulseStatic :: Route ((Theme, NeuronVersion), Impulse)
+
+-- | The value needed to render the Impulse page
+
+--
+-- All heavy graph computations are decoupled from rendering, producing this
+-- value, that is in turn used for instant rendering.
+data Impulse = Impulse
+  { -- | Clusters on the folgezettel graph.
+    impulseClusters :: [Forest (Zettel, [Zettel])],
+    impulseOrphans :: [Zettel],
+    -- | All zettel errors
+    impulseErrors :: Map ZettelID ZettelIssue,
+    impulseStats :: Stats,
+    impulsePinned :: [Zettel]
+  }
+
+data Stats = Stats
+  { statsZettelCount :: Int,
+    statsZettelConnectionCount :: Int
+  }
+  deriving (Eq, Show)
 
 routeHtmlPath :: Route a -> FilePath
 routeHtmlPath = \case

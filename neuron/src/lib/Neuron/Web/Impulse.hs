@@ -25,7 +25,7 @@ import Data.TagTree (mkDefaultTagQuery, mkTagPattern, unTag)
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Web.Query.View as QueryView
-import Neuron.Web.Route (NeuronWebT, Route (..), routeHtmlPath)
+import Neuron.Web.Route
 import qualified Neuron.Web.Theme as Theme
 import Neuron.Web.Widget (LoadableData, divClassVisible, elVisible)
 import qualified Neuron.Web.Widget as W
@@ -47,26 +47,6 @@ import Relude hiding ((&))
 import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam)
-
--- | The value needed to render the z-index
---
--- All heavy graph computations are decoupled from rendering, producing this
--- value, that is in turn used for instant rendering.
-data Impulse = Impulse
-  { -- | Clusters on the folgezettel graph.
-    impulseClusters :: [Forest (Zettel, [Zettel])],
-    impulseOrphans :: [Zettel],
-    -- | All zettel errors
-    impulseErrors :: Map ZettelID ZettelIssue,
-    impulseStats :: Stats,
-    impulsePinned :: [Zettel]
-  }
-
-data Stats = Stats
-  { statsZettelCount :: Int,
-    statsZettelConnectionCount :: Int
-  }
-  deriving (Eq, Show)
 
 -- TODO: Create SearchQuery.hs, and make a note of sharing it with CLI search.
 data TreeMatch
