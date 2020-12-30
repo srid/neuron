@@ -34,16 +34,6 @@ import Rib.Route (writeRoute)
 import Rib.Shake (buildStaticFiles)
 import qualified Skylighting.Core as Skylighting
 
-type App t m js =
-  ( PandocBuilder t m,
-    MonadHold t m,
-    PostBuild t m,
-    MonadFix m,
-    Prerender js t m,
-    PerformEvent t m,
-    TriggerEvent t m
-  )
-
 -- | The contents of GHCJS compiled JS.
 --
 -- We specify an alternate path, that is relative to project root, so that
@@ -60,29 +50,27 @@ generateMainSiteNg = do
 
 generateMainSite :: Config -> Action ()
 generateMainSite config = do
-  notesDir <- getNotesDir
   -- TODO: Make "static/*" configurable in .dhall; `{ staticIncludes = "static/*"; }`
   buildStaticFiles ["static/**", ".nojekyll"]
-  manifest <- Manifest.mkManifest <$> getDirectoryFiles notesDir Manifest.manifestPatterns
   headHtml <- getHeadHtml
+  manifest <-
+    Manifest.mkManifest <$> do
+      notesDir <- getNotesDir
+      getDirectoryFiles notesDir Manifest.manifestPatterns
   let writeHtmlRoute :: NeuronCache -> RD.RouteDataCache -> Route a -> Action ()
       writeHtmlRoute cache rdCache r = do
-        let w :: App t m js => m ()
-            w = do
-              let cacheDyn = case r of
-                    Route_Impulse {} ->
-                      -- FIXME: Injecting initial value here will break hydration on Impulse.
-                      constDyn Nothing
-                    _ ->
-                      constDyn $ W.availableData cache
-              renderRoutePage cacheDyn rdCache headHtml manifest r
         -- We do this verbose dance to make sure hydration happens only on Impulse route.
         -- Ideally, this should be abstracted out, but polymorphic types are a bitch.
         html :: ByteString <- liftIO $ case r of
           Route_Impulse {} ->
-            fmap snd . renderStatic . runHydratableT $ w
+            fmap snd . renderStatic . runHydratableT $ do
+              -- FIXME: Injecting initial value here will break hydration on Impulse.
+              let cacheDyn = constDyn Nothing
+              renderRoutePage cacheDyn rdCache headHtml manifest r
           _ ->
-            fmap snd . renderStatic $ w
+            fmap snd . renderStatic $ do
+              let cacheDyn = constDyn $ W.availableData cache
+              renderRoutePage cacheDyn rdCache headHtml manifest r
         -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
         writeRoute r $ decodeUtf8 @Text $ "<!DOCTYPE html>" <> html
   void $ generateSite config writeHtmlRoute
@@ -90,7 +78,14 @@ generateMainSite config = do
 -- | Render the given route
 renderRoutePage ::
   forall t m js a.
-  App t m js =>
+  ( PandocBuilder t m,
+    MonadHold t m,
+    PostBuild t m,
+    MonadFix m,
+    Prerender js t m,
+    PerformEvent t m,
+    TriggerEvent t m
+  ) =>
   Dynamic t (W.LoadableData NeuronCache) ->
   RD.RouteDataCache ->
   HeadHtml ->
