@@ -140,7 +140,7 @@ common app-common
     exceptions,
     file-embed,
     optparse-applicative,
-    pandoc,
+    pandoc-types,
     -- Use skylighting >= 0.9 as they are written in pure Haskell
     skylighting-core >= 0.9,
     relude,
