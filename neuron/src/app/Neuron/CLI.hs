@@ -27,10 +27,9 @@ import Neuron.CLI.Rib
     Command (..),
     commandParser,
     runRib,
-    runRibOnceQuietly,
   )
 import Neuron.CLI.Search (interactiveSearch)
-import Neuron.CLI.Types (QueryCommand (..))
+import Neuron.CLI.Types (AppT, QueryCommand (..), runAppT)
 import Neuron.Config (getConfig)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Version as Version
@@ -44,8 +43,8 @@ import Options.Applicative
 import Relude
 import System.Directory (getCurrentDirectory)
 
-run :: (Config -> Action ()) -> IO ()
-run act = do
+run :: (Config -> Action ()) -> AppT IO () -> IO ()
+run act actNg = do
   defaultNotesDir <- getCurrentDirectory
   cliParser <- commandParser defaultNotesDir <$> now
   app <-
@@ -53,7 +52,7 @@ run act = do
       info
         (versionOption <*> cliParser <**> helper)
         (fullDesc <> progDesc "Neuron, future-proof Zettelkasten app <https://neuron.zettel.page/>")
-  runWith act app
+  runWith act actNg app
   where
     versionOption =
       infoOption
@@ -63,19 +62,21 @@ run act = do
       tz <- getCurrentTimeZone
       utcToLocalTime tz <$> liftIO getCurrentTime
 
-runWith :: (Config -> Action ()) -> App -> IO ()
-runWith act App {..} =
+runWith :: (Config -> Action ()) -> AppT IO () -> App -> IO ()
+runWith act actNg app@App {..} =
   case cmd of
+    Gen ->
+      runAppT app actNg
     Rib ribCfg ->
       runRib (act =<< getConfig) notesDir ribCfg
     New newCommand ->
-      runRibOnceQuietly notesDir $ do
+      runAppT app $ do
         newZettelFile newCommand =<< getConfig
     Open openCommand ->
-      runRibOnceQuietly notesDir $ do
+      runAppT app $ do
         openLocallyGeneratedFile openCommand
     Query QueryCommand {..} ->
-      runRibOnceQuietly notesDir $ do
+      runAppT app $ do
         Cache.NeuronCache {..} <-
           if cached
             then Cache.getCache
@@ -91,5 +92,5 @@ runWith act App {..} =
               let result = Q.runGraphQuery _neuronCache_graph q
               putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result _neuronCache_errors
     Search searchCmd -> do
-      runRibOnceQuietly notesDir $ do
-        interactiveSearch notesDir searchCmd
+      runAppT app $ do
+        interactiveSearch searchCmd

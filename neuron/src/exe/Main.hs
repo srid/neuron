@@ -15,6 +15,7 @@ import Data.FileEmbed (embedOneStringFileOf)
 import Development.Shake (Action, getDirectoryFiles)
 import Main.Utf8 (withUtf8)
 import Neuron.CLI (run)
+import Neuron.CLI.Types (AppT, getNotesDir)
 import Neuron.Config.Type (Config)
 import Neuron.Web.Cache.Type (NeuronCache (..))
 import Neuron.Web.Generate (generateSite)
@@ -30,7 +31,7 @@ import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude
 import Rib.Route (writeRoute)
-import Rib.Shake (buildStaticFiles, ribInputDir)
+import Rib.Shake (buildStaticFiles)
 import qualified Skylighting.Core as Skylighting
 
 type App t m js =
@@ -51,11 +52,15 @@ impulseJS :: Text
 impulseJS = $(embedOneStringFileOf ["./ghcjs/impulse.js", "./neuron/ghcjs/impulse.js"])
 
 main :: IO ()
-main = withUtf8 $ run generateMainSite
+main = withUtf8 $ run generateMainSite generateMainSiteNg
+
+generateMainSiteNg :: AppT IO ()
+generateMainSiteNg = do
+  putStrLn =<< getNotesDir
 
 generateMainSite :: Config -> Action ()
 generateMainSite config = do
-  notesDir <- ribInputDir
+  notesDir <- getNotesDir
   -- TODO: Make "static/*" configurable in .dhall; `{ staticIncludes = "static/*"; }`
   buildStaticFiles ["static/**", ".nojekyll"]
   manifest <- Manifest.mkManifest <$> getDirectoryFiles notesDir Manifest.manifestPatterns
@@ -97,13 +102,18 @@ renderRoutePage cacheDyn rdCache headHtml manifest r = do
       fffmap = fmap . fmap . fmap
   el "html" $ do
     el "head" $ do
+      -- TODO: replace passing config (siteTitle), with using RD
+      -- Actually ... put version, theme, siteTitle (config stuff) in one common
+      -- dyn, and rebuild all. Actually, just rebuild all on any neuron.dhall
+      -- change. Wait a sec, just split `NeuronCache` into neuron.dhall/neuron
+      -- (cfg+ver) fields, and zk field (graph+errs), then holdDyn on them.
       V.headTemplate r $ (_neuronCache_config &&& mkRD) `fffmap` cacheDyn
       renderHeadHtml headHtml
       renderManifest manifest
       W.loadingWidget' cacheDyn blank (const blank) $ \cacheDyn' ->
         dyn_ $
           ffor cacheDyn' $ \cache@NeuronCache {..} ->
-            -- TODO: replace passing graph, with using RD
+            -- TODO: replace passing config and graph, with using RD (breadcrumb and opengraph)
             renderStructuredData _neuronCache_config r (_neuronCache_graph, mkRD cache)
       () <- case r of
         Route_Impulse {} ->
@@ -123,7 +133,7 @@ renderRoutePage cacheDyn rdCache headHtml manifest r = do
             V.renderRouteImpulse $ mkRD `fffmap` cacheDyn
         Route_Zettel {} -> do
           runNeuronWeb routeConfig $
-            -- TODO: replace passing graph, with using RD
+            -- TODO: replace passing config and graph, with using RD
             V.renderRouteZettel $ (id &&& mkRD) `fffmap` cacheDyn
       pure ()
 

@@ -16,15 +16,13 @@ import Data.Some (withSome)
 import Data.Text (strip)
 import qualified Data.Text as T
 import Data.Time.DateMayTime (DateMayTime, formatDateMayTime)
-import Development.Shake (Action)
-import Neuron.CLI.Types (NewCommand (..))
+import Neuron.CLI.Types (MonadApp, NewCommand (..), getNotesDir)
 import Neuron.Config.Type (Config (..))
 import Neuron.Web.Generate as Gen (loadZettelkasten)
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
 import Relude
-import Rib.Shake (ribInputDir)
 import System.Directory (setCurrentDirectory)
 import System.FilePath ((</>))
 import qualified System.Posix.Env as Env
@@ -33,7 +31,7 @@ import System.Posix.Process (executeFile)
 -- | Create a new zettel file and open it in editor if requested
 --
 -- As well as print the path to the created file.
-newZettelFile :: NewCommand -> Config -> Action ()
+newZettelFile :: (MonadIO m, MonadApp m) => NewCommand -> Config -> m ()
 newZettelFile NewCommand {..} config = do
   (_, zettels) <- Gen.loadZettelkasten config
   mzid <- withSome idScheme $ \scheme -> do
@@ -46,7 +44,7 @@ newZettelFile NewCommand {..} config = do
   case mzid of
     Left e -> die $ show e
     Right zid -> do
-      notesDir <- ribInputDir
+      notesDir <- getNotesDir
       let zettelFile = zettelIDSourceFileName zid
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-

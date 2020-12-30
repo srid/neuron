@@ -9,23 +9,24 @@ module Neuron.Web.HeadHtml
   )
 where
 
-import Development.Shake (Action, doesFileExist, readFile')
+import Neuron.CLI.Types (MonadApp (getNotesDir, needFile))
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Pandoc.PandocRaw (PandocRaw (..))
 import Relude
-import Rib.Shake (ribInputDir)
+import System.Directory (doesFileExist)
 import System.FilePath ((</>))
 import Text.Pandoc.Definition (Format (..))
 
 newtype HeadHtml = HeadHtml (Maybe Text)
 
-getHeadHtml :: Action HeadHtml
+getHeadHtml :: (MonadIO m, MonadApp m) => m HeadHtml
 getHeadHtml = do
-  headHtmlPath <- ribInputDir <&> (</> "head.html")
-  doesFileExist headHtmlPath >>= \case
-    True ->
-      HeadHtml . Just . toText <$> readFile' headHtmlPath
+  headHtmlPath <- getNotesDir <&> (</> "head.html")
+  liftIO (doesFileExist headHtmlPath) >>= \case
+    True -> do
+      needFile headHtmlPath
+      HeadHtml . Just <$> readFileText headHtmlPath
     False ->
       pure $ HeadHtml Nothing
 

@@ -20,14 +20,15 @@ where
 import Control.Monad.Writer.Strict (runWriter, tell)
 import qualified Data.Map.Strict as Map
 import Data.Text.IO (hPutStr, hPutStrLn)
-import Development.Shake (Action, need)
+import Development.Shake (Action)
+import Neuron.CLI.Types (MonadApp, getNotesDir, needFile)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
 import Neuron.Plugin (PluginRegistry)
 import qualified Neuron.Plugin as Plugin
 import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
-import Neuron.Web.Cache.Type (NeuronCache, _neuronCache_graph)
+import Neuron.Web.Cache.Type (NeuronCache)
 import qualified Neuron.Web.Cache.Type as Cache
 import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
@@ -45,7 +46,6 @@ import Neuron.Zettelkasten.Zettel.Error
     zettelErrorText,
   )
 import Relude hiding (traceShowId)
-import Rib.Shake (ribInputDir)
 import System.Directory (withCurrentDirectory)
 import qualified System.Directory.Contents as DC
 import System.Environment (lookupEnv)
@@ -60,22 +60,22 @@ generateSite ::
   Action ZettelGraph
 generateSite config writeHtmlRoute' = do
   reportPerf <- liftIO $ isJust <$> lookupEnv "NEURON_PERF"
-  (buildDur, (cache@Cache.NeuronCache {..}, !zettelContents)) <- timeItT $ loadZettelkasten config
+  (buildDur, (cache, RD.mkRouteDataCache -> rdCache)) <- timeItT $ loadZettelkasten config
   when reportPerf $ liftIO $ hPutStrLn stderr $ toText @String $ printf "Took %.2fs to build the graph" buildDur
-  let rdCache = RD.mkRouteDataCache zettelContents
-      writeHtmlRoute :: forall a. Z.Route a -> Action ()
+  let writeHtmlRoute :: forall a. Z.Route a -> Action ()
       writeHtmlRoute = writeHtmlRoute' cache rdCache
-  (writeDur, ()) <- timeItT $ do
-    -- Generate HTML for every zettel
-    (writeHtmlRoute . Z.Route_Zettel) `mapM_` RD.allSlugs rdCache
-    -- Generate Impulse
-    writeHtmlRoute $ Z.Route_Impulse Nothing
-    -- ... and its static version
-    writeHtmlRoute Z.Route_ImpulseStatic
+  (writeDur, ()) <-
+    timeItT $ do
+      -- Generate HTML for every zettel
+      (writeHtmlRoute . Z.Route_Zettel) `mapM_` RD.allSlugs rdCache
+      -- Generate Impulse
+      writeHtmlRoute $ Z.Route_Impulse Nothing
+      -- ... and its static version
+      writeHtmlRoute Z.Route_ImpulseStatic
   -- Report all errors
   -- TODO: Report only new errors in this run, to avoid spamming the terminal.
   missingLinks <- fmap sum $
-    forM (Map.toList _neuronCache_errors) $ \(zid, issue) -> do
+    forM (Map.toList $ Cache._neuronCache_errors cache) $ \(zid, issue) -> do
       case issue of
         ZettelIssue_MissingLinks (_slug, qErrs) ->
           pure (length qErrs)
@@ -85,7 +85,7 @@ generateSite config writeHtmlRoute' = do
   when (missingLinks > 0) $
     liftIO $ hPutStrLn stderr $ "E " <> show missingLinks <> " missing links found across zettels (see Impulse)"
   when reportPerf $ liftIO $ hPutStrLn stderr $ toText @String $ printf "Took %.2fs to generate html" writeDur
-  pure _neuronCache_graph
+  pure $ Cache._neuronCache_graph cache
   where
     -- Report an error in the terminal
     reportError :: MonadIO m => ZettelID -> ZettelError -> m ()
@@ -101,20 +101,20 @@ generateSite config writeHtmlRoute' = do
             go (x : xs) =
               x : fmap (toText . (replicate n ' ' <>) . toString) xs
 
-loadZettelkasten :: Config -> Action (NeuronCache, [ZettelC])
+loadZettelkasten :: (MonadIO m, MonadApp m) => Config -> m (NeuronCache, [ZettelC])
 loadZettelkasten config = do
   let plugins = Config.getPlugins config
   liftIO $ hPutStrLn stderr $ "Plugins enabled: " <> show (Map.keys plugins)
   ((g, zs), errs) <- loadZettelkastenFromFiles plugins =<< locateZettelFiles plugins
   let cache = Cache.NeuronCache g errs config neuronVersion
-      cacheSmall = cache {_neuronCache_graph = stripSurroundingContext g}
+      cacheSmall = cache {Cache._neuronCache_graph = stripSurroundingContext g}
   Cache.updateCache cacheSmall
   pure (cache, zs)
 
-locateZettelFiles :: PluginRegistry -> Action (DC.DirTree FilePath)
+locateZettelFiles :: (MonadIO m, MonadApp m) => PluginRegistry -> m (DC.DirTree FilePath)
 locateZettelFiles plugins = do
   -- Run with notes dir as PWD, so that DirTree uses relative paths throughout.
-  d <- ribInputDir
+  d <- getNotesDir
   liftIO $
     withCurrentDirectory d $
       -- Building with "." as root directory ensures that the returned tree
@@ -132,9 +132,10 @@ locateZettelFiles plugins = do
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFromFiles ::
+  (MonadIO m, MonadApp m) =>
   PluginRegistry ->
   DC.DirTree FilePath ->
-  Action
+  m
     ( ( ZettelGraph,
         [ZettelC]
       ),
@@ -151,8 +152,8 @@ loadZettelkastenFromFiles plugins fileTree = do
         flip R.resolveZidRefsFromDirTree fileTree $ \relPath -> do
           -- NOTE: This is the only place where Shake is being used (for
           -- posterity)
-          absPath <- fmap (</> relPath) ribInputDir
-          need [absPath]
+          absPath <- fmap (</> relPath) getNotesDir
+          needFile absPath
           decodeUtf8With lenientDecode <$> readFileBS absPath
         Plugin.afterZettelRead plugins fileTree
   pure $
