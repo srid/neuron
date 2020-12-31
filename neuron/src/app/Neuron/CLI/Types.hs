@@ -23,6 +23,7 @@ module Neuron.CLI.Types
     SearchCommand (..),
     OpenCommand (..),
     QueryCommand (..),
+    GenCommand (..),
     commandParser,
   )
 where
@@ -47,14 +48,17 @@ import Neuron.Zettelkasten.Zettel as Q
   ( ZettelQuery (..),
   )
 import Options.Applicative
+import Options.Applicative.Extra
 import Relude
-import System.FilePath (addTrailingPathSeparator, (</>))
+import System.FilePath ((</>))
 import qualified Text.URI as URI
 
 data App = App
   { notesDir :: FilePath,
+    outputDir :: Maybe FilePath,
     cmd :: Command
   }
+  deriving (Show)
 
 newtype AppT m a = AppT (ReaderT App m a)
   deriving (Functor, Applicative, Monad, MonadFail, MonadIO, MonadTrans)
@@ -73,8 +77,13 @@ class MonadApp m where
 instance Monad m => MonadApp (AppT m) where
   getNotesDir =
     AppT $ reader notesDir
-  getOutputDir =
-    (</> ".neuron" </> "output2") <$> getNotesDir
+  getOutputDir = do
+    mOut <- AppT $ reader outputDir
+    case mOut of
+      Nothing ->
+        getNotesDir <&> (</> ".neuron" </> "output2")
+      Just fp ->
+        pure fp
 
 data NewCommand = NewCommand
   { date :: DateMayTime,
@@ -94,8 +103,8 @@ data SearchBy
   | SearchByContent
   deriving (Eq, Show)
 
-data OpenCommand = OpenCommand
-  { route :: Some R.Route
+newtype OpenCommand = OpenCommand
+  { unOpenCommand :: Some R.Route
   }
   deriving (Eq, Show)
 
@@ -103,6 +112,13 @@ data QueryCommand = QueryCommand
   { -- Use cache instead of building the zettelkasten from scratch
     cached :: Bool,
     query :: Either (Some Q.ZettelQuery) (Some Q.GraphQuery)
+  }
+  deriving (Eq, Show)
+
+data GenCommand = GenCommand
+  { -- | Whether to run a HTTP server on `outputDir`
+    serve :: Maybe (Text, Int),
+    watch :: Bool
   }
   deriving (Eq, Show)
 
@@ -116,7 +132,8 @@ data Command
   | -- | Run a query against the Zettelkasten
     Query QueryCommand
   | -- | Run site generation
-    Gen
+    Gen GenCommand
+  deriving (Eq, Show)
 
 -- | optparse-applicative parser for neuron CLI
 commandParser :: FilePath -> LocalTime -> Parser App
@@ -127,17 +144,24 @@ commandParser defaultNotesDir now = do
       ( short 'd' <> metavar "PATH" <> value defaultNotesDir
           <> help "Run as if neuron was started in PATH instead of the current working directory"
       )
+  outputDir <-
+    optional $
+      option
+        directoryReader
+        ( short 'o' <> metavar "PATH"
+            <> help "Custom path to generate static site in"
+        )
   cmd <- cmdParser
   pure $ App {..}
   where
     cmdParser =
       hsubparser $
         mconcat
-          [ command "new" $ info newCommand $ progDesc "Create a new zettel",
+          [ command "gen" $ info genCommand $ progDesc "Generate a static site",
+            command "new" $ info newCommand $ progDesc "Create a new zettel",
             command "open" $ info openCommand $ progDesc "Open the locally generated Zettelkasten website",
             command "search" $ info searchCommand $ progDesc "Search zettels and print the matching filepath",
-            command "query" $ info queryCommand $ progDesc "Run a query against the zettelkasten",
-            command "gen" $ info genCommand $ progDesc "Generate static site"
+            command "query" $ info queryCommand $ progDesc "Run a query against the zettelkasten"
           ]
     newCommand = do
       idScheme <-
@@ -208,7 +232,15 @@ commandParser defaultNotesDir now = do
       edit <- switch (long "edit" <> short 'e' <> help "Open the matching zettel in $EDITOR")
       pure $ Search $ SearchCommand searchBy edit
     genCommand = do
-      pure Gen
+      serve <- hostPortOption
+      watch <-
+        switch
+          ( long "watch"
+              <> short 'w'
+              <> help "Watch for changes and regenerate"
+          )
+      pure $ Gen $ GenCommand {..}
+
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
       eitherReader $ first show . parseZettelID . toText
@@ -226,6 +258,3 @@ commandParser defaultNotesDir now = do
     -- We don't care about connections in the CLI, but the query requires one -
     -- so pass a dummy value.
     connDummy = C.OrdinaryConnection
-    -- Like `str` but adds a trailing slash if there isn't one.
-    directoryReader :: ReadM FilePath
-    directoryReader = fmap addTrailingPathSeparator str

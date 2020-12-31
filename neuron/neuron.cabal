@@ -184,6 +184,7 @@ library neuron-app-lib
     Data.Structured.OpenGraph
     Data.Structured.OpenGraph.Render
     System.Directory.Contents.Extra
+    Options.Applicative.Extra
     Neuron.Backend
     Neuron.CLI
     Neuron.CLI.New

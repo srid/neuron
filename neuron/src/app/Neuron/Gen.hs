@@ -71,22 +71,24 @@ import qualified System.Directory.Contents.Extra as DC
 import qualified System.FSNotify as FSN
 import System.FilePath ((</>))
 
-generateSite :: AppT IO ()
-generateSite = do
+generateSite :: Bool -> AppT IO ()
+generateSite continueMonitoring = do
   app <- getApp
+  liftIO $ print app
   --initial gen
   doGen
-  liftIO $ putStrLn "Monitoring for changes ..."
-  lift $
-    runHeadlessApp $ do
-      fsChanged <- genApp app
-      performEvent_ $
-        ffor fsChanged $ \(fmap FSN.eventPath -> paths) -> do
-          forM_ paths $ \path ->
-            liftIO $ putStrLn $ "M " <> DC.mkRelative (notesDir app) path
-          liftIO $ runAppT app doGen
-          liftIO $ putStrLn "Monitoring for changes ..."
-      pure never
+  when continueMonitoring $ do
+    liftIO $ putStrLn "Monitoring for changes ..."
+    lift $
+      runHeadlessApp $ do
+        fsChanged <- genApp app
+        performEvent_ $
+          ffor fsChanged $ \(fmap FSN.eventPath -> paths) -> do
+            forM_ paths $ \path ->
+              liftIO $ putStrLn $ "M " <> DC.mkRelative (notesDir app) path
+            liftIO $ runAppT app doGen
+            liftIO $ putStrLn "Monitoring for changes ..."
+        pure never
   where
     -- Do a one-off generation from top to bottom.
     -- No incrementall stuff (yet)

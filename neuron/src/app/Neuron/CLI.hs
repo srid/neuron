@@ -11,6 +11,7 @@ module Neuron.CLI
   )
 where
 
+import Control.Concurrent.Async (race_)
 import qualified Data.Aeson.Text as Aeson
 import Data.Some (withSome)
 import Data.Tagged
@@ -19,10 +20,11 @@ import Data.Time
     getCurrentTimeZone,
     utcToLocalTime,
   )
+import qualified Neuron.Backend as Backend
 import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Open (openLocallyGeneratedFile)
 import Neuron.CLI.Search (interactiveSearch)
-import Neuron.CLI.Types (App (..), AppT, Command (..), QueryCommand (..), commandParser, runAppT)
+import Neuron.CLI.Types
 import Neuron.Config (getConfig)
 import qualified Neuron.Gen as Gen
 import qualified Neuron.Version as Version
@@ -35,7 +37,7 @@ import Options.Applicative
 import Relude
 import System.Directory (getCurrentDirectory)
 
-run :: AppT IO () -> IO ()
+run :: (Bool -> AppT IO ()) -> IO ()
 run act = do
   defaultNotesDir <- getCurrentDirectory
   cliParser <- commandParser defaultNotesDir <$> now
@@ -44,7 +46,7 @@ run act = do
       info
         (versionOption <*> cliParser <**> helper)
         (fullDesc <> progDesc "Neuron, future-proof Zettelkasten app <https://neuron.zettel.page/>")
-  runWith act app
+  runAppT app $ runAppCommand act
   where
     versionOption =
       infoOption
@@ -54,35 +56,40 @@ run act = do
       tz <- getCurrentTimeZone
       utcToLocalTime tz <$> liftIO getCurrentTime
 
-runWith :: AppT IO () -> App -> IO ()
-runWith actNg app@App {..} =
-  case cmd of
-    Gen ->
-      runAppT app actNg
+runAppCommand :: (Bool -> AppT IO ()) -> AppT IO ()
+runAppCommand genAct = do
+  c <- cmd <$> getApp
+  case c of
+    Gen GenCommand {..} -> do
+      case serve of
+        Just (host, port) -> do
+          outDir <- getOutputDir
+          app <- getApp
+          liftIO $
+            race_ (runAppT app $ genAct watch) $ do
+              Backend.serve host port outDir
+        Nothing ->
+          genAct watch
     New newCommand ->
-      runAppT app $ do
-        newZettelFile newCommand =<< getConfig
+      newZettelFile newCommand =<< getConfig
     Open openCommand ->
-      runAppT app $ do
-        openLocallyGeneratedFile openCommand
-    Query QueryCommand {..} ->
-      runAppT app $ do
-        Cache.NeuronCache {..} <-
-          if cached
-            then Cache.getCache
-            else do
-              (ch, _, _) <- Gen.loadZettelkasten =<< getConfig
-              pure ch
-        case query of
-          Left someQ ->
-            withSome someQ $ \q -> do
-              let zsSmall = sansLinkContext <$> G.getZettels _neuronCache_graph
-                  result = Q.runZettelQuery zsSmall q
-              putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson q result _neuronCache_errors
-          Right someQ ->
-            withSome someQ $ \q -> do
-              let result = Q.runGraphQuery _neuronCache_graph q
-              putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result _neuronCache_errors
+      openLocallyGeneratedFile openCommand
+    Query QueryCommand {..} -> do
+      Cache.NeuronCache {..} <-
+        if cached
+          then Cache.getCache
+          else do
+            (ch, _, _) <- Gen.loadZettelkasten =<< getConfig
+            pure ch
+      case query of
+        Left someQ ->
+          withSome someQ $ \q -> do
+            let zsSmall = sansLinkContext <$> G.getZettels _neuronCache_graph
+                result = Q.runZettelQuery zsSmall q
+            putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson q result _neuronCache_errors
+        Right someQ ->
+          withSome someQ $ \q -> do
+            let result = Q.runGraphQuery _neuronCache_graph q
+            putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result _neuronCache_errors
     Search searchCmd -> do
-      runAppT app $ do
-        interactiveSearch searchCmd
+      interactiveSearch searchCmd
