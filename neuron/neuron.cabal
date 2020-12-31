@@ -110,7 +110,6 @@ library
     Neuron.Frontend.Impulse
     Neuron.Frontend.Theme
     Neuron.Frontend.View
-    Neuron.Orphans
     Text.Megaparsec.Simple
     Text.Pandoc.Util
     Text.URI.Util

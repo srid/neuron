@@ -7,7 +7,6 @@
 module Neuron.Zettelkasten.Query.Error where
 
 import Data.Aeson (FromJSON, ToJSON)
-import Neuron.Orphans ()
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import Relude
