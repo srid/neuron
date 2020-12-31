@@ -68,7 +68,7 @@ renderZettel ::
 renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
   -- Open impulse on pressing the forward slash key.
   el "script" $ do
-    text "document.onkeyup = function(e) { if (e.key == \"/\") { document.location.href = \"impulse.html\"; } }"
+    text "document.onkeyup = function(e) { if ([\"/\", \"s\"].includes(e.key)) { document.location.href = \"impulse.html\"; } }"
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
