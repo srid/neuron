@@ -6,12 +6,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Responsible for caching zettelkasten graph on disk
-module Neuron.Web.Cache where
+module Neuron.Cache where
 
 import Data.Aeson (eitherDecodeFileStrict, encodeFile)
 import Neuron.CLI.Types (MonadApp, getOutputDir)
 import Neuron.Config.Type (Config)
-import Neuron.Web.Cache.Type (NeuronCache, ReadMode (..))
+import Neuron.Cache.Type (NeuronCache, ReadMode (..))
 import Relude
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>))

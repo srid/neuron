@@ -5,7 +5,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Widget where
+module Neuron.Frontend.Widget where
 
 import Control.Monad.Fix (MonadFix)
 import qualified Data.Text as T

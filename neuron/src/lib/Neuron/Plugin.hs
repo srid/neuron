@@ -15,7 +15,7 @@ import Neuron.Plugin.PluginData (PluginData (..))
 import qualified Neuron.Plugin.Plugins.DirTree as DirTree
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import Neuron.Plugin.Type (Plugin (..))
-import Neuron.Web.Route (NeuronWebT)
+import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)

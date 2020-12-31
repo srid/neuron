@@ -9,7 +9,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Impulse
+module Neuron.Frontend.Impulse
   ( renderImpulse,
     buildImpulse,
     Impulse (..),
@@ -24,12 +24,12 @@ import Data.Foldable (maximum)
 import Data.TagTree (mkDefaultTagQuery, mkTagPattern, unTag)
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (..))
-import qualified Neuron.Web.Query.View as QueryView
-import Neuron.Web.Route
-import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Widget (LoadableData, divClassVisible, elVisible)
-import qualified Neuron.Web.Widget as W
-import Neuron.Web.Zettel.View (renderZettelParseError)
+import qualified Neuron.Frontend.Query.View as QueryView
+import Neuron.Frontend.Route
+import qualified Neuron.Frontend.Theme as Theme
+import Neuron.Frontend.Widget (LoadableData, divClassVisible, elVisible)
+import qualified Neuron.Frontend.Widget as W
+import Neuron.Frontend.Zettel.View (renderZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G

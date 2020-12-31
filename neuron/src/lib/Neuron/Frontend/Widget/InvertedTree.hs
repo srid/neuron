@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Widget.InvertedTree
+module Neuron.Frontend.Widget.InvertedTree
   ( renderInvertedHeadlessTree,
     style,
   )

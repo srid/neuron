@@ -10,7 +10,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Zettel.View
+module Neuron.Frontend.Zettel.View
   ( renderZettel,
     renderZettelContentCard,
     renderZettelParseError,
@@ -23,17 +23,17 @@ import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Plugin (renderPluginPanel)
-import qualified Neuron.Web.Query.View as Q
-import Neuron.Web.Route
+import qualified Neuron.Frontend.Query.View as Q
+import Neuron.Frontend.Route
   ( NeuronWebT,
     Route (..),
     neuronRouteLink,
   )
-import Neuron.Web.Theme (Theme)
-import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Widget (elPreOverflowing, elTime, semanticIcon)
-import qualified Neuron.Web.Widget.AutoScroll as AS
-import qualified Neuron.Web.Widget.InvertedTree as IT
+import Neuron.Frontend.Theme (Theme)
+import qualified Neuron.Frontend.Theme as Theme
+import Neuron.Frontend.Widget (elPreOverflowing, elTime, semanticIcon)
+import qualified Neuron.Frontend.Widget.AutoScroll as AS
+import qualified Neuron.Frontend.Widget.InvertedTree as IT
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G

@@ -38,7 +38,7 @@ import Data.Time.DateMayTime
     mkDateMayTime,
     parseDateMayTime,
   )
-import qualified Neuron.Web.Route as R
+import qualified Neuron.Frontend.Route as R
 import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))

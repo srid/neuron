@@ -6,7 +6,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Route.Data
+module Neuron.Frontend.Route.Data
   ( RouteDataCache,
     allSlugs,
     mkRouteDataCache,
@@ -15,11 +15,11 @@ module Neuron.Web.Route.Data
 where
 
 import qualified Data.Map.Strict as Map
+import Neuron.Cache.Type (NeuronCache (..))
 import qualified Neuron.Config.Type as Config
-import Neuron.Web.Cache.Type (NeuronCache (..))
-import qualified Neuron.Web.Impulse as Impulse
-import Neuron.Web.Route (Route (..))
-import qualified Neuron.Web.Theme as Theme
+import qualified Neuron.Frontend.Impulse as Impulse
+import Neuron.Frontend.Route (Route (..))
+import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Zettelkasten.ID (Slug)
 import Neuron.Zettelkasten.Zettel (ZettelC, zettelSlug)
 import Relude

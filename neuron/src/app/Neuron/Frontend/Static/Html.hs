@@ -8,18 +8,18 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Html where
+module Neuron.Frontend.Static.Html where
 
 import Control.Monad.Fix (MonadFix)
 import Data.FileEmbed (embedOneStringFileOf)
-import Neuron.Web.Cache.Type (NeuronCache (..))
-import Neuron.Web.HeadHtml (HeadHtml, renderHeadHtml)
-import Neuron.Web.Manifest (Manifest, renderManifest)
-import Neuron.Web.Route (Route (..), routeConfig, runNeuronWeb)
-import qualified Neuron.Web.Route.Data as RD
-import Neuron.Web.StructuredData (renderStructuredData)
-import qualified Neuron.Web.View as V
-import qualified Neuron.Web.Widget as W
+import Neuron.Cache.Type (NeuronCache (..))
+import Neuron.Frontend.Manifest (Manifest, renderManifest)
+import Neuron.Frontend.Route (Route (..), routeConfig, runNeuronWeb)
+import qualified Neuron.Frontend.Route.Data as RD
+import Neuron.Frontend.Static.HeadHtml (HeadHtml, renderHeadHtml)
+import Neuron.Frontend.Static.StructuredData (renderStructuredData)
+import qualified Neuron.Frontend.View as V
+import qualified Neuron.Frontend.Widget as W
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude

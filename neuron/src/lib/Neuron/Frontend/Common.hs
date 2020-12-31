@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Common where
+module Neuron.Frontend.Common where
 
 import Clay (Css, (?))
 import qualified Clay as C

@@ -13,7 +13,7 @@ module Main where
 import GHC.IO.Handle (BufferMode (LineBuffering))
 import Main.Utf8 (withUtf8)
 import Neuron.CLI (run)
-import qualified Neuron.Gen as Gen
+import qualified Neuron.Reactor as Reactor
 import Relude
 import System.IO (hSetBuffering)
 
@@ -22,4 +22,4 @@ main = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stderr LineBuffering
   withUtf8 $
-    run Gen.generateSite
+    run Reactor.generateSite

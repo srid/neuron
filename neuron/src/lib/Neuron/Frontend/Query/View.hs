@@ -8,7 +8,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Query.View
+module Neuron.Frontend.Query.View
   ( renderQueryResult,
     renderZettelLink,
     renderZettelLinkIDOnly,
@@ -34,12 +34,12 @@ import Data.Tagged (untag)
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
 import GHC.Natural (naturalToInt)
-import Neuron.Web.Route
+import Neuron.Frontend.Route
   ( NeuronWebT,
     Route (..),
     neuronRouteLink,
   )
-import Neuron.Web.Widget (elNoSnippetSpan, elTime, semanticIcon)
+import Neuron.Frontend.Widget (elNoSnippetSpan, elTime, semanticIcon)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.ID (Slug, ZettelID (), unZettelID)
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))

@@ -8,7 +8,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Neuron's route and its config
-module Neuron.Web.Route where
+module Neuron.Frontend.Route where
 
 import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
@@ -16,7 +16,7 @@ import Data.Some (Some, withSome)
 import Data.TagTree (Tag, unTag)
 import Data.Tagged (Tagged)
 import Data.Tree (Forest)
-import Neuron.Web.Theme (Theme)
+import Neuron.Frontend.Theme (Theme)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,

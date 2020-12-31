@@ -4,7 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | HTML & CSS
-module Neuron.Web.Theme
+module Neuron.Frontend.Theme
   ( Theme (..),
     mkTheme,
     themeCss,

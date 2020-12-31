@@ -4,14 +4,14 @@
 module Main where
 
 import qualified Impulse.Run as Run
-import qualified Neuron.Web.Cache.Type as C
-import Neuron.Web.Route
+import qualified Neuron.Cache.Type as C
+import Neuron.Frontend.Route
   ( Route (Route_Impulse),
     routeConfig,
     runNeuronWeb,
   )
-import qualified Neuron.Web.Route.Data as RD
-import qualified Neuron.Web.View as V
+import qualified Neuron.Frontend.Route.Data as RD
+import qualified Neuron.Frontend.View as V
 import qualified Reflex.Dom.Main as Main
 
 main :: IO ()

@@ -6,7 +6,7 @@ module Neuron.Version where
 
 import Data.Tagged (Tagged (..))
 import Data.Version (showVersion)
-import Neuron.Web.Route (NeuronVersion)
+import Neuron.Frontend.Route (NeuronVersion)
 import Paths_neuron (version)
 import Relude (ToText (toText), ($))
 

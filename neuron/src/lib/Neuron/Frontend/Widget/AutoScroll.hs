@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Widget.AutoScroll where
+module Neuron.Frontend.Widget.AutoScroll where
 
 import Data.Tagged
 import Reflex.Dom.Core hiding ((&))

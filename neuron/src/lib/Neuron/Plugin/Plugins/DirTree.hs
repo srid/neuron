@@ -18,14 +18,14 @@ import Data.Some (Some (Some))
 import Data.TagTree (Tag, TagNode (..), TagQuery (..))
 import qualified Data.TagTree as Tag
 import qualified Data.Text as T
-import Neuron.Plugin.PluginData (DirZettel (..), PluginData (PluginData_DirTree))
-import Neuron.Plugin.Type (Plugin (..))
-import qualified Neuron.Web.Query.View as Q
-import Neuron.Web.Route (NeuronWebT)
-import Neuron.Web.Widget
+import qualified Neuron.Frontend.Query.View as Q
+import Neuron.Frontend.Route (NeuronWebT)
+import Neuron.Frontend.Widget
   ( ListItem (ListItem_File, ListItem_Folder),
     listItem,
   )
+import Neuron.Plugin.PluginData (DirZettel (..), PluginData (PluginData_DirTree))
+import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)

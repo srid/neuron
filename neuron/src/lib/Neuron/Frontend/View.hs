@@ -13,32 +13,32 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | HTML & CSS
-module Neuron.Web.View where
+module Neuron.Frontend.View where
 
 import Clay (Css, em, gray, important, pct, (?))
 import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Data.Tagged (untag)
+import Neuron.Cache.Type (NeuronCache (..))
+import qualified Neuron.Cache.Type as NeuronCache
 import Neuron.Config.Type (Config (..))
 import qualified Neuron.Config.Type as Config
-import Neuron.Web.Cache.Type (NeuronCache (..))
-import qualified Neuron.Web.Cache.Type as NeuronCache
-import Neuron.Web.Common (neuronCommonStyle, neuronFonts)
-import qualified Neuron.Web.Impulse as Impulse
-import qualified Neuron.Web.Query.View as QueryView
-import Neuron.Web.Route
+import Neuron.Frontend.Common (neuronCommonStyle, neuronFonts)
+import qualified Neuron.Frontend.Impulse as Impulse
+import qualified Neuron.Frontend.Query.View as QueryView
+import Neuron.Frontend.Route
   ( Impulse,
     NeuronVersion,
     NeuronWebT,
     Route (..),
     routeTitle',
   )
-import Neuron.Web.Theme (Theme)
-import qualified Neuron.Web.Theme as Theme
-import Neuron.Web.Widget (LoadableData, elLinkGoogleFonts)
-import qualified Neuron.Web.Widget as W
-import qualified Neuron.Web.Zettel.CSS as ZettelCSS
-import qualified Neuron.Web.Zettel.View as ZettelView
+import Neuron.Frontend.Theme (Theme)
+import qualified Neuron.Frontend.Theme as Theme
+import Neuron.Frontend.Widget (LoadableData, elLinkGoogleFonts)
+import qualified Neuron.Frontend.Widget as W
+import qualified Neuron.Frontend.Zettel.CSS as ZettelCSS
+import qualified Neuron.Frontend.Zettel.View as ZettelView
 import Neuron.Zettelkasten.Zettel (ZettelC)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)

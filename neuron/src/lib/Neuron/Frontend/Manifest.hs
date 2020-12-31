@@ -4,7 +4,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Manifest
+module Neuron.Frontend.Manifest
   ( Manifest,
     manifestPatterns,
     mkManifest,

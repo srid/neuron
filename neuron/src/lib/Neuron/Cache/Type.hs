@@ -7,13 +7,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.Cache.Type where
+module Neuron.Cache.Type where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Neuron.Config.Type (Config)
-import Neuron.Web.Route (NeuronVersion)
-import Neuron.Web.Widget (LoadableData (..))
+import Neuron.Frontend.Route (NeuronVersion)
+import Neuron.Frontend.Widget (LoadableData (..))
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)

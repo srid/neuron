@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.HeadHtml
+module Neuron.Frontend.Static.HeadHtml
   ( HeadHtml,
     getHeadHtml,
     getHeadHtmlFromTree,

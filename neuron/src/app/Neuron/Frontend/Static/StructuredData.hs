@@ -7,7 +7,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Web.StructuredData
+module Neuron.Frontend.Static.StructuredData
   ( renderStructuredData,
   )
 where
@@ -26,7 +26,7 @@ import Data.TagTree (Tag (unTag))
 import qualified Data.Text as T
 import qualified Network.URI.Encode as E
 import Neuron.Config.Type (Config (..), getSiteBaseUrl)
-import Neuron.Web.Route (Route (..), routeHtmlPath, routeTitle')
+import Neuron.Frontend.Route (Route (..), routeHtmlPath, routeTitle')
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G

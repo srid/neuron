@@ -10,9 +10,8 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- TODO: Rename to Neuron.Reactor?
--- ie. Name an internal component for mnemonic benefits.
-module Neuron.Gen where
+-- | React to the world, and build our Zettelkasten
+module Neuron.Reactor where
 
 import Control.Monad.Fix (MonadFix)
 import Control.Monad.Writer.Strict (runWriter, tell)
@@ -28,23 +27,23 @@ import Neuron.CLI.Types
     getApp,
     runAppT,
   )
+import qualified Neuron.Cache as Cache
+import Neuron.Cache.Type (NeuronCache)
+import qualified Neuron.Cache.Type as Cache
 import Neuron.Config (getConfig)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
+import Neuron.Frontend.Manifest (Manifest)
+import qualified Neuron.Frontend.Manifest as Manifest
+import Neuron.Frontend.Route (Route (Route_Impulse), routeHtmlPath)
+import qualified Neuron.Frontend.Route as Z
+import qualified Neuron.Frontend.Route.Data as RD
+import qualified Neuron.Frontend.Static.HeadHtml as HeadHtml
+import qualified Neuron.Frontend.Static.Html as Html
+import qualified Neuron.Frontend.Widget as W
 import Neuron.Plugin (PluginRegistry)
 import qualified Neuron.Plugin as Plugin
 import Neuron.Version (neuronVersion)
-import qualified Neuron.Web.Cache as Cache
-import Neuron.Web.Cache.Type (NeuronCache)
-import qualified Neuron.Web.Cache.Type as Cache
-import qualified Neuron.Web.HeadHtml as HeadHtml
-import qualified Neuron.Web.Html as Html
-import Neuron.Web.Manifest (Manifest)
-import qualified Neuron.Web.Manifest as Manifest
-import Neuron.Web.Route (Route (Route_Impulse), routeHtmlPath)
-import qualified Neuron.Web.Route as Z
-import qualified Neuron.Web.Route.Data as RD
-import qualified Neuron.Web.Widget as W
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
 import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)

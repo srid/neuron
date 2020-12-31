@@ -7,7 +7,7 @@ module Neuron.Plugin.Type where
 
 import Data.Default
 import Data.Tagged
-import Neuron.Web.Route (NeuronWebT)
+import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
