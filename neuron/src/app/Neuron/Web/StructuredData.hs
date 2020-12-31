@@ -12,6 +12,7 @@ module Neuron.Web.StructuredData
   )
 where
 
+import Control.Monad.Except (liftEither, runExcept)
 import Data.Some (Some (Some))
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
@@ -23,9 +24,9 @@ import Data.Structured.OpenGraph
 import Data.Structured.OpenGraph.Render (renderOpenGraph)
 import Data.TagTree (Tag (unTag))
 import qualified Data.Text as T
+import qualified Network.URI.Encode as E
 import Neuron.Config.Type (Config (..), getSiteBaseUrl)
-import Neuron.Web.Generate.Route (routeUri)
-import Neuron.Web.Route (Route (..), routeTitle')
+import Neuron.Web.Route (Route (..), routeHtmlPath, routeTitle')
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
@@ -41,6 +42,7 @@ import Relude
 import Text.Pandoc.Definition (Inline (Image, Link, Str), Pandoc (..))
 import Text.Pandoc.Util (getFirstParagraphText, plainify)
 import qualified Text.Pandoc.Walk as W
+import Text.URI (URI, mkURI)
 import qualified Text.URI as URI
 
 renderStructuredData :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
@@ -126,3 +128,21 @@ renderPandocAsText g =
               Nothing
           pure $ Link attr readableInlines (url, title)
       x -> x
+
+data BaseUrlError
+  = BaseUrlNotAbsolute
+  deriving (Eq, Show)
+
+instance Exception BaseUrlError
+
+-- | Make an absolute URI for a route, given a base URL.
+routeUri :: HasCallStack => URI -> Route a -> URI
+routeUri baseUrl r = either (error . toText . displayException) id $
+  runExcept $ do
+    let -- Use `E.encode` to deal with unicode code points, as mkURI will fail on them.
+        -- This is necessary to support non-ascii characters in filenames
+        relUrl = toText . E.encode . toString $ routeHtmlPath r
+    uri <- liftEither $ mkURI relUrl
+    case URI.relativeTo uri baseUrl of
+      Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
+      Just x -> pure x

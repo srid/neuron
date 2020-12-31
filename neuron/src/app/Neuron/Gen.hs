@@ -19,9 +19,15 @@ import Control.Monad.Writer.Strict (runWriter, tell)
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import Data.Text.IO (hPutStrLn)
+import Data.Text.IO (hPutStr, hPutStrLn)
 import Data.Time (NominalDiffTime)
 import Neuron.CLI.Types
+  ( App (..),
+    AppT,
+    MonadApp (..),
+    getApp,
+    runAppT,
+  )
 import Neuron.Config (getConfig)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
@@ -31,18 +37,17 @@ import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
 import Neuron.Web.Cache.Type (NeuronCache)
 import qualified Neuron.Web.Cache.Type as Cache
-import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.HeadHtml as HeadHtml
 import qualified Neuron.Web.Html as Html
 import Neuron.Web.Manifest (Manifest)
 import qualified Neuron.Web.Manifest as Manifest
-import Neuron.Web.Route
+import Neuron.Web.Route (Route (Route_Impulse), routeHtmlPath)
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Web.Route.Data as RD
 import qualified Neuron.Web.Widget as W
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
-import Neuron.Zettelkasten.ID (ZettelID (..))
+import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
@@ -50,10 +55,14 @@ import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Error
   ( ZettelError (..),
     ZettelIssue (..),
+    zettelErrorText,
   )
 import Reflex
 import Reflex.Dom.Core
-import Reflex.FSNotify
+  ( HydratableT (runHydratableT),
+    renderStatic,
+  )
+import Reflex.FSNotify (FSEvent, watchTree)
 import Reflex.Host.Headless (runHeadlessApp)
 import Relude
 import System.Directory (doesFileExist, withCurrentDirectory)
@@ -100,8 +109,9 @@ generateSite = do
       (wH . Z.Route_Zettel) `mapM_` RD.allSlugs rdCache
       wH $ Z.Route_Impulse Nothing
       wH Z.Route_ImpulseStatic
-      -- TODO: report errors
+      reportAllErrors cache
       pure ()
+
     genApp ::
       forall t m.
       ( Reflex t,
@@ -118,6 +128,35 @@ generateSite = do
     genApp App {..} = do
       -- TODO: Not doing any change monitoring for now; while we migrate away from rib.
       watchDirWithDebounce 0.1 notesDir
+
+-- Report all errors
+-- TODO: Report only new errors in this run, to avoid spamming the terminal.
+reportAllErrors :: MonadIO m => NeuronCache -> m ()
+reportAllErrors cache = do
+  missingLinks <- fmap sum $
+    forM (Map.toList $ Cache._neuronCache_errors cache) $ \(zid, issue) -> do
+      case issue of
+        ZettelIssue_MissingLinks (_slug, qErrs) ->
+          pure (length qErrs)
+        ZettelIssue_Error e -> do
+          reportError zid e
+          pure 0
+  when (missingLinks > 0) $
+    liftIO $ hPutStrLn stderr $ "E " <> show missingLinks <> " missing links found across zettels (see Impulse)"
+  where
+    -- Report an error in the terminal
+    reportError :: MonadIO m => ZettelID -> ZettelError -> m ()
+    reportError zid (zettelErrorText -> err) = do
+      liftIO $ hPutStrLn stderr $ toText $ "E " <> zettelIDSourceFileName zid
+      liftIO $ hPutStr stderr $ "  - " <> indentAllButFirstLine 4 err
+      where
+        indentAllButFirstLine :: Int -> Text -> Text
+        indentAllButFirstLine n = unlines . go . lines
+          where
+            go [] = []
+            go [x] = [x]
+            go (x : xs) =
+              x : fmap (toText . (replicate n ' ' <>) . toString) xs
 
 genRouteHtml ::
   forall m a.

@@ -30,7 +30,6 @@ import Neuron.Version (neuronVersion)
 import qualified Neuron.Web.Cache as Cache
 import Neuron.Web.Cache.Type (NeuronCache)
 import qualified Neuron.Web.Cache.Type as Cache
-import Neuron.Web.Generate.Route ()
 import qualified Neuron.Web.Route as Z
 import qualified Neuron.Web.Route.Data as RD
 import qualified Neuron.Zettelkasten.Graph.Build as G
@@ -72,8 +71,13 @@ generateSite config writeHtmlRoute' = do
       writeHtmlRoute $ Z.Route_Impulse Nothing
       -- ... and its static version
       writeHtmlRoute Z.Route_ImpulseStatic
-  -- Report all errors
-  -- TODO: Report only new errors in this run, to avoid spamming the terminal.
+  when reportPerf $ liftIO $ hPutStrLn stderr $ toText @String $ printf "Took %.2fs to generate html" writeDur
+  reportAllErrors cache
+
+-- Report all errors
+-- TODO: Report only new errors in this run, to avoid spamming the terminal.
+reportAllErrors :: MonadIO m => NeuronCache -> m ZettelGraph
+reportAllErrors cache = do
   missingLinks <- fmap sum $
     forM (Map.toList $ Cache._neuronCache_errors cache) $ \(zid, issue) -> do
       case issue of
@@ -84,7 +88,6 @@ generateSite config writeHtmlRoute' = do
           pure 0
   when (missingLinks > 0) $
     liftIO $ hPutStrLn stderr $ "E " <> show missingLinks <> " missing links found across zettels (see Impulse)"
-  when reportPerf $ liftIO $ hPutStrLn stderr $ toText @String $ printf "Took %.2fs to generate html" writeDur
   pure $ Cache._neuronCache_graph cache
   where
     -- Report an error in the terminal

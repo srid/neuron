@@ -8,7 +8,6 @@ where
 
 import Data.Some (foldSome)
 import Neuron.CLI.Types (MonadApp, OpenCommand (..), getOutputDir)
-import Neuron.Web.Generate.Route ()
 import Neuron.Web.Route (routeHtmlPath)
 import Relude
 import System.Directory (doesFileExist)

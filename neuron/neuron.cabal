@@ -201,7 +201,6 @@ library neuron-app-lib
     Neuron.Web.Cache
     Neuron.Web.HeadHtml
     Neuron.Web.Generate
-    Neuron.Web.Generate.Route
     Neuron.Web.StructuredData
     Neuron.Zettelkasten.ID.Scheme
     Neuron.Gen
