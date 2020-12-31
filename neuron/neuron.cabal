@@ -183,6 +183,7 @@ library neuron-app-lib
     Data.Structured.Breadcrumb
     Data.Structured.OpenGraph
     Data.Structured.OpenGraph.Render
+    System.Directory.Contents.Extra
     Neuron.CLI
     Neuron.CLI.New
     Neuron.CLI.Open

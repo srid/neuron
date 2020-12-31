@@ -11,6 +11,7 @@
 module Main where
 
 import Development.Shake (Action, getDirectoryFiles)
+import GHC.IO.Handle (BufferMode (LineBuffering))
 import Main.Utf8 (withUtf8)
 import Neuron.CLI (run)
 import Neuron.CLI.Types (MonadApp (getNotesDir))
@@ -28,9 +29,13 @@ import Reflex.Dom.Core
 import Relude
 import Rib.Route (writeRoute)
 import Rib.Shake (buildStaticFiles)
+import System.IO (hSetBuffering)
 
 main :: IO ()
-main = withUtf8 $ run generateMainSite Gen.generateSite
+main = do
+  hSetBuffering stdout LineBuffering
+  hSetBuffering stderr LineBuffering
+  withUtf8 $ run generateMainSite Gen.generateSite
 
 generateMainSite :: Config -> Action ()
 generateMainSite config = do

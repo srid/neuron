@@ -56,11 +56,11 @@ import Reflex.Dom.Core
 import Reflex.FSNotify
 import Reflex.Host.Headless (runHeadlessApp)
 import Relude
-import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, withCurrentDirectory)
+import System.Directory (doesFileExist, withCurrentDirectory)
 import qualified System.Directory.Contents as DC
+import qualified System.Directory.Contents.Extra as DC
 import qualified System.FSNotify as FSN
 import System.FilePath ((</>))
-import System.Posix (fileExist, getFileStatus, modificationTime)
 
 generateSite :: AppT IO ()
 generateSite = do
@@ -72,74 +72,66 @@ generateSite = do
     runHeadlessApp $ do
       fsChanged <- genApp app
       performEvent_ $
-        ffor fsChanged $ \() -> do
-          liftIO $ putStrLn "!! changed"
+        ffor fsChanged $ \(fmap FSN.eventPath -> paths) -> do
+          forM_ paths $ \path ->
+            liftIO $ putStrLn $ "M " <> DC.mkRelative (notesDir app) path
           liftIO $ runAppT app doGen
           liftIO $ putStrLn "Monitoring for changes ..."
       pure never
-
--- Do a one-off generation from top to bottom.
--- No incrementall stuff (yet)
-doGen :: AppT IO ()
-doGen = do
-  (cache, RD.mkRouteDataCache -> rdCache, fileTree) <- loadZettelkasten =<< getConfig
-  -- Static files
-  case DC.walkContents "static" fileTree of
-    Just staticTree@(DC.DirTree_Dir _ _) -> do
-      -- TODO: copy files
-      notesDir <- getNotesDir
-      outputDir <- getOutputDir
-      liftIO $ dirTreeCopy notesDir outputDir staticTree
-    _ ->
+  where
+    -- Do a one-off generation from top to bottom.
+    -- No incrementall stuff (yet)
+    doGen :: AppT IO ()
+    doGen = do
+      (cache, RD.mkRouteDataCache -> rdCache, fileTree) <- loadZettelkasten =<< getConfig
+      -- Static files
+      case DC.walkContents "static" fileTree of
+        Just staticTree@(DC.DirTree_Dir _ _) -> do
+          notesDir <- getNotesDir
+          outputDir <- getOutputDir
+          liftIO $ DC.dirTreeCopy notesDir outputDir staticTree
+        _ ->
+          pure ()
+      headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
+      let manifest = Manifest.mkManifestFromTree fileTree
+      -- Do it
+      let wH :: Route a -> AppT IO ()
+          wH r = writeRouteHtml r =<< genRouteHtml headHtml manifest cache rdCache r
+      (wH . Z.Route_Zettel) `mapM_` RD.allSlugs rdCache
+      wH $ Z.Route_Impulse Nothing
+      wH Z.Route_ImpulseStatic
+      -- TODO: report errors
       pure ()
-  headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
-  let manifest = Manifest.mkManifestFromTree fileTree
-  -- Do it
-  let wH :: Route a -> AppT IO ()
-      wH = writeHtmlRoute headHtml manifest cache rdCache
-  (wH . Z.Route_Zettel) `mapM_` RD.allSlugs rdCache
-  wH $ Z.Route_Impulse Nothing
-  wH Z.Route_ImpulseStatic
-  -- TODO: report errors
-  putStrLn =<< getNotesDir
+    genApp ::
+      forall t m.
+      ( Reflex t,
+        MonadIO m,
+        PerformEvent t m,
+        PostBuild t m,
+        TriggerEvent t m,
+        MonadHold t m,
+        MonadFix m,
+        MonadIO (Performable m)
+      ) =>
+      App ->
+      m (Event t [FSEvent])
+    genApp App {..} = do
+      -- TODO: Not doing any change monitoring for now; while we migrate away from rib.
+      watchDirWithDebounce 0.1 notesDir
 
--- Copy the given directory tree from @src@ as base directory, to @dest@
-dirTreeCopy :: FilePath -> FilePath -> DC.DirTree FilePath -> IO ()
-dirTreeCopy src dest = \case
-  DC.DirTree_File fp _ -> do
-    let (a, b) = (src </>) &&& (dest </>) $ fp
-    aT <- modificationTime <$> getFileStatus a
-    -- FIXME: if a file gets deleted, we must remove it?
-    mBT <- do
-      fileExist b >>= \case
-        True -> do
-          bT <- modificationTime <$> getFileStatus b
-          pure $ Just bT
-        False ->
-          pure Nothing
-    when (maybe True (aT >) mBT) $ do
-      putStrLn $ "[cp] " <> fp
-      copyFile a b
-  DC.DirTree_Symlink {} ->
-    pure ()
-  DC.DirTree_Dir dp children -> do
-    createDirectoryIfMissing False (dest </> dp)
-    forM_ (Map.elems children) $ \childTree -> do
-      dirTreeCopy src dest childTree
-
-writeHtmlRoute ::
+genRouteHtml ::
   forall m a.
-  (MonadIO m, MonadApp m) =>
+  MonadIO m =>
   HeadHtml.HeadHtml ->
   Manifest ->
   NeuronCache ->
   RD.RouteDataCache ->
   Route a ->
-  m ()
-writeHtmlRoute headHtml manifest cache rdCache r = do
+  m ByteString
+genRouteHtml headHtml manifest cache rdCache r = do
   -- We do this verbose dance to make sure hydration happens only on Impulse route.
   -- Ideally, this should be abstracted out, but polymorphic types are a bitch.
-  html :: ByteString <- liftIO $ case r of
+  liftIO $ case r of
     Route_Impulse {} ->
       fmap snd . renderStatic . runHydratableT $ do
         -- FIXME: Injecting initial value here will break hydration on Impulse.
@@ -149,39 +141,20 @@ writeHtmlRoute headHtml manifest cache rdCache r = do
       fmap snd . renderStatic $ do
         let cacheDyn = constDyn $ W.availableData cache
         Html.renderRoutePage cacheDyn rdCache headHtml manifest r
-  -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
+
+writeRouteHtml :: (MonadApp m, MonadIO m) => Route a -> ByteString -> m ()
+writeRouteHtml r content = do
   outputDir <- getOutputDir
   let htmlFile = outputDir </> routeHtmlPath r
-  let s = decodeUtf8 @Text $ "<!DOCTYPE html>" <> html
+  -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
+  let s = decodeUtf8 @Text $ "<!DOCTYPE html>" <> content
   s0 <- liftIO $ do
     doesFileExist htmlFile >>= \case
       True -> Just <$> readFileText htmlFile
       False -> pure Nothing
   unless (Just s == s0) $ do
-    liftIO $ putStrLn $ "+ " <> htmlFile
+    liftIO $ putStrLn $ "+ " <> DC.mkRelative outputDir htmlFile
     writeFileText htmlFile s
-
-genApp ::
-  forall t m.
-  ( Reflex t,
-    MonadIO m,
-    PerformEvent t m,
-    PostBuild t m,
-    TriggerEvent t m,
-    MonadHold t m,
-    MonadFix m,
-    MonadIO (Performable m)
-  ) =>
-  App ->
-  m (Event t ())
-genApp App {..} = do
-  fsEvt <- watchDirWithDebounce 0.1 notesDir
-  performEvent_ $
-    ffor fsEvt $ \(fmap FSN.eventPath -> paths) ->
-      forM_ paths $ \path ->
-        liftIO $ putStrLn $ "M " <> path
-  -- TODO: Not doing any change monitoring for now; while we migrate away from rib.
-  pure $ () <$ traceEvent "fsEvt" fsEvt
 
 -- | Like `watchDir` but batches file events
 --
@@ -203,16 +176,18 @@ watchDirWithDebounce ms dirPath = do
   pb <- getPostBuild
   evt <- watchTree cfg (dirPath <$ pb) (const True)
   -- TODO: support with .neuronignore
-  let evt2 = flip ffilter evt $ \(FSN.eventPath -> path) ->
-        not $ ".neuron" `T.isInfixOf` toText path
+  let evt2 = flip ffilter evt $ \(toText . FSN.eventPath -> path) ->
+        not (".neuron" `T.isInfixOf` path || ".git" `T.isInfixOf` path)
   evtGrouped <- fmap toList <$> batchOccurrences ms evt2
   -- Discard all but the last event for each path.
   pure $ nubByKeepLast ((==) `on` FSN.eventPath) <$> evtGrouped
+  where
+    -- Like @Data.List.nubBy@ but keeps the last occurence
+    nubByKeepLast :: (a -> a -> Bool) -> [a] -> [a]
+    nubByKeepLast f =
+      reverse . nubBy f . reverse
 
--- | Like @Data.List.nubBy@ but keeps the last occurence
-nubByKeepLast :: (a -> a -> Bool) -> [a] -> [a]
-nubByKeepLast f =
-  reverse . nubBy f . reverse
+-- Functions from old Generate.hs
 
 loadZettelkasten :: (MonadIO m, MonadApp m) => Config -> m (NeuronCache, [ZettelC], DC.DirTree FilePath)
 loadZettelkasten config = do
