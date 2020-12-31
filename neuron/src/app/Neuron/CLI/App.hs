@@ -6,7 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.CLI
+module Neuron.CLI.App
   ( run,
   )
 where
@@ -25,11 +25,12 @@ import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Open (openLocallyGeneratedFile)
 import Neuron.CLI.Search (interactiveSearch)
 import Neuron.CLI.Types
+import Neuron.CLI.Parser
+import qualified Neuron.Cache as Cache
+import qualified Neuron.Cache.Type as Cache
 import Neuron.Config (getConfig)
 import qualified Neuron.Reactor as Reactor
 import qualified Neuron.Version as Version
-import qualified Neuron.Cache as Cache
-import qualified Neuron.Cache.Type as Cache
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
 import Neuron.Zettelkasten.Zettel (sansLinkContext)
