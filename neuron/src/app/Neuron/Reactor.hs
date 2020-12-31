@@ -100,7 +100,7 @@ generateSite continueMonitoring = do
         Just staticTree@(DC.DirTree_Dir _ _) -> do
           notesDir <- getNotesDir
           outputDir <- getOutputDir
-          liftIO $ DC.dirTreeCopy notesDir outputDir staticTree
+          liftIO $ DC.rsyncDir notesDir outputDir staticTree
         _ ->
           pure ()
       headHtml <- HeadHtml.getHeadHtmlFromTree fileTree

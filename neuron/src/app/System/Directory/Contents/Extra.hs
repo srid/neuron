@@ -19,12 +19,12 @@ import System.FilePath ((</>))
 import System.Posix (fileExist, getFileStatus, modificationTime)
 
 -- | Copy the given directory tree from @src@ as base directory, to @dest@
-dirTreeCopy :: FilePath -> FilePath -> DC.DirTree FilePath -> IO ()
-dirTreeCopy src dest = \case
+rsyncDir :: FilePath -> FilePath -> DC.DirTree FilePath -> IO ()
+rsyncDir src dest = \case
   DC.DirTree_File fp _ -> do
     let (a, b) = (src </>) &&& (dest </>) $ fp
     aT <- modificationTime <$> getFileStatus a
-    -- FIXME: if a file gets deleted, we must remove it?
+    -- TODO: if a file gets deleted, we must remove it.
     mBT <- do
       fileExist b >>= \case
         True -> do
@@ -40,4 +40,4 @@ dirTreeCopy src dest = \case
   DC.DirTree_Dir dp children -> do
     createDirectoryIfMissing False (dest </> dp)
     forM_ (Map.elems children) $ \childTree -> do
-      dirTreeCopy src dest childTree
+      rsyncDir src dest childTree
