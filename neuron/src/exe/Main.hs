@@ -10,11 +10,13 @@
 
 module Main where
 
+import Control.Concurrent.Async (race_)
 import Development.Shake (Action, getDirectoryFiles)
 import GHC.IO.Handle (BufferMode (LineBuffering))
 import Main.Utf8 (withUtf8)
+import qualified Neuron.Backend as Backend
 import Neuron.CLI (run)
-import Neuron.CLI.Types (MonadApp (getNotesDir))
+import Neuron.CLI.Types (MonadApp (getNotesDir), getApp, getOutputDir, runAppT)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Gen as Gen
 import Neuron.Web.Cache.Type (NeuronCache (..))
@@ -34,7 +36,11 @@ main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stderr LineBuffering
-  withUtf8 $ run generateMainSite Gen.generateSite
+  withUtf8 $
+    run generateMainSite $ do
+      outputDir <- getOutputDir
+      app <- getApp
+      liftIO $ race_ (runAppT app Gen.generateSite) (Backend.serve "127.0.0.1" 8080 outputDir)
 
 generateMainSite :: Config -> Action ()
 generateMainSite config = do

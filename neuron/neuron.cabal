@@ -168,7 +168,10 @@ common app-common
     timeit,
     reflex,
     reflex-fsnotify,
-    fsnotify
+    fsnotify,
+    wai-app-static,
+    warp,
+    async
 
 -- Everything below will have to be stripped away, if whoever uses this repo
 -- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
@@ -184,6 +187,7 @@ library neuron-app-lib
     Data.Structured.OpenGraph
     Data.Structured.OpenGraph.Render
     System.Directory.Contents.Extra
+    Neuron.Backend
     Neuron.CLI
     Neuron.CLI.New
     Neuron.CLI.Open
