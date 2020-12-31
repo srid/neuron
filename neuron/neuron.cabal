@@ -145,8 +145,6 @@ common app-common
     skylighting-core >= 0.9,
     relude,
     iso8601-time,
-    rib-core >=1.0,
-    shake -any,
     time,
     text,
     modern-uri,
@@ -160,7 +158,6 @@ common app-common
     dependent-sum-template,
     data-default,
     uuid,
-    shake,
     with-utf8,
     shower,
     either,
@@ -191,7 +188,6 @@ library neuron-app-lib
     Neuron.CLI
     Neuron.CLI.New
     Neuron.CLI.Open
-    Neuron.CLI.Rib
     Neuron.CLI.Search
     Neuron.CLI.Types
     Neuron.Config
@@ -200,7 +196,6 @@ library neuron-app-lib
     Neuron.Web.Html
     Neuron.Web.Cache
     Neuron.Web.HeadHtml
-    Neuron.Web.Generate
     Neuron.Web.StructuredData
     Neuron.Zettelkasten.ID.Scheme
     Neuron.Gen

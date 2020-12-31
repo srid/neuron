@@ -11,11 +11,7 @@ module Neuron.CLI.Search
   )
 where
 
-import Neuron.CLI.Rib
-  ( SearchBy (SearchByContent, SearchByTitle),
-    SearchCommand (..),
-  )
-import Neuron.CLI.Types (MonadApp, getNotesDir)
+import Neuron.CLI.Types (MonadApp, SearchBy (SearchByContent, SearchByTitle), SearchCommand (..), getNotesDir)
 import Relude
 import System.Posix.Process (executeFile)
 import System.Which (staticWhich)

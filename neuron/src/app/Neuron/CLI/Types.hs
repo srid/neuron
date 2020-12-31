@@ -23,7 +23,6 @@ module Neuron.CLI.Types
     SearchCommand (..),
     OpenCommand (..),
     QueryCommand (..),
-    RibConfig (..),
     commandParser,
   )
 where
@@ -38,7 +37,6 @@ import Data.Time.DateMayTime
     mkDateMayTime,
     parseDateMayTime,
   )
-import Development.Shake (Action, need)
 import qualified Neuron.Web.Route as R
 import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
@@ -50,9 +48,7 @@ import Neuron.Zettelkasten.Zettel as Q
   )
 import Options.Applicative
 import Relude
-import qualified Rib.Cli
-import qualified Rib.Shake
-import System.FilePath ((</>))
+import System.FilePath (addTrailingPathSeparator, (</>))
 import qualified Text.URI as URI
 
 data App = App
@@ -74,20 +70,11 @@ class MonadApp m where
   getNotesDir :: m FilePath
   getOutputDir :: m FilePath
 
-  -- TODO: Discard this once shake usage is removed.
-  needFile :: FilePath -> m ()
-
 instance Monad m => MonadApp (AppT m) where
   getNotesDir =
     AppT $ reader notesDir
   getOutputDir =
     (</> ".neuron" </> "output2") <$> getNotesDir
-  needFile _fp = pure ()
-
-instance MonadApp Action where
-  getNotesDir = Rib.Shake.ribInputDir
-  getOutputDir = Rib.Shake.ribOutputDir
-  needFile fp = need [fp]
 
 data NewCommand = NewCommand
   { date :: DateMayTime,
@@ -128,27 +115,15 @@ data Command
     Search SearchCommand
   | -- | Run a query against the Zettelkasten
     Query QueryCommand
-  | -- | Delegate to Rib's command parser
-    -- TODO: Dropthis in favour of Gen
-    Rib RibConfig
   | -- | Run site generation
     Gen
-
-data RibConfig = RibConfig
-  { ribOutputDir :: Maybe FilePath,
-    ribWatch :: Bool,
-    ribServe :: Maybe (Text, Int),
-    ribQuiet :: Bool,
-    ribShakeDbDir :: Maybe FilePath
-  }
-  deriving (Eq, Show)
 
 -- | optparse-applicative parser for neuron CLI
 commandParser :: FilePath -> LocalTime -> Parser App
 commandParser defaultNotesDir now = do
   notesDir <-
     option
-      Rib.Cli.directoryReader
+      directoryReader
       ( short 'd' <> metavar "PATH" <> value defaultNotesDir
           <> help "Run as if neuron was started in PATH instead of the current working directory"
       )
@@ -162,7 +137,6 @@ commandParser defaultNotesDir now = do
             command "open" $ info openCommand $ progDesc "Open the locally generated Zettelkasten website",
             command "search" $ info searchCommand $ progDesc "Search zettels and print the matching filepath",
             command "query" $ info queryCommand $ progDesc "Run a query against the zettelkasten",
-            command "rib" $ info ribCommand $ progDesc "Generate static site via rib",
             command "gen" $ info genCommand $ progDesc "Generate static site"
           ]
     newCommand = do
@@ -233,19 +207,6 @@ commandParser defaultNotesDir now = do
           <$> switch (long "full-text" <> short 'a' <> help "Full-text search")
       edit <- switch (long "edit" <> short 'e' <> help "Open the matching zettel in $EDITOR")
       pure $ Search $ SearchCommand searchBy edit
-    ribCommand = fmap Rib $ do
-      let ribQuiet = False
-          ribShakeDbDir = Nothing
-      ribOutputDir <-
-        optional $
-          option
-            Rib.Cli.directoryReader
-            ( long "output-dir" <> short 'o' <> metavar "OUTPUTDIR" <> showDefault
-                <> help "The directory where HTML will be generated"
-            )
-      ribWatch <- Rib.Cli.watchOption
-      ribServe <- Rib.Cli.serveOption
-      pure RibConfig {..}
     genCommand = do
       pure Gen
     zettelIDReader :: ReadM ZettelID
@@ -265,3 +226,6 @@ commandParser defaultNotesDir now = do
     -- We don't care about connections in the CLI, but the query requires one -
     -- so pass a dummy value.
     connDummy = C.OrdinaryConnection
+    -- Like `str` but adds a trailing slash if there isn't one.
+    directoryReader :: ReadM FilePath
+    directoryReader = fmap addTrailingPathSeparator str

@@ -10,7 +10,7 @@ module Neuron.Web.HeadHtml
   )
 where
 
-import Neuron.CLI.Types (MonadApp (getNotesDir, needFile))
+import Neuron.CLI.Types (MonadApp (getNotesDir))
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Pandoc.PandocRaw (PandocRaw (..))
@@ -36,7 +36,6 @@ getHeadHtml = do
   headHtmlPath <- getNotesDir <&> (</> "head.html")
   liftIO (doesFileExist headHtmlPath) >>= \case
     True -> do
-      needFile headHtmlPath
       HeadHtml . Just <$> readFileText headHtmlPath
     False ->
       pure $ HeadHtml Nothing

@@ -19,23 +19,15 @@ import Data.Time
     getCurrentTimeZone,
     utcToLocalTime,
   )
-import Development.Shake (Action)
 import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Open (openLocallyGeneratedFile)
-import Neuron.CLI.Rib
-  ( App (..),
-    Command (..),
-    commandParser,
-    runRib,
-  )
 import Neuron.CLI.Search (interactiveSearch)
-import Neuron.CLI.Types (AppT, QueryCommand (..), runAppT)
+import Neuron.CLI.Types (App (..), AppT, Command (..), QueryCommand (..), commandParser, runAppT)
 import Neuron.Config (getConfig)
-import Neuron.Config.Type (Config)
+import qualified Neuron.Gen as Gen
 import qualified Neuron.Version as Version
 import qualified Neuron.Web.Cache as Cache
 import qualified Neuron.Web.Cache.Type as Cache
-import qualified Neuron.Web.Generate as Gen
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
 import Neuron.Zettelkasten.Zettel (sansLinkContext)
@@ -43,8 +35,8 @@ import Options.Applicative
 import Relude
 import System.Directory (getCurrentDirectory)
 
-run :: (Config -> Action ()) -> AppT IO () -> IO ()
-run act actNg = do
+run :: AppT IO () -> IO ()
+run act = do
   defaultNotesDir <- getCurrentDirectory
   cliParser <- commandParser defaultNotesDir <$> now
   app <-
@@ -52,7 +44,7 @@ run act actNg = do
       info
         (versionOption <*> cliParser <**> helper)
         (fullDesc <> progDesc "Neuron, future-proof Zettelkasten app <https://neuron.zettel.page/>")
-  runWith act actNg app
+  runWith act app
   where
     versionOption =
       infoOption
@@ -62,13 +54,11 @@ run act actNg = do
       tz <- getCurrentTimeZone
       utcToLocalTime tz <$> liftIO getCurrentTime
 
-runWith :: (Config -> Action ()) -> AppT IO () -> App -> IO ()
-runWith act actNg app@App {..} =
+runWith :: AppT IO () -> App -> IO ()
+runWith actNg app@App {..} =
   case cmd of
     Gen ->
       runAppT app actNg
-    Rib ribCfg ->
-      runRib (act =<< getConfig) notesDir ribCfg
     New newCommand ->
       runAppT app $ do
         newZettelFile newCommand =<< getConfig
@@ -80,7 +70,9 @@ runWith act actNg app@App {..} =
         Cache.NeuronCache {..} <-
           if cached
             then Cache.getCache
-            else fmap fst . Gen.loadZettelkasten =<< getConfig
+            else do
+              (ch, _, _) <- Gen.loadZettelkasten =<< getConfig
+              pure ch
         case query of
           Left someQ ->
             withSome someQ $ \q -> do

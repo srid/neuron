@@ -278,10 +278,7 @@ loadZettelkastenFromFiles plugins fileTree = do
     fmap snd $
       flip runStateT Map.empty $ do
         flip R.resolveZidRefsFromDirTree fileTree $ \relPath -> do
-          -- NOTE: This is the only place where Shake is being used (for
-          -- posterity)
           absPath <- fmap (</> relPath) getNotesDir
-          needFile absPath
           decodeUtf8With lenientDecode <$> readFileBS absPath
         Plugin.afterZettelRead plugins fileTree
   pure $

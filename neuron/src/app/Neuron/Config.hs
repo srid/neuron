@@ -24,7 +24,7 @@ import qualified Dhall (Decoder (extract), auto)
 import qualified Dhall.Core (normalize)
 import qualified Dhall.Parser (exprFromText)
 import qualified Dhall.TypeCheck (typeOf)
-import Neuron.CLI.Types (MonadApp, getNotesDir, needFile)
+import Neuron.CLI.Types (MonadApp, getNotesDir)
 import Neuron.Config.Orphans ()
 import Neuron.Config.Type (Config, configFile, defaultConfig, mergeWithDefault)
 import Relude
@@ -39,7 +39,6 @@ getConfig = do
   configVal :: Text <-
     liftIO (doesFileExist configPath) >>= \case
       True -> do
-        needFile configPath
         s <- readFileText configPath
         -- Accept empty neuron.dhall (used to signify a directory to be used with neuron)
         if T.null (T.strip s)
