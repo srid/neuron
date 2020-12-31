@@ -13,7 +13,7 @@ import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Neuron.Config.Type (Config)
 import Neuron.Web.Route (NeuronVersion)
-import Neuron.Web.Widget (LoadableData)
+import Neuron.Web.Widget (LoadableData (..))
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
@@ -54,7 +54,7 @@ reflexDomGetCache staticCache = do
         performRequestAsyncWithError $
           XhrRequest "GET" "cache.json" def <$ pb
       let resp = ffor resp' $ first show >=> decodeXhrResponseWithError
-      mresp <- holdDyn Nothing $ Just <$> resp
+      mresp <- fmap LoadableData <$> holdDyn Nothing (Just <$> resp)
       -- Workaround for thrice triggering bug?
       holdUniqDyn mresp
       where

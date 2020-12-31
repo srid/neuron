@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -68,13 +69,14 @@ listItem x w = do
 --
 -- Outter Maybe represents if the data is still loading (==Nothing).
 -- Inner Either signals JSON decoding errors (==Left) if any.
-type LoadableData a = Maybe (Either String a)
+newtype LoadableData a = LoadableData {unLoadableData :: Maybe (Either String a)}
+  deriving (Eq, Show, Functor)
 
 getData :: LoadableData a -> Maybe a
-getData = (rightToMaybe =<<)
+getData = rightToMaybe <=< unLoadableData
 
 availableData :: a -> LoadableData a
-availableData = Just . Right
+availableData = LoadableData . Just . Right
 
 loadingWidget ::
   (DomBuilder t m, MonadFix m, MonadHold t m, PostBuild t m) =>
@@ -103,7 +105,7 @@ loadingWidget' ::
   (Dynamic t a -> m ()) ->
   m ()
 loadingWidget' valDyn lW eW w = do
-  mresp <- maybeDyn valDyn
+  mresp <- maybeDyn $ fmap unLoadableData valDyn
   dyn_ $
     ffor mresp $ \case
       Nothing -> lW

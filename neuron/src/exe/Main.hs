@@ -49,7 +49,7 @@ generateMainSite config = do
           Route_Impulse {} ->
             fmap snd . renderStatic . runHydratableT $ do
               -- FIXME: Injecting initial value here will break hydration on Impulse.
-              let cacheDyn = constDyn Nothing
+              let cacheDyn = constDyn $ W.LoadableData Nothing
               Html.renderRoutePage cacheDyn rdCache headHtml manifest r
           _ ->
             fmap snd . renderStatic $ do

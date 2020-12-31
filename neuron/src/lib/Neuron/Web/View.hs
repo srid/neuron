@@ -98,7 +98,7 @@ renderRouteImpulse dataLDyn = do
   -- impulse's sources).
   bodyTemplate neuronVer neuronTheme $ do
     divClass "ui text container" $ do
-      let impulseL = fmap (fmap snd) <$> dataLDyn
+      let impulseL = fmap snd <$> dataLDyn
       Impulse.renderImpulse neuronTheme impulseL
 
 renderRouteZettel ::
