@@ -27,7 +27,6 @@ import qualified Neuron.Web.Route.Data as RD
 import qualified Neuron.Web.Widget as W
 import Reflex.Dom.Core
 import Relude
-import Rib.Route (writeRoute)
 import Rib.Shake (buildStaticFiles)
 import System.IO (hSetBuffering)
 
@@ -60,6 +59,5 @@ generateMainSite config = do
             fmap snd . renderStatic $ do
               let cacheDyn = constDyn $ W.availableData cache
               Html.renderRoutePage cacheDyn rdCache headHtml manifest r
-        -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
-        writeRoute r $ decodeUtf8 @Text $ "<!DOCTYPE html>" <> html
+        Gen.writeRouteHtml r html
   void $ generateSite config writeHtmlRoute

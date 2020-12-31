@@ -19,12 +19,11 @@ where
 
 import Development.Shake (Action, Verbosity (Silent, Verbose))
 import Neuron.CLI.Types
-import Options.Applicative
 import Relude
 import qualified Rib.App
 import qualified Rib.Cli
-import System.Directory
-import System.FilePath
+import System.Directory (doesDirectoryExist)
+import System.FilePath ((</>))
 
 runRib :: Action () -> FilePath -> RibConfig -> IO ()
 runRib act notesDir ribCfg =
