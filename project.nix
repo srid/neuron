@@ -23,6 +23,7 @@ let
     reflex-dom-pandoc = thunkSource ./dep/reflex-dom-pandoc;
     pandoc-link-context = thunkSource ./dep/pandoc-link-context;
     directory-contents = thunkSource ./dep/directory-contents;
+    reflex-fsnotify = thunkSource ./dep/reflex-fsnotify;
   };
 
   searchBuilder = ''
@@ -46,6 +47,9 @@ let
     pandoc-link-context = self.callCabal2nix "pandoc-link-context" sources.pandoc-link-context {};
     reflex-dom-pandoc =
       pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
+    reflex-fsnotify = 
+      # Jailbreak to allow newer base
+      pkgs.haskell.lib.doJailbreak (self.callCabal2nix "reflex-fsnotify" sources.reflex-fsnotify {});
 
     # Test fails on pkgsMusl
     # https://github.com/hslua/hslua/issues/67

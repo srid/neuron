@@ -18,7 +18,9 @@ import qualified Data.Text as T
 import Data.Time.DateMayTime (DateMayTime, formatDateMayTime)
 import Neuron.CLI.Types (MonadApp, NewCommand (..), getNotesDir)
 import Neuron.Config.Type (Config (..))
+import qualified Neuron.Web.Cache.Type as Cache
 import Neuron.Web.Generate as Gen (loadZettelkasten)
+import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
@@ -33,12 +35,12 @@ import System.Posix.Process (executeFile)
 -- As well as print the path to the created file.
 newZettelFile :: (MonadIO m, MonadApp m) => NewCommand -> Config -> m ()
 newZettelFile NewCommand {..} config = do
-  (_, zettels) <- Gen.loadZettelkasten config
+  g <- fst <$> Gen.loadZettelkasten config
   mzid <- withSome idScheme $ \scheme -> do
     val <- liftIO $ IDScheme.genVal scheme
     pure $
       IDScheme.nextAvailableZettelID
-        (Set.fromList $ fmap (either zettelID zettelID) zettels)
+        (Set.fromList $ fmap zettelID $ G.getZettels $ Cache._neuronCache_graph g)
         val
         scheme
   case mzid of

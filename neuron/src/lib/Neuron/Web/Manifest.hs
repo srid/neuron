@@ -8,6 +8,7 @@ module Neuron.Web.Manifest
   ( Manifest,
     manifestPatterns,
     mkManifest,
+    mkManifestFromTree,
     renderManifest,
   )
 where
@@ -15,6 +16,7 @@ where
 import qualified Data.Set as Set
 import Reflex.Dom.Core
 import Relude
+import qualified System.Directory.Contents as DC
 
 data Manifest = Manifest
   { manifestFavicons :: Maybe Favicons,
@@ -28,6 +30,16 @@ data Favicons = Favicons
     faviconsAppleTouch :: Maybe FilePath
   }
   deriving (Eq)
+
+mkManifestFromTree :: DC.DirTree FilePath -> Manifest
+mkManifestFromTree fileTree =
+  let availableFiles = fforMaybe manifestPatterns $ \fp -> do
+        case DC.walkContents fp fileTree of
+          Just (DC.DirTree_File _ _) ->
+            Just fp
+          _ ->
+            Nothing
+   in mkManifest availableFiles
 
 mkManifest :: [FilePath] -> Manifest
 mkManifest (Set.fromList -> files) =

@@ -165,7 +165,10 @@ common app-common
     shower,
     either,
     uri-encode,
-    timeit
+    timeit,
+    reflex,
+    reflex-fsnotify,
+    fsnotify
 
 -- Everything below will have to be stripped away, if whoever uses this repo
 -- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
@@ -189,12 +192,14 @@ library neuron-app-lib
     Neuron.Config
     Neuron.Config.Orphans
     Neuron.Version
+    Neuron.Web.Html
     Neuron.Web.Cache
     Neuron.Web.HeadHtml
     Neuron.Web.Generate
     Neuron.Web.Generate.Route
     Neuron.Web.StructuredData
     Neuron.Zettelkasten.ID.Scheme
+    Neuron.Gen
   autogen-modules:
     Paths_neuron
   other-modules:

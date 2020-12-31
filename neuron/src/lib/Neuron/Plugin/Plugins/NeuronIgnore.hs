@@ -19,7 +19,6 @@ import Neuron.Plugin.Type (Plugin (..))
 import Reflex.Dom.Core (fforMaybe)
 import Relude hiding (trace, traceShow, traceShowId)
 import qualified System.Directory.Contents as DC
-import System.FilePath.Posix (takeExtension)
 import System.FilePattern (FilePattern, (?==))
 
 plugin :: Plugin ()
@@ -66,7 +65,8 @@ applyNeuronIgnore t = do
             Just True
               == ( do
                      guard $ not $ any (?== name) pats
-                     guard $ takeExtension name == ".md"
+                     -- getZettelID will skip non-Markdown files
+                     -- guard $ takeExtension name == ".md"
                      pure True
                  )
       unless included $ tell [name]

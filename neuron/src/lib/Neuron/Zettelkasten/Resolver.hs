@@ -25,7 +25,11 @@ data ZIDRef
     ZIDRef_Ambiguous (NonEmpty FilePath)
   deriving (Eq, Show)
 
-resolveZidRefsFromDirTree :: Monad m => (FilePath -> m Text) -> DC.DirTree FilePath -> StateT (Map ZettelID ZIDRef) m ()
+resolveZidRefsFromDirTree ::
+  Monad m =>
+  (FilePath -> m Text) ->
+  DC.DirTree FilePath ->
+  StateT (Map ZettelID ZIDRef) m ()
 resolveZidRefsFromDirTree readFileF = \case
   DC.DirTree_File relPath _ -> do
     whenJust (getZettelID relPath) $ \zid -> do

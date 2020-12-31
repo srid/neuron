@@ -12,6 +12,7 @@ module Neuron.CLI.Types
 
     -- * App monad
     AppT,
+    getApp,
     runAppT,
     MonadApp (..),
 
@@ -61,6 +62,9 @@ data App = App
 
 newtype AppT m a = AppT (ReaderT App m a)
   deriving (Functor, Applicative, Monad, MonadFail, MonadIO, MonadTrans)
+
+getApp :: Monad m => AppT m App
+getApp = AppT ask
 
 runAppT :: App -> AppT m a -> m a
 runAppT appEnv (AppT m) =
