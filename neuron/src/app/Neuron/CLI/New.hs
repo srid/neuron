@@ -33,7 +33,7 @@ import System.Posix.Process (executeFile)
 -- | Create a new zettel file and open it in editor if requested
 --
 -- As well as print the path to the created file.
-newZettelFile :: (MonadIO m, MonadApp m) => NewCommand -> Config -> m ()
+newZettelFile :: (MonadIO m, MonadApp m, MonadFail m) => NewCommand -> Config -> m ()
 newZettelFile NewCommand {..} config = do
   (g, _, _) <- Gen.loadZettelkasten config
   mzid <- withSome idScheme $ \scheme -> do

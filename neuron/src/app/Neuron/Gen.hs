@@ -69,7 +69,7 @@ import System.Directory (doesFileExist, withCurrentDirectory)
 import qualified System.Directory.Contents as DC
 import qualified System.Directory.Contents.Extra as DC
 import qualified System.FSNotify as FSN
-import System.FilePath ((</>))
+import System.FilePath (takeExtension, (</>))
 
 generateSite :: Bool -> AppT IO ()
 generateSite continueMonitoring = do
@@ -230,7 +230,7 @@ watchDirWithDebounce ms dirPath = do
 
 -- Functions from old Generate.hs
 
-loadZettelkasten :: (MonadIO m, MonadApp m) => Config -> m (NeuronCache, [ZettelC], DC.DirTree FilePath)
+loadZettelkasten :: (MonadIO m, MonadApp m, MonadFail m) => Config -> m (NeuronCache, [ZettelC], DC.DirTree FilePath)
 loadZettelkasten config = do
   let plugins = Config.getPlugins config
   liftIO $ hPutStrLn stderr $ "Plugins enabled: " <> show (Map.keys plugins)
@@ -262,7 +262,7 @@ locateZettelFiles plugins = do
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFromFiles ::
-  (MonadIO m, MonadApp m) =>
+  (MonadIO m, MonadApp m, MonadFail m) =>
   PluginRegistry ->
   DC.DirTree FilePath ->
   m
@@ -272,17 +272,21 @@ loadZettelkastenFromFiles ::
       Map ZettelID ZettelIssue
     )
 loadZettelkastenFromFiles plugins fileTree = do
-  let total = getSum @Int $ foldMap (const $ Sum 1) fileTree
-  -- TODO: Would be nice to show a progressbar here
-  -- liftIO $ DC.printDirTree fileTree
-  liftIO $ hPutStrLn stderr $ "Loading directory tree (" <> show total <> " files) ..."
   zidRefs <-
-    fmap snd $
-      flip runStateT Map.empty $ do
-        flip R.resolveZidRefsFromDirTree fileTree $ \relPath -> do
-          absPath <- fmap (</> relPath) getNotesDir
-          decodeUtf8With lenientDecode <$> readFileBS absPath
-        Plugin.afterZettelRead plugins fileTree
+    case DC.pruneDirTree =<< DC.filterDirTree ((== ".md") . takeExtension) fileTree of
+      Nothing ->
+        pure mempty
+      Just mdFileTree -> do
+        let total = getSum @Int $ foldMap (const $ Sum 1) mdFileTree
+        -- TODO: Would be nice to show a progressbar here
+        -- liftIO $ DC.printDirTree fileTree
+        liftIO $ hPutStrLn stderr $ "Loading directory tree (" <> show total <> " files) ..."
+        fmap snd $
+          flip runStateT Map.empty $ do
+            flip R.resolveZidRefsFromDirTree mdFileTree $ \relPath -> do
+              absPath <- fmap (</> relPath) getNotesDir
+              decodeUtf8With lenientDecode <$> readFileBS absPath
+            Plugin.afterZettelRead plugins mdFileTree
   pure $
     runWriter $ do
       filesWithContent <-

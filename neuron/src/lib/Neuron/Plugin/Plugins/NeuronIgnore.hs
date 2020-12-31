@@ -37,7 +37,7 @@ applyNeuronIgnore t = do
   -- filter will traverse that entire directory tree to apply the glob
   -- pattern filter.
   -- TODO: neuron should detect changes to this file, and reload.
-  ignorePats :: [FilePattern] <- case DC.walkDirTree "./.neuronignore" t of
+  ignorePats :: [FilePattern] <- fmap (mandatoryIgnorePats <>) $ case DC.walkDirTree "./.neuronignore" t of
     Just (DC.DirTree_File _ fp) -> do
       ls <- T.lines <$> readFileText fp
       pure $
@@ -54,6 +54,9 @@ applyNeuronIgnore t = do
   -- liftIO $ hPutStrLn stderr $ "Excluded " <> show nExcluded <> " filepaths"
   pure $ DC.pruneDirTree =<< mTreeFiltered
   where
+    mandatoryIgnorePats =
+      [ ".neuron/**"
+      ]
     defaultIgnorePats =
       [ -- Ignore top-level dotfiles and dotdirs
         ".*/**"
