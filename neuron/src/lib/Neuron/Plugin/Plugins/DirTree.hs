@@ -15,7 +15,8 @@ module Neuron.Plugin.Plugins.DirTree (plugin, renderPanel) where
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (Some))
-import Data.TagTree (Tag (Tag), TagQuery (..), mkTagPatternFromTag)
+import Data.TagTree (Tag, TagNode (..), TagQuery (..))
+import qualified Data.TagTree as Tag
 import qualified Data.Text as T
 import Neuron.Plugin.PluginData (DirZettel (..), PluginData (PluginData_DirTree))
 import Neuron.Plugin.Type (Plugin (..))
@@ -53,7 +54,7 @@ renderPanel graph DirZettel {..} = do
   elClass "nav" "ui attached deemphasized segment dirfolge" $ do
     el "h3" $ text "Directory contents"
     divClass "ui list" $ do
-      let q = TagQuery_Or $ one $ mkTagPatternFromTag _dirZettel_childrenTag
+      let q = TagQuery_Or $ one $ Tag.mkTagPatternFromTag _dirZettel_childrenTag
       let children = Q.zettelsByTag (G.getZettels graph) q
       whenJust (flip G.getZettel graph =<< _dirZettel_dirParent) $ \parZ ->
         listItem ListItem_Folder $
@@ -81,24 +82,24 @@ addTagAndQuery z =
           pure $ maybeToList $ parentDirTag $ zettelPath z
     childrenTagQuery = do
       DirZettel {..} <- runIdentity <$> DMap.lookup PluginData_DirTree (zettelPluginData z)
-      let q = TagQuery_Or $ one $ mkTagPatternFromTag _dirZettel_childrenTag
+      let q = TagQuery_Or $ one $ Tag.mkTagPatternFromTag _dirZettel_childrenTag
       pure $ Some $ ZettelQuery_ZettelsByTag q Folgezettel def
 
 injectDirectoryZettels :: MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m ()
 injectDirectoryZettels = \case
   DC.DirTree_Dir absPath contents -> do
     let dirName = takeFileName absPath
-        dirZettelId = ZettelID $ toText $ if dirName == "." then "index" else dirName
+        dirZettelId = ZettelID $ if dirName == "." then indexZettelName else toText dirName
         parDirName = takeFileName (takeDirectory absPath)
-        parDirZettelId = ZettelID $ toText $ if parDirName == "." then "index" else parDirName
+        parDirZettelId = ZettelID $ if parDirName == "." then indexZettelName else toText parDirName
         mkPluginData tags = DMap.singleton PluginData_DirTree $ Identity $ DirZettel tags (tagFromPath absPath) (Just parDirZettelId)
     -- Don't create folgezettel from index zettel. Why?
     -- - To avoid surprise when legacy notebooks with innuermous top level
     -- zettels use this feature.
     -- - Facilitate multiple clusters that don't "stick" because of index-folgezettel.
     -- If the user wants to make index branch to these top-level zettels,
-    -- they can add `[[[z:zettels?tag=index]]]` to do that.
-    unless (dirZettelId == ZettelID "index") $ do
+    -- they can add `[[[z:zettels?tag=root]]]` to do that.
+    unless (dirZettelId == ZettelID indexZettelName) $ do
       gets (Map.lookup dirZettelId) >>= \case
         Just (ZIDRef_Available p s pluginDataPrev) -> do
           -- A zettel with this directory name was already registered. Deal with it.
@@ -141,13 +142,18 @@ tagFromPath :: HasCallStack => FilePath -> Tag
 tagFromPath = \case
   "." ->
     -- Root file
-    Tag indexZettelName
+    Tag.constructTag (rootTag :| [])
   ('.' : '/' : dirPath) ->
-    Tag $ indexZettelName <> "/" <> T.replace " " "-" (toText dirPath)
+    let tagNodes = TagNode <$> T.splitOn "/" (T.replace " " "-" $ toText dirPath)
+     in Tag.constructTag $ rootTag :| tagNodes
   relPath ->
     error $ "Invalid relPath passed to parseZettel: " <> toText relPath
-  where
-    indexZettelName = "index"
+
+indexZettelName :: Text
+indexZettelName = "index"
+
+rootTag :: TagNode
+rootTag = TagNode "root"
 
 isDirectoryZettel :: ZettelT content -> Bool
 isDirectoryZettel (zettelPluginData -> pluginData) =
