@@ -19,7 +19,6 @@ let
 
   sources = {
     neuron = gitignoreSource ./neuron;
-    rib = thunkSource ./dep/rib;
     reflex-dom-pandoc = thunkSource ./dep/reflex-dom-pandoc;
     pandoc-link-context = thunkSource ./dep/pandoc-link-context;
     directory-contents = thunkSource ./dep/directory-contents;
@@ -42,8 +41,6 @@ let
   };
 
   haskellOverrides = self: super: {
-    rib-core = self.callCabal2nix "rib-core" (sources.rib + "/rib-core") { };
-
     pandoc-link-context = self.callCabal2nix "pandoc-link-context" sources.pandoc-link-context {};
     reflex-dom-pandoc =
       pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
@@ -69,7 +66,6 @@ let
           disallowedReferences = [
             self.pandoc
             self.pandoc-types
-            self.shake
             self.warp
             self.HTTP
             self.js-jquery
@@ -79,7 +75,6 @@ let
           postInstall = ''
             remove-references-to -t ${self.pandoc} $out/bin/neuron
             remove-references-to -t ${self.pandoc-types} $out/bin/neuron
-            remove-references-to -t ${self.shake} $out/bin/neuron
             remove-references-to -t ${self.warp} $out/bin/neuron
             remove-references-to -t ${self.HTTP} $out/bin/neuron
             remove-references-to -t ${self.js-jquery} $out/bin/neuron

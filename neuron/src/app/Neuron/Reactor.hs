@@ -11,6 +11,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | React to the world, and build our Zettelkasten
+-- TODO: Split this module appropriately.
 module Neuron.Reactor where
 
 import Control.Monad.Fix (MonadFix)
@@ -72,12 +73,12 @@ import System.FilePath (takeExtension, (</>))
 
 generateSite :: Bool -> AppT IO ()
 generateSite continueMonitoring = do
-  app <- getApp
-  liftIO $ print app
-  --initial gen
+  -- Initial gen
   doGen
+  -- Continue morning
   when continueMonitoring $ do
     liftIO $ putStrLn "Monitoring for changes ..."
+    app <- getApp
     lift $
       runHeadlessApp $ do
         fsChanged <- genApp app
@@ -127,7 +128,7 @@ generateSite continueMonitoring = do
       App ->
       m (Event t [FSEvent])
     genApp App {..} = do
-      -- TODO: Not doing any change monitoring for now; while we migrate away from rib.
+      -- TODO: Not doing any change monitoring yet
       watchDirWithDebounce 0.1 notesDir
 
 -- Report all errors
@@ -217,7 +218,7 @@ watchDirWithDebounce ms dirPath = do
   evt <- watchTree cfg (dirPath <$ pb) (const True)
   -- TODO: support with .neuronignore
   let evt2 = flip ffilter evt $ \(toText . FSN.eventPath -> path) ->
-        not (".neuron" `T.isInfixOf` path || ".git" `T.isInfixOf` path)
+        not (".neuron/" `T.isInfixOf` path || ".git" `T.isInfixOf` path)
   evtGrouped <- fmap toList <$> batchOccurrences ms evt2
   -- Discard all but the last event for each path.
   pure $ nubByKeepLast ((==) `on` FSN.eventPath) <$> evtGrouped
@@ -229,7 +230,10 @@ watchDirWithDebounce ms dirPath = do
 
 -- Functions from old Generate.hs
 
-loadZettelkasten :: (MonadIO m, MonadApp m, MonadFail m) => Config -> m (NeuronCache, [ZettelC], DC.DirTree FilePath)
+loadZettelkasten ::
+  (MonadIO m, MonadApp m, MonadFail m) =>
+  Config ->
+  m (NeuronCache, [ZettelC], DC.DirTree FilePath)
 loadZettelkasten config = do
   let plugins = Config.getPlugins config
   liftIO $ hPutStrLn stderr $ "Plugins enabled: " <> show (Map.keys plugins)

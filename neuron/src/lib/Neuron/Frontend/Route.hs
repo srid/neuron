@@ -29,7 +29,6 @@ import Relude
 
 type NeuronVersion = Tagged "NeuronVersion" Text
 
--- TODO: Do we even need a route GADT? Re-evaluate this when doing the rib->reflex-headless migration.
 data Route a where
   Route_Zettel :: Slug -> Route ZettelC
   -- | Impulse is implemented in github.com/srid/rememorate

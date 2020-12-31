@@ -22,6 +22,6 @@ openLocallyGeneratedFile (OpenCommand route) = do
   htmlPath <- fmap (</> relHtmlPath) getOutputDir
   liftIO (doesFileExist htmlPath) >>= \case
     False -> do
-      fail "No generated HTML found. Try runing `neuron rib` first."
+      fail "No generated HTML found. Try runing `neuron gen` first."
     True -> do
       liftIO $ executeFile opener True [htmlPath] Nothing

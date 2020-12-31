@@ -19,7 +19,7 @@ jobs:
       - name: Build neuron site 🔧
         run: |
           neuron --version
-          neuron -d guide/ rib
+          neuron -d guide/ gen
       - name: Deploy to GitHub Pages 🚀
         uses: JamesIves/github-pages-deploy-action@3.7.1
         with:

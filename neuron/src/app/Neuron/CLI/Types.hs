@@ -157,11 +157,11 @@ commandParser defaultNotesDir now = do
     cmdParser =
       hsubparser $
         mconcat
-          [ command "gen" $ info genCommand $ progDesc "Generate a static site",
+          [ command "gen" $ info genCommand $ progDesc "Generate and serve the static site",
             command "new" $ info newCommand $ progDesc "Create a new zettel",
-            command "open" $ info openCommand $ progDesc "Open the locally generated Zettelkasten website",
-            command "search" $ info searchCommand $ progDesc "Search zettels and print the matching filepath",
-            command "query" $ info queryCommand $ progDesc "Run a query against the zettelkasten"
+            command "open" $ info openCommand $ progDesc "Open the local static site",
+            command "search" $ info searchCommand $ progDesc "Search zettels and print their path",
+            command "query" $ info queryCommand $ progDesc "Query the zettelkasten in JSON"
           ]
     newCommand = do
       idScheme <-

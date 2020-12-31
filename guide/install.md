@@ -58,21 +58,22 @@ For alternative mechanisms, see [[[install-declarative]]].
 Make sure that you can execute the `neuron` executable. You should expect the following:
 
 ```
-Usage: neuron [--version] [-d PATH] COMMAND
+Usage: neuron [--version] [-d PATH] [-o PATH] COMMAND
   Neuron, future-proof Zettelkasten app <https://neuron.zettel.page/>
 
 Available options:
   --version                Show version
   -d PATH                  Run as if neuron was started in PATH instead of the
                            current working directory
+  -o PATH                  Custom path to generate static site in
   -h,--help                Show this help text
 
 Available commands:
+  gen                      Generate and serve the static site
   new                      Create a new zettel
-  open                     Open the locally generated Zettelkasten website
-  search                   Search zettels and print the matching filepath
-  query                    Run a query against the zettelkasten
-  rib                      Generate static site via rib
+  open                     Open the local static site
+  search                   Search zettels and print their path
+  query                    Query the zettelkasten in JSON
 ```
 
 ## What's next?
