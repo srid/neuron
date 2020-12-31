@@ -10,6 +10,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+-- For deriving of FromDhall Config
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Neuron.Config
   ( getConfig,
@@ -25,11 +27,12 @@ import qualified Dhall.Core (normalize)
 import qualified Dhall.Parser (exprFromText)
 import qualified Dhall.TypeCheck (typeOf)
 import Neuron.CLI.Types (MonadApp, getNotesDir)
-import Neuron.Config.Orphans ()
 import Neuron.Config.Type (Config, configFile, defaultConfig, mergeWithDefault)
 import Relude
 import System.Directory (doesFileExist)
 import System.FilePath ((</>))
+
+deriving instance FromDhall Config
 
 -- | Read the optional @neuron.dhall@ config file from the zettelkasten
 getConfig :: (MonadIO m, MonadFail m, MonadApp m) => m Config

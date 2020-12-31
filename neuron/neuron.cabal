@@ -193,7 +193,6 @@ library neuron-app-lib
     Neuron.CLI.Search
     Neuron.CLI.Types
     Neuron.Config
-    Neuron.Config.Orphans
     Neuron.Version
     Neuron.Cache
     Neuron.Frontend.Static.Html
