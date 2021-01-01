@@ -69,7 +69,7 @@ import System.Directory (doesFileExist, withCurrentDirectory)
 import qualified System.Directory.Contents as DC
 import qualified System.Directory.Contents.Extra as DC
 import qualified System.FSNotify as FSN
-import System.FilePath (takeExtension, (</>))
+import System.FilePath (makeRelative, takeExtension, (</>))
 
 generateSite :: Bool -> App ()
 generateSite continueMonitoring = do
@@ -88,7 +88,7 @@ generateSite continueMonitoring = do
             liftIO $
               runApp appEnv $ do
                 baseDir <- getNotesDir
-                forM_ paths $ \(DC.mkRelative baseDir -> path) ->
+                forM_ paths $ \(makeRelative baseDir -> path) ->
                   log I $ toText $ "M " <> path
                 doGen
                 log D "Finished generating; monitoring for changes."
