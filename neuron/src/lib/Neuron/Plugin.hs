@@ -11,11 +11,12 @@ import Data.Dependent.Map (DMap)
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (..), withSome)
+import qualified Data.Text as T
+import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Plugin.PluginData (PluginData (..))
 import qualified Neuron.Plugin.Plugins.DirTree as DirTree
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import Neuron.Plugin.Type (Plugin (..))
-import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
@@ -27,6 +28,13 @@ import Relude
 import qualified System.Directory.Contents.Types as DC
 
 type PluginRegistry = Map (Some PluginData) (Some Plugin)
+
+pluginRegistryShow :: PluginRegistry -> Text
+pluginRegistryShow r =
+  T.intercalate ", " $
+    Map.keys r <&> \case
+      Some PluginData_DirTree -> "dirtree"
+      Some PluginData_NeuronIgnore -> "neuronignore"
 
 lookupPlugins :: [Text] -> PluginRegistry
 lookupPlugins = Map.fromList . mapMaybe lookupPlugin

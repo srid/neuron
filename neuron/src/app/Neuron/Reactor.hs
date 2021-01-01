@@ -22,12 +22,11 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Neuron.CLI.Types
-  ( App (..),
-    AppT,
+  ( App,
     MonadApp (..),
-    getApp,
     getAppEnv,
-    runAppT,
+    getNotesDir,
+    runApp,
   )
 import qualified Neuron.Cache as Cache
 import Neuron.Cache.Type (NeuronCache)
@@ -72,7 +71,7 @@ import qualified System.Directory.Contents.Extra as DC
 import qualified System.FSNotify as FSN
 import System.FilePath (takeExtension, (</>))
 
-generateSite :: Bool -> AppT ()
+generateSite :: Bool -> App ()
 generateSite continueMonitoring = do
   -- Initial gen
   doGen
@@ -80,23 +79,24 @@ generateSite continueMonitoring = do
   when continueMonitoring $ do
     log D "Finished generating; monitoring for changes."
     appEnv <- getAppEnv
-    app <- getApp
+    notesDir <- getNotesDir
     liftIO $
       runHeadlessApp $ do
-        fsChanged <- genApp app
+        fsChanged <- watchDirWithDebounce 0.1 notesDir
         performEvent_ $
           ffor fsChanged $ \(fmap FSN.eventPath -> paths) -> do
             liftIO $
-              runAppT appEnv $ do
-                forM_ paths $ \path ->
-                  log I $ toText $ "M " <> DC.mkRelative (notesDir app) path
+              runApp appEnv $ do
+                baseDir <- getNotesDir
+                forM_ paths $ \(DC.mkRelative baseDir -> path) ->
+                  log I $ toText $ "M " <> path
                 doGen
                 log D "Finished generating; monitoring for changes."
         pure never
   where
     -- Do a one-off generation from top to bottom.
     -- No incrementall stuff (yet)
-    doGen :: AppT ()
+    doGen :: App ()
     doGen = do
       (cache, RD.mkRouteDataCache -> rdCache, fileTree) <- loadZettelkasten =<< getConfig
       -- Static files
@@ -104,7 +104,7 @@ generateSite continueMonitoring = do
         Just staticTree@(DC.DirTree_Dir _ _) -> do
           notesDir <- getNotesDir
           outputDir <- getOutputDir
-          liftIO $ DC.rsyncDir notesDir outputDir staticTree
+          DC.rsyncDir notesDir outputDir staticTree
         _ ->
           pure ()
       headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
@@ -113,30 +113,13 @@ generateSite continueMonitoring = do
       -- +2 for Impulse routes
       log D $ "Rendering routes (" <> show (length slugs + 2) <> " slugs) ..."
       -- Do it
-      let wH :: Route a -> AppT ()
+      let wH :: Route a -> App ()
           wH r = writeRouteHtml r =<< genRouteHtml headHtml manifest cache rdCache r
       (wH . Z.Route_Zettel) `mapM_` slugs
       wH $ Z.Route_Impulse Nothing
       wH Z.Route_ImpulseStatic
       reportAllErrors cache
       pure ()
-
-    genApp ::
-      forall t m.
-      ( Reflex t,
-        MonadIO m,
-        PerformEvent t m,
-        PostBuild t m,
-        TriggerEvent t m,
-        MonadHold t m,
-        MonadFix m,
-        MonadIO (Performable m)
-      ) =>
-      App ->
-      m (Event t [FSEvent])
-    genApp App {..} = do
-      -- TODO: Not doing any change monitoring yet
-      watchDirWithDebounce 0.1 notesDir
 
 -- Report all errors
 -- TODO: Report only new errors in this run, to avoid spamming the terminal.
@@ -244,7 +227,7 @@ loadZettelkasten ::
 loadZettelkasten config = do
   let plugins = Config.getPlugins config
   -- TODO Instead of logging here, put this info in Impulse footer.
-  log D $ "Plugins enabled: " <> show (Map.keys plugins)
+  log D $ "Plugins enabled: " <> Plugin.pluginRegistryShow plugins
   fileTree <- locateZettelFiles plugins
   ((g, zs), errs) <- loadZettelkastenFromFiles plugins fileTree
   let cache = Cache.NeuronCache g errs config neuronVersion

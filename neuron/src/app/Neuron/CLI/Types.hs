@@ -13,14 +13,13 @@
 
 module Neuron.CLI.Types
   ( -- * CLI
-    App (..),
+    AppConfig (..),
     Env (..),
 
     -- * App monad
-    AppT,
-    getApp,
+    App,
     getAppEnv,
-    runAppT,
+    runApp,
     MonadApp (..),
 
     -- * CLI commands
@@ -48,9 +47,7 @@ import Neuron.Zettelkasten.Zettel as Q
 import Relude
 import System.FilePath ((</>))
 
--- TODO: so many ugly types
-
-data App = App
+data AppConfig = AppConfig
   { notesDir :: FilePath,
     outputDir :: Maybe FilePath,
     cmd :: Command
@@ -58,7 +55,7 @@ data App = App
   deriving (Show)
 
 data Env m = Env
-  { envApp :: App,
+  { envAppConfig :: AppConfig,
     envLogAction :: LogAction m Message
   }
 
@@ -71,39 +68,39 @@ instance HasLog (Env m) Message m where
   setLogAction newLogAction env = env {envLogAction = newLogAction}
   {-# INLINE setLogAction #-}
 
-newtype AppT a = AppT (ReaderT (Env AppT) IO a)
+newtype App a = App (ReaderT (Env App) IO a)
   deriving newtype (Functor, Applicative, Monad, MonadIO)
-  deriving newtype (MonadReader (Env AppT))
+  deriving newtype (MonadReader (Env App))
 
-instance MonadFail AppT where
+instance MonadFail App where
   fail s = do
     logError $ toText s
     exitFailure
 
-getAppEnv :: AppT (Env AppT)
-getAppEnv = AppT ask
+getAppEnv :: App (Env App)
+getAppEnv = App ask
 
-getApp :: AppT App
-getApp = AppT $ reader envApp
-
-runAppT :: Env AppT -> AppT a -> IO a
-runAppT appEnv (AppT m) = do
+runApp :: Env App -> App a -> IO a
+runApp appEnv (App m) = do
   runReaderT m appEnv
 
 class MonadApp m where
   getNotesDir :: m FilePath
   getOutputDir :: m FilePath
+  getCommand :: m Command
 
-instance MonadApp AppT where
+instance MonadApp App where
   getNotesDir =
-    AppT $ reader $ notesDir . envApp
+    App $ reader $ notesDir . envAppConfig
   getOutputDir = do
-    mOut <- AppT $ reader $ outputDir . envApp
+    mOut <- App $ reader $ outputDir . envAppConfig
     case mOut of
       Nothing ->
         getNotesDir <&> (</> ".neuron" </> "output")
       Just fp ->
         pure fp
+  getCommand =
+    App $ reader $ cmd . envAppConfig
 
 data NewCommand = NewCommand
   { date :: DateMayTime,

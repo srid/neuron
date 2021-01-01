@@ -24,7 +24,7 @@ serve ::
   FilePath ->
   m ()
 serve host port path = do
-  log D $ toText $ "Serving " <> path <> " at http://" <> toString host <> ":" <> show port
+  log I $ toText $ "Serving " <> path <> " at http://" <> toString host <> ":" <> show port
   liftIO $ Warp.runSettings settings app
   where
     app = staticApp $ defaultFileServerSettings path

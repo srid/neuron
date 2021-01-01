@@ -47,7 +47,7 @@ import System.Console.ANSI
   )
 import System.Directory (getCurrentDirectory)
 
-run :: (Bool -> AppT ()) -> IO ()
+run :: (Bool -> App ()) -> IO ()
 run act = do
   defaultNotesDir <- getCurrentDirectory
   cliParser <- commandParser defaultNotesDir <$> now
@@ -57,7 +57,7 @@ run act = do
         (versionOption <*> cliParser <**> helper)
         (fullDesc <> progDesc "Neuron, future-proof Zettelkasten app <https://neuron.zettel.page/>")
   let logAction = cmap fmtNeuronMsg logTextStdout
-  runAppT (Env app logAction) $ runAppCommand act
+  runApp (Env app logAction) $ runAppCommand act
   where
     versionOption =
       infoOption
@@ -79,18 +79,17 @@ run act = do
         <> txt
         <> T.pack (setSGRCode [Reset])
 
-runAppCommand :: (Bool -> AppT ()) -> AppT ()
+runAppCommand :: (Bool -> App ()) -> App ()
 runAppCommand genAct = do
-  c <- cmd <$> getApp
-  case c of
+  getCommand >>= \case
     Gen GenCommand {..} -> do
       case serve of
         Just (host, port) -> do
           outDir <- getOutputDir
           appEnv <- getAppEnv
           liftIO $
-            race_ (runAppT appEnv $ genAct watch) $ do
-              runAppT appEnv $ Backend.serve host port outDir
+            race_ (runApp appEnv $ genAct watch) $ do
+              runApp appEnv $ Backend.serve host port outDir
         Nothing ->
           genAct watch
     New newCommand ->

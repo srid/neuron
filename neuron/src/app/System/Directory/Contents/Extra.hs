@@ -11,6 +11,7 @@
 
 module System.Directory.Contents.Extra where
 
+import Colog
 import qualified Data.Map.Strict as Map
 import Relude
 import System.Directory (copyFile, createDirectoryIfMissing)
@@ -19,13 +20,13 @@ import System.FilePath ((</>))
 import System.Posix (fileExist, getFileStatus, modificationTime)
 
 -- | Copy the given directory tree from @src@ as base directory, to @dest@
-rsyncDir :: FilePath -> FilePath -> DC.DirTree FilePath -> IO ()
+rsyncDir :: (MonadIO m, WithLog env Message m) => FilePath -> FilePath -> DC.DirTree FilePath -> m ()
 rsyncDir src dest = \case
   DC.DirTree_File fp _ -> do
     let (a, b) = (src </>) &&& (dest </>) $ fp
-    aT <- modificationTime <$> getFileStatus a
+    aT <- liftIO $ modificationTime <$> getFileStatus a
     -- TODO: if a file gets deleted, we must remove it.
-    mBT <- do
+    mBT <- liftIO $ do
       fileExist b >>= \case
         True -> do
           bT <- modificationTime <$> getFileStatus b
@@ -33,11 +34,12 @@ rsyncDir src dest = \case
         False ->
           pure Nothing
     when (maybe True (aT >) mBT) $ do
-      putStrLn $ "[cp] " <> fp
-      copyFile a b
+      -- TODO: Use logging!
+      log I $ toText $ "+ " <> fp
+      liftIO $ copyFile a b
   DC.DirTree_Symlink {} ->
     pure ()
   DC.DirTree_Dir dp children -> do
-    createDirectoryIfMissing False (dest </> dp)
+    liftIO $ createDirectoryIfMissing False (dest </> dp)
     forM_ (Map.elems children) $ \childTree -> do
       rsyncDir src dest childTree

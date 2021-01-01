@@ -37,7 +37,7 @@ import Relude
 import qualified Text.URI as URI
 
 -- | optparse-applicative parser for neuron CLI
-commandParser :: FilePath -> LocalTime -> Parser App
+commandParser :: FilePath -> LocalTime -> Parser AppConfig
 commandParser defaultNotesDir now = do
   notesDir <-
     option
@@ -53,7 +53,7 @@ commandParser defaultNotesDir now = do
             <> help "Custom path to generate static site in"
         )
   cmd <- cmdParser
-  pure $ App {..}
+  pure $ AppConfig {..}
   where
     cmdParser =
       hsubparser $
