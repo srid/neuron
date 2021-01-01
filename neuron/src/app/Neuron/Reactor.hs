@@ -19,7 +19,6 @@ import Control.Monad.Fix (MonadFix)
 import Control.Monad.Writer.Strict (runWriter, tell)
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Neuron.CLI.Types
   ( App,
@@ -44,6 +43,7 @@ import qualified Neuron.Frontend.Static.Html as Html
 import qualified Neuron.Frontend.Widget as W
 import Neuron.Plugin (PluginRegistry)
 import qualified Neuron.Plugin as Plugin
+import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import Neuron.Version (neuronVersion)
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
@@ -65,7 +65,7 @@ import Reflex.Dom.Core
 import Reflex.FSNotify (FSEvent, watchTree)
 import Reflex.Host.Headless (runHeadlessApp)
 import Relude
-import System.Directory (doesFileExist, withCurrentDirectory)
+import System.Directory (doesFileExist, makeAbsolute, withCurrentDirectory)
 import qualified System.Directory.Contents as DC
 import qualified System.Directory.Contents.Extra as DC
 import qualified System.FSNotify as FSN
@@ -87,16 +87,10 @@ generateSite continueMonitoring = do
           ffor fsChanged $ \(fmap FSN.eventPath -> paths) -> do
             liftIO $
               runApp appEnv $ do
-                baseDir <- getNotesDir
-                let relevantPaths = fforMaybe paths $ \(makeRelative baseDir -> path) -> do
-                      -- Changed path cannot refer to something *outside* notesDir
-                      guard $ isRelative path
-                      pure path
-                unless (null relevantPaths) $ do
-                  forM_ relevantPaths $ \path ->
-                    log I $ toText $ "* " <> path
-                  doGen
-                  log D "Finished generating; monitoring for changes."
+                forM_ paths $ \path ->
+                  log I $ toText $ "* " <> path
+                doGen
+                log D "Finished generating; monitoring for changes."
         pure never
   where
     -- Do a one-off generation from top to bottom.
@@ -202,19 +196,23 @@ watchDirWithDebounce ::
     PerformEvent t m,
     MonadIO (Performable m),
     MonadHold t m,
+    MonadIO m,
     MonadFix m
   ) =>
   NominalDiffTime ->
   FilePath ->
   m (Event t [FSEvent])
-watchDirWithDebounce ms dirPath = do
+watchDirWithDebounce ms dirPath' = do
+  -- Make absolute herte, so the relative function below works.
+  dirPath <- liftIO $ makeAbsolute dirPath'
   let cfg = FSN.defaultConfig {FSN.confDebounce = FSN.Debounce ms}
   pb <- getPostBuild
   fsEvt <- watchTree cfg (dirPath <$ pb) (const True)
-  -- TODO: support with .neuronignore
-  let evt2 = fforMaybe fsEvt $ \fse -> do
+  let evt2 = fforMaybe fsEvt $ \fse' -> do
+        fse <- mkEventPathRelative dirPath fse'
         let path = FSN.eventPath fse
-        guard $ not (".neuron/" `T.isInfixOf` toText path || ".git" `T.isInfixOf` toText path)
+            ign = NeuronIgnore.shouldIgnore NeuronIgnore.mandatoryIgnorePats
+        guard $ not $ ign path
         pure fse
   evtGrouped <- fmap toList <$> batchOccurrences ms evt2
   -- Discard all but the last event for each path.
@@ -224,6 +222,22 @@ watchDirWithDebounce ms dirPath = do
     nubByKeepLast :: (a -> a -> Bool) -> [a] -> [a]
     nubByKeepLast f =
       reverse . nubBy f . reverse
+    mkEventPathRelative :: FilePath -> FSN.Event -> Maybe FSN.Event
+    mkEventPathRelative baseDir = \case
+      FSN.Added fp t d ->
+        mkR fp <&> \p -> FSN.Added p t d
+      FSN.Modified fp t d ->
+        mkR fp <&> \p -> FSN.Modified p t d
+      FSN.Removed fp t d ->
+        mkR fp <&> \p -> FSN.Removed p t d
+      FSN.Unknown fp t d ->
+        mkR fp <&> \p -> FSN.Unknown p t d
+      where
+        mkR fp = do
+          let rel = makeRelative baseDir fp
+          guard $ isRelative rel
+          -- Tack in a "./" to be directory-contents friendly
+          pure $ "./" <> rel
 
 -- Functions from old Generate.hs
 

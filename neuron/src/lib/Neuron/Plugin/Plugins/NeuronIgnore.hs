@@ -8,7 +8,12 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Plugin.Plugins.NeuronIgnore (plugin) where
+module Neuron.Plugin.Plugins.NeuronIgnore
+  ( plugin,
+    shouldIgnore,
+    mandatoryIgnorePats,
+  )
+where
 
 import Data.Default (Default (def))
 import qualified Data.Text as T
@@ -47,18 +52,25 @@ applyNeuronIgnore t = do
   let mTreeFiltered = DC.filterDirTree (includeDirEntry ignorePats) t
   pure $ DC.pruneDirTree =<< mTreeFiltered
   where
-    mandatoryIgnorePats =
-      [ ".neuron/**"
-      ]
     defaultIgnorePats =
       [ -- Ignore dotfiles and dotdirs
         "**/.*/**"
         -- Ignore everything under sub directories
         -- "*/*/**"
       ]
-    includeDirEntry (fmap ("./" <>) -> pats) name =
+    includeDirEntry pats name =
       Just True
         == ( do
-               guard $ not $ any (?== name) pats
+               guard $ not $ shouldIgnore pats name
                pure True
            )
+
+shouldIgnore :: [FilePattern] -> FilePath -> Bool
+shouldIgnore (fmap ("./" <>) -> pats) fp =
+  any (?== fp) pats
+
+mandatoryIgnorePats :: [FilePattern]
+mandatoryIgnorePats =
+  [ ".neuron/**",
+    ".git/**"
+  ]
