@@ -94,7 +94,6 @@ let
           # In order to keep this list up to date, use nix-store and why-depends as
           # explained here: https://www.srid.ca/04b88e01.html
           disallowedReferences = [
-            self.pandoc
             self.pandoc-types
             self.warp
             self.HTTP
@@ -103,7 +102,6 @@ let
             self.js-flot
           ];
           postInstall = ''
-            remove-references-to -t ${self.pandoc} $out/bin/neuron
             remove-references-to -t ${self.pandoc-types} $out/bin/neuron
             remove-references-to -t ${self.warp} $out/bin/neuron
             remove-references-to -t ${self.HTTP} $out/bin/neuron
