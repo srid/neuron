@@ -56,7 +56,7 @@ import Text.Pandoc.Definition (Inline)
 
 -- | Render the query results.
 renderQueryResult ::
-  PandocBuilder t m => Maybe [Inline] -> DSum ZettelQuery Identity -> NeuronWebT t m ()
+  (PandocBuilder t m, PostBuild t m) => Maybe [Inline] -> DSum ZettelQuery Identity -> NeuronWebT t m ()
 renderQueryResult minner = \case
   ZettelQuery_ZettelByID _zid conn :=> Identity target -> do
     renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
@@ -121,7 +121,7 @@ renderQuery someQ =
 
 -- | Render a link to an individual zettel.
 renderZettelLink ::
-  DomBuilder t m =>
+  (DomBuilder t m, PostBuild t m) =>
   -- | Link inner text
   Maybe (m ()) ->
   -- | Connection type to display
@@ -180,13 +180,17 @@ renderMissingZettelLink mconn zid = do
       elConnSuffix mconn
 
 -- | Like `renderZettelLink` but when we only have ID in hand.
-renderZettelLinkIDOnly :: DomBuilder t m => ZettelID -> Slug -> NeuronWebT t m ()
+renderZettelLinkIDOnly :: (DomBuilder t m, PostBuild t m) => ZettelID -> Slug -> NeuronWebT t m ()
 renderZettelLinkIDOnly zid slug =
   elClass "span" "zettel-link-container" $ do
     elClass "span" "zettel-link" $ do
       neuronRouteLink (Some $ Route_Zettel slug) mempty $ text $ unZettelID zid
 
-renderTagTree :: forall t m. DomBuilder t m => Forest (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
+renderTagTree ::
+  forall t m.
+  (DomBuilder t m, PostBuild t m) =>
+  Forest (NonEmpty TagNode, Natural) ->
+  NeuronWebT t m ()
 renderTagTree t =
   divClass "tag-tree" $
     renderForest mempty t
@@ -217,7 +221,7 @@ renderTagTree t =
           Just rest ->
             unTagNode n <> "/" <> renderTagNode rest
 
-renderInlineTag :: DomBuilder t m => Tag -> Map Text Text -> m () -> NeuronWebT t m ()
+renderInlineTag :: (DomBuilder t m, PostBuild t m) => Tag -> Map Text Text -> m () -> NeuronWebT t m ()
 renderInlineTag tag = neuronRouteLink (Some $ Route_Impulse $ Just tag)
 
 style :: Css

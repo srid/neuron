@@ -49,7 +49,7 @@ plugin =
       _plugin_renderPanel = renderPanel
     }
 
-renderPanel :: DomBuilder t m => ZettelGraph -> DirZettel -> NeuronWebT t m ()
+renderPanel :: (DomBuilder t m, PostBuild t m) => ZettelGraph -> DirZettel -> NeuronWebT t m ()
 renderPanel graph DirZettel {..} = do
   elClass "nav" "ui attached deemphasized segment dirfolge" $ do
     el "h3" $ text "Directory contents"
@@ -149,6 +149,7 @@ tagFromPath = \case
   relPath ->
     error $ "Invalid relPath passed to parseZettel: " <> toText relPath
 
+-- TODO: Replace with indexZid from ID.hs
 indexZettelName :: Text
 indexZettelName = "index"
 

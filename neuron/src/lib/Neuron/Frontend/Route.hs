@@ -24,7 +24,7 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (zettelTitle),
   )
 import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
-import Reflex.Dom.Core (DomBuilder, elAttr, (=:))
+import Reflex.Dom.Core
 import Relude
 
 type NeuronVersion = Tagged "NeuronVersion" Text
@@ -34,8 +34,8 @@ data Route a where
   -- | Impulse is implemented in github.com/srid/rememorate
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
-  Route_Impulse :: Maybe Tag -> Route ((Theme, NeuronVersion), Impulse)
-  Route_ImpulseStatic :: Route ((Theme, NeuronVersion), Impulse)
+  Route_Impulse :: Maybe Tag -> Route (((Theme, NeuronVersion), Maybe Zettel), Impulse)
+  Route_ImpulseStatic :: Route (((Theme, NeuronVersion), Maybe Zettel), Impulse)
 
 -- | The value needed to render the Impulse page
 
@@ -60,8 +60,8 @@ data Stats = Stats
 
 routeHtmlPath :: Route a -> FilePath
 routeHtmlPath = \case
-  Route_Impulse (Just tag) ->
-    "impulse.html?q=tag:" <> toString (unTag tag)
+  Route_Impulse (Just t) ->
+    "impulse.html?q=tag:" <> toString (unTag t)
   Route_Impulse Nothing ->
     "impulse.html"
   Route_ImpulseStatic ->
@@ -71,7 +71,7 @@ routeHtmlPath = \case
 
 data RouteConfig t m = RouteConfig
   { -- | How to render a web route.
-    routeConfigRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> m (),
+    routeConfigRouteLink :: (DomBuilder t m, PostBuild t m) => Dynamic t (Some Route) -> Map Text Text -> m () -> m (),
     -- | Get the URL for a web route as plain text
     routeConfigRouteURL :: Some Route -> Text
   }
@@ -80,8 +80,8 @@ routeConfig :: RouteConfig t m
 routeConfig =
   RouteConfig renderRouteLink someRouteUrl
   where
-    renderRouteLink someR attrs =
-      elAttr "a" (attrs <> "href" =: someRouteUrl someR)
+    renderRouteLink dynR attrs =
+      elDynAttr "a" $ ffor dynR $ \someR -> attrs <> "href" =: someRouteUrl someR
     someRouteUrl :: Some Route -> Text
     someRouteUrl sr =
       toText $ withSome sr routeHtmlPath
@@ -91,10 +91,15 @@ type NeuronWebT t m = ReaderT (RouteConfig t m) m
 runNeuronWeb :: RouteConfig t m -> NeuronWebT t m a -> m a
 runNeuronWeb = flip runReaderT
 
-neuronRouteLink :: DomBuilder t m => Some Route -> Map Text Text -> m () -> NeuronWebT t m ()
-neuronRouteLink someR attrs w = do
+neuronRouteLink :: (DomBuilder t m, PostBuild t m) => Some Route -> Map Text Text -> m () -> NeuronWebT t m ()
+neuronRouteLink someR =
+  neuronDynRouteLink (constDyn someR)
+
+neuronDynRouteLink ::
+  (DomBuilder t m, PostBuild t m) => Dynamic t (Some Route) -> Map Text Text -> m () -> NeuronWebT t m ()
+neuronDynRouteLink rDyn attrs w = do
   f <- asks routeConfigRouteLink
-  lift $ f someR attrs w
+  lift $ f rDyn attrs w
 
 neuronRouteURL :: Monad m => Some Route -> NeuronWebT t m Text
 neuronRouteURL someR = do

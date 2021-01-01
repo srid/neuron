@@ -14,19 +14,20 @@ module Neuron.Frontend.Zettel.View
   ( renderZettel,
     renderZettelContentCard,
     renderZettelParseError,
+    renderBottomMenu,
   )
 where
 
+import Control.Monad.Fix (MonadFix)
 import qualified Data.Dependent.Map as DMap
 import Data.Some (Some (Some))
 import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
-import Neuron.Markdown (ZettelParseError)
-import Neuron.Plugin (renderPluginPanel)
 import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route
   ( NeuronWebT,
     Route (..),
+    neuronDynRouteLink,
     neuronRouteLink,
   )
 import Neuron.Frontend.Theme (Theme)
@@ -34,6 +35,8 @@ import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (elPreOverflowing, elTime, semanticIcon)
 import qualified Neuron.Frontend.Widget.AutoScroll as AS
 import qualified Neuron.Frontend.Widget.InvertedTree as IT
+import Neuron.Markdown (ZettelParseError)
+import Neuron.Plugin (renderPluginPanel)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
@@ -59,8 +62,7 @@ import Text.Pandoc.Definition (Pandoc (Pandoc))
 import qualified Text.URI as URI
 
 renderZettel ::
-  forall t m.
-  PandocBuilder t m =>
+  (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   Theme ->
   (ZettelGraph, ZettelC) ->
   Maybe Text ->
@@ -83,14 +85,14 @@ renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
       forM_ (DMap.toList $ zettelPluginData z) $ \pluginData ->
         renderPluginPanel graph pluginData
       renderZettelBottomPane graph z
-      renderBottomMenu theme graph mEditUrl z
+      renderBottomMenu (constDyn theme) (constDyn $ G.getZettel indexZid graph) ((<> toText (zettelPath z)) <$> mEditUrl)
   -- Because the tree above can be pretty large, we scroll past it
   -- automatically when the page loads.
   unless (null upTree) $ do
     AS.script "zettel-container-anchor"
 
 renderZettelContentCard ::
-  PandocBuilder t m =>
+  (PandocBuilder t m, PostBuild t m) =>
   (ZettelGraph, ZettelC) ->
   NeuronWebT t m ()
 renderZettelContentCard (graph, zc) =
@@ -101,8 +103,7 @@ renderZettelContentCard (graph, zc) =
       renderZettelRawContent z
 
 renderZettelBottomPane ::
-  forall t m.
-  PandocBuilder t m =>
+  (PandocBuilder t m, PostBuild t m) =>
   ZettelGraph ->
   Zettel ->
   NeuronWebT t m ()
@@ -125,17 +126,28 @@ renderZettelBottomPane graph z@Zettel {..} = do
       -- Tags
       whenJust tags renderTags
 
-renderBottomMenu :: (DomBuilder t m) => Theme -> ZettelGraph -> Maybe Text -> Zettel -> NeuronWebT t m ()
-renderBottomMenu theme graph mEditUrl Zettel {..} = do
-  divClass ("ui bottom attached icon compact inverted menu " <> Theme.semanticColor theme) $ do
+renderBottomMenu ::
+  (DomBuilder t m, PostBuild t m, MonadFix m, MonadHold t m) =>
+  Dynamic t Theme ->
+  -- | "Home" link
+  Dynamic t (Maybe Zettel) ->
+  -- | "Edit" URL for this route
+  Maybe Text ->
+  NeuronWebT t m ()
+renderBottomMenu themeDyn mIndexZettel mEditUrl = do
+  let divAttrs = ffor themeDyn $ \theme ->
+        "class" =: ("ui bottom attached icon compact inverted menu " <> Theme.semanticColor theme)
+  elDynAttr "div" divAttrs $ do
     -- Home
-    let mIndexZettel = G.getZettel indexZid graph
-    forM_ mIndexZettel $ \indexZettel ->
-      neuronRouteLink (Some $ Route_Zettel $ Z.zettelSlug indexZettel) ("class" =: "item" <> "title" =: "Home") $
-        semanticIcon "home"
+    x <- maybeDyn mIndexZettel
+    dyn_ $
+      ffor x $ \case
+        Nothing -> blank
+        Just indexZettel -> do
+          neuronDynRouteLink (Some . Route_Zettel . Z.zettelSlug <$> indexZettel) ("class" =: "item" <> "title" =: "Home") $
+            semanticIcon "home"
     -- Edit url
-    forM_ mEditUrl $ \editUrlBase -> do
-      let editUrl = editUrlBase <> toText zettelPath
+    forM_ mEditUrl $ \editUrl -> do
       let attrs = "href" =: editUrl <> "title" =: "Edit this page"
       elAttr "a" ("class" =: "item" <> attrs) $ do
         semanticIcon "edit"
@@ -144,7 +156,7 @@ renderBottomMenu theme graph mEditUrl Zettel {..} = do
       semanticIcon "wave square"
 
 mkPandocRenderConfig ::
-  PandocBuilder t m =>
+  (PandocBuilder t m, PostBuild t m) =>
   ZettelGraph ->
   Config t (NeuronWebT t m) [QueryResultError]
 mkPandocRenderConfig graph =
@@ -182,7 +194,7 @@ renderZettelContent renderCfg Zettel {..} = do
         elAttr "div" ("class" =: "date" <> "title" =: "Zettel date") $ do
           elTime date
 
-renderZettelRawContent :: (DomBuilder t m) => ZettelT (Text, ZettelParseError) -> m ()
+renderZettelRawContent :: DomBuilder t m => ZettelT (Text, ZettelParseError) -> m ()
 renderZettelRawContent Zettel {..} = do
   divClass "ui error message" $ do
     elClass "h2" "header" $ text "Zettel failed to parse"
@@ -194,7 +206,7 @@ renderZettelParseError :: DomBuilder t m => ZettelParseError -> m ()
 renderZettelParseError err =
   el "p" $ elPreOverflowing $ text $ untag err
 
-renderTags :: DomBuilder t m => NonEmpty Tag -> NeuronWebT t m ()
+renderTags :: (DomBuilder t m, PostBuild t m) => NonEmpty Tag -> NeuronWebT t m ()
 renderTags tags = do
   el "div" $ do
     forM_ tags $ \t -> do

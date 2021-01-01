@@ -30,6 +30,7 @@ import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (LoadableData, divClassVisible, elVisible)
 import qualified Neuron.Frontend.Widget as W
 import Neuron.Frontend.Zettel.View (renderZettelParseError)
+import qualified Neuron.Frontend.Zettel.View as ZettelView
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
@@ -95,9 +96,10 @@ buildImpulse graph errors =
 renderImpulse ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
   Dynamic t (Maybe Theme.Theme) ->
+  Dynamic t (Maybe Zettel) ->
   Dynamic t (LoadableData Impulse) ->
   NeuronWebT t m ()
-renderImpulse (fmap (fmap Theme.semanticColor) -> themeColor) impulseLDyn = do
+renderImpulse themeDyn indexZettel impulseLDyn = do
   mqDyn <- fmap join $
     prerender (pure $ constDyn Nothing) $ do
       searchInput =<< urlQueryVal [queryKey|q|]
@@ -128,9 +130,9 @@ renderImpulse (fmap (fmap Theme.semanticColor) -> themeColor) impulseLDyn = do
       orphans <- holdUniqDyn $ ffor2 (impulseOrphans <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
       divClassVisible (not . null <$> orphans) "ui segment" $ do
         elClass "p" "info" $ do
-          text "Notes without any "
-          elAttr "a" ("href" =: "https://neuron.zettel.page/linking.html") $ text "folgezettel"
-          text " relationships"
+          text "Notes not belonging to any "
+          elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "heterarchy"
+          text ":"
         el "ul" $
           void $
             simpleList orphans $ \zDyn ->
@@ -143,20 +145,23 @@ renderImpulse (fmap (fmap Theme.semanticColor) -> themeColor) impulseLDyn = do
       void $
         simpleList clusters $ \forestDyn -> do
           let visible = any treeMatches <$> forestDyn
-          divClassVisible visible ("ui " <> (fromMaybe "" <$> themeColor) <> " segment") $ do
+          divClassVisible visible ("ui " <> (maybe "" Theme.semanticColor <$> themeDyn) <> " segment") $ do
             el "ul" $ renderForest forestDyn
-      el "p" $ do
-        let stats = impulseStats <$> impulseDyn
-        text "The zettelkasten has "
-        dynText $ countNounBe "zettel" "zettels" . statsZettelCount <$> stats
-        text " and "
-        dynText $ countNounBe "link" "links" . statsZettelConnectionCount <$> stats
-        text ". It has "
-        dynText $ countNounBe "cluster" "clusters" . length . impulseClusters <$> impulseDyn
-        text " in its folgezettel graph. "
-        text "Each cluster's "
-        elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"
-        text " is rendered as a forest."
+      divClass "ui top attached segment" $ do
+        el "p" $ do
+          let stats = impulseStats <$> impulseDyn
+          text "The notebook has "
+          dynText $ countNounBe "note" "notes" . statsZettelCount <$> stats
+          text " and "
+          dynText $ countNounBe "link" "links" . statsZettelConnectionCount <$> stats
+          text ". It has "
+          dynText $ countNounBe "cluster" "clusters" . length . impulseClusters <$> impulseDyn
+          text " in its folgezettel graph. "
+          text "Each cluster's "
+          elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"
+          text " is rendered as a forest."
+      -- TODO: Use dynamic throughout instead of defaulting the theme
+      ZettelView.renderBottomMenu (fromMaybe Theme.Blue <$> themeDyn) indexZettel Nothing
   where
     -- Return the value for given query key (eg: ?q=???) from the URL location.
     -- urlQueryVal :: MonadJSM m => URI.RText 'URI.QueryKey -> m (Maybe Text)
@@ -269,7 +274,7 @@ renderForest treesDyn = do
                       elAttr "i" ("class" =: "linkify icon" <> "title" =: zettelTitle z2) blank
         el "ul" $ renderForest subtreesDyn
 
-zettelLink :: DomBuilder t m => Zettel -> NeuronWebT t m () -> NeuronWebT t m ()
+zettelLink :: (DomBuilder t m, PostBuild t m) => Zettel -> NeuronWebT t m () -> NeuronWebT t m ()
 zettelLink z w = do
   el "li" $ do
     QueryView.renderZettelLink Nothing Nothing def z

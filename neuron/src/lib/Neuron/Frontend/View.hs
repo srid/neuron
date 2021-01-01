@@ -39,7 +39,7 @@ import Neuron.Frontend.Widget (LoadableData, elLinkGoogleFonts)
 import qualified Neuron.Frontend.Widget as W
 import qualified Neuron.Frontend.Zettel.CSS as ZettelCSS
 import qualified Neuron.Frontend.Zettel.View as ZettelView
-import Neuron.Zettelkasten.Zettel (ZettelC)
+import Neuron.Zettelkasten.Zettel (Zettel, ZettelC)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude
@@ -87,19 +87,22 @@ bodyTemplate neuronVersionM neuronThemeM w = do
 renderRouteImpulse ::
   forall t m js.
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
-  Dynamic t (LoadableData ((Theme, NeuronVersion), Impulse)) ->
+  Dynamic t (LoadableData (((Theme, NeuronVersion), Maybe Zettel), Impulse)) ->
   NeuronWebT t m ()
 renderRouteImpulse dataLDyn = do
   let neuronTheme =
-        fmap (fst . fst) . W.getData <$> dataLDyn
+        fmap (fst . fst . fst) . W.getData <$> dataLDyn
       neuronVer =
-        fmap (snd . fst) . W.getData <$> dataLDyn
+        fmap (snd . fst . fst) . W.getData <$> dataLDyn
+      indexZettel =
+        join . fmap (snd . fst) . W.getData <$> dataLDyn
   -- HTML for this route is all handled in JavaScript (compiled from
   -- impulse's sources).
   bodyTemplate neuronVer neuronTheme $ do
-    divClass "ui text container" $ do
+    elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
+      --  divClass "ui text container" $ do
       let impulseL = fmap snd <$> dataLDyn
-      Impulse.renderImpulse neuronTheme impulseL
+      Impulse.renderImpulse neuronTheme indexZettel impulseL
 
 renderRouteZettel ::
   forall t m js.

@@ -5,5 +5,7 @@ Some neuron users have developed scripts and tools to improve on the base functi
 [neuron-extras](https://github.com/b0o/neuron-extras) by Maddison Hellstrom
 : auto-generate a Table of Contents / hierarchical index based on hierarchical [[tags]]
 
-[neuron-helper](https://git.lost-frequencies.eu/ybaumy/neuron-helper) by ybaumy
-: export ebook and article highlights from Readwise.io to neuron Markdown.
+[neuron-helper] by ybaumy
+: export ebook and article highlights from Readwise.io to neuron Markdown, etc.
+
+[neuron-helper]: https://github.com/zettelzottel/neuron-helper

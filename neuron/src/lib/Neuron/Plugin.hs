@@ -22,7 +22,7 @@ import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
 import Neuron.Zettelkasten.Zettel (ZettelC)
 import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
-import Reflex.Dom.Core (DomBuilder)
+import Reflex.Dom.Core (DomBuilder, PostBuild)
 import Reflex.Dom.Widget (blank)
 import Relude
 import qualified System.Directory.Contents.Types as DC
@@ -61,7 +61,7 @@ afterZettelRead :: MonadState (Map ZettelID ZIDRef) m => PluginRegistry -> DC.Di
 afterZettelRead plugins fileTree = do
   forM_ (plugins <&> \sp -> withSome sp _plugin_afterZettelRead) $ \f -> f fileTree
 
-renderPluginPanel :: DomBuilder t m => ZettelGraph -> DSum PluginData Identity -> NeuronWebT t m ()
+renderPluginPanel :: (DomBuilder t m, PostBuild t m) => ZettelGraph -> DSum PluginData Identity -> NeuronWebT t m ()
 renderPluginPanel graph = \case
   PluginData_DirTree :=> Identity t ->
     DirTree.renderPanel graph t
