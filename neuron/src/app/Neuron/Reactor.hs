@@ -20,7 +20,6 @@ import Control.Monad.Writer.Strict (runWriter, tell)
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
-import Data.Text.IO (hPutStr, hPutStrLn)
 import Data.Time (NominalDiffTime)
 import Neuron.CLI.Types
   ( App (..),
@@ -111,7 +110,8 @@ generateSite continueMonitoring = do
       headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
       let manifest = Manifest.mkManifestFromTree fileTree
           slugs = RD.allSlugs rdCache
-      log D $ "Generating routes (" <> show (length slugs) <> " zettel slugs) ..."
+      -- +2 for Impulse routes
+      log D $ "Rendering routes (" <> show (length slugs + 2) <> " slugs) ..."
       -- Do it
       let wH :: Route a -> AppT ()
           wH r = writeRouteHtml r =<< genRouteHtml headHtml manifest cache rdCache r
@@ -140,7 +140,7 @@ generateSite continueMonitoring = do
 
 -- Report all errors
 -- TODO: Report only new errors in this run, to avoid spamming the terminal.
-reportAllErrors :: (MonadIO m, WithLog env Message m) => NeuronCache -> m ()
+reportAllErrors :: forall m env. (MonadIO m, WithLog env Message m) => NeuronCache -> m ()
 reportAllErrors cache = do
   missingLinks <- fmap sum $
     forM (Map.toList $ Cache._neuronCache_errors cache) $ \(zid, issue) -> do
@@ -151,13 +151,13 @@ reportAllErrors cache = do
           reportError zid e
           pure 0
   when (missingLinks > 0) $
-    log E $ show missingLinks <> " missing links found across zettels (see Impulse)"
+    log W $ show missingLinks <> " missing links found across zettels (see Impulse)"
   where
     -- Report an error in the terminal
-    reportError :: MonadIO m => ZettelID -> ZettelError -> m ()
+    reportError :: ZettelID -> ZettelError -> m ()
     reportError zid (zettelErrorText -> err) = do
-      liftIO $ hPutStrLn stderr $ toText $ "E " <> zettelIDSourceFileName zid
-      liftIO $ hPutStr stderr $ "  - " <> indentAllButFirstLine 4 err
+      log E $ toText $ zettelIDSourceFileName zid
+      log E $ "  - " <> indentAllButFirstLine 4 err
       where
         indentAllButFirstLine :: Int -> Text -> Text
         indentAllButFirstLine n = unlines . go . lines
@@ -243,6 +243,7 @@ loadZettelkasten ::
   m (NeuronCache, [ZettelC], DC.DirTree FilePath)
 loadZettelkasten config = do
   let plugins = Config.getPlugins config
+  -- TODO Instead of logging here, put this info in Impulse footer.
   log D $ "Plugins enabled: " <> show (Map.keys plugins)
   fileTree <- locateZettelFiles plugins
   ((g, zs), errs) <- loadZettelkastenFromFiles plugins fileTree

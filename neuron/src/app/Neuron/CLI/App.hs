@@ -68,13 +68,11 @@ run act = do
       utcToLocalTime tz <$> liftIO getCurrentTime
     fmtNeuronMsg :: Message -> Text
     fmtNeuronMsg Msg {..} =
-      let sev = case msgSeverity of
-            Debug -> color Green "[D] "
-            Info -> color Blue "[I] "
-            Warning -> color Yellow "[W] "
-            Error -> color Red "[E] "
-       in sev
-            <> msgText
+      case msgSeverity of
+        Debug -> color Black $ "[D] " <> msgText
+        Info -> color Blue $ "[I] " <> msgText
+        Warning -> color Yellow $ "[W] " <> msgText
+        Error -> color Red $ "[E] " <> msgText
     color :: Color -> Text -> Text
     color c txt =
       T.pack (setSGRCode [SetColor Foreground Vivid c])
