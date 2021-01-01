@@ -51,10 +51,10 @@ applyNeuronIgnore t = do
       [ ".neuron/**"
       ]
     defaultIgnorePats =
-      [ -- Ignore top-level dotfiles and dotdirs
-        ".*/**"
+      [ -- Ignore dotfiles and dotdirs
+        "**/.*/**"
         -- Ignore everything under sub directories
-        -- "./*/*/**"
+        -- "*/*/**"
       ]
     includeDirEntry (fmap ("./" <>) -> pats) name =
       Just True
