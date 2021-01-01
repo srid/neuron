@@ -16,13 +16,31 @@ let
     gitignoreSource;
   inherit (import ./dep/nix-thunk {}) 
     thunkSource;
+  # Deal with non-Nix Haskellers allowing broken symlinks in an otherwise
+  # standalone Cabal package directory.
+  fuckSymlinkAbuse = p: pkgs.haskell.lib.overrideCabal p (drv: {
+    postUnpack = ''
+      echo fuck > $sourceRoot/README.md
+      echo fuck > $sourceRoot/LICENSE
+    '';
+  });
+  unfuckCoLog = p: pkgs.haskell.lib.overrideCabal p (drv: {
+    postUnpack = drv.postUnpack + ''
+      # Ditch executable stanzas that fail to build
+      # First 104 lines are enough to get the library.
+      head -n 104 $sourceRoot/co-log.cabal > fuck
+      mv fuck $sourceRoot/co-log.cabal
+    '';
+  });
 
   sources = {
     neuron = gitignoreSource ./neuron;
-    rib = thunkSource ./dep/rib;
     reflex-dom-pandoc = thunkSource ./dep/reflex-dom-pandoc;
     pandoc-link-context = thunkSource ./dep/pandoc-link-context;
     directory-contents = thunkSource ./dep/directory-contents;
+    reflex-fsnotify = thunkSource ./dep/reflex-fsnotify;
+    co-log = thunkSource ./dep/co-log;
+    chronos = thunkSource ./dep/chronos;
   };
 
   searchBuilder = ''
@@ -40,12 +58,25 @@ let
     preConfigure = searchBuilder;
   };
 
-  haskellOverrides = self: super: {
-    rib-core = self.callCabal2nix "rib-core" (sources.rib + "/rib-core") { };
-
+  haskellOverrides = self: super: with pkgs.haskell.lib; {
     pandoc-link-context = self.callCabal2nix "pandoc-link-context" sources.pandoc-link-context {};
     reflex-dom-pandoc =
-      pkgs.haskell.lib.dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
+      dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
+    reflex-fsnotify = 
+      # Jailbreak to allow newer base
+      doJailbreak (self.callCabal2nix "reflex-fsnotify" sources.reflex-fsnotify {});
+    
+    # Because co-log (and chronos) is broken on nixpkgs
+    co-log-core =
+      fuckSymlinkAbuse (self.callCabal2nix "co-log-core" (sources.co-log + "/co-log-core") {});
+    co-log =
+      unfuckCoLog (fuckSymlinkAbuse 
+        (self.callCabal2nix "co-log" (sources.co-log + "/co-log") {})
+      );
+    chronos =
+      # Jailbreak to work with whatever aeson
+      # Chronos' tests are fucked
+      dontCheck (doJailbreak (self.callCabal2nix "chronos" sources.chronos {}));
 
     # Test fails on pkgsMusl
     # https://github.com/hslua/hslua/issues/67
@@ -65,7 +96,6 @@ let
           disallowedReferences = [
             self.pandoc
             self.pandoc-types
-            self.shake
             self.warp
             self.HTTP
             self.js-jquery
@@ -75,7 +105,6 @@ let
           postInstall = ''
             remove-references-to -t ${self.pandoc} $out/bin/neuron
             remove-references-to -t ${self.pandoc-types} $out/bin/neuron
-            remove-references-to -t ${self.shake} $out/bin/neuron
             remove-references-to -t ${self.warp} $out/bin/neuron
             remove-references-to -t ${self.HTTP} $out/bin/neuron
             remove-references-to -t ${self.js-jquery} $out/bin/neuron

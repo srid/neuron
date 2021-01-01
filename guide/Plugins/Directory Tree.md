@@ -2,10 +2,11 @@
 slug: dirtree
 ---
 
-The *Directory Tree* plugin achieves two things:
+The *Directory Tree* plugin automatically creates a [[folgezettel-heterarchy]] reflecting the dirtectory tree of your notes. In effect, it does the following:
 
-1. Create a "directory zettel" on the fly for each sub-directory
-2. Create folgezettel links (see [[linking]]) automatically reflecting the directory tree
+1. Create a "directory zettel" on the fly for each sub-directory containing zettels
+2. Tag every zettel with a hierarchical [[tags]] (`root/**`) corresponding to its path
+3. Create folgezettel links (see [[linking]]) automatically reflecting the directory tree
 
 ## Directory Zettel
 
@@ -17,4 +18,4 @@ The zettel content for directory zettels are by default empty. However, you may 
 
 A [[folgezettel-heterarchy]] is formed, reflecting the directory tree on disk, with the exception of the `index` zettel[^man]. The forming of links is based on hierarchical [[tags]] (reflecting the relative path), that every normal zettel and directory zettel is automatically tagged with.
 
-[^man]: You may manually form these relationships by adding `[[[z:zettels?tag=index]]]` to the top-level `index.md`
+[^man]: You may manually form these relationships by adding `[[[z:zettels?tag=root]]]` to the top-level `index.md`

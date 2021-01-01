@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -11,20 +12,21 @@ module Neuron.CLI.New
   )
 where
 
+import Colog
 import qualified Data.Set as Set
 import Data.Some (withSome)
 import Data.Text (strip)
 import qualified Data.Text as T
 import Data.Time.DateMayTime (DateMayTime, formatDateMayTime)
-import Development.Shake (Action)
-import Neuron.CLI.Types (NewCommand (..))
+import Neuron.CLI.Types (MonadApp, NewCommand (..), getNotesDir)
+import qualified Neuron.Cache.Type as Cache
 import Neuron.Config.Type (Config (..))
-import Neuron.Web.Generate as Gen (loadZettelkasten)
+import Neuron.Reactor as Reactor
+import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
 import Neuron.Zettelkasten.Zettel (zettelID)
 import Relude
-import Rib.Shake (ribInputDir)
 import System.Directory (setCurrentDirectory)
 import System.FilePath ((</>))
 import qualified System.Posix.Env as Env
@@ -33,20 +35,20 @@ import System.Posix.Process (executeFile)
 -- | Create a new zettel file and open it in editor if requested
 --
 -- As well as print the path to the created file.
-newZettelFile :: NewCommand -> Config -> Action ()
+newZettelFile :: (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) => NewCommand -> Config -> m ()
 newZettelFile NewCommand {..} config = do
-  (_, zettels) <- Gen.loadZettelkasten config
+  (g, _, _) <- Reactor.loadZettelkasten config
   mzid <- withSome idScheme $ \scheme -> do
     val <- liftIO $ IDScheme.genVal scheme
     pure $
       IDScheme.nextAvailableZettelID
-        (Set.fromList $ fmap (either zettelID zettelID) zettels)
+        (Set.fromList $ fmap zettelID $ G.getZettels $ Cache._neuronCache_graph g)
         val
         scheme
   case mzid of
     Left e -> die $ show e
     Right zid -> do
-      notesDir <- ribInputDir
+      notesDir <- getNotesDir
       let zettelFile = zettelIDSourceFileName zid
       liftIO $ do
         fileAction :: FilePath -> FilePath -> IO () <-

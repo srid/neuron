@@ -11,11 +11,7 @@ module Neuron.CLI.Search
   )
 where
 
-import Development.Shake (Action)
-import Neuron.CLI.Rib
-  ( SearchBy (SearchByContent, SearchByTitle),
-    SearchCommand (..),
-  )
+import Neuron.CLI.Types (MonadApp, SearchBy (SearchByContent, SearchByTitle), SearchCommand (..), getNotesDir)
 import Relude
 import System.Posix.Process (executeFile)
 import System.Which (staticWhich)
@@ -34,8 +30,9 @@ searchScriptArgs SearchCommand {..} =
         bool "echo" "$EDITOR" searchEdit
    in searchByArgs <> [editArg]
 
-interactiveSearch :: FilePath -> SearchCommand -> Action ()
-interactiveSearch notesDir searchCmd =
+interactiveSearch :: (MonadIO m, MonadApp m) => SearchCommand -> m ()
+interactiveSearch searchCmd = do
+  notesDir <- getNotesDir
   liftIO $ execScript neuronSearchScript $ notesDir : searchScriptArgs searchCmd
   where
     execScript scriptPath args =

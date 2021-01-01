@@ -15,7 +15,7 @@ in {
   Unit.Description = "Neuron zettelkasten service";
   Install.WantedBy = [ "graphical-session.target" ];
   Service = {
-    ExecStart = "${neuron}/bin/neuron -d ${notesDir} rib -wS";
+    ExecStart = "${neuron}/bin/neuron -d ${notesDir} gen -wS";
   };
 };
 ```

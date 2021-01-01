@@ -22,7 +22,7 @@ Now run the neuron [[web]] on the `./guide` Zettelkasten:
 
 ```bash
 cd ./guide
-neuron rib -wS
+neuron gen -wS
 ```
 
 It can be accessed at [localhost:8080](http://localhost:8080). It should match what you see at [neuron.zettel.page](https://neuron.zettel.page).
@@ -72,7 +72,7 @@ From here, you can visit: [[6479cd5e]]
 Your Zettelkasten directory should now contain two zettels--named `6479cd5e.md` and `index.md`.  Now it is time to run the neuron [[web]]:
 
 ```bash
-neuron rib -wS
+neuron gen -wS
 ```
 
 * The `-w` option will watch your Zettelkasten directory and regenerate HTML files.

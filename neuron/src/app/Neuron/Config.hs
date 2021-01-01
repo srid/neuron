@@ -10,6 +10,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+-- For deriving of FromDhall Config
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Neuron.Config
   ( getConfig,
@@ -19,32 +21,32 @@ where
 
 import Data.Either.Validation (validationToEither)
 import qualified Data.Text as T
-import Development.Shake (Action, readFile')
 import Dhall (FromDhall)
 import qualified Dhall (Decoder (extract), auto)
 import qualified Dhall.Core (normalize)
 import qualified Dhall.Parser (exprFromText)
 import qualified Dhall.TypeCheck (typeOf)
-import Neuron.Config.Orphans ()
+import Neuron.CLI.Types (MonadApp, getNotesDir)
 import Neuron.Config.Type (Config, configFile, defaultConfig, mergeWithDefault)
 import Relude
-import Rib.Shake (ribInputDir)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>))
 
+deriving instance FromDhall Config
+
 -- | Read the optional @neuron.dhall@ config file from the zettelkasten
-getConfig :: Action Config
+getConfig :: (MonadIO m, MonadFail m, MonadApp m) => m Config
 getConfig = do
-  notesDir <- ribInputDir
+  notesDir <- getNotesDir
   let configPath = notesDir </> configFile
   configVal :: Text <-
     liftIO (doesFileExist configPath) >>= \case
       True -> do
-        s <- readFile' configPath
+        s <- readFileText configPath
         -- Accept empty neuron.dhall (used to signify a directory to be used with neuron)
-        if T.null (T.strip $ toText s)
+        if T.null (T.strip s)
           then pure defaultConfig
-          else mergeWithDefault . toText <$> readFile' configPath
+          else pure $ mergeWithDefault s
       False ->
         fail $ "not a neuron notes directory (no neuron.dhall found under " <> notesDir <> ")"
   either fail pure $ parsePure configFile $ mergeWithDefault configVal

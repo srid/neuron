@@ -28,7 +28,6 @@ import Control.Monad.Combinators (manyTill)
 import Data.Tagged (Tagged (..))
 import qualified Data.Text as T
 import qualified Data.YAML as YAML
-import Neuron.Orphans ()
 import Neuron.Zettelkasten.Zettel.Meta (Meta)
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M

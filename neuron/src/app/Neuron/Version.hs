@@ -4,10 +4,12 @@
 
 module Neuron.Version where
 
+import Data.Tagged (Tagged (..))
 import Data.Version (showVersion)
+import Neuron.Frontend.Route (NeuronVersion)
 import Paths_neuron (version)
-import Relude
+import Relude (ToText (toText), ($))
 
 -- | Neuron cabal library version
-neuronVersion :: Text
-neuronVersion = toText $ showVersion version
+neuronVersion :: NeuronVersion
+neuronVersion = Tagged $ toText $ showVersion version

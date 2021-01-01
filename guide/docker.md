@@ -11,7 +11,7 @@ mkdir ~/zettelkasten
 cd ~/zettelkasten
 echo "hello world" > hello.md
 touch neuron.dhall  # Mark this a neuron directory
-docker run --rm -t -i -p 8080:8080 -v $(pwd):/notes sridca/neuron neuron rib -ws 0.0.0.0:8080
+docker run --rm -t -i -p 8080:8080 -v $(pwd):/notes sridca/neuron neuron gen -ws 0.0.0.0:8080
 ```
 
-This will run the neuron rib server on the current directory which can be accessed at <http://localhost:8080>. The docker image operates on `/notes` as the current working directory, which is where you are expected to mount your notes directory.
+This will run the neuron server on the current directory which can be accessed at <http://localhost:8080>. The docker image operates on `/notes` as the current working directory, which is where you are expected to mount your notes directory.

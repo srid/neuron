@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 1.9.1.5
+version: 1.9.2.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -96,20 +96,20 @@ library
     Neuron.Zettelkasten.Graph.Type
     Neuron.Zettelkasten.Graph.Build
     Neuron.Zettelkasten.Resolver
-    Neuron.Web.Route
-    Neuron.Web.Manifest
-    Neuron.Web.Cache.Type
-    Neuron.Web.Common
-    Neuron.Web.Widget
-    Neuron.Web.Widget.AutoScroll
-    Neuron.Web.Widget.InvertedTree
-    Neuron.Web.Query.View
-    Neuron.Web.Zettel.View
-    Neuron.Web.Zettel.CSS
-    Neuron.Web.Impulse
-    Neuron.Web.Theme
-    Neuron.Web.View
-    Neuron.Orphans
+    Neuron.Cache.Type
+    Neuron.Frontend.Route
+    Neuron.Frontend.Route.Data
+    Neuron.Frontend.Manifest
+    Neuron.Frontend.Common
+    Neuron.Frontend.Widget
+    Neuron.Frontend.Widget.AutoScroll
+    Neuron.Frontend.Widget.InvertedTree
+    Neuron.Frontend.Query.View
+    Neuron.Frontend.Zettel.View
+    Neuron.Frontend.Zettel.CSS
+    Neuron.Frontend.Impulse
+    Neuron.Frontend.Theme
+    Neuron.Frontend.View
     Text.Megaparsec.Simple
     Text.Pandoc.Util
     Text.URI.Util
@@ -139,13 +139,11 @@ common app-common
     exceptions,
     file-embed,
     optparse-applicative,
-    pandoc,
+    pandoc-types,
     -- Use skylighting >= 0.9 as they are written in pure Haskell
     skylighting-core >= 0.9,
     relude,
     iso8601-time,
-    rib-core >=1.0,
-    shake -any,
     time,
     text,
     modern-uri,
@@ -159,12 +157,19 @@ common app-common
     dependent-sum-template,
     data-default,
     uuid,
-    shake,
     with-utf8,
     shower,
     either,
     uri-encode,
-    timeit
+    timeit,
+    reflex,
+    reflex-fsnotify,
+    fsnotify,
+    wai-app-static,
+    warp,
+    async,
+    co-log,
+    ansi-terminal
 
 -- Everything below will have to be stripped away, if whoever uses this repo
 -- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
@@ -179,20 +184,22 @@ library neuron-app-lib
     Data.Structured.Breadcrumb
     Data.Structured.OpenGraph
     Data.Structured.OpenGraph.Render
-    Neuron.CLI
+    System.Directory.Contents.Extra
+    Options.Applicative.Extra
+    Neuron.Backend
+    Neuron.Reactor
+    Neuron.CLI.App
     Neuron.CLI.New
     Neuron.CLI.Open
-    Neuron.CLI.Rib
     Neuron.CLI.Search
     Neuron.CLI.Types
+    Neuron.CLI.Parser
     Neuron.Config
-    Neuron.Config.Orphans
     Neuron.Version
-    Neuron.Web.Cache
-    Neuron.Web.HeadHtml
-    Neuron.Web.Generate
-    Neuron.Web.Generate.Route
-    Neuron.Web.StructuredData
+    Neuron.Cache
+    Neuron.Frontend.Static.Html
+    Neuron.Frontend.Static.HeadHtml
+    Neuron.Frontend.Static.StructuredData
     Neuron.Zettelkasten.ID.Scheme
   autogen-modules:
     Paths_neuron
