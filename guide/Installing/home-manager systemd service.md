@@ -1,4 +1,6 @@
-# `home-manager` systemd service
+---
+slug: install-systemd
+---
 
 If you use [home-manager](https://github.com/rycee/home-manager), you can have
 `neuron` run in the background automatically. Add the following to your `home.nix`:

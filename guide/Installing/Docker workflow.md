@@ -1,4 +1,6 @@
-# Docker workflow
+---
+slug: docker
+---
 
 You can use neuron without installing it by trying the Docker image [sridca/neuron](https://hub.docker.com/r/sridca/neuron). The image is built automatically from the development version of neuron. 
 

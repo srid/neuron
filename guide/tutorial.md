@@ -5,7 +5,7 @@ tags:
 
 # Tutorial
 
-Make sure you have already installed neuron (see [[install]]). Then follow this tutorial to get your own Zettelkasten up and running.
+Make sure you have already installed neuron (see [[Installing]]). Then follow this tutorial to get your own Zettelkasten up and running.
 
 ## Test with an existing Zettelkasten
 

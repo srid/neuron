@@ -6,7 +6,7 @@
 
 ## Getting started
 
-* [[[install]]]
+* [[[Installing]]]
 * [[[tutorial]]]
 * [[[guide]]]
 * [[[examples]]]

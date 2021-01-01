@@ -1,4 +1,6 @@
-# Installing
+---
+slug: install
+---
 
 Neuron can be installed on Windows, Linux or macOS.
 
@@ -20,7 +22,7 @@ OS-specific notes
 * If you are on **Windows**, you should begin by [installing Ubuntu on WSL 2](https://docs.microsoft.com/en-us/windows/wsl/install-win10) (not WSL 1), before installing Nix on it.
 * If you are on **macOS Catalina or later**, refer to the [macOS Installation](https://nixos.org/manual/nix/stable/#sect-macos-installation) section of the Nix manual on how to install Nix.
 
-As an alternative to Nix, you may try the [[[docker]]].
+As an alternative to Nix, you may try the [[[Docker workflow]]].
 :::
 
 [staticbin]: https://github.com/srid/neuron/releases/download/1.0.1.0/neuron-1.0.1.0-linux.tar.gz
@@ -46,7 +48,7 @@ nix-env -if https://github.com/srid/neuron/archive/master.tar.gz
 
 Note that this command can also *upgrade* your existing install of neuron.
 
-For alternative mechanisms, see [[[install-declarative]]].
+For alternative mechanisms, see [[[Declarative Install]]].
 
 [^v1]: The development version will reflect ongoing work neuron v2. To install neuron v1, run instead:
     ```
