@@ -56,7 +56,7 @@ run act = do
       info
         (versionOption <*> cliParser <**> helper)
         (fullDesc <> progDesc "Neuron, future-proof Zettelkasten app <https://neuron.zettel.page/>")
-  let logAction = cmap fmtNeuronMsg logTextStdout
+  let logAction = cmap fmtNeuronMsg logTextStderr
   runApp (Env app logAction) $ runAppCommand act
   where
     versionOption =
