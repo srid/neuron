@@ -34,7 +34,6 @@ rsyncDir src dest = \case
         False ->
           pure Nothing
     when (maybe True (aT >) mBT) $ do
-      -- TODO: Use logging!
       log I $ toText $ "+ " <> fp
       liftIO $ copyFile a b
   DC.DirTree_Symlink {} ->

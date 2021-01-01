@@ -10,11 +10,8 @@
 
 module Neuron.Plugin.Plugins.NeuronIgnore (plugin) where
 
-import Control.Monad.Writer (runWriter)
-import Control.Monad.Writer.Strict (MonadWriter (tell))
 import Data.Default (Default (def))
 import qualified Data.Text as T
-import Data.Text.IO (hPutStrLn)
 import Neuron.Plugin.Type (Plugin (..))
 import Reflex.Dom.Core (fforMaybe)
 import Relude hiding (trace, traceShow, traceShowId)
@@ -32,11 +29,10 @@ plugin =
 applyNeuronIgnore :: DC.DirTree FilePath -> IO (Maybe (DC.DirTree FilePath))
 applyNeuronIgnore t = do
   -- Note that filterDirTree invokes the function only files, not directory paths
-  -- FIXME: `filterADirTree` unfortunately won't filter directories; so
+  -- FIXME(performance): `filterADirTree` unfortunately won't filter directories; so
   -- even if a top-level directory is configured to be ignored, this
   -- filter will traverse that entire directory tree to apply the glob
   -- pattern filter.
-  -- TODO: neuron should detect changes to this file, and reload.
   ignorePats :: [FilePattern] <- fmap (mandatoryIgnorePats <>) $ case DC.walkDirTree "./.neuronignore" t of
     Just (DC.DirTree_File _ fp) -> do
       ls <- T.lines <$> readFileText fp
@@ -48,12 +44,7 @@ applyNeuronIgnore t = do
           pure $ toString s
     _ ->
       pure defaultIgnorePats
-  -- TODO: Use colog (but still in library/ghcjs)
-  -- TODO OR: Instead of logging here, put this info in Impulse footer.
-  hPutStrLn stderr $ "Ignore patterns: " <> show ignorePats
-  let (mTreeFiltered, _nExcluded) = runWriter @[FilePath] $ DC.filterADirTree (includeDirEntry ignorePats) t
-  -- Not printing, because this includesd all non-Markdown files, including static files. Hence, not really accurate.
-  -- liftIO $ hPutStrLn stderr $ "Excluded " <> show nExcluded <> " filepaths"
+  let mTreeFiltered = DC.filterDirTree (includeDirEntry ignorePats) t
   pure $ DC.pruneDirTree =<< mTreeFiltered
   where
     mandatoryIgnorePats =
@@ -65,14 +56,9 @@ applyNeuronIgnore t = do
         -- Ignore everything under sub directories
         -- "./*/*/**"
       ]
-    includeDirEntry (fmap ("./" <>) -> pats) name = do
-      let included =
-            Just True
-              == ( do
-                     guard $ not $ any (?== name) pats
-                     -- getZettelID will skip non-Markdown files
-                     -- guard $ takeExtension name == ".md"
-                     pure True
-                 )
-      unless included $ tell [name]
-      pure included
+    includeDirEntry (fmap ("./" <>) -> pats) name =
+      Just True
+        == ( do
+               guard $ not $ any (?== name) pats
+               pure True
+           )
