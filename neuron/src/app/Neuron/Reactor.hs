@@ -69,7 +69,7 @@ import System.Directory (doesFileExist, withCurrentDirectory)
 import qualified System.Directory.Contents as DC
 import qualified System.Directory.Contents.Extra as DC
 import qualified System.FSNotify as FSN
-import System.FilePath (makeRelative, takeExtension, (</>))
+import System.FilePath (isRelative, makeRelative, takeExtension, (</>))
 
 generateSite :: Bool -> App ()
 generateSite continueMonitoring = do
@@ -88,10 +88,15 @@ generateSite continueMonitoring = do
             liftIO $
               runApp appEnv $ do
                 baseDir <- getNotesDir
-                forM_ paths $ \(makeRelative baseDir -> path) ->
-                  log I $ toText $ "M " <> path
-                doGen
-                log D "Finished generating; monitoring for changes."
+                let relevantPaths = fforMaybe paths $ \(makeRelative baseDir -> path) -> do
+                      -- Changed path cannot refer to something *outside* notesDir
+                      guard $ isRelative path
+                      pure path
+                unless (null relevantPaths) $ do
+                  forM_ relevantPaths $ \path ->
+                    log I $ toText $ "* " <> path
+                  doGen
+                  log D "Finished generating; monitoring for changes."
         pure never
   where
     -- Do a one-off generation from top to bottom.
@@ -205,10 +210,12 @@ watchDirWithDebounce ::
 watchDirWithDebounce ms dirPath = do
   let cfg = FSN.defaultConfig {FSN.confDebounce = FSN.Debounce ms}
   pb <- getPostBuild
-  evt <- watchTree cfg (dirPath <$ pb) (const True)
+  fsEvt <- watchTree cfg (dirPath <$ pb) (const True)
   -- TODO: support with .neuronignore
-  let evt2 = flip ffilter evt $ \(toText . FSN.eventPath -> path) ->
-        not (".neuron/" `T.isInfixOf` path || ".git" `T.isInfixOf` path)
+  let evt2 = fforMaybe fsEvt $ \fse -> do
+        let path = FSN.eventPath fse
+        guard $ not (".neuron/" `T.isInfixOf` toText path || ".git" `T.isInfixOf` toText path)
+        pure fse
   evtGrouped <- fmap toList <$> batchOccurrences ms evt2
   -- Discard all but the last event for each path.
   pure $ nubByKeepLast ((==) `on` FSN.eventPath) <$> evtGrouped
