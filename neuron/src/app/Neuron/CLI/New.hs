@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -11,15 +12,16 @@ module Neuron.CLI.New
   )
 where
 
+import Colog
 import qualified Data.Set as Set
 import Data.Some (withSome)
 import Data.Text (strip)
 import qualified Data.Text as T
 import Data.Time.DateMayTime (DateMayTime, formatDateMayTime)
 import Neuron.CLI.Types (MonadApp, NewCommand (..), getNotesDir)
+import qualified Neuron.Cache.Type as Cache
 import Neuron.Config.Type (Config (..))
 import Neuron.Reactor as Reactor
-import qualified Neuron.Cache.Type as Cache
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
@@ -33,7 +35,7 @@ import System.Posix.Process (executeFile)
 -- | Create a new zettel file and open it in editor if requested
 --
 -- As well as print the path to the created file.
-newZettelFile :: (MonadIO m, MonadApp m, MonadFail m) => NewCommand -> Config -> m ()
+newZettelFile :: (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) => NewCommand -> Config -> m ()
 newZettelFile NewCommand {..} config = do
   (g, _, _) <- Reactor.loadZettelkasten config
   mzid <- withSome idScheme $ \scheme -> do

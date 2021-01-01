@@ -21,5 +21,5 @@ main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
   hSetBuffering stderr LineBuffering
-  withUtf8 $
+  withUtf8 $ do
     run Reactor.generateSite

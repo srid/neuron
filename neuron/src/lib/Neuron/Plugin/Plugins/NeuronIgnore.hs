@@ -48,6 +48,7 @@ applyNeuronIgnore t = do
           pure $ toString s
     _ ->
       pure defaultIgnorePats
+  -- TODO: Use colog (but still in library/ghcjs)
   hPutStrLn stderr $ "Ignore patterns: " <> show ignorePats
   let (mTreeFiltered, _nExcluded) = runWriter @[FilePath] $ DC.filterADirTree (includeDirEntry ignorePats) t
   -- Not printing, because this includesd all non-Markdown files, including static files. Hence, not really accurate.

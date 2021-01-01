@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -5,6 +6,7 @@
 
 module Neuron.Backend where
 
+import Colog
 import Network.Wai.Application.Static (defaultFileServerSettings, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
 import Relude
@@ -13,16 +15,17 @@ import Relude
 --
 -- Binds the server to host 127.0.0.1.
 serve ::
+  (MonadIO m, WithLog env Message m) =>
   -- | Host
   Text ->
   -- | Port number to bind to
   Int ->
   -- | Directory to serve.
   FilePath ->
-  IO ()
+  m ()
 serve host port path = do
-  putStrLn $ "[www] Serving " <> path <> " at http://" <> toString host <> ":" <> show port
-  Warp.runSettings settings app
+  log D $ toText $ "Serving " <> path <> " at http://" <> toString host <> ":" <> show port
+  liftIO $ Warp.runSettings settings app
   where
     app = staticApp $ defaultFileServerSettings path
     settings =

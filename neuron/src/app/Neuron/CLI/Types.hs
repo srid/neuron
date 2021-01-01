@@ -1,5 +1,10 @@
 {-# LANGUAGE ApplicativeDo #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -9,10 +14,12 @@
 module Neuron.CLI.Types
   ( -- * CLI
     App (..),
+    Env (..),
 
     -- * App monad
     AppT,
     getApp,
+    getAppEnv,
     runAppT,
     MonadApp (..),
 
@@ -27,6 +34,7 @@ module Neuron.CLI.Types
   )
 where
 
+import Colog
 import Data.Some (Some (..))
 import Data.Time.DateMayTime
   ( DateMayTime,
@@ -40,6 +48,8 @@ import Neuron.Zettelkasten.Zettel as Q
 import Relude
 import System.FilePath ((</>))
 
+-- TODO: so many ugly types
+
 data App = App
   { notesDir :: FilePath,
     outputDir :: Maybe FilePath,
@@ -47,25 +57,48 @@ data App = App
   }
   deriving (Show)
 
-newtype AppT m a = AppT (ReaderT App m a)
-  deriving (Functor, Applicative, Monad, MonadFail, MonadIO, MonadTrans)
+data Env m = Env
+  { envApp :: App,
+    envLogAction :: LogAction m Message
+  }
 
-getApp :: Monad m => AppT m App
-getApp = AppT ask
+instance HasLog (Env m) Message m where
+  getLogAction :: Env m -> LogAction m Message
+  getLogAction = envLogAction
+  {-# INLINE getLogAction #-}
 
-runAppT :: App -> AppT m a -> m a
-runAppT appEnv (AppT m) =
+  setLogAction :: LogAction m Message -> Env m -> Env m
+  setLogAction newLogAction env = env {envLogAction = newLogAction}
+  {-# INLINE setLogAction #-}
+
+newtype AppT a = AppT (ReaderT (Env AppT) IO a)
+  deriving newtype (Functor, Applicative, Monad, MonadIO)
+  deriving newtype (MonadReader (Env AppT))
+
+instance MonadFail AppT where
+  fail s = do
+    logError $ toText s
+    exitFailure
+
+getAppEnv :: AppT (Env AppT)
+getAppEnv = AppT ask
+
+getApp :: AppT App
+getApp = AppT $ reader envApp
+
+runAppT :: Env AppT -> AppT a -> IO a
+runAppT appEnv (AppT m) = do
   runReaderT m appEnv
 
 class MonadApp m where
   getNotesDir :: m FilePath
   getOutputDir :: m FilePath
 
-instance Monad m => MonadApp (AppT m) where
+instance MonadApp AppT where
   getNotesDir =
-    AppT $ reader notesDir
+    AppT $ reader $ notesDir . envApp
   getOutputDir = do
-    mOut <- AppT $ reader outputDir
+    mOut <- AppT $ reader $ outputDir . envApp
     case mOut of
       Nothing ->
         getNotesDir <&> (</> ".neuron" </> "output")

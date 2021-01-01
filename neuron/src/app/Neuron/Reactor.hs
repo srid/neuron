@@ -14,6 +14,7 @@
 -- TODO: Split this module appropriately.
 module Neuron.Reactor where
 
+import Colog
 import Control.Monad.Fix (MonadFix)
 import Control.Monad.Writer.Strict (runWriter, tell)
 import Data.List (nubBy)
@@ -26,6 +27,7 @@ import Neuron.CLI.Types
     AppT,
     MonadApp (..),
     getApp,
+    getAppEnv,
     runAppT,
   )
 import qualified Neuron.Cache as Cache
@@ -71,28 +73,31 @@ import qualified System.Directory.Contents.Extra as DC
 import qualified System.FSNotify as FSN
 import System.FilePath (takeExtension, (</>))
 
-generateSite :: Bool -> AppT IO ()
+generateSite :: Bool -> AppT ()
 generateSite continueMonitoring = do
   -- Initial gen
   doGen
   -- Continue morning
   when continueMonitoring $ do
-    liftIO $ putStrLn "Monitoring for changes ..."
+    log D "Finished generating; monitoring for changes."
+    appEnv <- getAppEnv
     app <- getApp
-    lift $
+    liftIO $
       runHeadlessApp $ do
         fsChanged <- genApp app
         performEvent_ $
           ffor fsChanged $ \(fmap FSN.eventPath -> paths) -> do
-            forM_ paths $ \path ->
-              liftIO $ putStrLn $ "M " <> DC.mkRelative (notesDir app) path
-            liftIO $ runAppT app doGen
-            liftIO $ putStrLn "Monitoring for changes ..."
+            liftIO $
+              runAppT appEnv $ do
+                forM_ paths $ \path ->
+                  log I $ toText $ "M " <> DC.mkRelative (notesDir app) path
+                doGen
+                log D "Finished generating; monitoring for changes."
         pure never
   where
     -- Do a one-off generation from top to bottom.
     -- No incrementall stuff (yet)
-    doGen :: AppT IO ()
+    doGen :: AppT ()
     doGen = do
       (cache, RD.mkRouteDataCache -> rdCache, fileTree) <- loadZettelkasten =<< getConfig
       -- Static files
@@ -105,10 +110,12 @@ generateSite continueMonitoring = do
           pure ()
       headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
       let manifest = Manifest.mkManifestFromTree fileTree
+          slugs = RD.allSlugs rdCache
+      log D $ "Generating routes (" <> show (length slugs) <> " zettel slugs) ..."
       -- Do it
-      let wH :: Route a -> AppT IO ()
+      let wH :: Route a -> AppT ()
           wH r = writeRouteHtml r =<< genRouteHtml headHtml manifest cache rdCache r
-      (wH . Z.Route_Zettel) `mapM_` RD.allSlugs rdCache
+      (wH . Z.Route_Zettel) `mapM_` slugs
       wH $ Z.Route_Impulse Nothing
       wH Z.Route_ImpulseStatic
       reportAllErrors cache
@@ -133,7 +140,7 @@ generateSite continueMonitoring = do
 
 -- Report all errors
 -- TODO: Report only new errors in this run, to avoid spamming the terminal.
-reportAllErrors :: MonadIO m => NeuronCache -> m ()
+reportAllErrors :: (MonadIO m, WithLog env Message m) => NeuronCache -> m ()
 reportAllErrors cache = do
   missingLinks <- fmap sum $
     forM (Map.toList $ Cache._neuronCache_errors cache) $ \(zid, issue) -> do
@@ -144,7 +151,7 @@ reportAllErrors cache = do
           reportError zid e
           pure 0
   when (missingLinks > 0) $
-    liftIO $ hPutStrLn stderr $ "E " <> show missingLinks <> " missing links found across zettels (see Impulse)"
+    log E $ show missingLinks <> " missing links found across zettels (see Impulse)"
   where
     -- Report an error in the terminal
     reportError :: MonadIO m => ZettelID -> ZettelError -> m ()
@@ -183,7 +190,7 @@ genRouteHtml headHtml manifest cache rdCache r = do
         let cacheDyn = constDyn $ W.availableData cache
         Html.renderRoutePage cacheDyn rdCache headHtml manifest r
 
-writeRouteHtml :: (MonadApp m, MonadIO m) => Route a -> ByteString -> m ()
+writeRouteHtml :: (MonadApp m, MonadIO m, WithLog env Message m) => Route a -> ByteString -> m ()
 writeRouteHtml r content = do
   outputDir <- getOutputDir
   let htmlFile = outputDir </> routeHtmlPath r
@@ -194,7 +201,7 @@ writeRouteHtml r content = do
       True -> Just <$> readFileText htmlFile
       False -> pure Nothing
   unless (Just s == s0) $ do
-    liftIO $ putStrLn $ "+ " <> DC.mkRelative outputDir htmlFile
+    log I $ toText $ "+ " <> DC.mkRelative outputDir htmlFile
     writeFileText htmlFile s
 
 -- | Like `watchDir` but batches file events
@@ -231,12 +238,12 @@ watchDirWithDebounce ms dirPath = do
 -- Functions from old Generate.hs
 
 loadZettelkasten ::
-  (MonadIO m, MonadApp m, MonadFail m) =>
+  (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) =>
   Config ->
   m (NeuronCache, [ZettelC], DC.DirTree FilePath)
 loadZettelkasten config = do
   let plugins = Config.getPlugins config
-  liftIO $ hPutStrLn stderr $ "Plugins enabled: " <> show (Map.keys plugins)
+  log D $ "Plugins enabled: " <> show (Map.keys plugins)
   fileTree <- locateZettelFiles plugins
   ((g, zs), errs) <- loadZettelkastenFromFiles plugins fileTree
   let cache = Cache.NeuronCache g errs config neuronVersion
@@ -265,7 +272,7 @@ locateZettelFiles plugins = do
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFromFiles ::
-  (MonadIO m, MonadApp m, MonadFail m) =>
+  (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) =>
   PluginRegistry ->
   DC.DirTree FilePath ->
   m
@@ -283,13 +290,14 @@ loadZettelkastenFromFiles plugins fileTree = do
         let total = getSum @Int $ foldMap (const $ Sum 1) mdFileTree
         -- TODO: Would be nice to show a progressbar here
         -- liftIO $ DC.printDirTree fileTree
-        liftIO $ hPutStrLn stderr $ "Loading directory tree (" <> show total <> " files) ..."
+        log D $ "Loading directory tree (" <> show total <> " .md files) ..."
         fmap snd $
           flip runStateT Map.empty $ do
             flip R.resolveZidRefsFromDirTree mdFileTree $ \relPath -> do
               absPath <- fmap (</> relPath) getNotesDir
               decodeUtf8With lenientDecode <$> readFileBS absPath
             Plugin.afterZettelRead plugins mdFileTree
+  log D $ "Building zettelkasten graph (" <> show (length zidRefs) <> " zettels) ..."
   pure $
     runWriter $ do
       filesWithContent <-

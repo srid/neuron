@@ -167,7 +167,9 @@ common app-common
     fsnotify,
     wai-app-static,
     warp,
-    async
+    async,
+    co-log,
+    ansi-terminal
 
 -- Everything below will have to be stripped away, if whoever uses this repo
 -- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
