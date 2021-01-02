@@ -12,12 +12,13 @@ module Neuron.CLI.New
   )
 where
 
-import Colog
+import Colog (WithLog)
 import qualified Data.Set as Set
 import Data.Some (withSome)
 import Data.Text (strip)
 import qualified Data.Text as T
 import Data.Time.DateMayTime (DateMayTime, formatDateMayTime)
+import Neuron.CLI.Logging
 import Neuron.CLI.Types (MonadApp, NewCommand (..), getNotesDir)
 import qualified Neuron.Cache.Type as Cache
 import Neuron.Config.Type (Config (..))

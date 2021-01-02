@@ -14,12 +14,13 @@
 -- TODO: Split this module appropriately.
 module Neuron.Reactor where
 
-import Colog
+import Colog (WithLog, log)
 import Control.Monad.Fix (MonadFix)
 import Control.Monad.Writer.Strict (runWriter, tell)
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
 import Data.Time (NominalDiffTime)
+import Neuron.CLI.Logging
 import Neuron.CLI.Types
   ( App,
     MonadApp (..),
@@ -70,14 +71,16 @@ import qualified System.Directory.Contents as DC
 import qualified System.Directory.Contents.Extra as DC
 import qualified System.FSNotify as FSN
 import System.FilePath (isRelative, makeRelative, takeExtension, (</>))
+import qualified Text.Show as Show
 
 generateSite :: Bool -> App ()
 generateSite continueMonitoring = do
   -- Initial gen
   doGen
   -- Continue morning
+  let awaitLog = log (D' Wait) "Awaiting file changes"
   when continueMonitoring $ do
-    log D "Finished generating; monitoring for changes."
+    awaitLog
     appEnv <- getAppEnv
     notesDir <- getNotesDir
     liftIO $
@@ -90,7 +93,7 @@ generateSite continueMonitoring = do
                 forM_ paths $ \path ->
                   log I $ toText $ "* " <> path
                 doGen
-                log D "Finished generating; monitoring for changes."
+                awaitLog
         pure never
   where
     -- Do a one-off generation from top to bottom.
@@ -118,22 +121,41 @@ generateSite continueMonitoring = do
       wH $ Z.Route_Impulse Nothing
       wH Z.Route_ImpulseStatic
       reportAllErrors cache
-      pure ()
+      getOutputDir >>= \(toText -> outputDir) ->
+        log (I' Done) $ "Finished generating at " <> outputDir
+
+data MissingLinks = MissingLinks
+  { missingLinksZettelsCount :: Int,
+    missingLinksLinksCount :: Int
+  }
+  deriving (Eq)
+
+instance Semigroup MissingLinks where
+  MissingLinks z1 l1 <> MissingLinks z2 l2 =
+    MissingLinks (z1 + z2) (l1 + l2)
+
+instance Monoid MissingLinks where
+  mempty = MissingLinks 0 0
+  mappend = (<>)
+
+instance Show.Show MissingLinks where
+  show (MissingLinks z n) =
+    show n <> " missing links found across " <> show z <> " zettels (see Impulse)"
 
 -- Report all errors
 -- TODO: Report only new errors in this run, to avoid spamming the terminal.
 reportAllErrors :: forall m env. (MonadIO m, WithLog env Message m) => NeuronCache -> m ()
 reportAllErrors cache = do
-  missingLinks <- fmap sum $
+  missingLinks :: MissingLinks <- fmap (mconcat . catMaybes) $
     forM (Map.toList $ Cache._neuronCache_errors cache) $ \(zid, issue) -> do
       case issue of
         ZettelIssue_MissingLinks (_slug, qErrs) ->
-          pure (length qErrs)
+          pure $ Just $ MissingLinks 1 (length qErrs)
         ZettelIssue_Error e -> do
           reportError zid e
-          pure 0
-  when (missingLinks > 0) $
-    log W $ show missingLinks <> " missing links found across zettels (see Impulse)"
+          pure Nothing
+  unless (missingLinks == mempty) $
+    log W $ show missingLinks
   where
     -- Report an error in the terminal
     reportError :: ZettelID -> ZettelError -> m ()

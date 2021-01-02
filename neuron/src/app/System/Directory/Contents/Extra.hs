@@ -11,8 +11,9 @@
 
 module System.Directory.Contents.Extra where
 
-import Colog
+import Colog (WithLog, log)
 import qualified Data.Map.Strict as Map
+import Neuron.CLI.Logging
 import Relude
 import System.Directory (copyFile, createDirectoryIfMissing)
 import qualified System.Directory.Contents as DC

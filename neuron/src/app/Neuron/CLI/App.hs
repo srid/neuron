@@ -11,21 +11,20 @@ module Neuron.CLI.App
   )
 where
 
-import Colog
 import Control.Concurrent.Async (race_)
 import qualified Data.Aeson.Text as Aeson
 import Data.Some (withSome)
 import Data.Tagged
-import qualified Data.Text as T
 import Data.Time
   ( getCurrentTime,
     getCurrentTimeZone,
     utcToLocalTime,
   )
 import qualified Neuron.Backend as Backend
+import qualified Neuron.CLI.Logging as Logging
 import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Open (openLocallyGeneratedFile)
-import Neuron.CLI.Parser
+import Neuron.CLI.Parser (commandParser)
 import Neuron.CLI.Search (interactiveSearch)
 import Neuron.CLI.Types
 import qualified Neuron.Cache as Cache
@@ -38,13 +37,6 @@ import qualified Neuron.Zettelkasten.Query as Q
 import Neuron.Zettelkasten.Zettel (sansLinkContext)
 import Options.Applicative
 import Relude
-import System.Console.ANSI
-  ( Color (..),
-    ColorIntensity (Vivid),
-    ConsoleLayer (Foreground),
-    SGR (..),
-    setSGRCode,
-  )
 import System.Directory (getCurrentDirectory)
 
 run :: (Bool -> App ()) -> IO ()
@@ -56,7 +48,7 @@ run act = do
       info
         (versionOption <*> cliParser <**> helper)
         (fullDesc <> progDesc "Neuron, future-proof Zettelkasten app <https://neuron.zettel.page/>")
-  let logAction = cmap fmtNeuronMsg logTextStderr
+  let logAction = Logging.mkLogAction
   runApp (Env app logAction) $ runAppCommand act
   where
     versionOption =
@@ -66,18 +58,6 @@ run act = do
     now = do
       tz <- getCurrentTimeZone
       utcToLocalTime tz <$> liftIO getCurrentTime
-    fmtNeuronMsg :: Message -> Text
-    fmtNeuronMsg Msg {..} =
-      case msgSeverity of
-        Debug -> color Black $ "[D] " <> msgText
-        Info -> color Blue $ "[I] " <> msgText
-        Warning -> color Yellow $ "[W] " <> msgText
-        Error -> color Red $ "[E] " <> msgText
-    color :: Color -> Text -> Text
-    color c txt =
-      T.pack (setSGRCode [SetColor Foreground Vivid c])
-        <> txt
-        <> T.pack (setSGRCode [Reset])
 
 runAppCommand :: (Bool -> App ()) -> App ()
 runAppCommand genAct = do

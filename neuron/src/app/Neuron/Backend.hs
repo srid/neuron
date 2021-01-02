@@ -6,9 +6,10 @@
 
 module Neuron.Backend where
 
-import Colog
+import Colog (WithLog, log)
 import Network.Wai.Application.Static (defaultFileServerSettings, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
+import Neuron.CLI.Logging
 import Relude
 
 -- | Run a HTTP server to serve a directory of static files
@@ -24,7 +25,7 @@ serve ::
   FilePath ->
   m ()
 serve host port path = do
-  log I $ toText $ "Serving " <> path <> " at http://" <> toString host <> ":" <> show port
+  log (I' WWW) $ toText $ "Serving " <> path <> " at http://" <> toString host <> ":" <> show port
   liftIO $ Warp.runSettings settings app
   where
     app = staticApp $ defaultFileServerSettings path
