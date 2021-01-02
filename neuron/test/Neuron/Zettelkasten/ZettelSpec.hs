@@ -8,8 +8,9 @@ module Neuron.Zettelkasten.ZettelSpec
   )
 where
 
+import qualified Data.Set as Set
 import Data.TagTree (Tag (Tag))
-import Data.Tagged
+import Data.Tagged (Tagged (Tagged))
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.DateMayTime (DateMayTime, mkDateMayTime)
 import Data.Time.LocalTime
@@ -49,7 +50,7 @@ spec = do
             "<spec>.md"
             "Some title"
             False
-            [Tag "science", Tag "journal/class"]
+            (Set.fromList [Tag "science", Tag "journal/class"])
             datetime
             False
             noQueries
