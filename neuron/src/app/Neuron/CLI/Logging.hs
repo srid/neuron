@@ -33,16 +33,22 @@ data LogMoji
   = Done
   | Wait
   | WWW
+  | Sent
+  | Received
   deriving stock (Read, Eq, Ord, Enum, Bounded, Ix)
 
 instance Text.Show LogMoji where
   show = \case
     Done ->
-      "✅"
+      "🥅"
     Wait ->
       "⏳"
     WWW ->
       "🌐"
+    Sent ->
+      "💾"
+    Received ->
+      "️📝"
 
 -- | Severity with an optional emoji
 data Severity
@@ -72,7 +78,8 @@ mkLogAction =
   where
     fmtNeuronMsg :: Message -> Text
     fmtNeuronMsg Msg {..} =
-      let f c mle = color c $ maybe "  " show mle <> " " <> msgText
+      let emptyEmoji = "  " -- Two spaces, because our emojis spans two ascii letters
+          f c mle = color c $ maybe emptyEmoji show mle <> " " <> msgText
        in case msgSeverity of
             Debug mle -> f Black mle
             Info mle -> f Blue mle

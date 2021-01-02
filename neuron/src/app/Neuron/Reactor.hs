@@ -91,7 +91,7 @@ generateSite continueMonitoring = do
             liftIO $
               runApp appEnv $ do
                 forM_ paths $ \path ->
-                  log I $ toText $ "* " <> path
+                  log (I' Received) $ toText path
                 doGen
                 awaitLog
         pure never
@@ -205,7 +205,7 @@ writeRouteHtml r content = do
       True -> Just <$> readFileText htmlFile
       False -> pure Nothing
   unless (Just s == s0) $ do
-    log I $ toText $ "+ " <> DC.mkRelative outputDir htmlFile
+    log (I' Sent) $ toText $ DC.mkRelative outputDir htmlFile
     writeFileText htmlFile s
 
 -- | Like `watchDir` but batches file events
