@@ -84,7 +84,10 @@ routeConfig =
       elDynAttr "a" $ ffor dynR $ \someR -> attrs <> "href" =: someRouteUrl someR
     someRouteUrl :: Some Route -> Text
     someRouteUrl sr =
-      toText $ withSome sr routeHtmlPath
+      toText $ withSome sr $ obviateIndexHtml . routeHtmlPath
+    obviateIndexHtml = \case
+      "index.html" -> "."
+      x -> x
 
 type NeuronWebT t m = ReaderT (RouteConfig t m) m
 
