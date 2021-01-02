@@ -20,9 +20,11 @@ where
 
 import Control.Monad.Fix (MonadFix)
 import qualified Data.Dependent.Map as DMap
+import Data.List (maximum)
 import Data.Some (Some (Some))
 import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
+import qualified Data.Tree as Tree
 import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route
   ( NeuronWebT,
@@ -86,10 +88,15 @@ renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
         renderPluginPanel graph pluginData
       renderZettelBottomPane graph z
       renderBottomMenu (constDyn theme) (constDyn $ G.getZettel indexZid graph) ((<> toText (zettelPath z)) <$> mEditUrl)
-  -- Because the tree above can be pretty large, we scroll past it
+  -- Because the tree above can be pretty large (4+ height), we scroll past it
   -- automatically when the page loads.
-  unless (null upTree) $ do
+  when (forestDepth upTree > 3) $
     AS.script "zettel-container-anchor"
+  where
+    forestDepth :: Tree.Forest a -> Int
+    forestDepth = \case
+      [] -> 0
+      ts -> maximum $ fmap (length . Tree.levels) ts
 
 renderZettelContentCard ::
   (PandocBuilder t m, PostBuild t m) =>
