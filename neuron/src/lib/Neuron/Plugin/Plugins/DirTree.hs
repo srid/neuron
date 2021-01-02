@@ -14,6 +14,7 @@ module Neuron.Plugin.Plugins.DirTree (plugin, renderPanel) where
 
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import Data.Some (Some (Some))
 import Data.TagTree (Tag, TagNode (..), TagQuery (..))
 import qualified Data.TagTree as Tag
@@ -67,19 +68,19 @@ addTagAndQuery :: forall c. HasCallStack => ZettelT c -> ZettelT c
 addTagAndQuery z =
   z
     { zettelTags =
-        zettelTags z <> dirZettelTags,
+        zettelTags z `Set.union` dirZettelTags,
       -- Add the tag query for building graph connections.
       zettelQueries =
         zettelQueries z <> fmap (,mempty) (maybeToList childrenTagQuery)
     }
   where
-    dirZettelTags = fromMaybe [] $ do
+    dirZettelTags = fromMaybe Set.empty $ do
       case runIdentity <$> DMap.lookup PluginData_DirTree (zettelPluginData z) of
         Just DirZettel {..} ->
           pure _dirZettel_tags
         Nothing ->
           -- Regular zettel
-          pure $ maybeToList $ parentDirTag $ zettelPath z
+          pure $ maybe Set.empty Set.singleton $ parentDirTag $ zettelPath z
     childrenTagQuery = do
       DirZettel {..} <- runIdentity <$> DMap.lookup PluginData_DirTree (zettelPluginData z)
       let q = TagQuery_Or $ one $ Tag.mkTagPatternFromTag _dirZettel_childrenTag
@@ -111,7 +112,7 @@ injectDirectoryZettels = \case
               R.markAmbiguous dirZettelId $ absPath :| [p]
             Nothing -> do
               -- A file zettel (DIRNAME.md) already exists on disk. Merge with it.
-              let pluginData = mkPluginData $ catMaybes [parentDirTag absPath, parentDirTag p]
+              let pluginData = mkPluginData $ Set.fromList $ catMaybes [parentDirTag absPath, parentDirTag p]
                   newRef = ZIDRef_Available p s (DMap.union pluginData pluginDataPrev)
               modify $ Map.update (const $ Just newRef) dirZettelId
         Just ZIDRef_Ambiguous {} ->
@@ -119,7 +120,7 @@ injectDirectoryZettels = \case
           pure ()
         Nothing -> do
           -- Inject a new zettel corresponding to this directory, that is uniquely named.
-          let pluginData = mkPluginData $ maybeToList $ parentDirTag absPath
+          let pluginData = mkPluginData $ maybe Set.empty Set.singleton $ parentDirTag absPath
           R.addZettel absPath dirZettelId pluginData $ do
             -- Set an appropriate title (same as directory name)
             let heading = toText (takeFileName absPath) <> "/"

@@ -159,7 +159,7 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
     linkTooltip
       | isJust mInner = Just $ "Zettel: " <> zettelTitle
       | null zettelTags = Nothing
-      | otherwise = Just $ "Tags: " <> T.intercalate "; " (unTag <$> zettelTags)
+      | otherwise = Just $ "Tags: " <> T.intercalate "; " (unTag <$> toList zettelTags)
 
 elConnSuffix :: DomBuilder t m => Maybe Connection -> m ()
 elConnSuffix mconn =

@@ -66,7 +66,7 @@ data ZettelT c = Zettel
     zettelTitle :: Text,
     -- | Whether the title was infered from the body
     zettelTitleInBody :: Bool,
-    zettelTags :: [Tag],
+    zettelTags :: Set Tag,
     -- | Date associated with the zettel if any
     zettelDate :: Maybe DateMayTime,
     zettelUnlisted :: Bool,

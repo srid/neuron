@@ -29,7 +29,7 @@ data DirZettel = DirZettel
     -- We expect the arity here to be 1-2. 1 for the simplest case; and 2, if
     -- both Foo/ and Foo.md exists (with the later being positioned *elsewhere*
     -- in the tree, with its own parent directory)
-    _dirZettel_tags :: [Tag],
+    _dirZettel_tags :: Set Tag,
     -- | The tag used by its child zettels (directories and files)
     _dirZettel_childrenTag :: Tag,
     -- | The zettel associated with the parent directory.

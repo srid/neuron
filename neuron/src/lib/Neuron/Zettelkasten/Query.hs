@@ -54,13 +54,13 @@ runZettelQuery zs = \case
     allTags :: Map.Map Tag Natural
     allTags =
       Map.fromListWith (+) $
-        concatMap (\Zettel {..} -> (,1) <$> zettelTags) zs
+        concatMap (\Zettel {..} -> (,1) <$> toList zettelTags) zs
 
 zettelsByTag :: [Zettel] -> TagQuery -> [Zettel]
 zettelsByTag zs q =
   sortZettelsReverseChronological $
     flip filter zs $ \Zettel {..} ->
-      matchTagQueryMulti zettelTags q
+      matchTagQueryMulti (toList zettelTags) q
 
 runGraphQuery :: ZettelGraph -> GraphQuery r -> Either QueryResultError r
 runGraphQuery g = \case

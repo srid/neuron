@@ -10,8 +10,8 @@
 module Neuron.Zettelkasten.Zettel.Parser where
 
 import Data.Dependent.Map (DMap)
-import Data.List (nub)
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import Data.Some (Some (..))
 import Data.TagTree (Tag, unTag)
 import qualified Data.Text as T
@@ -44,7 +44,7 @@ parseZettel queryExtractor fn zid s pluginData = do
   case parseMarkdown fn s of
     Left parseErr ->
       let slug = mkDefaultSlug $ unZettelID zid
-       in Left $ Zettel zid slug fn "Unknown" False [] Nothing False [] (s, parseErr) pluginData
+       in Left $ Zettel zid slug fn "Unknown" False Set.empty Nothing False [] (s, parseErr) pluginData
     Right (meta, doc) ->
       let -- Determine zettel title
           (title, titleInBody) = case Meta.title =<< meta of
@@ -56,7 +56,7 @@ parseZettel queryExtractor fn zid s pluginData = do
           -- Determine zettel tags
           metaTags = fromMaybe [] $ Meta.tags =<< meta
           queryTags = (getInlineTag . fst) `mapMaybe` queries
-          tags = nub $ metaTags <> queryTags
+          tags = Set.fromList $ metaTags <> queryTags
           -- Determine other metadata
           date = Meta.date =<< meta
           slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta

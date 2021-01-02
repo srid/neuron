@@ -116,7 +116,7 @@ renderZettelBottomPane ::
   NeuronWebT t m ()
 renderZettelBottomPane graph z@Zettel {..} = do
   let backlinks = nonEmpty $ G.backlinks isJust z graph
-      tags = nonEmpty zettelTags
+      tags = nonEmpty $ toList zettelTags
   whenJust (() <$ backlinks <|> () <$ tags) $ \() -> do
     elClass "nav" "ui attached segment deemphasized bottomPane" $ do
       -- Backlinks

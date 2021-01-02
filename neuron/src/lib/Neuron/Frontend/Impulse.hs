@@ -21,7 +21,8 @@ import Clay (Css, em, (?))
 import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Data.Foldable (maximum)
-import Data.TagTree (mkDefaultTagQuery, mkTagPattern, unTag)
+import qualified Data.Set as Set
+import Data.TagTree (Tag (..), mkDefaultTagQuery, mkTagPattern)
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Frontend.Query.View as QueryView
@@ -180,7 +181,7 @@ renderImpulse themeDyn indexZettel impulseLDyn = do
         if "tag:" `T.isPrefixOf` q
           then do
             let ztag = T.drop 4 q
-            guard $ ztag `notElem` fmap unTag (zettelTags z)
+            guard $ Tag ztag `Set.member` (zettelTags z)
           else guard $ not $ T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
     staticVersionNote = do
       el "p" $ do
