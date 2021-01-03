@@ -63,11 +63,12 @@ data Severity
   | Error (Maybe LogMoji)
   deriving stock (Show, Read, Eq, Ord)
 
-pattern D, I, W, E :: Severity
+pattern D, I, W, E, EE :: Severity
 pattern D <- Debug Nothing where D = Debug Nothing
 pattern I <- Info Nothing where I = Info Nothing
 pattern W <- Warning Nothing where W = Warning Nothing
 pattern E <- Error Nothing where E = Error Nothing
+pattern EE <- Error (Just (Custom '!' '!')) where EE = Error (Just $ Custom '!' '!')
 
 pattern D', I', W', E' :: LogMoji -> Severity
 pattern D' le <- Debug (Just le) where D' le = Debug (Just le)

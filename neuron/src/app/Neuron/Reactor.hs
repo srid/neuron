@@ -151,7 +151,7 @@ reportAllErrors g issues = do
     reportError :: ZettelID -> ZettelError -> m ()
     reportError zid (zettelErrorText -> err) = do
       -- We don't know the full path to this zettel; so just print the ID.
-      log (E' $ Custom '!' '!') $ "Cannot accept Zettel ID: " <> unZettelID zid
+      log EE $ "Cannot accept Zettel ID: " <> unZettelID zid
       log E $ indentAllButFirstLine 4 err
       where
         indentAllButFirstLine :: Int -> Text -> Text
