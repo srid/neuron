@@ -6,6 +6,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.CLI.Logging where
@@ -16,7 +17,6 @@ import Colog
     cmap,
     logTextStderr,
   )
-import Data.Ix (Ix)
 import qualified Data.Text as T
 import Relude
 import System.Console.ANSI
@@ -35,7 +35,10 @@ data LogMoji
   | WWW
   | Sent
   | Received
-  deriving stock (Read, Eq, Ord, Enum, Bounded, Ix)
+  | -- | Custom string can be used to substitute for an emoji.
+    -- It must be of length two, inasmuch as many emojis take two-letter space.
+    Custom Char Char
+  deriving stock (Read, Eq, Ord)
 
 instance Text.Show LogMoji where
   show = \case
@@ -49,6 +52,8 @@ instance Text.Show LogMoji where
       "💾"
     Received ->
       "️📝"
+    Custom a b ->
+      [a, b]
 
 -- | Severity with an optional emoji
 data Severity
@@ -78,8 +83,8 @@ mkLogAction =
   where
     fmtNeuronMsg :: Message -> Text
     fmtNeuronMsg Msg {..} =
-      let emptyEmoji = "  " -- Two spaces, because our emojis spans two ascii letters
-          f c mle = color c $ maybe emptyEmoji show mle <> " " <> msgText
+      let emptyEmoji = Custom ' ' ' '
+          f c (fromMaybe emptyEmoji -> le) = color c $ show le <> " " <> msgText
        in case msgSeverity of
             Debug mle -> f Black mle
             Info mle -> f Blue mle

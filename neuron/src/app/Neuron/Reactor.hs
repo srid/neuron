@@ -19,6 +19,7 @@ import Control.Monad.Fix (MonadFix)
 import Control.Monad.Writer.Strict (runWriter, tell)
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
+import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Neuron.CLI.Logging
 import Neuron.CLI.Types
@@ -46,16 +47,19 @@ import Neuron.Plugin (PluginRegistry)
 import qualified Neuron.Plugin as Plugin
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import Neuron.Version (neuronVersion)
+import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
-import Neuron.Zettelkasten.ID (ZettelID (..), zettelIDSourceFileName)
+import Neuron.Zettelkasten.ID (ZettelID (..))
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
+    ZettelT (zettelPath),
   )
 import Neuron.Zettelkasten.Zettel.Error
   ( ZettelError (..),
     ZettelIssue (..),
+    splitZettelIssues,
     zettelErrorText,
   )
 import Reflex
@@ -71,7 +75,6 @@ import qualified System.Directory.Contents as DC
 import qualified System.Directory.Contents.Extra as DC
 import qualified System.FSNotify as FSN
 import System.FilePath (isRelative, makeRelative, takeExtension, (</>))
-import qualified Text.Show as Show
 
 generateSite :: Bool -> App ()
 generateSite continueMonitoring = do
@@ -120,51 +123,39 @@ generateSite continueMonitoring = do
       (wH . Z.Route_Zettel) `mapM_` slugs
       wH $ Z.Route_Impulse Nothing
       wH Z.Route_ImpulseStatic
-      reportAllErrors cache
+      reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
       getOutputDir >>= \(toText -> outputDir) ->
         log (I' Done) $ "Finished generating at " <> outputDir
 
-data MissingLinks = MissingLinks
-  { missingLinksZettelsCount :: Int,
-    missingLinksLinksCount :: Int
-  }
-  deriving (Eq)
-
-instance Semigroup MissingLinks where
-  MissingLinks z1 l1 <> MissingLinks z2 l2 =
-    MissingLinks (z1 + z2) (l1 + l2)
-
-instance Monoid MissingLinks where
-  mempty = MissingLinks 0 0
-  mappend = (<>)
-
-instance Show.Show MissingLinks where
-  show (MissingLinks z n) =
-    show n <> " missing links found across " <> show z <> " zettels (see Impulse)"
-
 -- Report all errors
 -- TODO: Report only new errors in this run, to avoid spamming the terminal.
-reportAllErrors :: forall m env. (MonadIO m, WithLog env Message m) => NeuronCache -> m ()
-reportAllErrors cache = do
-  missingLinks :: MissingLinks <- fmap (mconcat . catMaybes) $
-    forM (Map.toList $ Cache._neuronCache_errors cache) $ \(zid, issue) -> do
-      case issue of
-        ZettelIssue_MissingLinks (_slug, qErrs) ->
-          pure $ Just $ MissingLinks 1 (length qErrs)
-        ZettelIssue_Error e -> do
-          reportError zid e
-          pure Nothing
-  unless (missingLinks == mempty) $
-    log W $ show missingLinks
+reportAllErrors ::
+  forall m env.
+  (MonadIO m, WithLog env Message m) =>
+  ZettelGraph ->
+  Map ZettelID ZettelIssue ->
+  m ()
+reportAllErrors g issues = do
+  let (errors, badLinks) = splitZettelIssues issues
+  whenNotNull badLinks $ \_ -> do
+    let zn = length badLinks
+        ln = length $ concat $ toList . snd . snd <$> badLinks
+    if zn < 3
+      then forM_ badLinks $ \(zid, _qErrs) -> do
+        let path = maybe "??" zettelPath $ G.getZettel zid g
+        log W $ "Missing link in " <> toText path
+      else log W $ show ln <> " missing links found across " <> show zn <> " notes (see Impulse)"
+  uncurry reportError `mapM_` errors
   where
     -- Report an error in the terminal
     reportError :: ZettelID -> ZettelError -> m ()
     reportError zid (zettelErrorText -> err) = do
-      log E $ toText $ zettelIDSourceFileName zid
-      log E $ "  - " <> indentAllButFirstLine 4 err
+      -- We don't know the full path to this zettel; so just print the ID.
+      log (E' $ Custom '!' '!') $ "Cannot accept Zettel ID: " <> unZettelID zid
+      log E $ indentAllButFirstLine 4 err
       where
         indentAllButFirstLine :: Int -> Text -> Text
-        indentAllButFirstLine n = unlines . go . lines
+        indentAllButFirstLine n = T.strip . unlines . go . lines
           where
             go [] = []
             go [x] = [x]
@@ -324,7 +315,7 @@ loadZettelkastenFromFiles plugins fileTree = do
               absPath <- fmap (</> relPath) getNotesDir
               decodeUtf8With lenientDecode <$> readFileBS absPath
             Plugin.afterZettelRead plugins mdFileTree
-  log D $ "Building zettelkasten graph (" <> show (length zidRefs) <> " zettels) ..."
+  log D $ "Building graph (" <> show (length zidRefs) <> " notes) ..."
   pure $
     runWriter $ do
       filesWithContent <-
