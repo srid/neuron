@@ -33,6 +33,9 @@ import Neuron.Zettelkasten.Zettel as Q
   )
 import Options.Applicative
 import Options.Applicative.Extra
+  ( directoryReader,
+    hostPortOption,
+  )
 import Relude
 import qualified Text.URI as URI
 
@@ -52,17 +55,24 @@ commandParser defaultNotesDir now = do
         ( short 'o' <> metavar "PATH"
             <> help "Custom path to generate static site in"
         )
-  cmd <- cmdParser
+  cmd <- cmdParser <|> cmdParserHidden
   pure $ AppConfig {..}
   where
     cmdParser =
       hsubparser $
         mconcat
-          [ command "gen" $ info genCommand $ progDesc "Generate and serve the static site",
+          [ command "gen" (info genCommand $ progDesc "Generate and serve the static site"),
             command "new" $ info newCommand $ progDesc "Create a new zettel",
             command "open" $ info openCommand $ progDesc "Open the local static site",
             command "search" $ info searchCommand $ progDesc "Search zettels and print their path",
             command "query" $ info queryCommand $ progDesc "Query the zettelkasten in JSON"
+          ]
+    -- Old commands are retained (but as alias) for backwards compat
+    cmdParserHidden =
+      hsubparser $
+        mconcat
+          [ command "rib" (info genCommand $ progDesc "Alias to gen"),
+            internal
           ]
     newCommand = do
       idScheme <-

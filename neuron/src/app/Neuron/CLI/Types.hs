@@ -42,7 +42,7 @@ import Data.Some (Some (..))
 import Data.Time.DateMayTime
   ( DateMayTime,
   )
-import Neuron.CLI.Logging (Message, Severity (Error))
+import Neuron.CLI.Logging
 import qualified Neuron.Frontend.Route as R
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import Neuron.Zettelkasten.Query.Graph as Q (GraphQuery (..))
@@ -79,7 +79,7 @@ newtype App a = App (ReaderT (Env App) IO a)
 
 instance MonadFail App where
   fail s = do
-    log (Error Nothing) $ toText s
+    log (E' $ Custom '!' '!') $ toText s
     exitFailure
 
 getAppEnv :: App (Env App)
