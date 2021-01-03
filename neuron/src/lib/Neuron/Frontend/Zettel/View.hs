@@ -151,8 +151,9 @@ renderBottomMenu themeDyn mIndexZettel mEditUrl = do
       ffor x $ \case
         Nothing -> blank
         Just indexZettel -> do
-          neuronDynRouteLink (Some . Route_Zettel . Z.zettelSlug <$> indexZettel) ("class" =: "item" <> "title" =: "Home") $
+          neuronDynRouteLink (Some . Route_Zettel . Z.zettelSlug <$> indexZettel) ("class" =: "item" <> "title" =: "Home") $ do
             semanticIcon "home"
+            text " Home"
     -- Edit url
     forM_ mEditUrl $ \editUrl -> do
       let attrs = "href" =: editUrl <> "title" =: "Edit this page"
