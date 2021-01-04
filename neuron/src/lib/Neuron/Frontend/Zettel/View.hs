@@ -45,7 +45,6 @@ import Neuron.Plugin (renderPluginPanel)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import qualified Neuron.Zettelkasten.Query.Eval as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
 import Neuron.Zettelkasten.Zettel
@@ -65,6 +64,10 @@ import Relude hiding ((&))
 import Text.Pandoc.Definition (Pandoc (Pandoc))
 import qualified Text.URI as URI
 
+-- TODO:L Get rid of graph argument which is only used to:
+-- - lookup link queries in Pandoc docs
+-- - backlinks and uptree data
+-- - plugin data (plugin route data)
 renderZettel ::
   (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   SiteData ->
@@ -169,30 +172,20 @@ renderBottomMenu themeDyn mIndexZettel mEditUrl = do
 mkPandocRenderConfig ::
   (PandocBuilder t m, PostBuild t m) =>
   ZettelGraph ->
-  Config t (NeuronWebT t m) [QueryResultError]
-mkPandocRenderConfig graph =
-  Config $ \oldRender (URI.mkURI -> muri) minner -> do
-    case muri of
-      Nothing ->
-        oldRender
-      Just (Q.parseQueryLink -> mquery) -> do
-        case mquery of
-          Nothing ->
-            -- This is not a query link; pass through.
-            oldRender
-          Just query ->
-            case Q.runQuery (G.getZettels graph) query of
-              Left e@(QueryResultError_NoSuchZettel mconn zid) -> do
-                Q.renderMissingZettelLink mconn zid
-                pure [e]
-              Right res -> do
-                Q.renderQueryResult minner res
-                pure mempty
+  Config t (NeuronWebT t m) ()
+mkPandocRenderConfig (Q.runQuery . G.getZettels -> runQuery) =
+  Config $ \oldRender url minner ->
+    fromMaybe oldRender $ do
+      uri <- URI.mkURI url
+      query <- Q.parseQueryLink uri
+      pure $ case runQuery query of
+        res -> do
+          Q.renderQueryResult minner res
 
 renderZettelContent ::
   forall t m.
   (PandocBuilder t m) =>
-  Config t (NeuronWebT t m) [QueryResultError] ->
+  Config t (NeuronWebT t m) () ->
   ZettelT Pandoc ->
   NeuronWebT t m ()
 renderZettelContent renderCfg Zettel {..} = do

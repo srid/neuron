@@ -13,69 +13,67 @@ module Neuron.Zettelkasten.Query.Eval
   )
 where
 
-import Control.Monad.Except (MonadError, throwError)
-import Control.Monad.Writer (MonadWriter (tell))
+import Control.Monad.Writer
 import Data.Dependent.Sum (DSum (..))
 import Data.Some (Some, withSome)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.Query (runZettelQuery)
-import Neuron.Zettelkasten.Query.Error (QueryResultError)
 import Neuron.Zettelkasten.Zettel
-  ( Zettel,
+  ( MissingZettel,
+    Zettel,
     ZettelQuery (..),
     ZettelT (..),
   )
 import Relude
 import Text.Pandoc.Definition (Block)
 
-runQuery :: [Zettel] -> Some ZettelQuery -> Either QueryResultError (DSum ZettelQuery Identity)
-runQuery zs =
-  flip runReaderT zs . runSomeZettelQuery
+runQuery :: [Zettel] -> Some ZettelQuery -> DSum ZettelQuery Identity
+runQuery zs someQ =
+  flip runReader zs $ runSomeZettelQuery someQ
 
 -- Query connections in the given zettel
 --
 -- Tell all errors; query parse errors (as already stored in `Zettel`) as well
 -- query result errors.
 queryConnections ::
-  ( -- Errors are written aside, accumulating valid connections.
-    MonadWriter [QueryResultError] m,
-    -- Running queries requires the zettels list.
-    MonadReader [Zettel] m
+  forall m.
+  ( -- Running queries requires the zettels list.
+    MonadReader [Zettel] m,
+    -- Track missing zettel links in writer
+    MonadWriter [MissingZettel] m
   ) =>
   Zettel ->
   m [((Connection, [Block]), Zettel)]
 queryConnections Zettel {..} = do
   fmap concat $
-    forM zettelQueries $ \(someQ, ctx) ->
-      runExceptT (runSomeZettelQuery someQ) >>= \case
-        Left e -> do
-          tell [e]
-          pure mempty
-        Right res ->
-          pure $ first (,ctx) <$> getConnections res
+    forM zettelQueries $ \(someQ, ctx) -> do
+      qRes <- runSomeZettelQuery someQ
+      links <- getConnections qRes
+      pure $ first (,ctx) <$> links
   where
-    getConnections :: DSum ZettelQuery Identity -> [(Connection, Zettel)]
+    getConnections :: DSum ZettelQuery Identity -> m [(Connection, Zettel)]
     getConnections = \case
       ZettelQuery_ZettelByID _ conn :=> Identity res ->
-        [(conn, res)]
+        case res of
+          Left zid -> do
+            tell [zid]
+            pure []
+          Right z ->
+            pure [(conn, z)]
       ZettelQuery_ZettelsByTag _ conn _mview :=> Identity res ->
-        (conn,) <$> res
+        pure $ (conn,) <$> res
       ZettelQuery_Tags _ :=> _ ->
-        mempty
+        pure mempty
       ZettelQuery_TagZettel _ :=> _ ->
-        mempty
+        pure mempty
 
 runSomeZettelQuery ::
-  ( MonadError QueryResultError m,
-    MonadReader [Zettel] m
+  ( MonadReader [Zettel] m
   ) =>
   Some ZettelQuery ->
   m (DSum ZettelQuery Identity)
 runSomeZettelQuery someQ =
   withSome someQ $ \q -> do
     zs <- ask
-    case runZettelQuery zs q of
-      Left e ->
-        throwError e
-      Right res ->
-        pure $ q :=> Identity res
+    let res = runZettelQuery zs q
+    pure $ q :=> Identity res

@@ -43,6 +43,9 @@ import Text.Pandoc.Builder (Block)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
 
+-- | A zettel ID doesn't refer to an existing zettel
+type MissingZettel = Tagged "MissingZettel" ZettelID
+
 -- | ZettelQuery queries individual zettels.
 --
 -- It does not care about the relationship *between* those zettels; for that use `GraphQuery`.
@@ -50,7 +53,7 @@ import Text.Show (Show (show))
 -- NOTE: This type is defined in this module, rather than Zettel.Query, because
 -- of the mutual dependency with the `ZettelT` type.
 data ZettelQuery r where
-  ZettelQuery_ZettelByID :: ZettelID -> Connection -> ZettelQuery Zettel
+  ZettelQuery_ZettelByID :: ZettelID -> Connection -> ZettelQuery (Either MissingZettel Zettel)
   ZettelQuery_ZettelsByTag :: TagQuery -> Connection -> ZettelsView -> ZettelQuery [Zettel]
   ZettelQuery_Tags :: TagQuery -> ZettelQuery (Map Tag Natural)
   ZettelQuery_TagZettel :: Tag -> ZettelQuery ()

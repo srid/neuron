@@ -30,6 +30,7 @@ import Relude
 
 type NeuronVersion = Tagged "NeuronVersion" Text
 
+-- | TODO: Pull SiteData out of GADT, as it exists in all constructors.
 data Route a where
   -- TODO: Eliminate ZettelGraph by taking just necessary subset into route data
   Route_Zettel :: Slug -> Route (SiteData, (ZettelGraph, ZettelC))
@@ -46,16 +47,18 @@ data Route a where
 data SiteData = SiteData
   { siteDataTheme :: Theme,
     siteDataNeuronVersion :: NeuronVersion,
+    -- editUrl from neuron.dhall
     siteDataEditUrl :: Maybe Text,
+    -- Reference to `index.md` zettel if any.
     siteDataIndexZettel :: Maybe Zettel
   }
   deriving (Eq)
 
 -- | The value needed to render the Impulse page
-
 --
 -- All heavy graph computations are decoupled from rendering, producing this
 -- value, that is in turn used for instant rendering.
+-- TODO: rename to `ImpulseData` for consistency
 data Impulse = Impulse
   { -- | Clusters on the folgezettel graph.
     impulseClusters :: [Forest (Zettel, [Zettel])],

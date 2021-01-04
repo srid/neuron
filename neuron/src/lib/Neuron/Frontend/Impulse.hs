@@ -23,6 +23,7 @@ import Control.Monad.Fix (MonadFix)
 import Data.Foldable (maximum)
 import qualified Data.Set as Set
 import Data.TagTree (Tag (..), mkDefaultTagQuery, mkTagPattern)
+import Data.Tagged
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (..))
 import qualified Neuron.Frontend.Query.View as QueryView
@@ -37,7 +38,6 @@ import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Query (zettelsByTag)
-import qualified Neuron.Zettelkasten.Query.Error as Q
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelT (zettelTitle),
@@ -214,10 +214,10 @@ renderErrors issues = do
                 simpleList (toList <$> zs404) $ \zDyn ->
                   divClass "item" $ do
                     dyn_ $
-                      ffor zDyn $ \(zid, (slug, qErrors)) -> do
+                      ffor zDyn $ \(zid, (slug, missingZids)) -> do
                         let tooltip =
                               "Links in vain to: "
-                                <> T.intercalate ", " (toList $ unZettelID <$> Q.missingZids qErrors)
+                                <> T.intercalate ", " (toList $ unZettelID . untag <$> missingZids)
                         elAttr "span" ("title" =: tooltip) $ do
                           QueryView.renderZettelLinkIDOnly zid slug
   where
