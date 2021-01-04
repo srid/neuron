@@ -10,14 +10,19 @@
 module Neuron.Zettelkasten.Query.Eval
   ( runQuery,
     queryConnections,
+    -- TODO: Move to new module?
+    QueryUrlCache,
+    buildQueryUrlCache,
   )
 where
 
 import Control.Monad.Writer
 import Data.Dependent.Sum (DSum (..))
+import qualified Data.Map.Strict as Map
 import Data.Some (Some, withSome)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.Query (runZettelQuery)
+import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
   ( MissingZettel,
     Zettel,
@@ -26,6 +31,7 @@ import Neuron.Zettelkasten.Zettel
   )
 import Relude
 import Text.Pandoc.Definition (Block)
+import qualified Text.URI as URI
 
 runQuery :: [Zettel] -> Some ZettelQuery -> DSum ZettelQuery Identity
 runQuery zs someQ =
@@ -77,3 +83,15 @@ runSomeZettelQuery someQ =
     zs <- ask
     let res = runZettelQuery zs q
     pure $ q :=> Identity res
+
+type QueryUrlCache = Map Text (DSum ZettelQuery Identity)
+
+buildQueryUrlCache :: [Zettel] -> [Text] -> QueryUrlCache
+buildQueryUrlCache zs urls =
+  Map.fromList $
+    catMaybes $
+      urls <&> \url -> do
+        uri <- URI.mkURI url
+        someQ <- parseQueryLink uri
+        res <- flip runReaderT zs $ runSomeZettelQuery someQ
+        pure (url, res)

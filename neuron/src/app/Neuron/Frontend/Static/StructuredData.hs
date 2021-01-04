@@ -60,7 +60,7 @@ routeStructuredData cfg (graph, v) = \case
             mkCrumb Zettel {..} =
               Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelSlug)
          in Breadcrumb.fromForest $
-              fmap mkCrumb <$> G.backlinkForest Folgezettel (sansContent $ snd . snd $ v) graph
+              fmap mkCrumb <$> G.backlinkForest Folgezettel (sansContent $ snd . snd . snd $ v) graph
   _ ->
     []
 
@@ -73,7 +73,7 @@ routeOpenGraph cfg@Config {siteTitle, author} g v r =
         (Route_Impulse _mtag) -> Just "Impulse"
         Route_ImpulseStatic -> Just "Impulse (static)"
         Route_Zettel _ -> do
-          doc <- getPandocDoc (snd $ snd v)
+          doc <- getPandocDoc (snd $ snd $ snd v)
           para <- getFirstParagraphText doc
           let paraText = renderPandocAsText g para
           pure $ T.take 300 paraText,
@@ -83,7 +83,7 @@ routeOpenGraph cfg@Config {siteTitle, author} g v r =
         _ -> Just OGType_Website,
       _openGraph_image = case r of
         Route_Zettel _ -> do
-          doc <- getPandocDoc (snd $ snd v)
+          doc <- getPandocDoc (snd $ snd $ snd v)
           image <- URI.mkURI =<< getFirstImg doc
           baseUrl <- either fail id $ getSiteBaseUrl cfg
           URI.relativeTo image baseUrl

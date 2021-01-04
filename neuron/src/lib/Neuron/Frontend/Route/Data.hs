@@ -23,12 +23,17 @@ import Neuron.Frontend.Route
 import qualified Neuron.Frontend.Theme as Theme
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (Slug, indexZid)
-import Neuron.Zettelkasten.Zettel (ZettelC, zettelSlug)
+import Neuron.Zettelkasten.Query.Eval
+  ( QueryUrlCache,
+    buildQueryUrlCache,
+  )
+import Neuron.Zettelkasten.Zettel (ZettelC, ZettelT (zettelContent), sansContent, zettelSlug)
 import Relude
+import qualified Text.Pandoc.Util as P
 
 -- This type is only used to store-once and retrieve-multiple-times the value
 -- for Route_Zettel routes. Ideally, we need a better route system.
-newtype RouteDataCache = RouteDataCache {unRouteDataCache :: Map Slug ZettelC}
+newtype RouteDataCache = RouteDataCache {unRouteDataCache :: Map Slug (QueryUrlCache, ZettelC)}
   deriving (Eq, Show, Generic, Semigroup, Monoid)
 
 allSlugs :: RouteDataCache -> [Slug]
@@ -36,7 +41,12 @@ allSlugs = Map.keys . unRouteDataCache
 
 mkRouteDataCache :: [ZettelC] -> RouteDataCache
 mkRouteDataCache zs =
-  RouteDataCache $ Map.fromList $ zs <&> either zettelSlug zettelSlug &&& id
+  RouteDataCache $
+    Map.fromList $
+      zs <&> \z ->
+        let urls = either (const []) (P.getLinks . zettelContent) z
+            qurlcache = buildQueryUrlCache (sansContent <$> zs) urls
+         in (either zettelSlug zettelSlug z, (qurlcache, z))
 
 -- NOTE: RouteDataCache is used only for the Route_Zettel route.
 mkRouteData :: RouteDataCache -> NeuronCache -> Route a -> a

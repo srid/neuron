@@ -22,6 +22,7 @@ module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson
 import Data.Aeson.GADT.TH (deriveJSONGADT)
+import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Dependent.Map (DMap)
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
@@ -130,6 +131,8 @@ deriveJSONGADT ''ZettelQuery
 deriveGEq ''ZettelQuery
 
 deriveGShow ''ZettelQuery
+
+deriveArgDict ''ZettelQuery
 
 deriving instance Show (ZettelQuery (Maybe Zettel))
 

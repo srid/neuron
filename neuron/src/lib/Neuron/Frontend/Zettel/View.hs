@@ -21,6 +21,7 @@ where
 import Control.Monad.Fix (MonadFix)
 import qualified Data.Dependent.Map as DMap
 import Data.List (maximum)
+import qualified Data.Map.Strict as Map
 import Data.Some (Some (Some))
 import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
@@ -45,8 +46,7 @@ import Neuron.Plugin (renderPluginPanel)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import qualified Neuron.Zettelkasten.Query.Eval as Q
-import qualified Neuron.Zettelkasten.Query.Parser as Q
+import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelC,
@@ -62,7 +62,6 @@ import Reflex.Dom.Pandoc
   )
 import Relude hiding ((&))
 import Text.Pandoc.Definition (Pandoc (Pandoc))
-import qualified Text.URI as URI
 
 -- TODO:L Get rid of graph argument which is only used to:
 -- - lookup link queries in Pandoc docs
@@ -71,9 +70,9 @@ import qualified Text.URI as URI
 renderZettel ::
   (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   SiteData ->
-  (ZettelGraph, ZettelC) ->
+  (ZettelGraph, (QueryUrlCache, ZettelC)) ->
   NeuronWebT t m ()
-renderZettel siteData (graph, zc@(sansContent -> z)) = do
+renderZettel siteData (graph, (qurlcache, zc@(sansContent -> z))) = do
   -- Open impulse on pressing the forward slash key.
   el "script" $ do
     text "document.onkeyup = function(e) { if ([\"/\", \"s\"].includes(e.key)) { document.location.href = \"impulse.html\"; } }"
@@ -86,11 +85,12 @@ renderZettel siteData (graph, zc@(sansContent -> z)) = do
     -- We use -24px (instead of -14px) here so as to not scroll all the way to
     -- title, and as to leave some of the tree visible as "hint" to the user.
     lift $ AS.marker "zettel-container-anchor" (-24)
+    let rdpConfig = mkReflexDomPandocConfig qurlcache
     divClass "zettel-view" $ do
-      renderZettelContentCard (graph, zc)
+      renderZettelContentCard rdpConfig zc
       forM_ (DMap.toList $ zettelPluginData z) $ \pluginData ->
         renderPluginPanel graph pluginData
-      renderZettelBottomPane graph z
+      renderZettelBottomPane graph rdpConfig z
       renderBottomMenu
         (constDyn $ siteDataTheme siteData)
         (constDyn $ siteDataIndexZettel siteData)
@@ -107,21 +107,23 @@ renderZettel siteData (graph, zc@(sansContent -> z)) = do
 
 renderZettelContentCard ::
   (PandocBuilder t m, PostBuild t m) =>
-  (ZettelGraph, ZettelC) ->
+  Config t (NeuronWebT t m) () ->
+  ZettelC ->
   NeuronWebT t m ()
-renderZettelContentCard (graph, zc) =
+renderZettelContentCard rdpConfig zc =
   case zc of
     Right z -> do
-      renderZettelContent (mkPandocRenderConfig graph) z
+      renderZettelContent rdpConfig z
     Left z -> do
       renderZettelRawContent z
 
 renderZettelBottomPane ::
   (PandocBuilder t m, PostBuild t m) =>
   ZettelGraph ->
+  Config t (NeuronWebT t m) () ->
   Zettel ->
   NeuronWebT t m ()
-renderZettelBottomPane graph z@Zettel {..} = do
+renderZettelBottomPane graph rdpConfig z@Zettel {..} = do
   let backlinks = nonEmpty $ G.backlinks isJust z graph
       tags = nonEmpty $ toList zettelTags
   whenJust (() <$ backlinks <|> () <$ tags) $ \() -> do
@@ -136,7 +138,7 @@ renderZettelBottomPane graph z@Zettel {..} = do
               elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
                 forM_ ctxList $ \ctx -> do
                   elClass "li" "item" $ do
-                    void $ elPandoc (mkPandocRenderConfig graph) $ Pandoc mempty [ctx]
+                    void $ elPandoc rdpConfig $ Pandoc mempty [ctx]
       -- Tags
       whenJust tags renderTags
 
@@ -169,18 +171,17 @@ renderBottomMenu themeDyn mIndexZettel mEditUrl = do
     neuronRouteLink (Some $ Route_Impulse Nothing) ("class" =: "right item" <> "title" =: "Open Impulse (press /)") $ do
       semanticIcon "wave square"
 
-mkPandocRenderConfig ::
+mkReflexDomPandocConfig ::
   (PandocBuilder t m, PostBuild t m) =>
-  ZettelGraph ->
+  QueryUrlCache ->
   Config t (NeuronWebT t m) ()
-mkPandocRenderConfig (Q.runQuery . G.getZettels -> runQuery) =
+mkReflexDomPandocConfig qurlcache =
   Config $ \oldRender url minner ->
     fromMaybe oldRender $ do
-      uri <- URI.mkURI url
-      query <- Q.parseQueryLink uri
-      pure $ case runQuery query of
-        res -> do
-          Q.renderQueryResult minner res
+      -- TODO: replace with rd cache
+      qres <- Map.lookup url qurlcache
+      pure $
+        Q.renderQueryResult minner qres
 
 renderZettelContent ::
   forall t m.

@@ -37,6 +37,7 @@ import qualified Neuron.Frontend.Widget as W
 import qualified Neuron.Frontend.Zettel.CSS as ZettelCSS
 import qualified Neuron.Frontend.Zettel.View as ZettelView
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
+import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
 import Neuron.Zettelkasten.Zettel (ZettelC)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
@@ -100,7 +101,7 @@ renderRouteImpulse dataLDyn = do
 renderRouteZettel ::
   forall t m js.
   (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
-  Dynamic t (LoadableData (SiteData, (ZettelGraph, ZettelC))) ->
+  Dynamic t (LoadableData (SiteData, (ZettelGraph, (QueryUrlCache, ZettelC)))) ->
   NeuronWebT t m ()
 renderRouteZettel dataLDyn = do
   let siteDataDyn = fmap fst . W.getData <$> dataLDyn

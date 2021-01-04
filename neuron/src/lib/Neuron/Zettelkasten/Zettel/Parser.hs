@@ -103,9 +103,3 @@ extractQueriesWithContext doc =
         one $ Plain [Str "Linking by tag: ", Code nullAttr qs]
       _ ->
         mempty
-
-extractQueriesWithoutContext :: QueryExtractor
-extractQueriesWithoutContext doc =
-  flip mapMaybe (P.getLinks doc) $ \(P._pandocLink_uri -> uri) -> do
-    someQ <- parseQueryLink uri
-    pure (someQ, mempty)
