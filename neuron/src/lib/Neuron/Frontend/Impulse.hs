@@ -96,11 +96,10 @@ buildImpulse graph errors =
 
 renderImpulse ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
-  Dynamic t (Maybe Theme.Theme) ->
-  Dynamic t (Maybe Zettel) ->
-  Dynamic t (LoadableData Impulse) ->
+  Dynamic t (LoadableData (SiteData, Impulse)) ->
   NeuronWebT t m ()
-renderImpulse themeDyn indexZettel impulseLDyn = do
+renderImpulse dataLDyn = do
+  -- themeDyn indexZettel impulseLDyn = do
   mqDyn <- fmap join $
     prerender (pure $ constDyn Nothing) $ do
       searchInput =<< urlQueryVal [queryKey|q|]
@@ -115,7 +114,10 @@ renderImpulse themeDyn indexZettel impulseLDyn = do
   -- Don't put static note in the static part of prerender; else it will appear on
   -- the static version as well, which is confusing.
   prerender_ blank staticVersionNote
-  W.loadingWidget impulseLDyn $ \impulseDyn -> do
+  W.loadingWidget dataLDyn $ \dataDyn -> do
+    let impulseDyn = snd <$> dataDyn
+        themeDyn = siteDataTheme . fst <$> dataDyn
+        indexZettel = siteDataIndexZettel . fst <$> dataDyn
     elVisible (ffor2 (impulseErrors <$> impulseDyn) mqDyn $ \errs mq -> isNothing mq && not (null errs)) $
       elClass "details" "ui tiny errors message" $ do
         el "summary" $ text "Errors"
@@ -146,7 +148,7 @@ renderImpulse themeDyn indexZettel impulseLDyn = do
       void $
         simpleList clusters $ \forestDyn -> do
           let visible = any treeMatches <$> forestDyn
-          divClassVisible visible ("ui " <> (maybe "" Theme.semanticColor <$> themeDyn) <> " segment") $ do
+          divClassVisible visible ("ui " <> (Theme.semanticColor <$> themeDyn) <> " segment") $ do
             el "ul" $ renderForest forestDyn
       divClass "ui top attached segment" $ do
         el "p" $ do
@@ -162,7 +164,7 @@ renderImpulse themeDyn indexZettel impulseLDyn = do
           elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"
           text " is rendered as a forest."
       -- TODO: Use dynamic throughout instead of defaulting the theme
-      ZettelView.renderBottomMenu (fromMaybe Theme.Blue <$> themeDyn) indexZettel Nothing
+      ZettelView.renderBottomMenu themeDyn indexZettel Nothing
   where
     -- Return the value for given query key (eg: ?q=???) from the URL location.
     -- urlQueryVal :: MonadJSM m => URI.RText 'URI.QueryKey -> m (Maybe Text)

@@ -29,8 +29,11 @@ import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route
   ( NeuronWebT,
     Route (..),
+    SiteData (..),
     neuronDynRouteLink,
     neuronRouteLink,
+    siteDataEditUrl,
+    siteDataIndexZettel,
   )
 import Neuron.Frontend.Theme (Theme)
 import qualified Neuron.Frontend.Theme as Theme
@@ -42,7 +45,6 @@ import Neuron.Plugin (renderPluginPanel)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID (indexZid)
 import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import qualified Neuron.Zettelkasten.Query.Eval as Q
 import qualified Neuron.Zettelkasten.Query.Parser as Q
@@ -65,18 +67,17 @@ import qualified Text.URI as URI
 
 renderZettel ::
   (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
-  Theme ->
+  SiteData ->
   (ZettelGraph, ZettelC) ->
-  Maybe Text ->
   NeuronWebT t m ()
-renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
+renderZettel siteData (graph, zc@(sansContent -> z)) = do
   -- Open impulse on pressing the forward slash key.
   el "script" $ do
     text "document.onkeyup = function(e) { if ([\"/\", \"s\"].includes(e.key)) { document.location.href = \"impulse.html\"; } }"
   let upTree = G.backlinkForest Folgezettel z graph
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
-      Q.renderZettelLink Nothing (fst <$> G.getConnection z z2 graph) def z2
+      Q.renderZettelLink Nothing Nothing def z2
   -- Main content
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     -- We use -24px (instead of -14px) here so as to not scroll all the way to
@@ -87,7 +88,10 @@ renderZettel theme (graph, zc@(sansContent -> z)) mEditUrl = do
       forM_ (DMap.toList $ zettelPluginData z) $ \pluginData ->
         renderPluginPanel graph pluginData
       renderZettelBottomPane graph z
-      renderBottomMenu (constDyn theme) (constDyn $ G.getZettel indexZid graph) ((<> toText (zettelPath z)) <$> mEditUrl)
+      renderBottomMenu
+        (constDyn $ siteDataTheme siteData)
+        (constDyn $ siteDataIndexZettel siteData)
+        ((<> toText (zettelPath z)) <$> siteDataEditUrl siteData)
   -- Because the tree above can be pretty large (4+ height), we scroll past it
   -- automatically when the page loads.
   when (forestDepth upTree > 3) $

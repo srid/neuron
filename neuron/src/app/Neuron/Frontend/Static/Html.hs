@@ -86,7 +86,7 @@ renderRoutePage cacheDyn rdCache headHtml manifest r = do
         Route_Zettel {} -> do
           runNeuronWeb routeConfig $
             -- TODO: replace passing config and graph, with using RD
-            V.renderRouteZettel $ (id &&& mkRD) `ffmap` cacheDyn
+            V.renderRouteZettel $ mkRD `ffmap` cacheDyn
       pure ()
 
 elImpulseJS :: DomBuilder t m => m ()

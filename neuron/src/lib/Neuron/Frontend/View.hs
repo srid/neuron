@@ -19,10 +19,7 @@ import Clay (Css, em, gray, important, pct, (?))
 import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Data.Tagged (untag)
-import Neuron.Cache.Type (NeuronCache (..))
-import qualified Neuron.Cache.Type as NeuronCache
 import Neuron.Config.Type (Config (..))
-import qualified Neuron.Config.Type as Config
 import Neuron.Frontend.Common (neuronCommonStyle, neuronFonts)
 import qualified Neuron.Frontend.Impulse as Impulse
 import qualified Neuron.Frontend.Query.View as QueryView
@@ -31,15 +28,16 @@ import Neuron.Frontend.Route
     NeuronVersion,
     NeuronWebT,
     Route (..),
+    SiteData (..),
     routeTitle',
   )
-import Neuron.Frontend.Theme (Theme)
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (LoadableData, elLinkGoogleFonts)
 import qualified Neuron.Frontend.Widget as W
 import qualified Neuron.Frontend.Zettel.CSS as ZettelCSS
 import qualified Neuron.Frontend.Zettel.View as ZettelView
-import Neuron.Zettelkasten.Zettel (Zettel, ZettelC)
+import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
+import Neuron.Zettelkasten.Zettel (ZettelC)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude
@@ -72,12 +70,13 @@ routeTitle r v Config {..} =
 
 bodyTemplate ::
   (DomBuilder t m, PostBuild t m) =>
-  Dynamic t (Maybe NeuronVersion) ->
-  Dynamic t (Maybe Theme) ->
+  Dynamic t (Maybe SiteData) ->
   m () ->
   m ()
-bodyTemplate neuronVersionM neuronThemeM w = do
-  let attrs = ffor neuronThemeM $ \(fmap (toText . Theme.themeIdentifier) -> mId) ->
+bodyTemplate siteDataM w = do
+  let neuronThemeM = fmap siteDataTheme <$> siteDataM
+      neuronVersionM = fmap siteDataNeuronVersion <$> siteDataM
+      attrs = ffor neuronThemeM $ \(fmap (toText . Theme.themeIdentifier) -> mId) ->
         "class" =: "ui fluid container universe"
           <> maybe mempty ("id" =:) mId
   elDynAttr "div" attrs $ do
@@ -87,40 +86,28 @@ bodyTemplate neuronVersionM neuronThemeM w = do
 renderRouteImpulse ::
   forall t m js.
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
-  Dynamic t (LoadableData (((Theme, NeuronVersion), Maybe Zettel), Impulse)) ->
+  Dynamic t (LoadableData (SiteData, Impulse)) ->
   NeuronWebT t m ()
 renderRouteImpulse dataLDyn = do
-  let neuronTheme =
-        fmap (fst . fst . fst) . W.getData <$> dataLDyn
-      neuronVer =
-        fmap (snd . fst . fst) . W.getData <$> dataLDyn
-      indexZettel =
-        join . fmap (snd . fst) . W.getData <$> dataLDyn
+  let siteData = fmap fst . W.getData <$> dataLDyn
   -- HTML for this route is all handled in JavaScript (compiled from
   -- impulse's sources).
-  bodyTemplate neuronVer neuronTheme $ do
+  bodyTemplate siteData $ do
     elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
       --  divClass "ui text container" $ do
-      let impulseL = fmap snd <$> dataLDyn
-      Impulse.renderImpulse neuronTheme indexZettel impulseL
+      Impulse.renderImpulse dataLDyn
 
 renderRouteZettel ::
   forall t m js.
   (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
-  Dynamic t (LoadableData (NeuronCache, ZettelC)) ->
+  Dynamic t (LoadableData (SiteData, (ZettelGraph, ZettelC))) ->
   NeuronWebT t m ()
-renderRouteZettel cacheLDyn = do
-  let neuronThemeM =
-        fmap (Theme.mkTheme . Config.theme . NeuronCache._neuronCache_config . fst) . W.getData <$> cacheLDyn
-      neuronVerM =
-        fmap (NeuronCache._neuronCache_neuronVersion . fst) . W.getData <$> cacheLDyn
-  bodyTemplate neuronVerM neuronThemeM $ do
-    W.loadingWidget cacheLDyn $ \cacheDyn -> do
+renderRouteZettel dataLDyn = do
+  let siteDataDyn = fmap fst . W.getData <$> dataLDyn
+  bodyTemplate siteDataDyn $ do
+    W.loadingWidget dataLDyn $ \dataDyn -> do
       dyn_ $
-        ffor cacheDyn $ \(NeuronCache {..}, val) -> do
-          let theme = Theme.mkTheme $ Config.theme _neuronCache_config
-              eu = Config.editUrl _neuronCache_config
-          ZettelView.renderZettel theme (_neuronCache_graph, val) eu
+        uncurry ZettelView.renderZettel <$> dataDyn
 
 renderBrandFooter :: (DomBuilder t m, PostBuild t m) => Dynamic t (Maybe NeuronVersion) -> m ()
 renderBrandFooter ver =

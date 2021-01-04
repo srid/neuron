@@ -19,11 +19,11 @@ import qualified Data.Map.Strict as Map
 import Neuron.Cache.Type (NeuronCache (..))
 import qualified Neuron.Config.Type as Config
 import qualified Neuron.Frontend.Impulse as Impulse
-import Neuron.Frontend.Route (Route (..))
+import Neuron.Frontend.Route
 import qualified Neuron.Frontend.Theme as Theme
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (Slug, indexZid)
-import Neuron.Zettelkasten.Zettel (Zettel, ZettelC, zettelSlug)
+import Neuron.Zettelkasten.Zettel (ZettelC, zettelSlug)
 import Relude
 
 -- This type is only used to store-once and retrieve-multiple-times the value
@@ -42,16 +42,19 @@ mkRouteDataCache zs =
 mkRouteData :: RouteDataCache -> NeuronCache -> Route a -> a
 mkRouteData (RouteDataCache slugMap) cache = \case
   Route_Impulse _ ->
-    mkImpulseData cache
+    (mkSiteData cache, mkImpulseData cache)
   Route_ImpulseStatic ->
-    mkImpulseData cache
+    (mkSiteData cache, mkImpulseData cache)
   Route_Zettel slug ->
     case Map.lookup slug slugMap of
-      Just z -> z
+      Just z ->
+        (mkSiteData cache, (_neuronCache_graph cache, z))
       Nothing -> error "Impossible" -- HACK
   where
     mkImpulseData NeuronCache {..} =
-      let impulse = Impulse.buildImpulse _neuronCache_graph _neuronCache_errors
-          theme = Theme.mkTheme $ Config.theme _neuronCache_config
-          indexZettel :: Maybe Zettel = G.getZettel indexZid _neuronCache_graph
-       in (((theme, _neuronCache_neuronVersion), indexZettel), impulse)
+      Impulse.buildImpulse _neuronCache_graph _neuronCache_errors
+    mkSiteData NeuronCache {..} =
+      let theme = Theme.mkTheme $ Config.theme _neuronCache_config
+          indexZettel = G.getZettel indexZid _neuronCache_graph
+          editUrl = Config.editUrl _neuronCache_config
+       in SiteData theme _neuronCache_neuronVersion editUrl indexZettel
