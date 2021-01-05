@@ -24,21 +24,11 @@ import Neuron.Frontend.Common (neuronCommonStyle, neuronFonts)
 import qualified Neuron.Frontend.Impulse as Impulse
 import qualified Neuron.Frontend.Query.View as QueryView
 import Neuron.Frontend.Route
-  ( Impulse,
-    NeuronVersion,
-    NeuronWebT,
-    Route (..),
-    SiteData (..),
-    routeTitle',
-  )
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (LoadableData, elLinkGoogleFonts)
 import qualified Neuron.Frontend.Widget as W
 import qualified Neuron.Frontend.Zettel.CSS as ZettelCSS
 import qualified Neuron.Frontend.Zettel.View as ZettelView
-import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
-import Neuron.Zettelkasten.Zettel (ZettelC)
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude
@@ -101,7 +91,7 @@ renderRouteImpulse dataLDyn = do
 renderRouteZettel ::
   forall t m js.
   (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
-  Dynamic t (LoadableData (SiteData, (ZettelGraph, (QueryUrlCache, ZettelC)))) ->
+  Dynamic t (LoadableData (SiteData, ZettelData)) ->
   NeuronWebT t m ()
 renderRouteZettel dataLDyn = do
   let siteDataDyn = fmap fst . W.getData <$> dataLDyn

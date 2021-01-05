@@ -13,12 +13,11 @@ import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
-import Neuron.Zettelkasten.Connection (Connection)
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Zettel (Zettel)
 import Relude
-import Text.Pandoc.Definition (Block)
 
 -- | Like `GraphQuery` but focused on the relationship between zettels.
 data GraphQuery r where
@@ -28,7 +27,7 @@ data GraphQuery r where
   GraphQuery_BacklinksOf ::
     Maybe Connection ->
     ZettelID ->
-    GraphQuery [((Connection, [Block]), Zettel)]
+    GraphQuery [(ContextualConnection, Zettel)]
 
 deriveJSONGADT ''GraphQuery
 

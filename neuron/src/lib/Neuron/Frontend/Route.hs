@@ -17,6 +17,7 @@ import Data.TagTree (Tag, unTag)
 import Data.Tagged (Tagged)
 import Data.Tree (Forest)
 import Neuron.Frontend.Theme (Theme)
+import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
@@ -34,7 +35,7 @@ type NeuronVersion = Tagged "NeuronVersion" Text
 -- | TODO: Pull SiteData out of GADT, as it exists in all constructors.
 data Route a where
   -- TODO: Eliminate ZettelGraph by taking just necessary subset into route data
-  Route_Zettel :: Slug -> Route (SiteData, (ZettelGraph, (QueryUrlCache, ZettelC)))
+  Route_Zettel :: Slug -> Route (SiteData, ZettelData)
   -- | Impulse is implemented in github.com/srid/rememorate
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
@@ -52,6 +53,16 @@ data SiteData = SiteData
     siteDataEditUrl :: Maybe Text,
     -- Reference to `index.md` zettel if any.
     siteDataIndexZettel :: Maybe Zettel
+  }
+  deriving (Eq)
+
+data ZettelData = ZettelData
+  { zettelDataZettel :: ZettelC,
+    zettelDataQueryUrlCache :: QueryUrlCache,
+    zettelDataUptree :: Forest Zettel,
+    zettelDataBacklinks :: [(ContextualConnection, Zettel)],
+    -- TODO: eliminate this
+    zettelDataGraph :: ZettelGraph
   }
   deriving (Eq)
 
@@ -132,7 +143,7 @@ routeTitle' v = \case
   Route_Impulse _mtag -> "Impulse"
   Route_ImpulseStatic -> "Impulse (static)"
   Route_Zettel _ ->
-    either zettelTitle zettelTitle $ snd . snd . snd $ v
+    either zettelTitle zettelTitle $ zettelDataZettel . snd $ v
 
 deriveGEq ''Route
 

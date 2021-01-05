@@ -21,6 +21,7 @@ import qualified Neuron.Config.Type as Config
 import qualified Neuron.Frontend.Impulse as Impulse
 import Neuron.Frontend.Route
 import qualified Neuron.Frontend.Theme as Theme
+import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (Slug, indexZid)
 import Neuron.Zettelkasten.Query.Eval
@@ -56,11 +57,17 @@ mkRouteData (RouteDataCache slugMap) cache = \case
   Route_ImpulseStatic ->
     (mkSiteData cache, mkImpulseData cache)
   Route_Zettel slug ->
-    case Map.lookup slug slugMap of
-      Just z ->
-        (mkSiteData cache, (_neuronCache_graph cache, z))
-      Nothing -> error "Impossible" -- HACK
+    (mkSiteData cache, mkZettelData cache slug)
   where
+    mkZettelData NeuronCache {..} slug =
+      case Map.lookup slug slugMap of
+        Just (qurlcache, zC) -> do
+          let z = sansContent zC
+              upTree = G.backlinkForest Folgezettel z _neuronCache_graph
+              backlinks = G.backlinks isJust z _neuronCache_graph
+          ZettelData zC qurlcache upTree backlinks _neuronCache_graph
+        Nothing ->
+          error $ "Impossible: bad slug cache: " <> slug
     mkImpulseData NeuronCache {..} =
       Impulse.buildImpulse _neuronCache_graph _neuronCache_errors
     mkSiteData NeuronCache {..} =

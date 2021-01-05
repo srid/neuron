@@ -27,15 +27,8 @@ import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
 import qualified Data.Tree as Tree
 import qualified Neuron.Frontend.Query.View as Q
-import Neuron.Frontend.Route
-  ( NeuronWebT,
-    Route (..),
-    SiteData (..),
-    neuronDynRouteLink,
-    neuronRouteLink,
-    siteDataEditUrl,
-    siteDataIndexZettel,
-  )
+import Neuron.Frontend.Route (NeuronWebT, Route (..), SiteData, ZettelData)
+import qualified Neuron.Frontend.Route as R
 import Neuron.Frontend.Theme (Theme)
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (elPreOverflowing, elTime, semanticIcon)
@@ -43,7 +36,6 @@ import qualified Neuron.Frontend.Widget.AutoScroll as AS
 import qualified Neuron.Frontend.Widget.InvertedTree as IT
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Plugin (renderPluginPanel)
-import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
@@ -70,13 +62,13 @@ import Text.Pandoc.Definition (Pandoc (Pandoc))
 renderZettel ::
   (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   SiteData ->
-  (ZettelGraph, (QueryUrlCache, ZettelC)) ->
+  ZettelData ->
   NeuronWebT t m ()
-renderZettel siteData (graph, (qurlcache, zc@(sansContent -> z))) = do
+renderZettel siteData zData = do
   -- Open impulse on pressing the forward slash key.
   el "script" $ do
     text "document.onkeyup = function(e) { if ([\"/\", \"s\"].includes(e.key)) { document.location.href = \"impulse.html\"; } }"
-  let upTree = G.backlinkForest Folgezettel z graph
+  let upTree = R.zettelDataUptree zData
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
       Q.renderZettelLink Nothing Nothing def z2
@@ -85,16 +77,19 @@ renderZettel siteData (graph, (qurlcache, zc@(sansContent -> z))) = do
     -- We use -24px (instead of -14px) here so as to not scroll all the way to
     -- title, and as to leave some of the tree visible as "hint" to the user.
     lift $ AS.marker "zettel-container-anchor" (-24)
-    let rdpConfig = mkReflexDomPandocConfig qurlcache
+    let rdpConfig = mkReflexDomPandocConfig $ R.zettelDataQueryUrlCache zData
     divClass "zettel-view" $ do
+      let zc = R.zettelDataZettel zData
+          z = sansContent zc
+          graph = R.zettelDataGraph zData
       renderZettelContentCard rdpConfig zc
       forM_ (DMap.toList $ zettelPluginData z) $ \pluginData ->
         renderPluginPanel graph pluginData
       renderZettelBottomPane graph rdpConfig z
       renderBottomMenu
-        (constDyn $ siteDataTheme siteData)
-        (constDyn $ siteDataIndexZettel siteData)
-        ((<> toText (zettelPath z)) <$> siteDataEditUrl siteData)
+        (constDyn $ R.siteDataTheme siteData)
+        (constDyn $ R.siteDataIndexZettel siteData)
+        ((<> toText (zettelPath z)) <$> R.siteDataEditUrl siteData)
   -- Because the tree above can be pretty large (4+ height), we scroll past it
   -- automatically when the page loads.
   when (forestDepth upTree > 3) $
@@ -160,7 +155,7 @@ renderBottomMenu themeDyn mIndexZettel mEditUrl = do
       ffor x $ \case
         Nothing -> blank
         Just indexZettel -> do
-          neuronDynRouteLink (Some . Route_Zettel . Z.zettelSlug <$> indexZettel) ("class" =: "item" <> "title" =: "Home") $
+          R.neuronDynRouteLink (Some . Route_Zettel . Z.zettelSlug <$> indexZettel) ("class" =: "item" <> "title" =: "Home") $
             semanticIcon "home"
     -- Edit url
     forM_ mEditUrl $ \editUrl -> do
@@ -168,7 +163,7 @@ renderBottomMenu themeDyn mIndexZettel mEditUrl = do
       elAttr "a" ("class" =: "item" <> attrs) $ do
         semanticIcon "edit"
     -- Impulse
-    neuronRouteLink (Some $ Route_Impulse Nothing) ("class" =: "right item" <> "title" =: "Open Impulse (press /)") $ do
+    R.neuronRouteLink (Some $ Route_Impulse Nothing) ("class" =: "right item" <> "title" =: "Open Impulse (press /)") $ do
       semanticIcon "wave square"
 
 mkReflexDomPandocConfig ::
@@ -218,7 +213,7 @@ renderTags tags = do
       -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
       -- the top pushes the zettel content down, introducing unnecessary white
       -- space below the title. So we put it at the bottom for now.
-      neuronRouteLink
+      R.neuronRouteLink
         (Some $ Route_Impulse $ Just t)
         ( "class" =: "ui basic label zettel-tag"
             <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")

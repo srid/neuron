@@ -20,7 +20,7 @@ import Control.Monad.Writer
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
 import Data.Some (Some, withSome)
-import Neuron.Zettelkasten.Connection (Connection)
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Query (runZettelQuery)
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
@@ -30,7 +30,6 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (..),
   )
 import Relude
-import Text.Pandoc.Definition (Block)
 import qualified Text.URI as URI
 
 runQuery :: [Zettel] -> Some ZettelQuery -> DSum ZettelQuery Identity
@@ -49,7 +48,7 @@ queryConnections ::
     MonadWriter [MissingZettel] m
   ) =>
   Zettel ->
-  m [((Connection, [Block]), Zettel)]
+  m [(ContextualConnection, Zettel)]
 queryConnections Zettel {..} = do
   fmap concat $
     forM zettelQueries $ \(someQ, ctx) -> do

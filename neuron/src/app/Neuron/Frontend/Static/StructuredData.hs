@@ -26,8 +26,8 @@ import Data.TagTree (Tag (unTag))
 import qualified Data.Text as T
 import qualified Network.URI.Encode as E
 import Neuron.Config.Type (Config (..), getSiteBaseUrl)
-import Neuron.Frontend.Route (Route (..), routeHtmlPath, routeTitle')
-import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
+import Neuron.Frontend.Route (Route (..))
+import qualified Neuron.Frontend.Route as R
 import Neuron.Zettelkasten.Graph (ZettelGraph)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
@@ -35,7 +35,6 @@ import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelQuery (..),
     ZettelT (..),
-    sansContent,
   )
 import Reflex.Dom.Core (DomBuilder)
 import Relude
@@ -48,10 +47,10 @@ import qualified Text.URI as URI
 renderStructuredData :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
 renderStructuredData config route val = do
   renderOpenGraph $ uncurry (routeOpenGraph config) val route
-  Breadcrumb.renderBreadcrumbs $ routeStructuredData config val route
+  Breadcrumb.renderBreadcrumbs $ routeStructuredData config (snd val) route
 
-routeStructuredData :: Config -> (ZettelGraph, a) -> Route a -> [Breadcrumb]
-routeStructuredData cfg (graph, v) = \case
+routeStructuredData :: Config -> a -> Route a -> [Breadcrumb]
+routeStructuredData cfg v = \case
   Route_Zettel _ ->
     case either fail id $ getSiteBaseUrl cfg of
       Nothing -> []
@@ -60,20 +59,20 @@ routeStructuredData cfg (graph, v) = \case
             mkCrumb Zettel {..} =
               Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelSlug)
          in Breadcrumb.fromForest $
-              fmap mkCrumb <$> G.backlinkForest Folgezettel (sansContent $ snd . snd . snd $ v) graph
+              fmap mkCrumb <$> R.zettelDataUptree (snd v)
   _ ->
     []
 
 routeOpenGraph :: Config -> ZettelGraph -> a -> Route a -> OpenGraph
 routeOpenGraph cfg@Config {siteTitle, author} g v r =
   OpenGraph
-    { _openGraph_title = routeTitle' v r,
+    { _openGraph_title = R.routeTitle' v r,
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
         (Route_Impulse _mtag) -> Just "Impulse"
         Route_ImpulseStatic -> Just "Impulse (static)"
         Route_Zettel _ -> do
-          doc <- getPandocDoc (snd $ snd $ snd v)
+          doc <- getPandocDoc (R.zettelDataZettel $ snd v)
           para <- getFirstParagraphText doc
           let paraText = renderPandocAsText g para
           pure $ T.take 300 paraText,
@@ -83,7 +82,7 @@ routeOpenGraph cfg@Config {siteTitle, author} g v r =
         _ -> Just OGType_Website,
       _openGraph_image = case r of
         Route_Zettel _ -> do
-          doc <- getPandocDoc (snd $ snd $ snd v)
+          doc <- getPandocDoc (R.zettelDataZettel $ snd v)
           image <- URI.mkURI =<< getFirstImg doc
           baseUrl <- either fail id $ getSiteBaseUrl cfg
           URI.relativeTo image baseUrl
@@ -112,6 +111,7 @@ renderPandocAsText g =
     plainifyZQueries = \case
       x@(Link attr inlines (url, title)) ->
         fromMaybe x $ do
+          -- TODO: use url cache from zettel data
           -- REFACTOR: This code should would fit in Query.View (rendering text,
           -- rather than html, variation)
           someQ <- parseQueryLink =<< URI.mkURI url
@@ -142,7 +142,7 @@ routeUri baseUrl r = either (error . toText . displayException) id $
   runExcept $ do
     let -- Use `E.encode` to deal with unicode code points, as mkURI will fail on them.
         -- This is necessary to support non-ascii characters in filenames
-        relUrl = toText . E.encode . toString $ routeHtmlPath r
+        relUrl = toText . E.encode . toString $ R.routeHtmlPath r
     uri <- liftEither $ mkURI relUrl
     case URI.relativeTo uri baseUrl of
       Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
