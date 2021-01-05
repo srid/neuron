@@ -12,10 +12,9 @@ where
 
 import Data.Graph.Labelled (LabelledGraph)
 import qualified Data.Graph.Labelled as Algo
-import Neuron.Zettelkasten.Connection (Connection)
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Zettel (Zettel, sansLinkContext)
 import Relude
-import Text.Pandoc.Definition (Block)
 
 -- | The Zettelkasten graph
 --
@@ -23,7 +22,7 @@ import Text.Pandoc.Definition (Block)
 -- `Algebra.Graph.Label.zero` value for the edge label, which is `Nothing` in
 -- our case, and is effectively the same as there not being an edge between
 -- those vertices.
-type ZettelGraph = LabelledGraph Zettel (Maybe (Connection, [Block]))
+type ZettelGraph = LabelledGraph Zettel (Maybe ContextualConnection)
 
 -- | Compress the graph to save space, by eliminating the unnecessary
 -- surrounding context Pandoc blocks.

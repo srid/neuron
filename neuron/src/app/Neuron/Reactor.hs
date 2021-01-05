@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -17,8 +18,10 @@ module Neuron.Reactor where
 import Colog (WithLog, log)
 import Control.Monad.Fix (MonadFix)
 import Control.Monad.Writer.Strict (runWriter, tell)
+import Data.Dependent.Sum (DSum ((:=>)))
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
+import Data.Some (Some (Some), foldSome)
 import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Neuron.CLI.Logging
@@ -35,7 +38,6 @@ import qualified Neuron.Cache.Type as Cache
 import Neuron.Config (getConfig)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
-import Neuron.Frontend.Manifest (Manifest)
 import qualified Neuron.Frontend.Manifest as Manifest
 import Neuron.Frontend.Route (Route (Route_Impulse), routeHtmlPath)
 import qualified Neuron.Frontend.Route as Z
@@ -52,10 +54,8 @@ import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import qualified Neuron.Zettelkasten.Resolver as R
-import Neuron.Zettelkasten.Zettel
-  ( ZettelC,
-    ZettelT (zettelPath),
-  )
+import Neuron.Zettelkasten.Zettel (ZettelC)
+import qualified Neuron.Zettelkasten.Zettel as Z
 import Neuron.Zettelkasten.Zettel.Error
   ( ZettelError (..),
     ZettelIssue (..),
@@ -103,7 +103,7 @@ generateSite continueMonitoring = do
     -- No incrementall stuff (yet)
     doGen :: App ()
     doGen = do
-      (cache, RD.mkRouteDataCache -> rdCache, fileTree) <- loadZettelkasten =<< getConfig
+      (cache, zs, fileTree) <- loadZettelkasten =<< getConfig
       -- Static files
       case DC.walkContents "static" fileTree of
         Just staticTree@(DC.DirTree_Dir _ _) -> do
@@ -112,17 +112,36 @@ generateSite continueMonitoring = do
           DC.rsyncDir notesDir outputDir staticTree
         _ ->
           pure ()
+      -- Build all routes, and their data
+      -- log D "Building route data ..."
       headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
       let manifest = Manifest.mkManifestFromTree fileTree
-          slugs = RD.allSlugs rdCache
-      -- +2 for Impulse routes
-      log D $ "Rendering routes (" <> show (length slugs + 2) <> " slugs) ..."
-      -- Do it
-      let wH :: Route a -> App ()
-          wH r = writeRouteHtml r =<< genRouteHtml headHtml manifest cache rdCache r
-      (wH . Z.Route_Zettel) `mapM_` slugs
-      wH $ Z.Route_Impulse Nothing
-      wH Z.Route_ImpulseStatic
+          siteData = RD.mkSiteData cache headHtml manifest
+          impulseData = RD.mkImpulseData cache
+          impulseRouteData = (siteData, impulseData)
+          mkZettelRoute zC =
+            let z = Z.sansContent zC
+                zettelData = RD.mkZettelData cache zC
+             in Z.Route_Zettel (Z.zettelSlug z) :=> Identity (siteData, zettelData)
+          !routes =
+            (Z.Route_Impulse Nothing :=> Identity impulseRouteData) :
+            (Z.Route_ImpulseStatic :=> Identity impulseRouteData) :
+            fmap mkZettelRoute zs
+      -- Render and write the routes
+      log D $ "Rendering routes (" <> show (length routes) <> " slugs) ..."
+      -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
+      -- Second bottleneck is graph building.
+      !routeHtml <- forM routes $ \case
+        r@(Z.Route_Zettel _) :=> Identity val -> do
+          (Some r,) <$> genRouteHtml r val
+        r@(Z.Route_Impulse _) :=> Identity val ->
+          (Some r,) <$> genRouteHtml r val
+        r@Z.Route_ImpulseStatic :=> Identity val ->
+          (Some r,) <$> genRouteHtml r val
+      -- log D "Writing to disk ..."
+      forM_ routeHtml $ \(someR, html) -> do
+        flip writeRouteHtml html `foldSome` someR
+      -- Report any errors and finish.
       reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
       getOutputDir >>= \(toText -> outputDir) ->
         log (I' Done) $ "Finished generating at " <> outputDir
@@ -142,7 +161,7 @@ reportAllErrors g issues = do
         ln = length $ concat $ toList . snd . snd <$> badLinks
     if zn < 3
       then forM_ badLinks $ \(zid, _qErrs) -> do
-        let path = maybe "??" zettelPath $ G.getZettel zid g
+        let path = maybe "??" Z.zettelPath $ G.getZettel zid g
         log W $ "Missing link in " <> toText path
       else log W $ show ln <> " missing links found across " <> show zn <> " notes (see Impulse)"
   uncurry reportError `mapM_` errors
@@ -165,25 +184,22 @@ reportAllErrors g issues = do
 genRouteHtml ::
   forall m a.
   MonadIO m =>
-  HeadHtml.HeadHtml ->
-  Manifest ->
-  NeuronCache ->
-  RD.RouteDataCache ->
   Route a ->
+  a ->
   m ByteString
-genRouteHtml headHtml manifest cache rdCache r = do
+genRouteHtml r val = do
   -- We do this verbose dance to make sure hydration happens only on Impulse route.
   -- Ideally, this should be abstracted out, but polymorphic types are a bitch.
   liftIO $ case r of
     Route_Impulse {} ->
       fmap snd . renderStatic . runHydratableT $ do
         -- FIXME: Injecting initial value here will break hydration on Impulse.
-        let cacheDyn = constDyn $ W.LoadableData Nothing
-        Html.renderRoutePage cacheDyn rdCache headHtml manifest r
+        let valDyn = constDyn $ W.unavailableData @a
+        Html.renderRoutePage r valDyn
     _ ->
       fmap snd . renderStatic $ do
-        let cacheDyn = constDyn $ W.availableData cache
-        Html.renderRoutePage cacheDyn rdCache headHtml manifest r
+        let valDyn = constDyn $ W.availableData val
+        Html.renderRoutePage r valDyn
 
 writeRouteHtml :: (MonadApp m, MonadIO m, WithLog env Message m) => Route a -> ByteString -> m ()
 writeRouteHtml r content = do
@@ -300,7 +316,7 @@ loadZettelkastenFromFiles ::
       Map ZettelID ZettelIssue
     )
 loadZettelkastenFromFiles plugins fileTree = do
-  zidRefs <-
+  !zidRefs <-
     case DC.pruneDirTree =<< DC.filterDirTree ((== ".md") . takeExtension) fileTree of
       Nothing ->
         pure mempty
@@ -325,6 +341,6 @@ loadZettelkastenFromFiles plugins fileTree = do
             pure Nothing
           R.ZIDRef_Available fp s pluginData ->
             pure $ Just (fp, (s, pluginData))
-      let zs = Plugin.afterZettelParse plugins (Map.toList filesWithContent)
-      g <- G.buildZettelkasten zs
+      let !zs = Plugin.afterZettelParse plugins (Map.toList filesWithContent)
+      !g <- G.buildZettelkasten zs
       pure (g, zs)

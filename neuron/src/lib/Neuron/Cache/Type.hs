@@ -12,7 +12,7 @@ module Neuron.Cache.Type where
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Neuron.Config.Type (Config)
-import Neuron.Frontend.Route (NeuronVersion)
+import Neuron.Frontend.Route.Data.Types (NeuronVersion)
 import Neuron.Frontend.Widget (LoadableData (..))
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)

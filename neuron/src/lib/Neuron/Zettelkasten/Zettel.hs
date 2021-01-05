@@ -22,6 +22,7 @@ module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson
 import Data.Aeson.GADT.TH (deriveJSONGADT)
+import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Dependent.Map (DMap)
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
@@ -34,7 +35,7 @@ import Data.TagTree (Tag, TagQuery)
 import Data.Tagged (Tagged (Tagged))
 import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Markdown (ZettelParseError)
-import Neuron.Plugin.PluginData (PluginData)
+import Neuron.Plugin.PluginData (PluginZettelData)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Query.Theme (ZettelsView)
@@ -43,6 +44,9 @@ import Text.Pandoc.Builder (Block)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
 
+-- | A zettel ID doesn't refer to an existing zettel
+type MissingZettel = Tagged "MissingZettel" ZettelID
+
 -- | ZettelQuery queries individual zettels.
 --
 -- It does not care about the relationship *between* those zettels; for that use `GraphQuery`.
@@ -50,7 +54,7 @@ import Text.Show (Show (show))
 -- NOTE: This type is defined in this module, rather than Zettel.Query, because
 -- of the mutual dependency with the `ZettelT` type.
 data ZettelQuery r where
-  ZettelQuery_ZettelByID :: ZettelID -> Connection -> ZettelQuery Zettel
+  ZettelQuery_ZettelByID :: ZettelID -> Connection -> ZettelQuery (Either MissingZettel Zettel)
   ZettelQuery_ZettelsByTag :: TagQuery -> Connection -> ZettelsView -> ZettelQuery [Zettel]
   ZettelQuery_Tags :: TagQuery -> ZettelQuery (Map Tag Natural)
   ZettelQuery_TagZettel :: Tag -> ZettelQuery ()
@@ -73,7 +77,7 @@ data ZettelT c = Zettel
     -- | List of all queries in the zettel
     zettelQueries :: [(Some ZettelQuery, [Block])],
     zettelContent :: c,
-    zettelPluginData :: DMap PluginData Identity
+    zettelPluginData :: DMap PluginZettelData Identity
   }
   deriving (Generic)
 
@@ -127,6 +131,8 @@ deriveJSONGADT ''ZettelQuery
 deriveGEq ''ZettelQuery
 
 deriveGShow ''ZettelQuery
+
+deriveArgDict ''ZettelQuery
 
 deriving instance Show (ZettelQuery (Maybe Zettel))
 

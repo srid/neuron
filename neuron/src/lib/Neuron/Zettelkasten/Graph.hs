@@ -28,12 +28,11 @@ import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
 import qualified Data.Set as Set
 import Data.Tree (Forest, flatten)
-import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
+import Neuron.Zettelkasten.Connection (Connection (Folgezettel), ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Zettel (Zettel, ZettelT (zettelID))
 import Relude
-import Text.Pandoc.Definition (Block)
 
 frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
 frontlinkForest conn z =
@@ -51,7 +50,7 @@ backlinks ::
   (Maybe Connection -> Bool) ->
   Zettel ->
   ZettelGraph ->
-  [((Connection, [Block]), Zettel)]
+  [(ContextualConnection, Zettel)]
 backlinks f z g =
   mapMaybe (\(e, v) -> (,v) <$> e) $
     G.preSetWithEdgeLabel (f . fmap fst) z g
@@ -101,7 +100,7 @@ getZettel = G.findVertex
 -- | Return the connection if any between two zettels
 --
 -- If no connection exists, this returns Nothing.
-getConnection :: Zettel -> Zettel -> ZettelGraph -> Maybe (Connection, [Block])
+getConnection :: Zettel -> Zettel -> ZettelGraph -> Maybe ContextualConnection
 getConnection z1 z2 g =
   -- Use `join` so that empty edge monoid is treated as an abscence of edge
   -- (connection)

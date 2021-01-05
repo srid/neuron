@@ -14,49 +14,27 @@ import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some, withSome)
 import Data.TagTree (Tag, unTag)
-import Data.Tagged (Tagged)
-import Data.Tree (Forest)
-import Neuron.Frontend.Theme (Theme)
-import Neuron.Zettelkasten.ID (Slug, ZettelID)
+import Neuron.Frontend.Route.Data.Types
+import Neuron.Zettelkasten.ID (Slug)
 import Neuron.Zettelkasten.Zettel
-  ( Zettel,
-    ZettelC,
-    ZettelT (zettelTitle),
+  ( ZettelT (zettelTitle),
   )
-import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Reflex.Dom.Core
 import Relude
 
-type NeuronVersion = Tagged "NeuronVersion" Text
-
-data Route a where
-  Route_Zettel :: Slug -> Route ZettelC
+data Route routeData where
+  Route_Zettel :: Slug -> Route (SiteData, ZettelData)
   -- | Impulse is implemented in github.com/srid/rememorate
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
-  Route_Impulse :: Maybe Tag -> Route (((Theme, NeuronVersion), Maybe Zettel), Impulse)
-  Route_ImpulseStatic :: Route (((Theme, NeuronVersion), Maybe Zettel), Impulse)
+  Route_Impulse :: Maybe Tag -> Route (SiteData, ImpulseData)
+  Route_ImpulseStatic :: Route (SiteData, ImpulseData)
 
--- | The value needed to render the Impulse page
-
---
--- All heavy graph computations are decoupled from rendering, producing this
--- value, that is in turn used for instant rendering.
-data Impulse = Impulse
-  { -- | Clusters on the folgezettel graph.
-    impulseClusters :: [Forest (Zettel, [Zettel])],
-    impulseOrphans :: [Zettel],
-    -- | All zettel errors
-    impulseErrors :: Map ZettelID ZettelIssue,
-    impulseStats :: Stats,
-    impulsePinned :: [Zettel]
-  }
-
-data Stats = Stats
-  { statsZettelCount :: Int,
-    statsZettelConnectionCount :: Int
-  }
-  deriving (Eq, Show)
+routeSiteData :: a -> Route a -> SiteData
+routeSiteData val = \case
+  Route_Zettel _ -> fst val
+  Route_Impulse _ -> fst val
+  Route_ImpulseStatic -> fst val
 
 routeHtmlPath :: Route a -> FilePath
 routeHtmlPath = \case
@@ -114,7 +92,7 @@ routeTitle' v = \case
   Route_Impulse _mtag -> "Impulse"
   Route_ImpulseStatic -> "Impulse (static)"
   Route_Zettel _ ->
-    either zettelTitle zettelTitle v
+    either zettelTitle zettelTitle $ zettelDataZettel . snd $ v
 
 deriveGEq ''Route
 

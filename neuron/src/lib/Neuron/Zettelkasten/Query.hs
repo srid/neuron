@@ -21,35 +21,30 @@ where
 import Data.Aeson (KeyValue ((.=)), ToJSON (toJSON), Value, object)
 import qualified Data.Map.Strict as Map
 import Data.TagTree (Tag, TagQuery (..), matchTagQuery, matchTagQueryMulti, tagTree)
+import Data.Tagged
 import Data.Tree (Tree (..))
 import Neuron.Zettelkasten.Graph (backlinks, getZettel)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
-import Neuron.Zettelkasten.Query.Error (QueryResultError (..))
 import Neuron.Zettelkasten.Query.Graph (GraphQuery (..))
-import Neuron.Zettelkasten.Zettel
-  ( Zettel,
-    ZettelQuery (..),
-    ZettelT (..),
-    sortZettelsReverseChronological,
-  )
+import Neuron.Zettelkasten.Zettel (MissingZettel, Zettel, ZettelQuery (..), ZettelT (..), sortZettelsReverseChronological)
 import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Relude
 
-runZettelQuery :: [Zettel] -> ZettelQuery r -> Either QueryResultError r
+runZettelQuery :: [Zettel] -> ZettelQuery r -> r
 runZettelQuery zs = \case
-  ZettelQuery_ZettelByID zid conn ->
+  ZettelQuery_ZettelByID zid _conn ->
     case find ((== zid) . zettelID) zs of
       Nothing ->
-        Left $ QueryResultError_NoSuchZettel (Just conn) zid
+        Left $ Tagged zid
       Just z ->
         Right z
   ZettelQuery_ZettelsByTag pats _mconn _mview ->
-    Right $ zettelsByTag zs pats
+    zettelsByTag zs pats
   ZettelQuery_Tags pats ->
-    Right $ Map.filterWithKey (const . flip matchTagQuery pats) allTags
+    Map.filterWithKey (const . flip matchTagQuery pats) allTags
   ZettelQuery_TagZettel _tag ->
-    Right ()
+    ()
   where
     allTags :: Map.Map Tag Natural
     allTags =
@@ -62,13 +57,13 @@ zettelsByTag zs q =
     flip filter zs $ \Zettel {..} ->
       matchTagQueryMulti (toList zettelTags) q
 
-runGraphQuery :: ZettelGraph -> GraphQuery r -> Either QueryResultError r
+runGraphQuery :: ZettelGraph -> GraphQuery r -> Either MissingZettel r
 runGraphQuery g = \case
   GraphQuery_Id -> Right g
   GraphQuery_BacklinksOf conn zid ->
     case getZettel zid g of
       Nothing ->
-        Left $ QueryResultError_NoSuchZettel conn zid
+        Left $ Tagged zid
       Just z ->
         Right $ backlinks (maybe isJust (const (== conn)) conn) z g
 
@@ -76,31 +71,28 @@ zettelQueryResultJson ::
   forall r.
   (ToJSON (ZettelQuery r)) =>
   ZettelQuery r ->
-  Either QueryResultError r ->
+  r ->
   -- Zettels that cannot be parsed by neuron
   Map ZettelID ZettelIssue ->
   Value
-zettelQueryResultJson q er skippedZettels =
+zettelQueryResultJson q r skippedZettels =
   toJSON $
     object
       [ "query" .= toJSON q,
-        either
-          (\e -> "error" .= toJSON e)
-          (\r -> "result" .= toJSON (resultJson r))
-          er,
+        "result" .= toJSON (resultJson r),
         "skipped" .= skippedZettels
       ]
   where
     resultJson :: r -> Value
-    resultJson r = case q of
+    resultJson res = case q of
       ZettelQuery_ZettelByID _ _mconn ->
-        toJSON r
+        toJSON res
       ZettelQuery_ZettelsByTag _ _mconn _mview ->
-        toJSON r
+        toJSON res
       ZettelQuery_Tags _ ->
-        toJSON $ fmap treeToJson . tagTree $ r
+        toJSON $ fmap treeToJson . tagTree $ res
       ZettelQuery_TagZettel _ ->
-        toJSON r
+        toJSON res
     treeToJson (Node (tag, count) children) =
       object
         [ "name" .= tag,
@@ -112,7 +104,7 @@ graphQueryResultJson ::
   forall r.
   (ToJSON (GraphQuery r)) =>
   GraphQuery r ->
-  Either QueryResultError r ->
+  Either MissingZettel r ->
   -- Zettels that cannot be parsed by neuron (and as such are excluded from the graph)
   Map ZettelID ZettelIssue ->
   Value

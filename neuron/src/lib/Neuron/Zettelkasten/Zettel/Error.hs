@@ -15,7 +15,7 @@ import Data.Tagged (untag)
 import qualified Data.Text as T
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
-import Neuron.Zettelkasten.Query.Error (QueryResultError)
+import Neuron.Zettelkasten.Zettel (MissingZettel)
 import Relude
 
 -- | All possible errors for a given zettel ID
@@ -24,7 +24,7 @@ import Relude
 -- post-resolved zettels (either unparsed, or parsed but with bad queries)
 data ZettelIssue
   = ZettelIssue_Error ZettelError
-  | ZettelIssue_MissingLinks (Slug, NonEmpty QueryResultError)
+  | ZettelIssue_MissingLinks (Slug, NonEmpty MissingZettel)
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data ZettelError
@@ -38,7 +38,7 @@ data ZettelError
 
 splitZettelIssues ::
   Map ZettelID ZettelIssue ->
-  ([(ZettelID, ZettelError)], [(ZettelID, (Slug, NonEmpty QueryResultError))])
+  ([(ZettelID, ZettelError)], [(ZettelID, (Slug, NonEmpty MissingZettel))])
 splitZettelIssues m =
   lefts &&& rights $
     flip fmap (Map.toList m) $ \(zid, issue) ->

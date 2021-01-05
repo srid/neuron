@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -77,6 +78,9 @@ getData = rightToMaybe <=< unLoadableData
 
 availableData :: a -> LoadableData a
 availableData = LoadableData . Just . Right
+
+unavailableData :: forall a. LoadableData a
+unavailableData = LoadableData @a Nothing
 
 loadingWidget ::
   (DomBuilder t m, MonadFix m, MonadHold t m, PostBuild t m) =>

@@ -17,12 +17,16 @@ import qualified Data.Set as Set
 import Reflex.Dom.Core
 import Relude
 import qualified System.Directory.Contents as DC
+import Data.Default
 
 data Manifest = Manifest
   { manifestFavicons :: Maybe Favicons,
     manifestWebAppManifest :: Maybe FilePath
   }
   deriving (Eq)
+
+instance Default Manifest where 
+  def = Manifest Nothing Nothing
 
 data Favicons = Favicons
   { faviconsDefault :: FilePath,

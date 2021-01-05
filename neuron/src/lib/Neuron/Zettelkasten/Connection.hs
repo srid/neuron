@@ -8,6 +8,7 @@ module Neuron.Zettelkasten.Connection where
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Default (Default (..))
 import Relude hiding (show)
+import Text.Pandoc.Definition (Block)
 import Text.Show (Show (show))
 
 -- | Represent the connection between zettels
@@ -32,3 +33,6 @@ instance Show Connection where
   show = \case
     Folgezettel -> "folgezettel"
     OrdinaryConnection -> "cf"
+
+-- | A connection with context represented by Pandoc blocks
+type ContextualConnection = (Connection, [Block])

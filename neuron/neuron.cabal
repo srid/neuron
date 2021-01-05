@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 1.9.2.13
+version: 1.9.3.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -88,7 +88,6 @@ library
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Graph
-    Neuron.Zettelkasten.Query.Error
     Neuron.Zettelkasten.Query.Eval
     Neuron.Zettelkasten.Query.Parser
     Neuron.Zettelkasten.Query.Theme
@@ -99,6 +98,7 @@ library
     Neuron.Cache.Type
     Neuron.Frontend.Route
     Neuron.Frontend.Route.Data
+    Neuron.Frontend.Route.Data.Types
     Neuron.Frontend.Manifest
     Neuron.Frontend.Common
     Neuron.Frontend.Widget

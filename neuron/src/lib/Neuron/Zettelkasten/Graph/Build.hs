@@ -12,20 +12,19 @@ where
 import Control.Monad.Writer.Strict
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
-import Neuron.Zettelkasten.Connection (Connection)
+import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
-import Neuron.Zettelkasten.Query.Error (QueryResultError)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
-  ( Zettel,
+  ( MissingZettel,
+    Zettel,
     ZettelC,
     ZettelT (..),
     sansContent,
   )
 import Neuron.Zettelkasten.Zettel.Error (ZettelError (..), ZettelIssue (..))
 import Relude
-import Text.Pandoc.Definition (Block)
 
 -- Build the zettelkasten graph from a list of zettels
 --
@@ -70,10 +69,10 @@ buildZettelkasten parsedZettels = do
 -- return them as well.
 mkZettelGraph ::
   [Zettel] ->
-  Writer (Map ZettelID (Slug, NonEmpty QueryResultError)) ZettelGraph
+  Writer (Map ZettelID (Slug, NonEmpty MissingZettel)) ZettelGraph
 mkZettelGraph zettels = do
   -- TODO: Also get connections via PluginData
-  let res :: [(Zettel, ([((Connection, [Block]), Zettel)], [QueryResultError]))] =
+  let res :: [(Zettel, ([(ContextualConnection, Zettel)], [MissingZettel]))] =
         flip fmap zettels $ \z ->
           (z, runQueryConnections zettels z)
   tell $
@@ -85,7 +84,7 @@ mkZettelGraph zettels = do
       flip concatMap res $ \(z1, fst -> conns) ->
         edgeFromConnection z1 <$> conns
 
-runQueryConnections :: [Zettel] -> Zettel -> ([((Connection, [Block]), Zettel)], [QueryResultError])
+runQueryConnections :: [Zettel] -> Zettel -> ([(ContextualConnection, Zettel)], [MissingZettel])
 runQueryConnections zettels z =
   flip runReader zettels $ do
     runWriterT $ queryConnections z

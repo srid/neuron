@@ -58,8 +58,12 @@ import Text.Pandoc.Definition (Inline)
 renderQueryResult ::
   (PandocBuilder t m, PostBuild t m) => Maybe [Inline] -> DSum ZettelQuery Identity -> NeuronWebT t m ()
 renderQueryResult minner = \case
-  ZettelQuery_ZettelByID _zid conn :=> Identity target -> do
-    renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
+  ZettelQuery_ZettelByID _zid conn :=> Identity res -> do
+    case res of
+      Left (untag -> zid) ->
+        renderMissingZettelLink zid
+      Right target ->
+        renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
   q@(ZettelQuery_ZettelsByTag pats conn view) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
@@ -169,15 +173,13 @@ elConnSuffix mconn =
     _ -> pure mempty
 
 -- TODO: Eventually refactor this function to reuse what's in renderZettelLink
-renderMissingZettelLink :: DomBuilder t m => Maybe Connection -> ZettelID -> m ()
-renderMissingZettelLink mconn zid = do
-  let connClass = show <$> mconn
-      classes :: [Text] = catMaybes $ [Just "zettel-link-container", Just "errors"] <> [connClass]
+renderMissingZettelLink :: DomBuilder t m => ZettelID -> m ()
+renderMissingZettelLink zid = do
+  let classes = ["zettel-link-container", "errors"]
   elClass "span" (T.intercalate " " classes) $ do
     let errMsg = "Wiki-link does not refer to any existing zettel"
     elAttr "span" ("class" =: "zettel-link" <> "title" =: errMsg) $ do
       elAttr "a" mempty $ text $ unZettelID zid
-      elConnSuffix mconn
 
 -- | Like `renderZettelLink` but when we only have ID in hand.
 renderZettelLinkIDOnly :: (DomBuilder t m, PostBuild t m) => ZettelID -> Slug -> NeuronWebT t m ()

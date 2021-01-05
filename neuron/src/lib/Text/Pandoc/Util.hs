@@ -6,6 +6,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- TODO Review and delete what's unused in this module
 module Text.Pandoc.Util
   ( getFirstParagraphText,
     getH1,
@@ -22,7 +23,6 @@ import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Pandoc.Walk as W
 import Text.URI (URI)
-import qualified Text.URI as URI
 
 data PandocLink = PandocLink
   { -- | This is set to Nothing for autolinks
@@ -39,19 +39,15 @@ isAutoLink PandocLink {..} =
   isNothing _pandocLink_inner
 
 -- | Get all links that have a valid URI
-getLinks :: W.Walkable B.Inline b => b -> [PandocLink]
+getLinks :: W.Walkable B.Inline b => b -> [Text]
 getLinks = W.query go
   where
-    go :: B.Inline -> [PandocLink]
+    go :: B.Inline -> [Text]
     go = maybeToList . uriLinkFromInline
-    uriLinkFromInline :: B.Inline -> Maybe PandocLink
+    uriLinkFromInline :: B.Inline -> Maybe Text
     uriLinkFromInline inline = do
-      B.Link _attr inlines (url, _title) <- pure inline
-      uri <- URI.mkURI url
-      let inner = do
-            guard $ inlines /= [B.Str url]
-            pure inlines
-      pure $ PandocLink inner uri
+      B.Link _attr _inlines (url, _title) <- pure inline
+      pure url
 
 getFirstParagraphText :: Pandoc -> Maybe [B.Inline]
 getFirstParagraphText = listToMaybe . W.query go
