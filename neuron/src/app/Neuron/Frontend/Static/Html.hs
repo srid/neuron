@@ -12,10 +12,8 @@ module Neuron.Frontend.Static.Html where
 
 import Control.Monad.Fix (MonadFix)
 import Data.FileEmbed (embedOneStringFileOf)
-import Neuron.Cache.Type (NeuronCache (..))
 import Neuron.Frontend.Manifest (Manifest, renderManifest)
 import Neuron.Frontend.Route (Route (..), routeConfig, runNeuronWeb)
-import qualified Neuron.Frontend.Route.Data as RD
 import Neuron.Frontend.Static.HeadHtml (HeadHtml, renderHeadHtml)
 import Neuron.Frontend.Static.StructuredData (renderStructuredData)
 import qualified Neuron.Frontend.View as V
@@ -43,15 +41,12 @@ renderRoutePage ::
     PerformEvent t m,
     TriggerEvent t m
   ) =>
-  Dynamic t (W.LoadableData NeuronCache) ->
-  RD.RouteDataCache ->
   HeadHtml ->
   Manifest ->
   Route a ->
+  Dynamic t (W.LoadableData a) ->
   m ()
-renderRoutePage cacheDyn rdCache headHtml manifest r = do
-  let mkRD = \ch -> RD.mkRouteData rdCache ch r
-      ffmap = fmap . fmap
+renderRoutePage headHtml manifest r val = do
   el "html" $ do
     el "head" $ do
       -- TODO: replace passing config (siteTitle), with using RD
@@ -59,14 +54,12 @@ renderRoutePage cacheDyn rdCache headHtml manifest r = do
       -- dyn, and rebuild all. Actually, just rebuild all on any neuron.dhall
       -- change. Wait a sec, just split `NeuronCache` into neuron.dhall/neuron
       -- (cfg+ver) fields, and zk field (graph+errs), then holdDyn on them.
-      V.headTemplate r $ (_neuronCache_config &&& mkRD) `ffmap` cacheDyn
+      V.headTemplate r val
       renderHeadHtml headHtml
       renderManifest manifest
-      W.loadingWidget' cacheDyn blank (const blank) $ \cacheDyn' ->
+      W.loadingWidget' val blank (const blank) $ \valDyn ->
         dyn_ $
-          ffor cacheDyn' $ \cache@NeuronCache {..} ->
-            -- TODO: replace passing config and graph, with using RD (breadcrumb and opengraph)
-            renderStructuredData _neuronCache_config r (mkRD cache)
+          renderStructuredData r <$> valDyn
       () <- case r of
         Route_Impulse {} ->
           elImpulseJS
@@ -79,14 +72,13 @@ renderRoutePage cacheDyn rdCache headHtml manifest r = do
       () <- case r of
         Route_Impulse {} -> do
           runNeuronWeb routeConfig $
-            V.renderRouteImpulse $ mkRD `ffmap` cacheDyn
+            V.renderRouteImpulse val
         Route_ImpulseStatic {} -> do
           runNeuronWeb routeConfig $
-            V.renderRouteImpulse $ mkRD `ffmap` cacheDyn
+            V.renderRouteImpulse val
         Route_Zettel {} -> do
           runNeuronWeb routeConfig $
-            -- TODO: replace passing config and graph, with using RD
-            V.renderRouteZettel $ mkRD `ffmap` cacheDyn
+            V.renderRouteZettel val
       pure ()
 
 elImpulseJS :: DomBuilder t m => m ()

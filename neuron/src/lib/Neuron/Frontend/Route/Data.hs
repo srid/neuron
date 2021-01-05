@@ -7,15 +7,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Frontend.Route.Data
-  ( RouteDataCache,
-    allSlugs,
-    mkRouteDataCache,
-    mkRouteData,
-  )
-where
+module Neuron.Frontend.Route.Data where
 
-import qualified Data.Map.Strict as Map
 import Neuron.Cache.Type (NeuronCache (..))
 import qualified Neuron.Config.Type as Config
 import qualified Neuron.Frontend.Impulse as Impulse
@@ -23,55 +16,33 @@ import Neuron.Frontend.Route
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.ID (Slug, indexZid)
+import Neuron.Zettelkasten.ID (indexZid)
 import Neuron.Zettelkasten.Query.Eval
-  ( QueryUrlCache,
-    buildQueryUrlCache,
+  ( buildQueryUrlCache,
   )
-import Neuron.Zettelkasten.Zettel (ZettelC, ZettelT (zettelContent), sansContent, zettelSlug)
+import Neuron.Zettelkasten.Zettel
 import Relude
 import qualified Text.Pandoc.Util as P
 
--- This type is only used to store-once and retrieve-multiple-times the value
--- for Route_Zettel routes. Ideally, we need a better route system.
-newtype RouteDataCache = RouteDataCache {unRouteDataCache :: Map Slug (QueryUrlCache, ZettelC)}
-  deriving (Eq, Show, Generic, Semigroup, Monoid)
+mkZettelData :: NeuronCache -> ZettelC -> ZettelData
+mkZettelData NeuronCache {..} zC = do
+  let z = sansContent zC
+      urls = either (const []) (P.getLinks . zettelContent) zC
+      qurlcache = buildQueryUrlCache (G.getZettels _neuronCache_graph) urls
+      upTree = G.backlinkForest Folgezettel z _neuronCache_graph
+      backlinks = G.backlinks isJust z _neuronCache_graph
+  ZettelData zC qurlcache upTree backlinks _neuronCache_graph
 
-allSlugs :: RouteDataCache -> [Slug]
-allSlugs = Map.keys . unRouteDataCache
+mkImpulseData :: NeuronCache -> Impulse
+mkImpulseData NeuronCache {..} =
+  Impulse.buildImpulse _neuronCache_graph _neuronCache_errors
 
-mkRouteDataCache :: [ZettelC] -> RouteDataCache
-mkRouteDataCache zs =
-  RouteDataCache $
-    Map.fromList $
-      zs <&> \z ->
-        let urls = either (const []) (P.getLinks . zettelContent) z
-            qurlcache = buildQueryUrlCache (sansContent <$> zs) urls
-         in (either zettelSlug zettelSlug z, (qurlcache, z))
-
--- NOTE: RouteDataCache is used only for the Route_Zettel route.
-mkRouteData :: RouteDataCache -> NeuronCache -> Route a -> a
-mkRouteData (RouteDataCache slugMap) cache = \case
-  Route_Impulse _ ->
-    (mkSiteData cache, mkImpulseData cache)
-  Route_ImpulseStatic ->
-    (mkSiteData cache, mkImpulseData cache)
-  Route_Zettel slug ->
-    (mkSiteData cache, mkZettelData cache slug)
-  where
-    mkZettelData NeuronCache {..} slug =
-      case Map.lookup slug slugMap of
-        Just (qurlcache, zC) -> do
-          let z = sansContent zC
-              upTree = G.backlinkForest Folgezettel z _neuronCache_graph
-              backlinks = G.backlinks isJust z _neuronCache_graph
-          ZettelData zC qurlcache upTree backlinks _neuronCache_graph
-        Nothing ->
-          error $ "Impossible: bad slug cache: " <> slug
-    mkImpulseData NeuronCache {..} =
-      Impulse.buildImpulse _neuronCache_graph _neuronCache_errors
-    mkSiteData NeuronCache {..} =
-      let theme = Theme.mkTheme $ Config.theme _neuronCache_config
-          indexZettel = G.getZettel indexZid _neuronCache_graph
-          editUrl = Config.editUrl _neuronCache_config
-       in SiteData theme _neuronCache_neuronVersion editUrl indexZettel
+mkSiteData :: NeuronCache -> SiteData
+mkSiteData NeuronCache {..} =
+  let theme = Theme.mkTheme $ Config.theme _neuronCache_config
+      siteTitle = Config.siteTitle _neuronCache_config
+      siteAuthor = Config.author _neuronCache_config
+      baseUrl = join $ Config.getSiteBaseUrl _neuronCache_config
+      indexZettel = G.getZettel indexZid _neuronCache_graph
+      editUrl = Config.editUrl _neuronCache_config
+   in SiteData theme siteTitle siteAuthor baseUrl editUrl _neuronCache_neuronVersion indexZettel

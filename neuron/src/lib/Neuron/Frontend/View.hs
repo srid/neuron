@@ -19,7 +19,6 @@ import Clay (Css, em, gray, important, pct, (?))
 import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Data.Tagged (untag)
-import Neuron.Config.Type (Config (..))
 import Neuron.Frontend.Common (neuronCommonStyle, neuronFonts)
 import qualified Neuron.Frontend.Impulse as Impulse
 import qualified Neuron.Frontend.Query.View as QueryView
@@ -36,23 +35,24 @@ import Relude
 headTemplate ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   Route a ->
-  Dynamic t (LoadableData (Config, a)) ->
+  Dynamic t (LoadableData a) ->
   m ()
 headTemplate r vLDyn = do
   elAttr "meta" ("http-equiv" =: "Content-Type" <> "content" =: "text/html; charset=utf-8") blank
   elAttr "meta" ("name" =: "viewport" <> "content" =: "width=device-width, initial-scale=1") blank
   W.loadingWidget' vLDyn (el "title" $ text "Loading...") (const $ el "title" $ text "Error") $ \vDyn ->
     dyn_ $
-      ffor vDyn $ \(cfg, v) ->
-        el "title" $ text $ routeTitle r v cfg
+      ffor vDyn $ \v ->
+        el "title" $ text $ routeTitle r v
   elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.css") blank
   elAttr "style" ("type" =: "text/css") $ text $ toText $ C.renderWith C.compact [] style
   elLinkGoogleFonts neuronFonts
 
 -- The `a` is used to find zettel title, and `Config` for site title.
-routeTitle :: Route a -> a -> Config -> Text
-routeTitle r v Config {..} =
-  withSuffix siteTitle . routeTitle' v $ r
+routeTitle :: Route a -> a -> Text
+routeTitle r v =
+  let siteTitle = siteDataSiteTitle (routeSiteData v r)
+   in withSuffix siteTitle (routeTitle' v r)
   where
     withSuffix suffix x =
       if x == suffix

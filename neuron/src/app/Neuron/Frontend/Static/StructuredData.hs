@@ -26,7 +26,6 @@ import Data.Structured.OpenGraph.Render (renderOpenGraph)
 import Data.TagTree (Tag (unTag))
 import qualified Data.Text as T
 import qualified Network.URI.Encode as E
-import Neuron.Config.Type (Config (..), getSiteBaseUrl)
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
 import Neuron.Zettelkasten.Query.Eval
@@ -43,15 +42,15 @@ import qualified Text.Pandoc.Walk as W
 import Text.URI (URI, mkURI)
 import qualified Text.URI as URI
 
-renderStructuredData :: DomBuilder t m => Config -> Route a -> a -> m ()
-renderStructuredData config route val = do
-  renderOpenGraph $ routeOpenGraph config val route
-  Breadcrumb.renderBreadcrumbs $ routeStructuredData config val route
+renderStructuredData :: DomBuilder t m => Route a -> a -> m ()
+renderStructuredData route val = do
+  renderOpenGraph $ routeOpenGraph val route
+  Breadcrumb.renderBreadcrumbs $ routeStructuredData val route
 
-routeStructuredData :: Config -> a -> Route a -> [Breadcrumb]
-routeStructuredData cfg v = \case
-  Route_Zettel _ ->
-    case either fail id $ getSiteBaseUrl cfg of
+routeStructuredData :: a -> Route a -> [Breadcrumb]
+routeStructuredData v = \case
+  R.Route_Zettel _ ->
+    case R.siteDataSiteBaseUrl (fst v) of
       Nothing -> []
       Just baseUrl ->
         let mkCrumb :: Zettel -> Breadcrumb.Item
@@ -62,11 +61,11 @@ routeStructuredData cfg v = \case
   _ ->
     []
 
-routeOpenGraph :: Config -> a -> Route a -> OpenGraph
-routeOpenGraph cfg@Config {siteTitle, author} v r =
+routeOpenGraph :: a -> Route a -> OpenGraph
+routeOpenGraph v r =
   OpenGraph
     { _openGraph_title = R.routeTitle' v r,
-      _openGraph_siteName = siteTitle,
+      _openGraph_siteName = R.siteDataSiteTitle (R.routeSiteData v r),
       _openGraph_description = case r of
         (Route_Impulse _mtag) -> Just "Impulse"
         Route_ImpulseStatic -> Just "Impulse (static)"
@@ -76,7 +75,7 @@ routeOpenGraph cfg@Config {siteTitle, author} v r =
           para <- getFirstParagraphText doc
           let paraText = renderPandocAsText (R.zettelDataQueryUrlCache zData) para
           pure $ T.take 300 paraText,
-      _openGraph_author = author,
+      _openGraph_author = R.siteDataSiteAuthor (R.routeSiteData v r),
       _openGraph_type = case r of
         Route_Zettel _ -> Just $ OGType_Article (Article Nothing Nothing Nothing Nothing mempty)
         _ -> Just OGType_Website,
@@ -84,11 +83,11 @@ routeOpenGraph cfg@Config {siteTitle, author} v r =
         Route_Zettel _ -> do
           doc <- getPandocDoc (R.zettelDataZettel $ snd v)
           image <- URI.mkURI =<< getFirstImg doc
-          baseUrl <- either fail id $ getSiteBaseUrl cfg
+          baseUrl <- R.siteDataSiteBaseUrl (fst v)
           URI.relativeTo image baseUrl
         _ -> Nothing,
       _openGraph_url = do
-        baseUrl <- either fail id $ getSiteBaseUrl cfg
+        baseUrl <- R.siteDataSiteBaseUrl (R.routeSiteData v r)
         pure $ routeUri baseUrl r
     }
   where

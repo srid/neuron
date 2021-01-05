@@ -52,10 +52,8 @@ import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import qualified Neuron.Zettelkasten.Resolver as R
-import Neuron.Zettelkasten.Zettel
-  ( ZettelC,
-    ZettelT (zettelPath),
-  )
+import Neuron.Zettelkasten.Zettel (ZettelC)
+import qualified Neuron.Zettelkasten.Zettel as Z
 import Neuron.Zettelkasten.Zettel.Error
   ( ZettelError (..),
     ZettelIssue (..),
@@ -103,7 +101,9 @@ generateSite continueMonitoring = do
     -- No incrementall stuff (yet)
     doGen :: App ()
     doGen = do
-      (cache, RD.mkRouteDataCache -> rdCache, fileTree) <- loadZettelkasten =<< getConfig
+      (cache, zs, fileTree) <- loadZettelkasten =<< getConfig
+      let siteData = RD.mkSiteData cache
+          impulseData = RD.mkImpulseData cache
       -- Static files
       case DC.walkContents "static" fileTree of
         Just staticTree@(DC.DirTree_Dir _ _) -> do
@@ -114,15 +114,17 @@ generateSite continueMonitoring = do
           pure ()
       headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
       let manifest = Manifest.mkManifestFromTree fileTree
-          slugs = RD.allSlugs rdCache
       -- +2 for Impulse routes
-      log D $ "Rendering routes (" <> show (length slugs + 2) <> " slugs) ..."
+      log D $ "Rendering routes (" <> show (length zs + 2) <> " slugs) ..."
       -- Do it
-      let wH :: Route a -> App ()
-          wH r = writeRouteHtml r =<< genRouteHtml headHtml manifest cache rdCache r
-      (wH . Z.Route_Zettel) `mapM_` slugs
-      wH $ Z.Route_Impulse Nothing
-      wH Z.Route_ImpulseStatic
+      let wH :: Route a -> a -> App ()
+          wH r val = writeRouteHtml r =<< genRouteHtml headHtml manifest r val
+      forM_ zs $ \zC -> do
+        let z = Z.sansContent zC
+            zettelData = RD.mkZettelData cache zC
+        wH (Z.Route_Zettel $ Z.zettelSlug z) (siteData, zettelData)
+      wH (Z.Route_Impulse Nothing) (siteData, impulseData)
+      wH Z.Route_ImpulseStatic (siteData, impulseData)
       reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
       getOutputDir >>= \(toText -> outputDir) ->
         log (I' Done) $ "Finished generating at " <> outputDir
@@ -142,7 +144,7 @@ reportAllErrors g issues = do
         ln = length $ concat $ toList . snd . snd <$> badLinks
     if zn < 3
       then forM_ badLinks $ \(zid, _qErrs) -> do
-        let path = maybe "??" zettelPath $ G.getZettel zid g
+        let path = maybe "??" Z.zettelPath $ G.getZettel zid g
         log W $ "Missing link in " <> toText path
       else log W $ show ln <> " missing links found across " <> show zn <> " notes (see Impulse)"
   uncurry reportError `mapM_` errors
@@ -167,23 +169,22 @@ genRouteHtml ::
   MonadIO m =>
   HeadHtml.HeadHtml ->
   Manifest ->
-  NeuronCache ->
-  RD.RouteDataCache ->
   Route a ->
+  a ->
   m ByteString
-genRouteHtml headHtml manifest cache rdCache r = do
+genRouteHtml headHtml manifest r val = do
   -- We do this verbose dance to make sure hydration happens only on Impulse route.
   -- Ideally, this should be abstracted out, but polymorphic types are a bitch.
   liftIO $ case r of
     Route_Impulse {} ->
       fmap snd . renderStatic . runHydratableT $ do
         -- FIXME: Injecting initial value here will break hydration on Impulse.
-        let cacheDyn = constDyn $ W.LoadableData Nothing
-        Html.renderRoutePage cacheDyn rdCache headHtml manifest r
+        let valDyn = constDyn $ W.unavailableData @a
+        Html.renderRoutePage headHtml manifest r valDyn
     _ ->
       fmap snd . renderStatic $ do
-        let cacheDyn = constDyn $ W.availableData cache
-        Html.renderRoutePage cacheDyn rdCache headHtml manifest r
+        let valDyn = constDyn $ W.availableData val
+        Html.renderRoutePage headHtml manifest r valDyn
 
 writeRouteHtml :: (MonadApp m, MonadIO m, WithLog env Message m) => Route a -> ByteString -> m ()
 writeRouteHtml r content = do

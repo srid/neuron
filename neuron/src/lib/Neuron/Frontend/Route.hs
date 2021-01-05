@@ -29,6 +29,7 @@ import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Reflex.Dom.Core
 import Relude
+import Text.URI (URI)
 
 type NeuronVersion = Tagged "NeuronVersion" Text
 
@@ -42,15 +43,25 @@ data Route a where
   Route_Impulse :: Maybe Tag -> Route (SiteData, Impulse)
   Route_ImpulseStatic :: Route (SiteData, Impulse)
 
+routeSiteData :: a -> Route a -> SiteData
+routeSiteData val = \case
+  Route_Zettel _ -> fst val
+  Route_Impulse _ -> fst val
+  Route_ImpulseStatic -> fst val
+
 -- | Site-wide data common to all routes.
 --
 -- Significance: changes to these data must regenerate the routes, even if the
 -- route-specific data hasn't changed.
 data SiteData = SiteData
   { siteDataTheme :: Theme,
-    siteDataNeuronVersion :: NeuronVersion,
-    -- editUrl from neuron.dhall
+    -- Config from neuron.dhall
+    siteDataSiteTitle :: Text,
+    siteDataSiteAuthor :: Maybe Text,
+    siteDataSiteBaseUrl :: Maybe URI,
     siteDataEditUrl :: Maybe Text,
+    -- Neuron's version
+    siteDataNeuronVersion :: NeuronVersion,
     -- Reference to `index.md` zettel if any.
     siteDataIndexZettel :: Maybe Zettel
   }
