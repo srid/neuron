@@ -28,19 +28,23 @@ import Neuron.Zettelkasten.Query.Eval
   )
 import Neuron.Zettelkasten.Zettel
   ( ZettelC,
-    ZettelT (zettelContent),
+    ZettelT (..),
     sansContent,
   )
-import Relude
+import Relude hiding (traceShowId)
 import qualified Text.Pandoc.Util as P
 
 mkZettelData :: NeuronCache -> ZettelC -> ZettelData
 mkZettelData NeuronCache {..} zC = do
   let z = sansContent zC
-      urls = either (const []) (P.getLinks . zettelContent) zC
-      qurlcache = buildQueryUrlCache (G.getZettels _neuronCache_graph) urls
       upTree = G.backlinkForest Folgezettel z _neuronCache_graph
       backlinks = G.backlinks isJust z _neuronCache_graph
+      allUrls =
+        -- Gather urls from zettel content, and ...
+        either (const []) (P.getLinks . zettelContent) zC
+          -- Gather urls from backlinks
+          <> concat (P.getLinks . snd . fst <$> backlinks)
+      qurlcache = buildQueryUrlCache (G.getZettels _neuronCache_graph) allUrls
   ZettelData zC qurlcache upTree backlinks _neuronCache_graph
 
 mkImpulseData :: NeuronCache -> Impulse
