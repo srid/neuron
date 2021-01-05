@@ -13,7 +13,8 @@ import qualified Data.Map.Strict as Map
 import Data.Some (Some (..), withSome)
 import qualified Data.Text as T
 import Neuron.Frontend.Route (NeuronWebT)
-import Neuron.Plugin.PluginData (PluginData (..))
+import Neuron.Frontend.Route.Data.Types
+import Neuron.Plugin.PluginData
 import qualified Neuron.Plugin.Plugins.DirTree as DirTree
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import Neuron.Plugin.Type (Plugin (..))
@@ -27,22 +28,22 @@ import Reflex.Dom.Widget (blank)
 import Relude
 import qualified System.Directory.Contents.Types as DC
 
-type PluginRegistry = Map (Some PluginData) (Some Plugin)
+type PluginRegistry = Map (Some PluginZettelData) (Some Plugin)
 
 pluginRegistryShow :: PluginRegistry -> Text
 pluginRegistryShow r =
   T.intercalate ", " $
     Map.keys r <&> \case
-      Some PluginData_DirTree -> "dirtree"
-      Some PluginData_NeuronIgnore -> "neuronignore"
+      Some PluginZettelData_DirTree -> "dirtree"
+      Some PluginZettelData_NeuronIgnore -> "neuronignore"
 
 lookupPlugins :: [Text] -> PluginRegistry
 lookupPlugins = Map.fromList . mapMaybe lookupPlugin
   where
-    lookupPlugin :: Text -> Maybe (Some PluginData, Some Plugin)
+    lookupPlugin :: Text -> Maybe (Some PluginZettelData, Some Plugin)
     lookupPlugin = \case
-      "dirtree" -> Just (Some PluginData_DirTree, Some DirTree.plugin)
-      "neuronignore" -> Just (Some PluginData_NeuronIgnore, Some NeuronIgnore.plugin)
+      "dirtree" -> Just (Some PluginZettelData_DirTree, Some DirTree.plugin)
+      "neuronignore" -> Just (Some PluginZettelData_NeuronIgnore, Some NeuronIgnore.plugin)
       _ -> Nothing
 
 filterSources :: PluginRegistry -> DC.DirTree FilePath -> IO (Maybe (DC.DirTree FilePath))
@@ -52,7 +53,7 @@ filterSources plugins t = do
       combiner = \ima f -> (fmap join . traverse f) =<< ima
   foldl' combiner (pure $ Just t) applyF
 
-afterZettelParse :: PluginRegistry -> [(ZettelID, (FilePath, (Text, DMap PluginData Identity)))] -> [ZettelC]
+afterZettelParse :: PluginRegistry -> [(ZettelID, (FilePath, (Text, DMap PluginZettelData Identity)))] -> [ZettelC]
 afterZettelParse plugins fs = do
   parseZettels extractQueriesWithContext fs <&> \z ->
     foldl' (\z1 f -> f z1) z (plugins <&> \sp -> withSome sp _plugin_afterZettelParse)
@@ -61,9 +62,16 @@ afterZettelRead :: MonadState (Map ZettelID ZIDRef) m => PluginRegistry -> DC.Di
 afterZettelRead plugins fileTree = do
   forM_ (plugins <&> \sp -> withSome sp _plugin_afterZettelRead) $ \f -> f fileTree
 
-renderPluginPanel :: (DomBuilder t m, PostBuild t m) => ZettelGraph -> DSum PluginData Identity -> NeuronWebT t m ()
-renderPluginPanel graph = \case
-  PluginData_DirTree :=> Identity t ->
-    DirTree.renderPanel graph t
-  PluginData_NeuronIgnore :=> Identity () ->
+routePluginData :: ZettelGraph -> DSum PluginZettelData Identity -> DSum PluginZettelRouteData Identity
+routePluginData g = \case
+  PluginZettelData_DirTree :=> Identity dirTree ->
+    PluginZettelRouteData_DirTree :=> Identity (DirTree.routePluginData g dirTree)
+  PluginZettelData_NeuronIgnore :=> Identity () ->
+    PluginZettelRouteData_NeuronIgnore :=> Identity ()
+
+renderPluginPanel :: (DomBuilder t m, PostBuild t m) => DSum PluginZettelRouteData Identity -> NeuronWebT t m ()
+renderPluginPanel = \case
+  PluginZettelRouteData_DirTree :=> Identity t ->
+    DirTree.renderPanel t
+  PluginZettelRouteData_NeuronIgnore :=> Identity () ->
     blank

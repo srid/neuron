@@ -16,7 +16,7 @@ import Data.Some (Some (..))
 import Data.TagTree (Tag, unTag)
 import qualified Data.Text as T
 import Neuron.Markdown (parseMarkdown)
-import Neuron.Plugin.PluginData (PluginData)
+import Neuron.Plugin.PluginData (PluginZettelData)
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
@@ -38,7 +38,7 @@ parseZettel ::
   FilePath ->
   ZettelID ->
   Text ->
-  DMap PluginData Identity ->
+  DMap PluginZettelData Identity ->
   ZettelC
 parseZettel queryExtractor fn zid s pluginData = do
   case parseMarkdown fn s of
@@ -80,7 +80,7 @@ parseZettel queryExtractor fn zid s pluginData = do
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
   QueryExtractor ->
-  [(ZettelID, (FilePath, (Text, DMap PluginData Identity)))] ->
+  [(ZettelID, (FilePath, (Text, DMap PluginZettelData Identity)))] ->
   [ZettelC]
 parseZettels queryExtractor files =
   flip fmap files $ \(zid, (path, (s, pluginData))) ->

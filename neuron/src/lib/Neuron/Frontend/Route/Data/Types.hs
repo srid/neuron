@@ -1,8 +1,11 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -10,13 +13,20 @@
 -- | Neuron's route and its config
 module Neuron.Frontend.Route.Data.Types where
 
+import Data.Aeson.GADT.TH (deriveJSONGADT)
+import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Default (Default (..))
+import Data.Dependent.Map (DMap)
+import Data.GADT.Compare.TH
+  ( DeriveGCompare (deriveGCompare),
+    DeriveGEQ (deriveGEq),
+  )
+import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Tagged (Tagged)
 import Data.Tree (Forest)
 import Neuron.Frontend.Manifest (Manifest)
 import Neuron.Frontend.Theme (Theme)
 import Neuron.Zettelkasten.Connection (ContextualConnection)
-import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
 import Neuron.Zettelkasten.Zettel
@@ -61,10 +71,8 @@ data ZettelData = ZettelData
     zettelDataQueryUrlCache :: QueryUrlCache,
     zettelDataUptree :: Forest Zettel,
     zettelDataBacklinks :: [(ContextualConnection, Zettel)],
-    -- TODO: eliminate, after working on plugin data stuff
-    zettelDataGraph :: ZettelGraph
+    zettelDataPlugin :: DMap PluginZettelRouteData Identity
   }
-  deriving (Eq)
 
 -- | The value needed to render the Impulse page
 --
@@ -86,3 +94,26 @@ data Stats = Stats
     statsZettelConnectionCount :: Int
   }
   deriving (Eq, Show)
+
+-- Plugin types
+
+data DirZettelVal = DirZettelVal
+  { dirZettelValChildren :: [Zettel],
+    dirZettelValParent :: Maybe Zettel
+  }
+  deriving (Eq, Show)
+
+instance Default DirZettelVal where
+  def = DirZettelVal mempty Nothing
+
+data PluginZettelRouteData routeData where
+  PluginZettelRouteData_DirTree :: PluginZettelRouteData DirZettelVal
+  PluginZettelRouteData_NeuronIgnore :: PluginZettelRouteData ()
+
+deriveArgDict ''PluginZettelRouteData
+deriveJSONGADT ''PluginZettelRouteData
+deriveGEq ''PluginZettelRouteData
+deriveGShow ''PluginZettelRouteData
+deriveGCompare ''PluginZettelRouteData
+
+deriving instance Eq ZettelData

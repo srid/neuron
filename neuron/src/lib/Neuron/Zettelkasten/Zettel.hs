@@ -35,7 +35,7 @@ import Data.TagTree (Tag, TagQuery)
 import Data.Tagged (Tagged (Tagged))
 import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Markdown (ZettelParseError)
-import Neuron.Plugin.PluginData (PluginData)
+import Neuron.Plugin.PluginData (PluginZettelData)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Query.Theme (ZettelsView)
@@ -77,7 +77,7 @@ data ZettelT c = Zettel
     -- | List of all queries in the zettel
     zettelQueries :: [(Some ZettelQuery, [Block])],
     zettelContent :: c,
-    zettelPluginData :: DMap PluginData Identity
+    zettelPluginData :: DMap PluginZettelData Identity
   }
   deriving (Generic)
 

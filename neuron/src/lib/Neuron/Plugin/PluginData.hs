@@ -9,6 +9,8 @@
 
 -- | This module should be remain as independent as possible, as it is imported
 -- by Zettel.hs, and we want to avoid cyclic dependencies.
+--
+-- See also Route.Data.Types where PluginZettelRouteData is defined.
 module Neuron.Plugin.PluginData where
 
 import Data.Aeson
@@ -27,8 +29,8 @@ import Relude
 data DirZettel = DirZettel
   { -- | What to tag this directory zettel.
     -- We expect the arity here to be 1-2. 1 for the simplest case; and 2, if
-    -- both Foo/ and Foo.md exists (with the later being positioned *elsewhere*
-    -- in the tree, with its own parent directory)
+    -- both Foo/ and Foo.md exists, with the later being positioned *elsewhere*
+    -- in the tree, with its own parent directory.
     _dirZettel_tags :: Set Tag,
     -- | The tag used by its child zettels (directories and files)
     _dirZettel_childrenTag :: Tag,
@@ -38,15 +40,16 @@ data DirZettel = DirZettel
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 -- Every zettel is associated with custom data for each plugin.
-data PluginData a where
+-- TODO: Rename to PluginZettelData
+data PluginZettelData a where
   -- | Tag (and another optional tag, if the user's directory zettel is
   -- positioned in a *different* directory) and parent zettel associated with a
   -- directory zettel
-  PluginData_DirTree :: PluginData DirZettel
-  PluginData_NeuronIgnore :: PluginData ()
+  PluginZettelData_DirTree :: PluginZettelData DirZettel
+  PluginZettelData_NeuronIgnore :: PluginZettelData ()
 
-deriveArgDict ''PluginData
-deriveJSONGADT ''PluginData
-deriveGEq ''PluginData
-deriveGShow ''PluginData
-deriveGCompare ''PluginData
+deriveArgDict ''PluginZettelData
+deriveJSONGADT ''PluginZettelData
+deriveGEq ''PluginZettelData
+deriveGShow ''PluginZettelData
+deriveGCompare ''PluginZettelData

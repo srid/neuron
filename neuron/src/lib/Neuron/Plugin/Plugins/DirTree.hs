@@ -10,22 +10,26 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Plugin.Plugins.DirTree (plugin, renderPanel) where
+module Neuron.Plugin.Plugins.DirTree (plugin, routePluginData, renderPanel) where
 
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Some (Some (Some))
-import Data.TagTree (Tag, TagNode (..), TagQuery (..))
+import Data.TagTree (Tag, TagNode (..), TagQuery (..), mkDefaultTagQuery)
 import qualified Data.TagTree as Tag
 import qualified Data.Text as T
 import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route (NeuronWebT)
+import Neuron.Frontend.Route.Data.Types
 import Neuron.Frontend.Widget
   ( ListItem (ListItem_File, ListItem_Folder),
     listItem,
   )
-import Neuron.Plugin.PluginData (DirZettel (..), PluginData (PluginData_DirTree))
+import Neuron.Plugin.PluginData
+  ( DirZettel (..),
+    PluginZettelData (PluginZettelData_DirTree),
+  )
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
@@ -42,7 +46,7 @@ import System.FilePath (takeDirectory, takeFileName)
 
 -- Directory zettels using this plugin are associated with a `Tag` that
 -- corresponds to the directory contents.
-plugin :: Plugin DirZettel
+plugin :: Plugin DirZettelVal
 plugin =
   def
     { _plugin_afterZettelRead = injectDirectoryZettels,
@@ -50,17 +54,22 @@ plugin =
       _plugin_renderPanel = renderPanel
     }
 
-renderPanel :: (DomBuilder t m, PostBuild t m) => ZettelGraph -> DirZettel -> NeuronWebT t m ()
-renderPanel graph DirZettel {..} = do
+routePluginData :: ZettelGraph -> DirZettel -> DirZettelVal
+routePluginData g DirZettel {..} =
+  let childrenQuery = mkDefaultTagQuery $ one $ Tag.mkTagPatternFromTag _dirZettel_childrenTag
+      children = Q.zettelsByTag (G.getZettels g) childrenQuery
+      mparent = flip G.getZettel g =<< _dirZettel_dirParent
+   in DirZettelVal children mparent
+
+renderPanel :: (DomBuilder t m, PostBuild t m) => DirZettelVal -> NeuronWebT t m ()
+renderPanel DirZettelVal {..} = do
   elClass "nav" "ui attached deemphasized segment dirfolge" $ do
     el "h3" $ text "Directory contents"
     divClass "ui list" $ do
-      let q = TagQuery_Or $ one $ Tag.mkTagPatternFromTag _dirZettel_childrenTag
-      let children = Q.zettelsByTag (G.getZettels graph) q
-      whenJust (flip G.getZettel graph =<< _dirZettel_dirParent) $ \parZ ->
+      whenJust dirZettelValParent $ \parZ ->
         listItem ListItem_Folder $
           Q.renderZettelLink (Just $ text "..") Nothing Nothing parZ
-      forM_ children $ \cz ->
+      forM_ dirZettelValChildren $ \cz ->
         listItem (bool ListItem_File ListItem_Folder $ isDirectoryZettel cz) $
           Q.renderZettelLink Nothing (Just Folgezettel) Nothing cz
 
@@ -75,14 +84,14 @@ addTagAndQuery z =
     }
   where
     dirZettelTags = fromMaybe Set.empty $ do
-      case runIdentity <$> DMap.lookup PluginData_DirTree (zettelPluginData z) of
+      case runIdentity <$> DMap.lookup PluginZettelData_DirTree (zettelPluginData z) of
         Just DirZettel {..} ->
           pure _dirZettel_tags
         Nothing ->
           -- Regular zettel
           pure $ maybe Set.empty Set.singleton $ parentDirTag $ zettelPath z
     childrenTagQuery = do
-      DirZettel {..} <- runIdentity <$> DMap.lookup PluginData_DirTree (zettelPluginData z)
+      DirZettel {..} <- runIdentity <$> DMap.lookup PluginZettelData_DirTree (zettelPluginData z)
       let q = TagQuery_Or $ one $ Tag.mkTagPatternFromTag _dirZettel_childrenTag
       pure $ Some $ ZettelQuery_ZettelsByTag q Folgezettel def
 
@@ -93,7 +102,7 @@ injectDirectoryZettels = \case
         dirZettelId = ZettelID $ if dirName == "." then indexZettelName else toText dirName
         parDirName = takeFileName (takeDirectory absPath)
         parDirZettelId = ZettelID $ if parDirName == "." then indexZettelName else toText parDirName
-        mkPluginData tags = DMap.singleton PluginData_DirTree $ Identity $ DirZettel tags (tagFromPath absPath) (Just parDirZettelId)
+        mkPluginData tags = DMap.singleton PluginZettelData_DirTree $ Identity $ DirZettel tags (tagFromPath absPath) (Just parDirZettelId)
     -- Don't create folgezettel from index zettel. Why?
     -- - To avoid surprise when legacy notebooks with innuermous top level
     -- zettels use this feature.
@@ -104,7 +113,7 @@ injectDirectoryZettels = \case
       gets (Map.lookup dirZettelId) >>= \case
         Just (ZIDRef_Available p s pluginDataPrev) -> do
           -- A zettel with this directory name was already registered. Deal with it.
-          case runIdentity <$> DMap.lookup PluginData_DirTree pluginDataPrev of
+          case runIdentity <$> DMap.lookup PluginZettelData_DirTree pluginDataPrev of
             Just _ -> do
               -- A *directory* zettel of this name was already added.
               -- Ambiguous directories disallowed! For eg., you can't have
@@ -159,6 +168,6 @@ rootTag = TagNode "root"
 
 isDirectoryZettel :: ZettelT content -> Bool
 isDirectoryZettel (zettelPluginData -> pluginData) =
-  case DMap.lookup PluginData_DirTree pluginData of
+  case DMap.lookup PluginZettelData_DirTree pluginData of
     Just _ -> True
     _ -> False

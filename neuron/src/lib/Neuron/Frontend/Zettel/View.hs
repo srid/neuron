@@ -29,7 +29,7 @@ import qualified Data.Tree as Tree
 import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route (NeuronWebT, Route (..))
 import qualified Neuron.Frontend.Route as R
-import Neuron.Frontend.Route.Data.Types (SiteData, ZettelData)
+import Neuron.Frontend.Route.Data.Types (SiteData, ZettelData (zettelDataPlugin))
 import qualified Neuron.Frontend.Route.Data.Types as R
 import Neuron.Frontend.Theme (Theme)
 import qualified Neuron.Frontend.Theme as Theme
@@ -37,9 +37,8 @@ import Neuron.Frontend.Widget (elPreOverflowing, elTime, semanticIcon)
 import qualified Neuron.Frontend.Widget.AutoScroll as AS
 import qualified Neuron.Frontend.Widget.InvertedTree as IT
 import Neuron.Markdown (ZettelParseError)
-import Neuron.Plugin (renderPluginPanel)
-import Neuron.Zettelkasten.Graph (ZettelGraph)
-import qualified Neuron.Zettelkasten.Graph as G
+import qualified Neuron.Plugin as Plugin
+import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
@@ -83,11 +82,10 @@ renderZettel siteData zData = do
     divClass "zettel-view" $ do
       let zc = R.zettelDataZettel zData
           z = sansContent zc
-          graph = R.zettelDataGraph zData
       renderZettelContentCard rdpConfig zc
-      forM_ (DMap.toList $ zettelPluginData z) $ \pluginData ->
-        renderPluginPanel graph pluginData
-      renderZettelBottomPane graph rdpConfig z
+      forM_ (DMap.toList $ zettelDataPlugin zData) $ \pluginData ->
+        Plugin.renderPluginPanel pluginData
+      renderZettelBottomPane zData rdpConfig z
       renderBottomMenu
         (constDyn $ R.siteDataTheme siteData)
         (constDyn $ R.siteDataIndexZettel siteData)
@@ -116,27 +114,16 @@ renderZettelContentCard rdpConfig zc =
 
 renderZettelBottomPane ::
   (PandocBuilder t m, PostBuild t m) =>
-  ZettelGraph ->
+  ZettelData ->
   Config t (NeuronWebT t m) () ->
   Zettel ->
   NeuronWebT t m ()
-renderZettelBottomPane graph rdpConfig z@Zettel {..} = do
-  let backlinks = nonEmpty $ G.backlinks isJust z graph
+renderZettelBottomPane zData rdpConfig Zettel {..} = do
+  let backlinks = nonEmpty $ R.zettelDataBacklinks zData
       tags = nonEmpty $ toList zettelTags
-  whenJust (() <$ backlinks <|> () <$ tags) $ \() -> do
+  when (isJust backlinks || isJust tags) $ do
     elClass "nav" "ui attached segment deemphasized bottomPane" $ do
-      -- Backlinks
-      whenJust backlinks $ \links -> do
-        elClass "h3" "ui header" $ text "Backlinks"
-        elClass "ul" "backlinks" $ do
-          forM_ links $ \((conn, ctxList), zl) ->
-            el "li" $ do
-              Q.renderZettelLink Nothing (Just conn) def zl
-              elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
-                forM_ ctxList $ \ctx -> do
-                  elClass "li" "item" $ do
-                    void $ elPandoc rdpConfig $ Pandoc mempty [ctx]
-      -- Tags
+      whenJust backlinks (renderBacklinks rdpConfig)
       whenJust tags renderTags
 
 renderBottomMenu ::
@@ -207,6 +194,22 @@ renderZettelRawContent Zettel {..} = do
 renderZettelParseError :: DomBuilder t m => ZettelParseError -> m ()
 renderZettelParseError err =
   el "p" $ elPreOverflowing $ text $ untag err
+
+renderBacklinks ::
+  (PandocBuilder t m, PostBuild t m) =>
+  Config t (NeuronWebT t m) () ->
+  NonEmpty (ContextualConnection, Zettel) ->
+  NeuronWebT t m ()
+renderBacklinks rdpConfig links = do
+  elClass "h3" "ui header" $ text "Backlinks"
+  elClass "ul" "backlinks" $ do
+    forM_ links $ \((conn, ctxList), zl) ->
+      el "li" $ do
+        Q.renderZettelLink Nothing (Just conn) def zl
+        elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
+          forM_ ctxList $ \ctx -> do
+            elClass "li" "item" $ do
+              void $ elPandoc rdpConfig $ Pandoc mempty [ctx]
 
 renderTags :: (DomBuilder t m, PostBuild t m) => NonEmpty Tag -> NeuronWebT t m ()
 renderTags tags = do
