@@ -12,7 +12,7 @@ where
 import Control.Monad.Writer.Strict
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
-import Neuron.Zettelkasten.Connection
+import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Query.Eval (queryConnections)

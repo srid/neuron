@@ -12,7 +12,13 @@ module Neuron.Frontend.Route.Data where
 import Neuron.Cache.Type (NeuronCache (..))
 import qualified Neuron.Config.Type as Config
 import qualified Neuron.Frontend.Impulse as Impulse
+import Neuron.Frontend.Manifest (Manifest)
 import Neuron.Frontend.Route
+  ( HeadHtml,
+    Impulse,
+    SiteData (SiteData),
+    ZettelData (ZettelData),
+  )
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
@@ -21,6 +27,10 @@ import Neuron.Zettelkasten.Query.Eval
   ( buildQueryUrlCache,
   )
 import Neuron.Zettelkasten.Zettel
+  ( ZettelC,
+    ZettelT (zettelContent),
+    sansContent,
+  )
 import Relude
 import qualified Text.Pandoc.Util as P
 
@@ -37,12 +47,12 @@ mkImpulseData :: NeuronCache -> Impulse
 mkImpulseData NeuronCache {..} =
   Impulse.buildImpulse _neuronCache_graph _neuronCache_errors
 
-mkSiteData :: NeuronCache -> SiteData
-mkSiteData NeuronCache {..} =
+mkSiteData :: NeuronCache -> HeadHtml -> Manifest -> SiteData
+mkSiteData NeuronCache {..} headHtml manifest =
   let theme = Theme.mkTheme $ Config.theme _neuronCache_config
       siteTitle = Config.siteTitle _neuronCache_config
       siteAuthor = Config.author _neuronCache_config
       baseUrl = join $ Config.getSiteBaseUrl _neuronCache_config
       indexZettel = G.getZettel indexZid _neuronCache_graph
       editUrl = Config.editUrl _neuronCache_config
-   in SiteData theme siteTitle siteAuthor baseUrl editUrl _neuronCache_neuronVersion indexZettel
+   in SiteData theme siteTitle siteAuthor baseUrl editUrl headHtml manifest _neuronCache_neuronVersion indexZettel

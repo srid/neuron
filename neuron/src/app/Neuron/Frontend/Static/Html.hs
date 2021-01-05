@@ -12,9 +12,10 @@ module Neuron.Frontend.Static.Html where
 
 import Control.Monad.Fix (MonadFix)
 import Data.FileEmbed (embedOneStringFileOf)
-import Neuron.Frontend.Manifest (Manifest, renderManifest)
-import Neuron.Frontend.Route (Route (..), routeConfig, runNeuronWeb)
-import Neuron.Frontend.Static.HeadHtml (HeadHtml, renderHeadHtml)
+import Neuron.Frontend.Manifest (renderManifest)
+import Neuron.Frontend.Route (Route (..))
+import qualified Neuron.Frontend.Route as R
+import Neuron.Frontend.Static.HeadHtml (renderHeadHtml)
 import Neuron.Frontend.Static.StructuredData (renderStructuredData)
 import qualified Neuron.Frontend.View as V
 import qualified Neuron.Frontend.Widget as W
@@ -41,25 +42,19 @@ renderRoutePage ::
     PerformEvent t m,
     TriggerEvent t m
   ) =>
-  HeadHtml ->
-  Manifest ->
   Route a ->
   Dynamic t (W.LoadableData a) ->
   m ()
-renderRoutePage headHtml manifest r val = do
+renderRoutePage r val = do
   el "html" $ do
     el "head" $ do
-      -- TODO: replace passing config (siteTitle), with using RD
-      -- Actually ... put version, theme, siteTitle (config stuff) in one common
-      -- dyn, and rebuild all. Actually, just rebuild all on any neuron.dhall
-      -- change. Wait a sec, just split `NeuronCache` into neuron.dhall/neuron
-      -- (cfg+ver) fields, and zk field (graph+errs), then holdDyn on them.
       V.headTemplate r val
-      renderHeadHtml headHtml
-      renderManifest manifest
       W.loadingWidget' val blank (const blank) $ \valDyn ->
         dyn_ $
-          renderStructuredData r <$> valDyn
+          ffor valDyn $ \v -> do
+            renderHeadHtml $ R.siteDataHeadHtml (R.routeSiteData v r)
+            renderManifest $ R.siteDataManifest (R.routeSiteData v r)
+            renderStructuredData r v
       () <- case r of
         Route_Impulse {} ->
           elImpulseJS
@@ -71,13 +66,13 @@ renderRoutePage headHtml manifest r val = do
     el "body" $ do
       () <- case r of
         Route_Impulse {} -> do
-          runNeuronWeb routeConfig $
+          R.runNeuronWeb R.routeConfig $
             V.renderRouteImpulse val
         Route_ImpulseStatic {} -> do
-          runNeuronWeb routeConfig $
+          R.runNeuronWeb R.routeConfig $
             V.renderRouteImpulse val
         Route_Zettel {} -> do
-          runNeuronWeb routeConfig $
+          R.runNeuronWeb R.routeConfig $
             V.renderRouteZettel val
       pure ()
 

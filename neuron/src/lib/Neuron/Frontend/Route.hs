@@ -10,12 +10,14 @@
 -- | Neuron's route and its config
 module Neuron.Frontend.Route where
 
+import Data.Default
 import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some, withSome)
 import Data.TagTree (Tag, unTag)
 import Data.Tagged (Tagged)
 import Data.Tree (Forest)
+import Neuron.Frontend.Manifest (Manifest)
 import Neuron.Frontend.Theme (Theme)
 import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
@@ -49,6 +51,14 @@ routeSiteData val = \case
   Route_Impulse _ -> fst val
   Route_ImpulseStatic -> fst val
 
+-- TODO: Move all these special types to Route.Data.Types?
+
+newtype HeadHtml = HeadHtml (Maybe Text)
+  deriving (Eq)
+
+instance Default HeadHtml where
+  def = HeadHtml Nothing
+
 -- | Site-wide data common to all routes.
 --
 -- Significance: changes to these data must regenerate the routes, even if the
@@ -60,6 +70,9 @@ data SiteData = SiteData
     siteDataSiteAuthor :: Maybe Text,
     siteDataSiteBaseUrl :: Maybe URI,
     siteDataEditUrl :: Maybe Text,
+    -- Data from filesystem
+    siteDataHeadHtml :: HeadHtml,
+    siteDataManifest :: Manifest,
     -- Neuron's version
     siteDataNeuronVersion :: NeuronVersion,
     -- Reference to `index.md` zettel if any.

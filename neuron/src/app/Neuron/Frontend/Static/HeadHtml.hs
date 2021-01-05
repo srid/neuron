@@ -11,7 +11,8 @@ module Neuron.Frontend.Static.HeadHtml
 where
 
 import Neuron.CLI.Types (MonadApp (getNotesDir))
-import Reflex.Dom.Core
+import Neuron.Frontend.Route (HeadHtml (..))
+import Reflex.Dom.Core (blank, elAttr, (=:))
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Pandoc.PandocRaw (PandocRaw (..))
 import Relude
@@ -19,8 +20,6 @@ import System.Directory (doesFileExist)
 import qualified System.Directory.Contents as DC
 import System.FilePath ((</>))
 import Text.Pandoc.Definition (Format (..))
-
-newtype HeadHtml = HeadHtml (Maybe Text)
 
 getHeadHtmlFromTree :: (MonadIO m, MonadApp m) => DC.DirTree FilePath -> m HeadHtml
 getHeadHtmlFromTree fileTree = do

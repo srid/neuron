@@ -17,6 +17,7 @@ module Neuron.Reactor where
 import Colog (WithLog, log)
 import Control.Monad.Fix (MonadFix)
 import Control.Monad.Writer.Strict (runWriter, tell)
+import Data.Dependent.Sum (DSum ((:=>)))
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -35,7 +36,6 @@ import qualified Neuron.Cache.Type as Cache
 import Neuron.Config (getConfig)
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
-import Neuron.Frontend.Manifest (Manifest)
 import qualified Neuron.Frontend.Manifest as Manifest
 import Neuron.Frontend.Route (Route (Route_Impulse), routeHtmlPath)
 import qualified Neuron.Frontend.Route as Z
@@ -102,8 +102,6 @@ generateSite continueMonitoring = do
     doGen :: App ()
     doGen = do
       (cache, zs, fileTree) <- loadZettelkasten =<< getConfig
-      let siteData = RD.mkSiteData cache
-          impulseData = RD.mkImpulseData cache
       -- Static files
       case DC.walkContents "static" fileTree of
         Just staticTree@(DC.DirTree_Dir _ _) -> do
@@ -112,19 +110,30 @@ generateSite continueMonitoring = do
           DC.rsyncDir notesDir outputDir staticTree
         _ ->
           pure ()
+      -- Build all routes, and their data
       headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
       let manifest = Manifest.mkManifestFromTree fileTree
-      -- +2 for Impulse routes
-      log D $ "Rendering routes (" <> show (length zs + 2) <> " slugs) ..."
-      -- Do it
-      let wH :: Route a -> a -> App ()
-          wH r val = writeRouteHtml r =<< genRouteHtml headHtml manifest r val
-      forM_ zs $ \zC -> do
-        let z = Z.sansContent zC
-            zettelData = RD.mkZettelData cache zC
-        wH (Z.Route_Zettel $ Z.zettelSlug z) (siteData, zettelData)
-      wH (Z.Route_Impulse Nothing) (siteData, impulseData)
-      wH Z.Route_ImpulseStatic (siteData, impulseData)
+          siteData = RD.mkSiteData cache headHtml manifest
+          impulseData = RD.mkImpulseData cache
+          impulseRouteData = (siteData, impulseData)
+          mkZettelRoute zC =
+            let z = Z.sansContent zC
+                zettelData = RD.mkZettelData cache zC
+             in Z.Route_Zettel (Z.zettelSlug z) :=> Identity (siteData, zettelData)
+          routes :: [DSum Route Identity] =
+            (Z.Route_Impulse Nothing :=> Identity impulseRouteData) :
+            (Z.Route_ImpulseStatic :=> Identity impulseRouteData) :
+            fmap mkZettelRoute zs
+      -- Render and write the routes
+      log D $ "Rendering routes (" <> show (length routes) <> " slugs) ..."
+      _ :: [()] <- forM routes $ \case
+        r@(Z.Route_Zettel _) :=> Identity val ->
+          writeRouteHtml r =<< genRouteHtml r val
+        r@(Z.Route_Impulse _) :=> Identity val ->
+          writeRouteHtml r =<< genRouteHtml r val
+        r@Z.Route_ImpulseStatic :=> Identity val ->
+          writeRouteHtml r =<< genRouteHtml r val
+      -- Report any errors and finish.
       reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
       getOutputDir >>= \(toText -> outputDir) ->
         log (I' Done) $ "Finished generating at " <> outputDir
@@ -167,12 +176,10 @@ reportAllErrors g issues = do
 genRouteHtml ::
   forall m a.
   MonadIO m =>
-  HeadHtml.HeadHtml ->
-  Manifest ->
   Route a ->
   a ->
   m ByteString
-genRouteHtml headHtml manifest r val = do
+genRouteHtml r val = do
   -- We do this verbose dance to make sure hydration happens only on Impulse route.
   -- Ideally, this should be abstracted out, but polymorphic types are a bitch.
   liftIO $ case r of
@@ -180,11 +187,11 @@ genRouteHtml headHtml manifest r val = do
       fmap snd . renderStatic . runHydratableT $ do
         -- FIXME: Injecting initial value here will break hydration on Impulse.
         let valDyn = constDyn $ W.unavailableData @a
-        Html.renderRoutePage headHtml manifest r valDyn
+        Html.renderRoutePage r valDyn
     _ ->
       fmap snd . renderStatic $ do
         let valDyn = constDyn $ W.availableData val
-        Html.renderRoutePage headHtml manifest r valDyn
+        Html.renderRoutePage r valDyn
 
 writeRouteHtml :: (MonadApp m, MonadIO m, WithLog env Message m) => Route a -> ByteString -> m ()
 writeRouteHtml r content = do
