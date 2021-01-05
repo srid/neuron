@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -20,6 +21,7 @@ import Control.Monad.Writer.Strict (runWriter, tell)
 import Data.Dependent.Sum (DSum ((:=>)))
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
+import Data.Some
 import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Neuron.CLI.Logging
@@ -111,6 +113,7 @@ generateSite continueMonitoring = do
         _ ->
           pure ()
       -- Build all routes, and their data
+      -- log D "Building route data ..."
       headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
       let manifest = Manifest.mkManifestFromTree fileTree
           siteData = RD.mkSiteData cache headHtml manifest
@@ -120,19 +123,24 @@ generateSite continueMonitoring = do
             let z = Z.sansContent zC
                 zettelData = RD.mkZettelData cache zC
              in Z.Route_Zettel (Z.zettelSlug z) :=> Identity (siteData, zettelData)
-          routes :: [DSum Route Identity] =
+          !routes =
             (Z.Route_Impulse Nothing :=> Identity impulseRouteData) :
             (Z.Route_ImpulseStatic :=> Identity impulseRouteData) :
             fmap mkZettelRoute zs
       -- Render and write the routes
       log D $ "Rendering routes (" <> show (length routes) <> " slugs) ..."
-      _ :: [()] <- forM routes $ \case
-        r@(Z.Route_Zettel _) :=> Identity val ->
-          writeRouteHtml r =<< genRouteHtml r val
+      -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
+      -- Second bottleneck is graph building.
+      !routeHtml <- forM routes $ \case
+        r@(Z.Route_Zettel _) :=> Identity val -> do
+          (Some r,) <$> genRouteHtml r val
         r@(Z.Route_Impulse _) :=> Identity val ->
-          writeRouteHtml r =<< genRouteHtml r val
+          (Some r,) <$> genRouteHtml r val
         r@Z.Route_ImpulseStatic :=> Identity val ->
-          writeRouteHtml r =<< genRouteHtml r val
+          (Some r,) <$> genRouteHtml r val
+      -- log D "Writing to disk ..."
+      forM_ routeHtml $ \(someR, html) -> do
+        flip writeRouteHtml html `foldSome` someR
       -- Report any errors and finish.
       reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
       getOutputDir >>= \(toText -> outputDir) ->
@@ -308,7 +316,7 @@ loadZettelkastenFromFiles ::
       Map ZettelID ZettelIssue
     )
 loadZettelkastenFromFiles plugins fileTree = do
-  zidRefs <-
+  !zidRefs <-
     case DC.pruneDirTree =<< DC.filterDirTree ((== ".md") . takeExtension) fileTree of
       Nothing ->
         pure mempty
@@ -333,6 +341,6 @@ loadZettelkastenFromFiles plugins fileTree = do
             pure Nothing
           R.ZIDRef_Available fp s pluginData ->
             pure $ Just (fp, (s, pluginData))
-      let zs = Plugin.afterZettelParse plugins (Map.toList filesWithContent)
-      g <- G.buildZettelkasten zs
+      let !zs = Plugin.afterZettelParse plugins (Map.toList filesWithContent)
+      !g <- G.buildZettelkasten zs
       pure (g, zs)

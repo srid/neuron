@@ -9,6 +9,7 @@
 
 module Neuron.Frontend.Route.Data where
 
+import qualified Data.Set as Set
 import Neuron.Cache.Type (NeuronCache (..))
 import qualified Neuron.Config.Type as Config
 import qualified Neuron.Frontend.Impulse as Impulse
@@ -39,11 +40,13 @@ mkZettelData NeuronCache {..} zC = do
   let z = sansContent zC
       upTree = G.backlinkForest Folgezettel z _neuronCache_graph
       backlinks = G.backlinks isJust z _neuronCache_graph
+      -- All URLs we expect to see in the final HTML.
       allUrls =
-        -- Gather urls from zettel content, and ...
-        either (const []) (P.getLinks . zettelContent) zC
-          -- Gather urls from backlinks
-          <> concat (P.getLinks . snd . fst <$> backlinks)
+        Set.toList . Set.fromList $
+          -- Gather urls from zettel content, and ...
+          either (const []) (P.getLinks . zettelContent) zC
+            -- Gather urls from backlinks context.
+            <> concat (P.getLinks . snd . fst <$> backlinks)
       qurlcache = buildQueryUrlCache (G.getZettels _neuronCache_graph) allUrls
   ZettelData zC qurlcache upTree backlinks _neuronCache_graph
 

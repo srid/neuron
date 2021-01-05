@@ -20,7 +20,7 @@ import qualified System.Directory.Contents.Types as DC
 -- | What does a Zettel ID refer to?
 data ZIDRef
   = -- | The ZID maps to a file on disk with the given contents
-    ZIDRef_Available FilePath Text (DMap PluginData Identity)
+    ZIDRef_Available FilePath !Text (DMap PluginData Identity)
   | -- | The ZID maps to more than one file, hence ambiguous.
     ZIDRef_Ambiguous (NonEmpty FilePath)
   deriving (Eq, Show)
