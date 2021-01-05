@@ -10,106 +10,31 @@
 -- | Neuron's route and its config
 module Neuron.Frontend.Route where
 
-import Data.Default
 import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some, withSome)
 import Data.TagTree (Tag, unTag)
-import Data.Tagged (Tagged)
-import Data.Tree (Forest)
-import Neuron.Frontend.Manifest (Manifest)
-import Neuron.Frontend.Theme (Theme)
-import Neuron.Zettelkasten.Connection (ContextualConnection)
-import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (Slug, ZettelID)
-import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
+import Neuron.Frontend.Route.Data.Types
+import Neuron.Zettelkasten.ID (Slug)
 import Neuron.Zettelkasten.Zettel
-  ( Zettel,
-    ZettelC,
-    ZettelT (zettelTitle),
+  ( ZettelT (zettelTitle),
   )
-import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Reflex.Dom.Core
 import Relude
-import Text.URI (URI)
 
-type NeuronVersion = Tagged "NeuronVersion" Text
-
--- | TODO: Pull SiteData out of GADT, as it exists in all constructors.
-data Route a where
-  -- TODO: Eliminate ZettelGraph by taking just necessary subset into route data
+data Route routeData where
   Route_Zettel :: Slug -> Route (SiteData, ZettelData)
   -- | Impulse is implemented in github.com/srid/rememorate
   -- The tag argument is only used in rendering the URL, and not when writing the file.
   -- TODO: Fix this bad use of types.
-  Route_Impulse :: Maybe Tag -> Route (SiteData, Impulse)
-  Route_ImpulseStatic :: Route (SiteData, Impulse)
+  Route_Impulse :: Maybe Tag -> Route (SiteData, ImpulseData)
+  Route_ImpulseStatic :: Route (SiteData, ImpulseData)
 
 routeSiteData :: a -> Route a -> SiteData
 routeSiteData val = \case
   Route_Zettel _ -> fst val
   Route_Impulse _ -> fst val
   Route_ImpulseStatic -> fst val
-
--- TODO: Move all these special types to Route.Data.Types?
-
-newtype HeadHtml = HeadHtml (Maybe Text)
-  deriving (Eq)
-
-instance Default HeadHtml where
-  def = HeadHtml Nothing
-
--- | Site-wide data common to all routes.
---
--- Significance: changes to these data must regenerate the routes, even if the
--- route-specific data hasn't changed.
-data SiteData = SiteData
-  { siteDataTheme :: Theme,
-    -- Config from neuron.dhall
-    siteDataSiteTitle :: Text,
-    siteDataSiteAuthor :: Maybe Text,
-    siteDataSiteBaseUrl :: Maybe URI,
-    siteDataEditUrl :: Maybe Text,
-    -- Data from filesystem
-    siteDataHeadHtml :: HeadHtml,
-    siteDataManifest :: Manifest,
-    -- Neuron's version
-    siteDataNeuronVersion :: NeuronVersion,
-    -- Reference to `index.md` zettel if any.
-    siteDataIndexZettel :: Maybe Zettel
-  }
-  deriving (Eq)
-
-data ZettelData = ZettelData
-  { zettelDataZettel :: ZettelC,
-    zettelDataQueryUrlCache :: QueryUrlCache,
-    zettelDataUptree :: Forest Zettel,
-    zettelDataBacklinks :: [(ContextualConnection, Zettel)],
-    -- TODO: eliminate this
-    zettelDataGraph :: ZettelGraph
-  }
-  deriving (Eq)
-
--- | The value needed to render the Impulse page
---
--- All heavy graph computations are decoupled from rendering, producing this
--- value, that is in turn used for instant rendering.
--- TODO: rename to `ImpulseData` for consistency
-data Impulse = Impulse
-  { -- | Clusters on the folgezettel graph.
-    impulseClusters :: [Forest (Zettel, [Zettel])],
-    impulseOrphans :: [Zettel],
-    -- | All zettel errors
-    impulseErrors :: Map ZettelID ZettelIssue,
-    impulseStats :: Stats,
-    impulsePinned :: [Zettel]
-  }
-
-data Stats = Stats
-  { statsZettelCount :: Int,
-    statsZettelConnectionCount :: Int
-  }
-  deriving (Eq, Show)
 
 routeHtmlPath :: Route a -> FilePath
 routeHtmlPath = \case

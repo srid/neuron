@@ -98,6 +98,7 @@ library
     Neuron.Cache.Type
     Neuron.Frontend.Route
     Neuron.Frontend.Route.Data
+    Neuron.Frontend.Route.Data.Types
     Neuron.Frontend.Manifest
     Neuron.Frontend.Common
     Neuron.Frontend.Widget

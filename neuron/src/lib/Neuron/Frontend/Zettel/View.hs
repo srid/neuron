@@ -27,8 +27,10 @@ import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
 import qualified Data.Tree as Tree
 import qualified Neuron.Frontend.Query.View as Q
-import Neuron.Frontend.Route (NeuronWebT, Route (..), SiteData, ZettelData)
+import Neuron.Frontend.Route (NeuronWebT, Route (..))
 import qualified Neuron.Frontend.Route as R
+import Neuron.Frontend.Route.Data.Types (SiteData, ZettelData)
+import qualified Neuron.Frontend.Route.Data.Types as R
 import Neuron.Frontend.Theme (Theme)
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (elPreOverflowing, elTime, semanticIcon)

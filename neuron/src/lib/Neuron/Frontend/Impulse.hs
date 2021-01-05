@@ -11,8 +11,6 @@
 
 module Neuron.Frontend.Impulse
   ( renderImpulse,
-    buildImpulse,
-    Impulse (..),
     style,
   )
 where
@@ -20,24 +18,24 @@ where
 import Clay (Css, em, (?))
 import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
-import Data.Foldable (maximum)
 import qualified Data.Set as Set
-import Data.TagTree (Tag (..), mkDefaultTagQuery, mkTagPattern)
+import Data.TagTree (Tag (..))
 import Data.Tagged
 import qualified Data.Text as T
-import Data.Tree (Forest, Tree (..))
+import Data.Tree (Tree (..))
 import qualified Neuron.Frontend.Query.View as QueryView
 import Neuron.Frontend.Route
+  ( NeuronWebT,
+    Route (Route_ImpulseStatic),
+    routeHtmlPath,
+  )
+import Neuron.Frontend.Route.Data.Types
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (LoadableData, divClassVisible, elVisible)
 import qualified Neuron.Frontend.Widget as W
 import Neuron.Frontend.Zettel.View (renderZettelParseError)
 import qualified Neuron.Frontend.Zettel.View as ZettelView
-import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
-import Neuron.Zettelkasten.Graph (ZettelGraph)
-import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (ZettelID (..))
-import Neuron.Zettelkasten.Query (zettelsByTag)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelT (zettelTitle),
@@ -72,31 +70,9 @@ searchTree f (Node x xs) =
 treeMatches :: Tree (Maybe a, b) -> Bool
 treeMatches (Node (mm, _) _) = isJust mm
 
-buildImpulse :: ZettelGraph -> Map ZettelID ZettelIssue -> Impulse
-buildImpulse graph errors =
-  let (orphans, clusters) = partitionEithers $
-        flip fmap (G.categoryClusters graph) $ \case
-          [Node z []] -> Left z -- Orphans (cluster of exactly one)
-          x -> Right x
-      clustersWithUplinks :: [Forest (Zettel, [Zettel])] =
-        -- Compute backlinks for each node in the tree.
-        flip fmap clusters $ \(zs :: [Tree Zettel]) ->
-          G.backlinksMulti Folgezettel zs graph
-      stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
-      pinnedZettels = zettelsByTag (G.getZettels graph) $ mkDefaultTagQuery [mkTagPattern "pinned"]
-   in Impulse (fmap sortCluster clustersWithUplinks) orphans errors stats pinnedZettels
-  where
-    -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
-    sortCluster fs =
-      sortZettelForest $
-        flip fmap fs $ \Node {..} ->
-          Node rootLabel $ sortZettelForest subForest
-    -- Sort zettel trees so that trees containing the most recent zettel (by ID) come first.
-    sortZettelForest = sortOn (Down . maximum)
-
 renderImpulse ::
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
-  Dynamic t (LoadableData (SiteData, Impulse)) ->
+  Dynamic t (LoadableData (SiteData, ImpulseData)) ->
   NeuronWebT t m ()
 renderImpulse dataLDyn = do
   -- themeDyn indexZettel impulseLDyn = do
@@ -118,19 +94,19 @@ renderImpulse dataLDyn = do
     let impulseDyn = snd <$> dataDyn
         themeDyn = siteDataTheme . fst <$> dataDyn
         indexZettel = siteDataIndexZettel . fst <$> dataDyn
-    elVisible (ffor2 (impulseErrors <$> impulseDyn) mqDyn $ \errs mq -> isNothing mq && not (null errs)) $
+    elVisible (ffor2 (impulseDataErrors <$> impulseDyn) mqDyn $ \errs mq -> isNothing mq && not (null errs)) $
       elClass "details" "ui tiny errors message" $ do
         el "summary" $ text "Errors"
-        renderErrors $ impulseErrors <$> impulseDyn
+        renderErrors $ impulseDataErrors <$> impulseDyn
     divClass "z-index" $ do
-      pinned <- holdUniqDyn $ ffor2 (impulsePinned <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
+      pinned <- holdUniqDyn $ ffor2 (impulseDataPinned <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
       divClassVisible (not . null <$> pinned) "ui pinned raised segment" $ do
         elClass "h3" "ui header" $ text "Pinned"
         el "ul" $
           void $
             simpleList pinned $ \zDyn ->
               dyn_ $ ffor zDyn $ \z -> zettelLink z blank
-      orphans <- holdUniqDyn $ ffor2 (impulseOrphans <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
+      orphans <- holdUniqDyn $ ffor2 (impulseDataOrphans <$> impulseDyn) mqDyn $ \v mq -> filter (matchZettel mq) v
       divClassVisible (not . null <$> orphans) "ui segment" $ do
         elClass "p" "info" $ do
           text "Notes not belonging to any "
@@ -141,7 +117,7 @@ renderImpulse dataLDyn = do
             simpleList orphans $ \zDyn ->
               dyn_ $ ffor zDyn $ \z -> zettelLink z blank
       clusters <- holdUniqDyn $
-        ffor2 (impulseClusters <$> impulseDyn) mqDyn $ \cs mq ->
+        ffor2 (impulseDataClusters <$> impulseDyn) mqDyn $ \cs mq ->
           ffor cs $ \forest ->
             ffor forest $ \tree -> do
               searchTree (matchZettel mq . fst) tree
@@ -152,13 +128,13 @@ renderImpulse dataLDyn = do
             el "ul" $ renderForest forestDyn
       divClass "ui top attached segment" $ do
         el "p" $ do
-          let stats = impulseStats <$> impulseDyn
+          let stats = impulseDataStats <$> impulseDyn
           text "The notebook has "
           dynText $ countNounBe "note" "notes" . statsZettelCount <$> stats
           text " and "
           dynText $ countNounBe "link" "links" . statsZettelConnectionCount <$> stats
           text ". It has "
-          dynText $ countNounBe "cluster" "clusters" . length . impulseClusters <$> impulseDyn
+          dynText $ countNounBe "cluster" "clusters" . length . impulseDataClusters <$> impulseDyn
           text " in its folgezettel graph. "
           text "Each cluster's "
           elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"

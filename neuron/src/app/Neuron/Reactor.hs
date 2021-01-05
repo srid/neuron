@@ -21,7 +21,7 @@ import Control.Monad.Writer.Strict (runWriter, tell)
 import Data.Dependent.Sum (DSum ((:=>)))
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
-import Data.Some
+import Data.Some (Some (Some), foldSome)
 import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Neuron.CLI.Logging

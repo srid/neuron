@@ -28,6 +28,7 @@ import qualified Data.Text as T
 import qualified Network.URI.Encode as E
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
+import qualified Neuron.Frontend.Route.Data.Types as R
 import Neuron.Zettelkasten.Query.Eval
 import Neuron.Zettelkasten.Zettel
   ( Zettel,

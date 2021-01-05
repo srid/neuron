@@ -11,7 +11,7 @@ module Neuron.Frontend.Static.HeadHtml
 where
 
 import Neuron.CLI.Types (MonadApp (getNotesDir))
-import Neuron.Frontend.Route (HeadHtml (..))
+import Neuron.Frontend.Route.Data.Types (HeadHtml (..))
 import Reflex.Dom.Core (blank, elAttr, (=:))
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Pandoc.PandocRaw (PandocRaw (..))

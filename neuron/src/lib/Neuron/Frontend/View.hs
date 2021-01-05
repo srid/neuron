@@ -23,6 +23,12 @@ import Neuron.Frontend.Common (neuronCommonStyle, neuronFonts)
 import qualified Neuron.Frontend.Impulse as Impulse
 import qualified Neuron.Frontend.Query.View as QueryView
 import Neuron.Frontend.Route
+  ( NeuronWebT,
+    Route,
+    routeSiteData,
+    routeTitle',
+  )
+import Neuron.Frontend.Route.Data.Types
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (LoadableData, elLinkGoogleFonts)
 import qualified Neuron.Frontend.Widget as W
@@ -77,7 +83,7 @@ bodyTemplate siteDataM w = do
 renderRouteImpulse ::
   forall t m js.
   (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
-  Dynamic t (LoadableData (SiteData, Impulse)) ->
+  Dynamic t (LoadableData (SiteData, ImpulseData)) ->
   NeuronWebT t m ()
 renderRouteImpulse dataLDyn = do
   let siteData = fmap fst . W.getData <$> dataLDyn

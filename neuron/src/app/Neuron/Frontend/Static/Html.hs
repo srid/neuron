@@ -15,6 +15,7 @@ import Data.FileEmbed (embedOneStringFileOf)
 import Neuron.Frontend.Manifest (renderManifest)
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
+import qualified Neuron.Frontend.Route.Data.Types as R
 import Neuron.Frontend.Static.HeadHtml (renderHeadHtml)
 import Neuron.Frontend.Static.StructuredData (renderStructuredData)
 import qualified Neuron.Frontend.View as V
