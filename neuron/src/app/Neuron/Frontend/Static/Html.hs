@@ -66,7 +66,7 @@ renderRoutePage cacheDyn rdCache headHtml manifest r = do
         dyn_ $
           ffor cacheDyn' $ \cache@NeuronCache {..} ->
             -- TODO: replace passing config and graph, with using RD (breadcrumb and opengraph)
-            renderStructuredData _neuronCache_config r (_neuronCache_graph, mkRD cache)
+            renderStructuredData _neuronCache_config r (mkRD cache)
       () <- case r of
         Route_Impulse {} ->
           elImpulseJS

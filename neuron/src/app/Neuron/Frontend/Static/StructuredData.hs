@@ -13,7 +13,8 @@ module Neuron.Frontend.Static.StructuredData
 where
 
 import Control.Monad.Except (liftEither, runExcept)
-import Data.Some (Some (Some))
+import Data.Dependent.Sum
+import qualified Data.Map.Strict as Map
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.Structured.OpenGraph
@@ -28,9 +29,7 @@ import qualified Network.URI.Encode as E
 import Neuron.Config.Type (Config (..), getSiteBaseUrl)
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
-import Neuron.Zettelkasten.Graph (ZettelGraph)
-import qualified Neuron.Zettelkasten.Graph as G
-import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
+import Neuron.Zettelkasten.Query.Eval
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelQuery (..),
@@ -44,10 +43,10 @@ import qualified Text.Pandoc.Walk as W
 import Text.URI (URI, mkURI)
 import qualified Text.URI as URI
 
-renderStructuredData :: DomBuilder t m => Config -> Route a -> (ZettelGraph, a) -> m ()
+renderStructuredData :: DomBuilder t m => Config -> Route a -> a -> m ()
 renderStructuredData config route val = do
-  renderOpenGraph $ uncurry (routeOpenGraph config) val route
-  Breadcrumb.renderBreadcrumbs $ routeStructuredData config (snd val) route
+  renderOpenGraph $ routeOpenGraph config val route
+  Breadcrumb.renderBreadcrumbs $ routeStructuredData config val route
 
 routeStructuredData :: Config -> a -> Route a -> [Breadcrumb]
 routeStructuredData cfg v = \case
@@ -63,18 +62,19 @@ routeStructuredData cfg v = \case
   _ ->
     []
 
-routeOpenGraph :: Config -> ZettelGraph -> a -> Route a -> OpenGraph
-routeOpenGraph cfg@Config {siteTitle, author} g v r =
+routeOpenGraph :: Config -> a -> Route a -> OpenGraph
+routeOpenGraph cfg@Config {siteTitle, author} v r =
   OpenGraph
     { _openGraph_title = R.routeTitle' v r,
       _openGraph_siteName = siteTitle,
       _openGraph_description = case r of
         (Route_Impulse _mtag) -> Just "Impulse"
         Route_ImpulseStatic -> Just "Impulse (static)"
-        Route_Zettel _ -> do
-          doc <- getPandocDoc (R.zettelDataZettel $ snd v)
+        Route_Zettel _slug -> do
+          let zData = snd v
+          doc <- getPandocDoc $ R.zettelDataZettel zData
           para <- getFirstParagraphText doc
-          let paraText = renderPandocAsText g para
+          let paraText = renderPandocAsText (R.zettelDataQueryUrlCache zData) para
           pure $ T.take 300 paraText,
       _openGraph_author = author,
       _openGraph_type = case r of
@@ -102,8 +102,8 @@ routeOpenGraph cfg@Config {siteTitle, author} g v r =
         Image _ _ (url, _) -> [toText url]
         _ -> []
 
-renderPandocAsText :: ZettelGraph -> [Inline] -> Text
-renderPandocAsText g =
+renderPandocAsText :: QueryUrlCache -> [Inline] -> Text
+renderPandocAsText qurlcache =
   plainify
     . W.walk plainifyZQueries
   where
@@ -111,22 +111,22 @@ renderPandocAsText g =
     plainifyZQueries = \case
       x@(Link attr inlines (url, title)) ->
         fromMaybe x $ do
-          -- TODO: use url cache from zettel data
-          -- REFACTOR: This code should would fit in Query.View (rendering text,
-          -- rather than html, variation)
-          someQ <- parseQueryLink =<< URI.mkURI url
-          readableInlines <- case someQ of
-            Some (ZettelQuery_ZettelByID zid _conn) -> do
-              if inlines == [Str url]
-                then do
-                  Zettel {zettelTitle} <- G.getZettel zid g
-                  pure [Str zettelTitle]
-                else pure inlines
-            Some (ZettelQuery_TagZettel (unTag -> tag)) -> do
-              pure [Str $ "#" <> tag]
-            _ ->
-              -- Ideally we should replace these with `[[..]]`
-              Nothing
+          readableInlines <-
+            Map.lookup url qurlcache >>= \case
+              ZettelQuery_ZettelByID _zid _conn :=> Identity res -> do
+                if inlines == [Str url]
+                  then do
+                    case res of
+                      Left _zid ->
+                        pure inlines
+                      Right Zettel {..} ->
+                        pure [Str zettelTitle]
+                  else pure inlines
+              ZettelQuery_TagZettel (unTag -> tag) :=> Identity () -> do
+                pure [Str $ "#" <> tag]
+              _ ->
+                -- Ideally we should replace these with `[[..]]`
+                Nothing
           pure $ Link attr readableInlines (url, title)
       x -> x
 
