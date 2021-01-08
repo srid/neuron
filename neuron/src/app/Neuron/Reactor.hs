@@ -58,10 +58,6 @@ import Neuron.Zettelkasten.Zettel.Error
   )
 import Reflex
 import Reflex.Dom.Core
-  ( HydratableT (runHydratableT),
-    dyn_,
-    renderStatic,
-  )
 import Reflex.FSNotify (FSEvent, watchTree)
 import Reflex.Host.Headless (runHeadlessApp)
 import Relude
@@ -87,19 +83,49 @@ awaitLog :: App ()
 awaitLog = log (D' Wait) "Awaiting file changes"
 
 reflexApp ::
+  forall m t.
   (Monad m, MonadIO m, PerformEvent t m, MonadFix m, MonadHold t m, MonadIO (Performable m), TriggerEvent t m, PostBuild t m, Adjustable t m, NotReady t m) =>
   Env App ->
   m (Event t ())
 reflexApp appEnv = do
+  let run :: App a -> m a
+      run a = liftIO $ runApp appEnv a
   -- Build a dynamic of directory tree
   dtDyn <- buildDirTreeDyn appEnv
+  withConfig <- eitherDyn dtDyn
   dyn_ $
-    ffor dtDyn $ \_dt -> do
-      liftIO $
-        runApp appEnv $ do
-          doGen
-          awaitLog
+    ffor withConfig $ \case
+      Left errDyn ->
+        dyn_ $
+          ffor errDyn $ \err ->
+            run $ log EE err
+      Right treeDyn -> do
+        routeDataE <- dyn $
+          ffor treeDyn $ \(cfg, tree') -> do
+            (cache, zs, fileTree) <- run $ loadZettelkastenFromFiles cfg tree'
+            run $ buildRouteData fileTree zs cache
+        routeDataDyn <- holdDyn [] routeDataE
+        widgetHold_ blank $
+          ffor (attach (current routeDataDyn) routeDataE) $ \(_old, new) -> do
+            run $ writeRoutes new
   pure never
+
+writeRoutes :: [DSum Route Identity] -> App ()
+writeRoutes new = do
+  log D $ "Rendering routes (" <> show (length new) <> " slugs) ..."
+  -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
+  -- Second bottleneck is graph building.
+  !routeHtml <- forM new $ \case
+    r@(Z.Route_Zettel _) :=> Identity val -> do
+      (Some r,) <$> genRouteHtml r val
+    r@(Z.Route_Impulse _) :=> Identity val ->
+      (Some r,) <$> genRouteHtml r val
+    r@Z.Route_ImpulseStatic :=> Identity val ->
+      (Some r,) <$> genRouteHtml r val
+  -- log D "Writing to disk ..."
+  forM_ routeHtml $ \(someR, html) -> do
+    flip writeRouteHtml html `foldSome` someR
+  awaitLog
 
 buildDirTreeDyn :: (MonadIO (Performable m), MonadIO m, PerformEvent t m, TriggerEvent t m, PostBuild t m, MonadHold t m, MonadFix m) => Env App -> m (Dynamic t (Either Text (Config, DC.DirTree FilePath)))
 buildDirTreeDyn appEnv = do
@@ -120,6 +146,7 @@ buildDirTreeDyn appEnv = do
 
 -- Do a one-off generation from top to bottom.
 -- No incrementall stuff (yet)
+-- TODO: Move the non-reflex IO engine to Neuron/Reactor/Builder.hs
 doGen :: App ()
 doGen = do
   -- TODO: cache is used in reportError just to get zettrel title. Fix that.
@@ -134,7 +161,17 @@ doGen = do
     _ ->
       pure ()
   -- Build all routes, and their data
-  -- log D "Building route data ..."
+  routes <- buildRouteData fileTree zs cache
+  -- Render and write the routes
+  writeRoutes routes
+  -- Report any errors and finish.
+  reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
+  getOutputDir >>= \(toText -> outputDir) ->
+    log (I' Done) $ "Finished generating at " <> outputDir
+
+buildRouteData :: (MonadIO m, MonadApp m, WithLog env Message m) => DC.DirTree FilePath -> [ZettelC] -> NeuronCache -> m [DSum Route Identity]
+buildRouteData fileTree zs cache = do
+  log D "Building route data ..."
   headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
   let manifest = Manifest.mkManifestFromTree fileTree
       siteData = RD.mkSiteData cache headHtml manifest
@@ -144,29 +181,11 @@ doGen = do
         let z = Z.sansContent zC
             zettelData = RD.mkZettelData cache zC
          in Z.Route_Zettel (Z.zettelSlug z) :=> Identity (siteData, zettelData)
-      -- TODO: Make this a Dynamic t (DMap ...) and use factorDyn?
       !routes =
         (Z.Route_Impulse Nothing :=> Identity impulseRouteData) :
         (Z.Route_ImpulseStatic :=> Identity impulseRouteData) :
         fmap mkZettelRoute zs
-  -- Render and write the routes
-  log D $ "Rendering routes (" <> show (length routes) <> " slugs) ..."
-  -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
-  -- Second bottleneck is graph building.
-  !routeHtml <- forM routes $ \case
-    r@(Z.Route_Zettel _) :=> Identity val -> do
-      (Some r,) <$> genRouteHtml r val
-    r@(Z.Route_Impulse _) :=> Identity val ->
-      (Some r,) <$> genRouteHtml r val
-    r@Z.Route_ImpulseStatic :=> Identity val ->
-      (Some r,) <$> genRouteHtml r val
-  -- log D "Writing to disk ..."
-  forM_ routeHtml $ \(someR, html) -> do
-    flip writeRouteHtml html `foldSome` someR
-  -- Report any errors and finish.
-  reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
-  getOutputDir >>= \(toText -> outputDir) ->
-    log (I' Done) $ "Finished generating at " <> outputDir
+  pure routes
 
 -- Report all errors
 -- TODO: Report only new errors in this run, to avoid spamming the terminal.
@@ -298,15 +317,19 @@ loadZettelkasten ::
 loadZettelkasten = do
   -- TODO Instead of logging here, put this info in Impulse footer.
   locateZettelFiles >>= \case
-    Left e -> fail $ toString e
-    Right (config, fileTree) -> do
-      let plugins = Config.getPlugins config
-      log D $ "Plugins enabled: " <> Plugin.pluginRegistryShow plugins
-      ((g, zs), errs) <- loadZettelkastenFromFiles plugins fileTree
-      let cache = Cache.NeuronCache g errs config neuronVersion
-          cacheSmall = cache {Cache._neuronCache_graph = stripSurroundingContext g}
-      Cache.updateCache cacheSmall
-      pure (cache, zs, fileTree)
+    Left e -> fail (toString e)
+    Right (config, fileTree) ->
+      loadZettelkastenFromFiles config fileTree
+
+loadZettelkastenFromFiles :: (WithLog env Message m, MonadFail m, MonadApp m, MonadIO m) => Config -> DC.DirTree FilePath -> m (NeuronCache, [ZettelC], DC.DirTree FilePath)
+loadZettelkastenFromFiles config fileTree = do
+  let plugins = Config.getPlugins config
+  log D $ "Plugins enabled: " <> Plugin.pluginRegistryShow plugins
+  ((g, zs), errs) <- loadZettelkastenFromFilesWithPlugins plugins fileTree
+  let cache = Cache.NeuronCache g errs config neuronVersion
+      cacheSmall = cache {Cache._neuronCache_graph = stripSurroundingContext g}
+  Cache.updateCache cacheSmall
+  pure (cache, zs, fileTree)
 
 locateZettelFiles :: (MonadIO m, MonadApp m) => m (Either Text (Config, DC.DirTree FilePath))
 locateZettelFiles = do
@@ -334,7 +357,7 @@ locateZettelFiles = do
           pure $ Left "Empty directory"
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
-loadZettelkastenFromFiles ::
+loadZettelkastenFromFilesWithPlugins ::
   (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) =>
   PluginRegistry ->
   DC.DirTree FilePath ->
@@ -344,7 +367,7 @@ loadZettelkastenFromFiles ::
       ),
       Map ZettelID ZettelIssue
     )
-loadZettelkastenFromFiles plugins fileTree = do
+loadZettelkastenFromFilesWithPlugins plugins fileTree = do
   !zidRefs <-
     case DC.pruneDirTree =<< DC.filterDirTree ((== ".md") . takeExtension) fileTree of
       Nothing ->
