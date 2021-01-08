@@ -8,13 +8,34 @@ The *Directory Tree* plugin automatically creates a [[folgezettel-heterarchy]] r
 2. Tag every zettel with a hierarchical [[tags]] (`root/**`) corresponding to its path
 3. Create folgezettel links (see [[linking]]) automatically reflecting the directory tree
 
-## Directory Zettel
+## Using and creating Directory Zettels
 
 Given a file `./Home/Projects/HouseWarming.md` this plugin will create three zettels with [[id]] `Home`, `Project` and `HouseWarming`. In the [[web]], neuron will display the "contents" of a directory beneath the zettel content.
 
 Directory names must be **globally** unique across the entire zettelkasten, inasmuch they directly reflect [[id]] which must also be unique. This means that two directories or zettels with the same name but in different paths will not work: having both `./Home/Projects/HouseWarming` and `./Work/Projects/FireZeMissiles` will cause Neuron to attempt to generate two zettels with the ID `Projects`, which will cause an error. In order to resolve this error, and to keep the zettel IDs [[atomic]], it would be better to rename **both** notes to `./Home/HomeProjects/` and `./Work/WorkProjects/`.
 
-The zettel content for directory zettels are by default empty. However, you may explicitly specify them by creating zettel files using the same [[id]]; for the example above, you may create `./Project.md` and `./Project/HouseWarming.md` - and they will be "merged" to the auto-created directory zettels.
+### Adding content to a Directory Zettel
+
+The zettel content for directory zettels are by default empty, only showing a list of links to its contents. However, you may explicitly specify them by creating zettel files using the same [[id]]; for the example above, you may create `./HomeProjects.md`- and it will be "merged" to the auto-created directory zettel:
+
+```
+# Directory structure
+
+└─Home/
+  ├── HomeProjects/        # HomeProjects **directory** zettel
+  │   └── HouseWarming.md
+  └── HomeProjects.md      # Note whose content will be merged into the HomeProjects **directory** zettel
+
+# Generated HTML notes
+
+- Home.html
+- HomeProjects.html
+- HouseWarming.html
+```
+
+No addtional zettels are generated, but any content in the `HomeProjects.md`
+file will be shown in the generated `HomeProjects.html` file in the [[web]].
+
 
 ### Generated notes are 'lifted' out of their directory hierarchy
 
