@@ -130,37 +130,6 @@ path:
 - HouseWarming.html       #root/Home/HomeProjects
 ```
 
-
-
-### Generated notes are 'lifted' out of their directory hierarchy
-
-Notes whose files are located in a subdirectory, will be 'lifted' to the same level as the 'root'--at the same level as their parents and grandparents.
-
-For example, the following directory structure
-
-```
-└─programming
-  ├── ruby.md
-  ├── ruby
-  │   ├── rails.md
-  │   └── rspec-testing.md
-  └── functional-programming.md
-```
-
-would create the following HTML documents, all at the top-level of the generated Neuron site: 
-
-- `programming.html`
-- `ruby.html`
-- `rails.html`
-- `rspec-testing.html`
-- `functional-programming.html`
-
-Because a directory's name will become its zettel ID, and because all zettels are 'lifted' out of their path hierarchy when notes are generated, it is important to give it a clear and meaningful name (if you are using non-random IDs). 
-
-A zettel created by the directory `work/notes` is a bad zettel ID, because once at the 'top' level of the zettelkasten, the ID `notes` has lost the context provided by its parent directory. A better ID would be `work/work-notes`.
-
-While this might seem redundant at first glance, the rationale for this this lift is to keep the zettels [[atomic]], and to keep linking as simple as possible. To link to the `work-notes` zettel, you don't need to remember that it's in the `work/` directory--you just link to `[[work-notes]]`. And if you choose to move it in the future, you don't need to hunt down and remember to update links that have been made to it.
-
 ## Links & tags created
 
 A [[folgezettel-heterarchy]] is formed, reflecting the directory tree on disk, with the exception of the `index` zettel[^man]. The forming of links is based on hierarchical [[tags]] (reflecting the relative path), that every normal zettel and directory zettel is automatically tagged with.
