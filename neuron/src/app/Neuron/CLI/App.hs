@@ -29,7 +29,6 @@ import Neuron.CLI.Search (interactiveSearch)
 import Neuron.CLI.Types
 import qualified Neuron.Cache as Cache
 import qualified Neuron.Cache.Type as Cache
-import Neuron.Config (getConfig)
 import qualified Neuron.Reactor as Reactor
 import qualified Neuron.Version as Version
 import qualified Neuron.Zettelkasten.Graph as G
@@ -73,7 +72,7 @@ runAppCommand genAct = do
         Nothing ->
           genAct watch
     New newCommand ->
-      newZettelFile newCommand =<< getConfig
+      newZettelFile newCommand
     Open openCommand ->
       openLocallyGeneratedFile openCommand
     Query QueryCommand {..} -> do
@@ -81,7 +80,7 @@ runAppCommand genAct = do
         if cached
           then Cache.getCache
           else do
-            (ch, _, _) <- Reactor.loadZettelkasten =<< getConfig
+            (ch, _, _) <- Reactor.loadZettelkasten
             pure ch
       case query of
         Left someQ ->

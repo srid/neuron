@@ -26,16 +26,10 @@ import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Neuron.CLI.Logging
 import Neuron.CLI.Types
-  ( App,
-    MonadApp (..),
-    getAppEnv,
-    getNotesDir,
-    runApp,
-  )
 import qualified Neuron.Cache as Cache
 import Neuron.Cache.Type (NeuronCache)
 import qualified Neuron.Cache.Type as Cache
-import Neuron.Config (getConfig)
+import qualified Neuron.Config as Config
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
 import qualified Neuron.Frontend.Manifest as Manifest
@@ -77,74 +71,99 @@ import qualified System.FSNotify as FSN
 import System.FilePath (isRelative, makeRelative, takeExtension, (</>))
 
 generateSite :: Bool -> App ()
-generateSite continueMonitoring = do
-  -- Initial gen
-  doGen
-  -- Continue morning
-  let awaitLog = log (D' Wait) "Awaiting file changes"
-  when continueMonitoring $ do
-    awaitLog
+generateSite = \case
+  False ->
+    -- Initial one-off gen
+    doGen
+  True -> do
+    -- Generate, and monitor for changes.
     appEnv <- getAppEnv
     notesDir <- getNotesDir
     liftIO $
       runHeadlessApp $ do
-        fsChanged <- watchDirWithDebounce 0.1 notesDir
-        performEvent_ $
-          ffor fsChanged $ \(fmap FSN.eventPath -> paths) -> do
-            liftIO $
-              runApp appEnv $ do
-                forM_ paths $ \path ->
-                  log (I' Received) $ toText path
-                doGen
-                awaitLog
-        pure never
-  where
-    -- Do a one-off generation from top to bottom.
-    -- No incrementall stuff (yet)
-    doGen :: App ()
-    doGen = do
-      (cache, zs, fileTree) <- loadZettelkasten =<< getConfig
-      -- Static files
-      case DC.walkContents "static" fileTree of
-        Just staticTree@(DC.DirTree_Dir _ _) -> do
-          notesDir <- getNotesDir
-          outputDir <- getOutputDir
-          DC.rsyncDir notesDir outputDir staticTree
-        _ ->
-          pure ()
-      -- Build all routes, and their data
-      -- log D "Building route data ..."
-      headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
-      let manifest = Manifest.mkManifestFromTree fileTree
-          siteData = RD.mkSiteData cache headHtml manifest
-          impulseData = RD.mkImpulseData cache
-          impulseRouteData = (siteData, impulseData)
-          mkZettelRoute zC =
-            let z = Z.sansContent zC
-                zettelData = RD.mkZettelData cache zC
-             in Z.Route_Zettel (Z.zettelSlug z) :=> Identity (siteData, zettelData)
-          !routes =
-            (Z.Route_Impulse Nothing :=> Identity impulseRouteData) :
-            (Z.Route_ImpulseStatic :=> Identity impulseRouteData) :
-            fmap mkZettelRoute zs
-      -- Render and write the routes
-      log D $ "Rendering routes (" <> show (length routes) <> " slugs) ..."
-      -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
-      -- Second bottleneck is graph building.
-      !routeHtml <- forM routes $ \case
-        r@(Z.Route_Zettel _) :=> Identity val -> do
-          (Some r,) <$> genRouteHtml r val
-        r@(Z.Route_Impulse _) :=> Identity val ->
-          (Some r,) <$> genRouteHtml r val
-        r@Z.Route_ImpulseStatic :=> Identity val ->
-          (Some r,) <$> genRouteHtml r val
-      -- log D "Writing to disk ..."
-      forM_ routeHtml $ \(someR, html) -> do
-        flip writeRouteHtml html `foldSome` someR
-      -- Report any errors and finish.
-      reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
-      getOutputDir >>= \(toText -> outputDir) ->
-        log (I' Done) $ "Finished generating at " <> outputDir
+        reflexApp appEnv notesDir
+
+awaitLog :: App ()
+awaitLog = log (D' Wait) "Awaiting file changes"
+
+-- NOTE: This is work-in-progress. Things are not reactive yet.
+reflexApp ::
+  ( Monad m,
+    MonadIO m,
+    PerformEvent t m,
+    MonadFix m,
+    MonadHold t m,
+    MonadIO (Performable m),
+    TriggerEvent t m,
+    PostBuild t m
+  ) =>
+  Env App ->
+  FilePath ->
+  m (Event t ())
+reflexApp appEnv notesDir = do
+  -- Initial gen
+  liftIO $
+    runApp appEnv $ do
+      doGen
+      awaitLog
+  fsChanged <- watchDirWithDebounce 0.1 notesDir
+  performEvent_ $
+    ffor fsChanged $ \(fmap FSN.eventPath -> paths) -> do
+      liftIO $
+        runApp appEnv $ do
+          forM_ paths $ \path ->
+            log (I' Received) $ toText path
+          doGen
+          awaitLog
+  pure never
+
+-- Do a one-off generation from top to bottom.
+-- No incrementall stuff (yet)
+doGen :: App ()
+doGen = do
+  (cache, zs, fileTree) <- loadZettelkasten
+  -- Static files
+  case DC.walkContents "static" fileTree of
+    Just staticTree@(DC.DirTree_Dir _ _) -> do
+      notesDir <- getNotesDir
+      outputDir <- getOutputDir
+      DC.rsyncDir notesDir outputDir staticTree
+    _ ->
+      pure ()
+  -- Build all routes, and their data
+  -- log D "Building route data ..."
+  headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
+  let manifest = Manifest.mkManifestFromTree fileTree
+      siteData = RD.mkSiteData cache headHtml manifest
+      impulseData = RD.mkImpulseData cache
+      impulseRouteData = (siteData, impulseData)
+      mkZettelRoute zC =
+        let z = Z.sansContent zC
+            zettelData = RD.mkZettelData cache zC
+         in Z.Route_Zettel (Z.zettelSlug z) :=> Identity (siteData, zettelData)
+      -- TODO: Make this a Dynamic t (DMap ...) and use factorDyn?
+      !routes =
+        (Z.Route_Impulse Nothing :=> Identity impulseRouteData) :
+        (Z.Route_ImpulseStatic :=> Identity impulseRouteData) :
+        fmap mkZettelRoute zs
+  -- Render and write the routes
+  log D $ "Rendering routes (" <> show (length routes) <> " slugs) ..."
+  -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
+  -- Second bottleneck is graph building.
+  !routeHtml <- forM routes $ \case
+    r@(Z.Route_Zettel _) :=> Identity val -> do
+      (Some r,) <$> genRouteHtml r val
+    r@(Z.Route_Impulse _) :=> Identity val ->
+      (Some r,) <$> genRouteHtml r val
+    r@Z.Route_ImpulseStatic :=> Identity val ->
+      (Some r,) <$> genRouteHtml r val
+  -- log D "Writing to disk ..."
+  forM_ routeHtml $ \(someR, html) -> do
+    flip writeRouteHtml html `foldSome` someR
+  -- Report any errors and finish.
+  reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
+  getOutputDir >>= \(toText -> outputDir) ->
+    log (I' Done) $ "Finished generating at " <> outputDir
 
 -- Report all errors
 -- TODO: Report only new errors in this run, to avoid spamming the terminal.
@@ -272,21 +291,22 @@ watchDirWithDebounce ms dirPath' = do
 
 loadZettelkasten ::
   (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) =>
-  Config ->
   m (NeuronCache, [ZettelC], DC.DirTree FilePath)
-loadZettelkasten config = do
-  let plugins = Config.getPlugins config
+loadZettelkasten = do
   -- TODO Instead of logging here, put this info in Impulse footer.
-  log D $ "Plugins enabled: " <> Plugin.pluginRegistryShow plugins
-  fileTree <- locateZettelFiles plugins
-  ((g, zs), errs) <- loadZettelkastenFromFiles plugins fileTree
-  let cache = Cache.NeuronCache g errs config neuronVersion
-      cacheSmall = cache {Cache._neuronCache_graph = stripSurroundingContext g}
-  Cache.updateCache cacheSmall
-  pure (cache, zs, fileTree)
+  locateZettelFiles >>= \case
+    Left e -> fail $ toString e
+    Right (config, fileTree) -> do
+      let plugins = Config.getPlugins config
+      log D $ "Plugins enabled: " <> Plugin.pluginRegistryShow plugins
+      ((g, zs), errs) <- loadZettelkastenFromFiles plugins fileTree
+      let cache = Cache.NeuronCache g errs config neuronVersion
+          cacheSmall = cache {Cache._neuronCache_graph = stripSurroundingContext g}
+      Cache.updateCache cacheSmall
+      pure (cache, zs, fileTree)
 
-locateZettelFiles :: (MonadIO m, MonadApp m) => PluginRegistry -> m (DC.DirTree FilePath)
-locateZettelFiles plugins = do
+locateZettelFiles :: (MonadIO m, MonadApp m) => m (Either Text (Config, DC.DirTree FilePath))
+locateZettelFiles = do
   -- Run with notes dir as PWD, so that DirTree uses relative paths throughout.
   d <- getNotesDir
   liftIO $
@@ -296,13 +316,19 @@ locateZettelFiles plugins = do
       -- assumption then holds elsewhere in neuron.
       DC.buildDirTree "." >>= \case
         Just t -> do
-          Plugin.filterSources plugins t >>= \case
-            Nothing ->
-              fail "No source files to process"
-            Just tF ->
-              pure tF
+          -- Look for neuron.dhall
+          case DC.walkContents "neuron.dhall" t of
+            Just (DC.DirTree_File _ dhallFp) -> do
+              config <- Config.getConfigFromFile dhallFp
+              Plugin.filterSources (Config.getPlugins config) t >>= \case
+                Nothing ->
+                  pure $ Left "No source files to process"
+                Just tF ->
+                  pure $ Right (config, tF)
+            _ ->
+              pure $ Left "No neuron.dhall found"
         Nothing ->
-          fail "No sources"
+          pure $ Left "Empty directory"
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFromFiles ::

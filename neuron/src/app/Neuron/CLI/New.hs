@@ -21,8 +21,7 @@ import Data.Time.DateMayTime (DateMayTime, formatDateMayTime)
 import Neuron.CLI.Logging
 import Neuron.CLI.Types (MonadApp, NewCommand (..), getNotesDir)
 import qualified Neuron.Cache.Type as Cache
-import Neuron.Config.Type (Config (..))
-import Neuron.Reactor as Reactor
+import Neuron.Reactor as Reactor (loadZettelkasten)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
@@ -36,9 +35,9 @@ import System.Posix.Process (executeFile)
 -- | Create a new zettel file and open it in editor if requested
 --
 -- As well as print the path to the created file.
-newZettelFile :: (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) => NewCommand -> Config -> m ()
-newZettelFile NewCommand {..} config = do
-  (g, _, _) <- Reactor.loadZettelkasten config
+newZettelFile :: (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) => NewCommand -> m ()
+newZettelFile NewCommand {..} = do
+  (g, _, _) <- Reactor.loadZettelkasten
   mzid <- withSome idScheme $ \scheme -> do
     val <- liftIO $ IDScheme.genVal scheme
     pure $
