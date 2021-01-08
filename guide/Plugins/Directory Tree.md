@@ -35,41 +35,26 @@ The zettel content for directory zettels are by default empty, only showing a li
 - HouseWarming.html
 ```
 
-No addtional zettels are generated, but any content in the `HomeProjects.md`
-file will be shown in the generated `HomeProjects.html` file in the [[web]].
+No addtional zettels are generated, but any content in the `HomeProjects.md` file will be shown in the generated `HomeProjects.html` file in the [[web]].
 
 ## Directory Zettels are normal zettels
 
-When Neuron is configured to use the **Directory Tree** plugin, it looks for all
-the markdown files in your repository, regardless of how many folders deep they
-are (unless you are using the [[Ignoring files]] plugin).
+When Neuron is configured to use the **Directory Tree** plugin, it looks for all the markdown files in your repository, regardless of how many folders deep they are (unless you are using the [[Ignoring files]] plugin).
 
 The directory structure you have on disk is used to do 2 things:
 
-- automatically create a [[folgezettel-heterarchy]] from a directory zettel with
-    the zettels for its contents
+- automatically create a [[folgezettel-heterarchy]] from a directory zettel with the zettels for its contents
 - automatically tag the zettels created with their on-disk path
 
-Once Neuron generates the [[zettelkasten]], the directory structure is
-discarded from memory and not used in the [[web]]. All of the generated notes are made accessible at the 'top' level of the generated site--you don't need to navigate down the on-disk directory structure in the [[web]].
+Once Neuron generates the [[zettelkasten]], the directory structure is discarded from memory and not used in the [[web]]. All of the generated notes are made accessible at the 'top' level of the generated site--you don't need to navigate down the on-disk directory structure in the [[web]].
 
-This is one reason why it's good practice to give your directories an [[atomic]]
-[[id]]--once you've generated your zettelkasten, you no longer have the parent
-directories around to provide context. The example from before,
-`./Home/Projects`, would create a note for your home projects with the ID
-`Projects`--we can no longer tell that it is specifically **home** projects.
-(The other reason it is good to have unique IDs is to avoid ID clash, as covered
-above.)
+This is one reason why it's good practice to give your directories an [[atomic]] [[id]]--once you've generated your zettelkasten, you no longer have the parent directories around to provide context. The example from before, `./Home/Projects`, would create a note for your home projects with the ID `Projects`--we can no longer tell that it is specifically **home** projects. (The other reason it is good to have unique IDs is to avoid ID clash, as covered above.)
 
 ### Automatically created folgezettel heterarchies
 
-Even though the on-disk directory structure is discarded, the information it
-carries is preserved by Neuron when it creates a [[folgezettel-heterarchy]]
-between a Directory Zettel and its child notes/contents.
+Even though the on-disk directory structure is discarded, the information it carries is preserved by Neuron when it creates a [[folgezettel-heterarchy]] between a Directory Zettel and its child notes/contents.
 
-Putting the `HomeProjects.md` zettel inside the `Home/` folder creates
-a parent-to-child folgezettel relationship from `Home` to `HomeProjects`, _as if you had a `Home.md` note that included a folgezettel
-link to `HomeProjects.md` in its content_.
+Putting the `HomeProjects.md` zettel inside the `Home/` folder creates a parent-to-child folgezettel relationship from `Home` to `HomeProjects`, _as if you had a `Home.md` note that included a folgezettel link to `HomeProjects.md` in its content_.
 
 This structure
 
@@ -107,19 +92,11 @@ date: 2020-12-31
 
 #### The **Directory Tree** plugin only triggers on folders inside the Neuron project
 
-When enabled, the plugin will only work on the subfolders it finds **inside** the
-Neuron project. This means that it will **not** automatically create a
-[[folgezettel-heterarchy]] from the `index` of your project to every
-zettel in the project (whether you have an
-explicit `index.md` zettel or just rely on Neuron's [[impulse-feature]] as your
-home)[^man].
+When enabled, the plugin will only work on the subfolders it finds **inside** the Neuron project. This means that it will **not** automatically create a [[folgezettel-heterarchy]] from the `index` of your project to every zettel in the project (whether you have an explicit `index.md` zettel or just rely on Neuron's [[impulse-feature]] as your home)[^man].
 
 ### Creating links and heterarchies outside the directory
 
-Directory Zettles just being normal zettels also means that you can link and create any [[folgezettel-heterarchy]] you
-like with the zettels created from directory trees. For example, we could create
-a new zettel called `Projects.md` at the 'top' of our Neuron project, to gather
-together all of our more focused project zettels, as a sort of gateway:
+Directory Zettles just being normal zettels also means that you can link and create any [[folgezettel-heterarchy]] you like with the zettels created from directory trees. For example, we could create a new zettel called `Projects.md` at the 'top' of our Neuron project, to gather together all of our more focused project zettels, as a sort of gateway:
 
 ```
 # Directory structure
@@ -152,11 +129,7 @@ on my [[[HomeProjects]]].
 
 ### Automatically created tags
 
-In addition to creating automatic a [[folgezettel-heterarchy]] for each
-directory, the plugin also [[tags]] the notes with their on-disk path, up to, but
-**not including** their own ID. So the note at
-`./Home/HomeProjects/HouseWarming.md` would get the **hierarchical** tag
-`#root/Home/HomeProjects`. These tags always start at the `#root` tag.
+In addition to creating automatic a [[folgezettel-heterarchy]] for each directory, the plugin also [[tags]] the notes with their on-disk path, up to, but **not including** their own ID. So the note at `./Home/HomeProjects/HouseWarming.md` would get the **hierarchical** tag `#root/Home/HomeProjects`. These tags always start at the `#root` tag.
 
 Given our work-and-home project:
 
