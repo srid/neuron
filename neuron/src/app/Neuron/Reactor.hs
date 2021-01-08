@@ -59,6 +59,7 @@ import Neuron.Zettelkasten.Zettel.Error
 import Reflex
 import Reflex.Dom.Core
   ( HydratableT (runHydratableT),
+    dyn_,
     renderStatic,
   )
 import Reflex.FSNotify (FSEvent, watchTree)
@@ -78,49 +79,51 @@ generateSite = \case
   True -> do
     -- Generate, and monitor for changes.
     appEnv <- getAppEnv
-    notesDir <- getNotesDir
     liftIO $
       runHeadlessApp $ do
-        reflexApp appEnv notesDir
+        reflexApp appEnv
 
 awaitLog :: App ()
 awaitLog = log (D' Wait) "Awaiting file changes"
 
--- NOTE: This is work-in-progress. Things are not reactive yet.
 reflexApp ::
-  ( Monad m,
-    MonadIO m,
-    PerformEvent t m,
-    MonadFix m,
-    MonadHold t m,
-    MonadIO (Performable m),
-    TriggerEvent t m,
-    PostBuild t m
-  ) =>
+  (Monad m, MonadIO m, PerformEvent t m, MonadFix m, MonadHold t m, MonadIO (Performable m), TriggerEvent t m, PostBuild t m, Adjustable t m, NotReady t m) =>
   Env App ->
-  FilePath ->
   m (Event t ())
-reflexApp appEnv notesDir = do
-  -- Initial gen
-  liftIO $
+reflexApp appEnv = do
+  -- Build a dynamic of directory tree
+  dtDyn <- buildDirTreeDyn appEnv
+  dyn_ $
+    ffor dtDyn $ \_dt -> do
+      liftIO $
+        runApp appEnv $ do
+          doGen
+          awaitLog
+  pure never
+
+buildDirTreeDyn :: (MonadIO (Performable m), MonadIO m, PerformEvent t m, TriggerEvent t m, PostBuild t m, MonadHold t m, MonadFix m) => Env App -> m (Dynamic t (Either Text (Config, DC.DirTree FilePath)))
+buildDirTreeDyn appEnv = do
+  (notesDir, tree0) <- liftIO $
     runApp appEnv $ do
-      doGen
-      awaitLog
-  fsChanged <- watchDirWithDebounce 0.1 notesDir
-  performEvent_ $
-    ffor fsChanged $ \(fmap FSN.eventPath -> paths) -> do
+      (,) <$> getNotesDir <*> locateZettelFiles
+  fsEventsE <- watchDirWithDebounce 0.1 notesDir
+  treeE <- performEvent $
+    ffor fsEventsE $ \(fmap FSN.eventPath -> paths) ->
       liftIO $
         runApp appEnv $ do
           forM_ paths $ \path ->
             log (I' Received) $ toText path
-          doGen
-          awaitLog
-  pure never
+          -- TODO(perf): Instead of rebuilding the tree, patch the existing tree
+          -- with changed paths.
+          locateZettelFiles
+  holdDyn tree0 treeE
 
 -- Do a one-off generation from top to bottom.
 -- No incrementall stuff (yet)
 doGen :: App ()
 doGen = do
+  -- TODO: cache is used in reportError just to get zettrel title. Fix that.
+  -- Then build a dynamic of route data only
   (cache, zs, fileTree) <- loadZettelkasten
   -- Static files
   case DC.walkContents "static" fileTree of
