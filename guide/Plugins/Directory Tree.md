@@ -10,9 +10,9 @@ The *Directory Tree* plugin automatically creates a [[folgezettel-heterarchy]] r
 
 ## Directory Zettel
 
-Given a folder `./Project/HouseWarming/`, this plugin will create two zettels with [[id]] `Project` and `HouseWarming`. In the [[web]], neuron will display the "contents" of a directory beneath the zettel content.
+Given a file `./Home/Projects/HouseWarming.md` this plugin will create three zettels with [[id]] `Home`, `Project` and `HouseWarming`. In the [[web]], neuron will display the "contents" of a directory beneath the zettel content.
 
-Directory names must be **globally** unique across the entire zettelkasten, inasmuch they directly reflect [[id]] which must also be unique. This means that two directories or zettels with the same name but in different paths will not work: having both `family/notes` and `work/notes` will cause Neuron to attempt to generate two zettels with the ID `notes`, which will cause an error. In order to resolve this error, and to keep the zettel IDs [[atomic]], it would be better to rename **both** notes to `work/work-notes/` and `family/family-notes`.
+Directory names must be **globally** unique across the entire zettelkasten, inasmuch they directly reflect [[id]] which must also be unique. This means that two directories or zettels with the same name but in different paths will not work: having both `./Home/Projects/HouseWarming` and `./Work/Projects/FireZeMissiles` will cause Neuron to attempt to generate two zettels with the ID `Projects`, which will cause an error. In order to resolve this error, and to keep the zettel IDs [[atomic]], it would be better to rename **both** notes to `./Home/HomeProjects/` and `./Work/WorkProjects/`.
 
 The zettel content for directory zettels are by default empty. However, you may explicitly specify them by creating zettel files using the same [[id]]; for the example above, you may create `./Project.md` and `./Project/HouseWarming.md` - and they will be "merged" to the auto-created directory zettels.
 
