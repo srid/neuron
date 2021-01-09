@@ -37,7 +37,7 @@ data DirZettel = DirZettel
     -- | The zettel associated with the parent directory.
     _dirZettel_dirParent :: Maybe ZettelID
   }
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+  deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON)
 
 -- Every zettel is associated with custom data for each plugin.
 -- TODO: Rename to PluginZettelData

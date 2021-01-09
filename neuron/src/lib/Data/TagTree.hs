@@ -71,6 +71,7 @@ newtype Tag = Tag {unTag :: Text}
 newtype TagPattern = TagPattern {unTagPattern :: FilePattern}
   deriving
     ( Eq,
+      Ord,
       Show,
       Generic
     )
@@ -91,7 +92,7 @@ data TagQuery
   = TagQuery_And (NonEmpty TagPattern)
   | TagQuery_Or (NonEmpty TagPattern)
   | TagQuery_All
-  deriving (Eq, Generic)
+  deriving (Eq, Ord, Generic)
   deriving anyclass
     ( ToJSON,
       FromJSON

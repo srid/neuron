@@ -40,7 +40,7 @@ import Text.URI (URI)
 type NeuronVersion = Tagged "NeuronVersion" Text
 
 newtype HeadHtml = HeadHtml (Maybe Text)
-  deriving (Eq)
+  deriving (Eq, Show)
 
 instance Default HeadHtml where
   def = HeadHtml Nothing
@@ -64,7 +64,7 @@ data SiteData = SiteData
     -- Reference to `index.md` zettel if any.
     siteDataIndexZettel :: Maybe Zettel
   }
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data ZettelData = ZettelData
   { zettelDataZettel :: ZettelC,
@@ -88,6 +88,7 @@ data ImpulseData = ImpulseData
     impulseDataStats :: Stats,
     impulseDataPinned :: [Zettel]
   }
+  deriving (Eq, Show)
 
 data Stats = Stats
   { statsZettelCount :: Int,

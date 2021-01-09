@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -10,7 +12,11 @@
 -- | Neuron's route and its config
 module Neuron.Frontend.Route where
 
-import Data.GADT.Compare.TH (DeriveGEQ (deriveGEq))
+import Data.Constraint.Extras.TH (deriveArgDict)
+import Data.GADT.Compare.TH
+  ( DeriveGCompare (deriveGCompare),
+    DeriveGEQ (deriveGEq),
+  )
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some, withSome)
 import Data.TagTree (Tag, unTag)
@@ -95,5 +101,6 @@ routeTitle' v = \case
     either zettelTitle zettelTitle $ zettelDataZettel . snd $ v
 
 deriveGEq ''Route
-
 deriveGShow ''Route
+deriveGCompare ''Route
+deriveArgDict ''Route

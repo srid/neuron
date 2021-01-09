@@ -18,6 +18,7 @@ module Neuron.Reactor where
 import Colog (WithLog, log)
 import Control.Monad.Fix (MonadFix)
 import Control.Monad.Writer.Strict (runWriter, tell)
+import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum ((:=>)))
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
@@ -33,7 +34,7 @@ import qualified Neuron.Config as Config
 import Neuron.Config.Type (Config)
 import qualified Neuron.Config.Type as Config
 import qualified Neuron.Frontend.Manifest as Manifest
-import Neuron.Frontend.Route (Route (Route_Impulse), routeHtmlPath)
+import Neuron.Frontend.Route (Route (Route_Impulse, Route_ImpulseStatic, Route_Zettel), routeHtmlPath)
 import qualified Neuron.Frontend.Route as Z
 import qualified Neuron.Frontend.Route.Data as RD
 import qualified Neuron.Frontend.Static.HeadHtml as HeadHtml
@@ -106,8 +107,26 @@ reflexApp appEnv = do
             run $ buildRouteData fileTree zs cache
         routeDataDyn <- holdDyn [] routeDataE
         widgetHold_ blank $
-          ffor (attach (current routeDataDyn) routeDataE) $ \(_old, new) -> do
-            run $ writeRoutes new
+          ffor (attach (current routeDataDyn) (updated routeDataDyn)) $ \(old, new) -> do
+            let oldMap = DMap.fromList old
+                modified :: [DSum Route Identity] =
+                  fforMaybe new $ \case
+                    rd@(r@(Route_Zettel _) :=> newVal) ->
+                      case DMap.lookup r oldMap of
+                        Just oldVal -> guard (oldVal /= newVal) >> pure rd
+                        Nothing -> pure rd
+                    rd@(r@(Route_Impulse _) :=> newVal) ->
+                      case DMap.lookup r oldMap of
+                        Just oldVal -> guard (oldVal /= newVal) >> pure rd
+                        Nothing -> pure rd
+                    rd@(r@Route_ImpulseStatic :=> newVal) ->
+                      case DMap.lookup r oldMap of
+                        Just oldVal -> guard (oldVal /= newVal) >> pure rd
+                        Nothing -> pure rd
+                _removed = DMap.toList $ DMap.difference oldMap oldMap
+            unless (null modified) $ do
+              run $ writeRoutes modified
+            run awaitLog
   pure never
 
 writeRoutes :: [DSum Route Identity] -> App ()
@@ -125,7 +144,6 @@ writeRoutes new = do
   -- log D "Writing to disk ..."
   forM_ routeHtml $ \(someR, html) -> do
     flip writeRouteHtml html `foldSome` someR
-  awaitLog
 
 buildDirTreeDyn :: (MonadIO (Performable m), MonadIO m, PerformEvent t m, TriggerEvent t m, PostBuild t m, MonadHold t m, MonadFix m) => Env App -> m (Dynamic t (Either Text (Config, DC.DirTree FilePath)))
 buildDirTreeDyn appEnv = do
@@ -153,6 +171,7 @@ doGen = do
   -- Then build a dynamic of route data only
   (cache, zs, fileTree) <- loadZettelkasten
   -- Static files
+  -- TODO(reactive)
   case DC.walkContents "static" fileTree of
     Just staticTree@(DC.DirTree_Dir _ _) -> do
       notesDir <- getNotesDir
@@ -165,6 +184,7 @@ doGen = do
   -- Render and write the routes
   writeRoutes routes
   -- Report any errors and finish.
+  -- TODO(reactive)
   reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
   getOutputDir >>= \(toText -> outputDir) ->
     log (I' Done) $ "Finished generating at " <> outputDir

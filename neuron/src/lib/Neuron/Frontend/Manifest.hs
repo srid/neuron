@@ -13,19 +13,19 @@ module Neuron.Frontend.Manifest
   )
 where
 
+import Data.Default
 import qualified Data.Set as Set
 import Reflex.Dom.Core
 import Relude
 import qualified System.Directory.Contents as DC
-import Data.Default
 
 data Manifest = Manifest
   { manifestFavicons :: Maybe Favicons,
     manifestWebAppManifest :: Maybe FilePath
   }
-  deriving (Eq)
+  deriving (Eq, Show)
 
-instance Default Manifest where 
+instance Default Manifest where
   def = Manifest Nothing Nothing
 
 data Favicons = Favicons
@@ -33,7 +33,7 @@ data Favicons = Favicons
     faviconsAlts :: [FilePath],
     faviconsAppleTouch :: Maybe FilePath
   }
-  deriving (Eq)
+  deriving (Eq, Show)
 
 mkManifestFromTree :: DC.DirTree FilePath -> Manifest
 mkManifestFromTree fileTree =
