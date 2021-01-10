@@ -21,8 +21,7 @@ import Data.Time.DateMayTime (DateMayTime, formatDateMayTime)
 import Neuron.CLI.Logging
 import Neuron.CLI.Types (MonadApp, NewCommand (..), getNotesDir)
 import qualified Neuron.Cache.Type as Cache
-import Neuron.Config.Type (Config (..))
-import Neuron.Reactor as Reactor
+import Neuron.Reactor as Reactor (loadZettelkasten)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (zettelIDSourceFileName)
 import qualified Neuron.Zettelkasten.ID.Scheme as IDScheme
@@ -36,26 +35,28 @@ import System.Posix.Process (executeFile)
 -- | Create a new zettel file and open it in editor if requested
 --
 -- As well as print the path to the created file.
-newZettelFile :: (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) => NewCommand -> Config -> m ()
-newZettelFile NewCommand {..} config = do
-  (g, _, _) <- Reactor.loadZettelkasten config
-  mzid <- withSome idScheme $ \scheme -> do
-    val <- liftIO $ IDScheme.genVal scheme
-    pure $
-      IDScheme.nextAvailableZettelID
-        (Set.fromList $ fmap zettelID $ G.getZettels $ Cache._neuronCache_graph g)
-        val
-        scheme
-  case mzid of
-    Left e -> die $ show e
-    Right zid -> do
-      notesDir <- getNotesDir
-      let zettelFile = zettelIDSourceFileName zid
-      liftIO $ do
-        fileAction :: FilePath -> FilePath -> IO () <-
-          bool (pure showAction) mkEditActionFromEnv edit
-        writeFileText (notesDir </> zettelFile) $ defaultZettelContent date
-        fileAction notesDir zettelFile
+newZettelFile :: (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) => NewCommand -> m ()
+newZettelFile NewCommand {..} = do
+  Reactor.loadZettelkasten >>= \case
+    Left e -> fail $ toString e
+    Right (g, _, _) -> do
+      mzid <- withSome idScheme $ \scheme -> do
+        val <- liftIO $ IDScheme.genVal scheme
+        pure $
+          IDScheme.nextAvailableZettelID
+            (Set.fromList $ fmap zettelID $ G.getZettels $ Cache._neuronCache_graph g)
+            val
+            scheme
+      case mzid of
+        Left e -> die $ show e
+        Right zid -> do
+          notesDir <- getNotesDir
+          let zettelFile = zettelIDSourceFileName zid
+          liftIO $ do
+            fileAction :: FilePath -> FilePath -> IO () <-
+              bool (pure showAction) mkEditActionFromEnv edit
+            writeFileText (notesDir </> zettelFile) $ defaultZettelContent date
+            fileAction notesDir zettelFile
   where
     mkEditActionFromEnv :: IO (FilePath -> FilePath -> IO ())
     mkEditActionFromEnv =

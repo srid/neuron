@@ -26,8 +26,6 @@ import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Dependent.Map (DMap)
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
-  ( DeriveGEQ (deriveGEq),
-  )
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
@@ -109,12 +107,6 @@ sansLinkContext z =
   where
     stripContextFromZettelQuery (someQ, _ctx) = (someQ, mempty)
 
-instance Eq (ZettelT c) where
-  (==) = (==) `on` zettelID
-
-instance Ord (ZettelT c) where
-  compare = compare `on` zettelID
-
 instance Show (ZettelT c) where
   show Zettel {..} = "Zettel:" <> show zettelID
 
@@ -131,6 +123,7 @@ deriveJSONGADT ''ZettelQuery
 deriveGEq ''ZettelQuery
 
 deriveGShow ''ZettelQuery
+deriveGCompare ''ZettelQuery
 
 deriveArgDict ''ZettelQuery
 
@@ -145,6 +138,18 @@ deriving instance Eq (ZettelQuery (Maybe Zettel))
 deriving instance Eq (ZettelQuery [Zettel])
 
 deriving instance Eq (ZettelQuery (Map Tag Natural))
+
+deriving instance Eq (ZettelT Pandoc)
+
+deriving instance Eq (ZettelT MetadataOnly)
+
+deriving instance Eq (ZettelT (Text, ZettelParseError))
+
+deriving instance Ord (ZettelT Pandoc)
+
+deriving instance Ord (ZettelT MetadataOnly)
+
+deriving instance Ord (ZettelT (Text, ZettelParseError))
 
 deriving instance ToJSON Zettel
 

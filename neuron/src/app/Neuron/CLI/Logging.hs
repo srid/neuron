@@ -96,3 +96,11 @@ mkLogAction =
       T.pack (setSGRCode [SetColor Foreground Vivid c])
         <> txt
         <> T.pack (setSGRCode [Reset])
+
+indentAllButFirstLine :: Int -> Text -> Text
+indentAllButFirstLine n = T.strip . unlines . go . lines
+  where
+    go [] = []
+    go [x] = [x]
+    go (x : xs) =
+      x : fmap (toText . (replicate n ' ' <>) . toString) xs

@@ -15,12 +15,12 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Neuron.Config
-  ( getConfig,
+  ( getConfigFromFile,
+    missingConfigError,
     parsePure,
   )
 where
 
-import Colog (WithLog, log)
 import Data.Either.Validation (validationToEither)
 import qualified Data.Text as T
 import Dhall (FromDhall)
@@ -28,34 +28,30 @@ import qualified Dhall (Decoder (extract), auto)
 import qualified Dhall.Core (normalize)
 import qualified Dhall.Parser (exprFromText)
 import qualified Dhall.TypeCheck (typeOf)
-import Neuron.CLI.Logging
-import Neuron.CLI.Types (MonadApp, getNotesDir)
 import Neuron.Config.Type (Config, configFile, defaultConfig, mergeWithDefault)
 import Relude
-import System.Directory (doesFileExist)
-import System.FilePath ((</>))
 
 deriving instance FromDhall Config
 
--- | Read the optional @neuron.dhall@ config file from the zettelkasten
-getConfig :: (MonadIO m, MonadFail m, MonadApp m, WithLog env Message m) => m Config
-getConfig = do
-  notesDir <- getNotesDir
-  let configPath = notesDir </> configFile
-  configVal :: Text <-
-    liftIO (doesFileExist configPath) >>= \case
-      True -> do
-        s <- readFileText configPath
-        -- Accept empty neuron.dhall (used to signify a directory to be used with neuron)
+getConfigFromFile :: MonadIO m => FilePath -> m (Either Text Config)
+getConfigFromFile configPath = do
+  s <- readFileText configPath
+  -- Accept empty neuron.dhall (used to signify a directory to be used with neuron)
+  let configVal =
         if T.null (T.strip s)
-          then pure defaultConfig
-          else pure $ mergeWithDefault s
-      False -> do
-        log E $ "You must add a neuron.dhall to " <> toText notesDir
-        log E "You can add one by running:"
-        log E $ "  touch " <> toText notesDir <> "/neuron.dhall"
-        fail "Not a neuron notes directory"
-  either fail pure $ parsePure configFile $ mergeWithDefault configVal
+          then defaultConfig
+          else mergeWithDefault s
+  pure $ first toText $ parsePure configFile $ mergeWithDefault configVal
+
+missingConfigError :: FilePath -> Text
+missingConfigError notesDir = do
+  T.intercalate
+    "\n"
+    [ "No neuron.dhall found",
+      "You must add a neuron.dhall to " <> toText notesDir,
+      "You can add one by running:",
+      "  touch " <> toText notesDir <> "/neuron.dhall"
+    ]
 
 -- | Pure version of `Dhall.input Dhall.auto`
 --

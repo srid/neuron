@@ -21,7 +21,7 @@ import System.FilePath ((</>))
 import System.Posix (fileExist, getFileStatus, modificationTime)
 
 -- | Copy the given directory tree from @src@ as base directory, to @dest@
-rsyncDir :: (MonadIO m, WithLog env Message m) => FilePath -> FilePath -> DC.DirTree FilePath -> m ()
+rsyncDir :: (MonadIO m, WithLog env Message m) => FilePath -> FilePath -> DC.DirTree FilePath -> m Int
 rsyncDir src dest = \case
   DC.DirTree_File fp _ -> do
     let (a, b) = (src </>) &&& (dest </>) $ fp
@@ -34,12 +34,16 @@ rsyncDir src dest = \case
           pure $ Just bT
         False ->
           pure Nothing
-    when (maybe True (aT >) mBT) $ do
-      log I $ toText $ "+ " <> fp
-      liftIO $ copyFile a b
+    if maybe True (aT >) mBT
+      then do
+        log I $ toText $ "+ " <> fp
+        liftIO $ copyFile a b
+        pure 1
+      else pure 0
   DC.DirTree_Symlink {} ->
-    pure ()
+    pure 0
   DC.DirTree_Dir dp children -> do
     liftIO $ createDirectoryIfMissing False (dest </> dp)
-    forM_ (Map.elems children) $ \childTree -> do
-      rsyncDir src dest childTree
+    fmap sum $
+      forM (Map.elems children) $ \childTree -> do
+        rsyncDir src dest childTree

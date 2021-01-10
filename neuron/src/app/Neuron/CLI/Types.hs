@@ -79,7 +79,7 @@ newtype App a = App (ReaderT (Env App) IO a)
 
 instance MonadFail App where
   fail s = do
-    log EE $ toText s
+    log EE $ indentAllButFirstLine 4 $ toText s
     exitFailure
 
 getAppEnv :: App (Env App)
