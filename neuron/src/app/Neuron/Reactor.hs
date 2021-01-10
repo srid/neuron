@@ -44,7 +44,6 @@ import Neuron.Plugin (PluginRegistry)
 import qualified Neuron.Plugin as Plugin
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import Neuron.Version (neuronVersion)
-import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
 import Neuron.Zettelkasten.ID (ZettelID (..))
@@ -57,7 +56,6 @@ import Neuron.Zettelkasten.Zettel.Error
     splitZettelIssues,
     zettelErrorText,
   )
-import Reflex
 import Reflex.Dom.Core
 import Reflex.FSNotify (FSEvent, watchTree)
 import Reflex.Host.Headless (runHeadlessApp)
@@ -101,35 +99,44 @@ reflexApp appEnv = do
           ffor errDyn $ \err ->
             run $ log EE err
       Right treeDyn -> do
-        routeDataE <- dyn $
+        routeDataWithErrorsE <- dyn $
           ffor treeDyn $ \(cfg, tree') -> do
             (cache, zs, fileTree) <- run $ loadZettelkastenFromFiles cfg tree'
-            run $ buildRouteData fileTree zs cache
-        routeDataDyn <- holdDyn [] routeDataE
+            routeData <- run $ buildRouteData fileTree zs cache
+            pure (routeData, Cache._neuronCache_errors cache)
+        routeDataDyn <- holdDyn [] $ fst <$> routeDataWithErrorsE
         widgetHold_ blank $
           ffor (attach (current routeDataDyn) (updated routeDataDyn)) $ \(old, new) -> do
-            let oldMap = DMap.fromList old
-                modified :: [DSum Route Identity] =
-                  fforMaybe new $ \case
-                    rd@(r@(Route_Zettel _) :=> newVal) ->
-                      case DMap.lookup r oldMap of
-                        Just oldVal -> guard (oldVal /= newVal) >> pure rd
-                        Nothing -> pure rd
-                    rd@(r@(Route_Impulse _) :=> newVal) ->
-                      case DMap.lookup r oldMap of
-                        Just oldVal -> guard (oldVal /= newVal) >> pure rd
-                        Nothing -> pure rd
-                    rd@(r@Route_ImpulseStatic :=> newVal) ->
-                      case DMap.lookup r oldMap of
-                        Just oldVal -> guard (oldVal /= newVal) >> pure rd
-                        Nothing -> pure rd
-                _removed = DMap.toList $ DMap.difference oldMap oldMap
-            unless (null modified) $ do
-              run $ writeRoutes modified
-            run awaitLog
+            let mModified = modifiedRoutesOnly old new
+            run $ do
+              whenJust mModified writeRoutes
+              awaitLog
+        widgetHold_ blank $
+          ffor (snd <$> routeDataWithErrorsE) $ \errors ->
+            run $ reportAllErrors errors
   pure never
+  where
+    modifiedRoutesOnly :: [DSum Route Identity] -> [DSum Route Identity] -> Maybe (NonEmpty (DSum Route Identity))
+    modifiedRoutesOnly old new =
+      let oldMap = DMap.fromList old
+          modified :: [DSum Route Identity] =
+            fforMaybe new $ \case
+              rd@(r@(Route_Zettel _) :=> newVal) ->
+                case DMap.lookup r oldMap of
+                  Just oldVal -> guard (oldVal /= newVal) >> pure rd
+                  Nothing -> pure rd
+              rd@(r@(Route_Impulse _) :=> newVal) ->
+                case DMap.lookup r oldMap of
+                  Just oldVal -> guard (oldVal /= newVal) >> pure rd
+                  Nothing -> pure rd
+              rd@(r@Route_ImpulseStatic :=> newVal) ->
+                case DMap.lookup r oldMap of
+                  Just oldVal -> guard (oldVal /= newVal) >> pure rd
+                  Nothing -> pure rd
+          _removed = DMap.toList $ DMap.difference oldMap oldMap
+       in nonEmpty modified
 
-writeRoutes :: [DSum Route Identity] -> App ()
+writeRoutes :: NonEmpty (DSum Route Identity) -> App ()
 writeRoutes new = do
   log D $ "Rendering routes (" <> show (length new) <> " slugs) ..."
   -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
@@ -182,10 +189,12 @@ doGen = do
   -- Build all routes, and their data
   routes <- buildRouteData fileTree zs cache
   -- Render and write the routes
-  writeRoutes routes
+  case nonEmpty routes of
+    Nothing -> log I "No routes to render"
+    Just r -> writeRoutes r
   -- Report any errors and finish.
   -- TODO(reactive)
-  reportAllErrors (Cache._neuronCache_graph cache) (Cache._neuronCache_errors cache)
+  reportAllErrors (Cache._neuronCache_errors cache)
   getOutputDir >>= \(toText -> outputDir) ->
     log (I' Done) $ "Finished generating at " <> outputDir
 
@@ -212,19 +221,14 @@ buildRouteData fileTree zs cache = do
 reportAllErrors ::
   forall m env.
   (MonadIO m, WithLog env Message m) =>
-  ZettelGraph ->
   Map ZettelID ZettelIssue ->
   m ()
-reportAllErrors g issues = do
+reportAllErrors issues = do
   let (errors, badLinks) = splitZettelIssues issues
   whenNotNull badLinks $ \_ -> do
     let zn = length badLinks
         ln = length $ concat $ toList . snd . snd <$> badLinks
-    if zn < 3
-      then forM_ badLinks $ \(zid, _qErrs) -> do
-        let path = maybe "??" Z.zettelPath $ G.getZettel zid g
-        log W $ "Missing link in " <> toText path
-      else log W $ show ln <> " missing links found across " <> show zn <> " notes (see Impulse)"
+    log W $ show ln <> " missing links found across " <> show zn <> " notes (see Impulse)"
   uncurry reportError `mapM_` errors
   where
     -- Report an error in the terminal
