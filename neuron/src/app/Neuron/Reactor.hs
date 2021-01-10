@@ -27,7 +27,6 @@ import Data.Dependent.Sum (DSum ((:=>)))
 import Data.List (nubBy)
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (Some), foldSome)
-import qualified Data.Text as T
 import Data.Time (NominalDiffTime)
 import Neuron.CLI.Logging
 import Neuron.CLI.Types
@@ -95,7 +94,9 @@ reflexApp appEnv = do
         dyn $
           ffor errDyn $ \err ->
             -- TODO: Just return error as is, and handle it at top-level.
-            run $ log EE err
+            run $ do
+              log EE "Config file error"
+              log E $ indentAllButFirstLine 4 err
       Right treeDyn -> do
         -- Build route data
         routeDataWithErrorsE <- dyn $
@@ -123,7 +124,7 @@ reflexApp appEnv = do
             run $ do
               outputDir <- getOutputDir
               case n' of
-                0 -> log (I' Done) "Nothing written to output"
+                0 -> log (I' Done) "Nothing updated in output directory"
                 n -> log (I' Done) $ show n <> " files updated in " <> toText outputDir
         pure $ () <$ done
   where
@@ -235,14 +236,6 @@ reportAllErrors issues = do
       -- We don't know the full path to this zettel; so just print the ID.
       log EE $ "Cannot accept Zettel ID: " <> unZettelID zid
       log E $ indentAllButFirstLine 4 err
-      where
-        indentAllButFirstLine :: Int -> Text -> Text
-        indentAllButFirstLine n = T.strip . unlines . go . lines
-          where
-            go [] = []
-            go [x] = [x]
-            go (x : xs) =
-              x : fmap (toText . (replicate n ' ' <>) . toString) xs
 
 genRouteHtml ::
   forall m a.
@@ -337,16 +330,16 @@ watchDirWithDebounce ms dirPath' = do
 -- Functions from old Generate.hs
 
 loadZettelkasten ::
-  (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) =>
-  m (NeuronCache, [ZettelC], DC.DirTree FilePath)
+  (MonadIO m, MonadApp m, WithLog env Message m) =>
+  m (Either Text (NeuronCache, [ZettelC], DC.DirTree FilePath))
 loadZettelkasten = do
   -- TODO Instead of logging here, put this info in Impulse footer.
   locateZettelFiles >>= \case
-    Left e -> fail (toString e)
+    Left e -> pure $ Left e
     Right (config, fileTree) ->
-      loadZettelkastenFromFiles config fileTree
+      Right <$> loadZettelkastenFromFiles config fileTree
 
-loadZettelkastenFromFiles :: (WithLog env Message m, MonadFail m, MonadApp m, MonadIO m) => Config -> DC.DirTree FilePath -> m (NeuronCache, [ZettelC], DC.DirTree FilePath)
+loadZettelkastenFromFiles :: (WithLog env Message m, MonadApp m, MonadIO m) => Config -> DC.DirTree FilePath -> m (NeuronCache, [ZettelC], DC.DirTree FilePath)
 loadZettelkastenFromFiles config fileTree = do
   let plugins = Config.getPlugins config
   log D $ "Plugins enabled: " <> Plugin.pluginRegistryShow plugins
@@ -370,20 +363,23 @@ locateZettelFiles = do
           -- Look for neuron.dhall
           case DC.walkContents "neuron.dhall" t of
             Just (DC.DirTree_File _ dhallFp) -> do
-              config <- Config.getConfigFromFile dhallFp
-              Plugin.filterSources (Config.getPlugins config) t >>= \case
-                Nothing ->
-                  pure $ Left "No source files to process"
-                Just tF ->
-                  pure $ Right (config, tF)
+              Config.getConfigFromFile dhallFp >>= \case
+                Left e ->
+                  pure $ Left e
+                Right config ->
+                  Plugin.filterSources (Config.getPlugins config) t >>= \case
+                    Nothing ->
+                      pure $ Left "No source files to process"
+                    Just tF ->
+                      pure $ Right (config, tF)
             _ ->
-              pure $ Left "No neuron.dhall found"
+              pure $ Left $ Config.missingConfigError d
         Nothing ->
           pure $ Left "Empty directory"
 
 -- | Load the Zettelkasten from disk, using the given list of zettel files
 loadZettelkastenFromFilesWithPlugins ::
-  (MonadIO m, MonadApp m, MonadFail m, WithLog env Message m) =>
+  (MonadIO m, MonadApp m, WithLog env Message m) =>
   PluginRegistry ->
   DC.DirTree FilePath ->
   m

@@ -80,8 +80,9 @@ runAppCommand genAct = do
         if cached
           then Cache.getCache
           else do
-            (ch, _, _) <- Reactor.loadZettelkasten
-            pure ch
+            Reactor.loadZettelkasten >>= \case
+              Left e -> fail $ toString e
+              Right (ch, _, _) -> pure ch
       case query of
         Left someQ ->
           withSome someQ $ \q -> do
