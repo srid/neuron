@@ -13,7 +13,11 @@
 
 -- | React to the world, and build our Zettelkasten
 -- TODO: Split this module appropriately.
-module Neuron.Reactor where
+module Neuron.Reactor
+  ( generateSite,
+    loadZettelkasten,
+  )
+where
 
 import Colog (WithLog, log)
 import Control.Monad.Fix (MonadFix)
@@ -67,20 +71,16 @@ import qualified System.FSNotify as FSN
 import System.FilePath (isRelative, makeRelative, takeExtension, (</>))
 
 generateSite :: Bool -> App ()
-generateSite = \case
-  False ->
-    -- Initial one-off gen
-    doGen
-  True -> do
-    -- Generate, and monitor for changes.
-    appEnv <- getAppEnv
-    liftIO $
-      runHeadlessApp $ do
-        reflexApp appEnv
+generateSite continueWatching = do
+  appEnv <- getAppEnv
+  liftIO $
+    runHeadlessApp $ do
+      generated <- reflexApp appEnv
+      pure $ bool generated never continueWatching
 
 reflexApp ::
   forall m t.
-  (Monad m, MonadIO m, PerformEvent t m, MonadFix m, MonadHold t m, MonadIO (Performable m), TriggerEvent t m, PostBuild t m, Adjustable t m, NotReady t m) =>
+  (MonadIO m, PerformEvent t m, MonadFix m, MonadHold t m, MonadIO (Performable m), TriggerEvent t m, PostBuild t m, Adjustable t m, NotReady t m) =>
   Env App ->
   m (Event t ())
 reflexApp appEnv = do
@@ -88,31 +88,49 @@ reflexApp appEnv = do
       run a = liftIO $ runApp appEnv a
   -- Build a dynamic of directory tree
   treeOrErrorDyn <- eitherDyn =<< buildDirTreeDyn appEnv
-  dyn_ $
+  switchHold never <=< dyn $
     ffor treeOrErrorDyn $ \case
-      Left errDyn ->
-        dyn_ $
+      Left errDyn -> do
+        -- Display neuron.dhall errors
+        dyn $
           ffor errDyn $ \err ->
+            -- TODO: Just return error as is, and handle it at top-level.
             run $ log EE err
       Right treeDyn -> do
-        dyn_ $ run . copyStaticFiles . snd <$> treeDyn
+        -- Build route data
         routeDataWithErrorsE <- dyn $
           ffor treeDyn $ \(cfg, tree') -> do
             (cache, zs, fileTree) <- run $ loadZettelkastenFromFiles cfg tree'
             routeData <- run $ buildRouteData fileTree zs cache
             pure (routeData, Cache._neuronCache_errors cache)
-        routeDataDyn <- holdDyn [] $ fst <$> routeDataWithErrorsE
+        -- Do everything now.
+        routeDataWithErrorsE' <- rememberLastEvent (mempty, mempty) routeDataWithErrorsE
+        done <- performEvent $
+          ffor (attach (current $ snd <$> treeDyn) routeDataWithErrorsE') $ \(filesTree, ((oldRoutes, _oldErrs), (newRoutes, newErrors))) -> do
+            -- Copy static files
+            nStatic <- liftIO $ runApp appEnv $ copyStaticFiles filesTree
+            -- Write modified routes
+            nRoutes <- case modifiedRoutesOnly oldRoutes newRoutes of
+              Just rs -> liftIO $ runApp appEnv $ writeRoutes rs
+              Nothing -> pure 0
+            -- Report errors
+            liftIO $ runApp appEnv $ reportAllErrors newErrors
+            pure $ nRoutes + nStatic
+
+        -- let done = fforMaybe (mergeWith combine [doneRoutesE, doneStaticFilesE, doneErrsE]) id
         widgetHold_ blank $
-          ffor (attach (current routeDataDyn) (updated routeDataDyn)) $ \(old, new) -> do
-            let mModified = modifiedRoutesOnly old new
+          ffor done $ \n' ->
             run $ do
-              whenJust mModified writeRoutes
-              log D "Finished writing all routes."
-        widgetHold_ blank $
-          ffor (snd <$> routeDataWithErrorsE) $ \errors ->
-            run $ reportAllErrors errors
-  pure never
+              outputDir <- getOutputDir
+              case n' of
+                0 -> log (I' Done) "Nothing written to output"
+                n -> log (I' Done) $ show n <> " files updated in " <> toText outputDir
+        pure $ () <$ done
   where
+    rememberLastEvent :: a -> Event t a -> m (Event t (a, a))
+    rememberLastEvent x evt = do
+      xDyn <- holdDyn x evt
+      pure $ attach (current xDyn) evt
     modifiedRoutesOnly :: [DSum Route Identity] -> [DSum Route Identity] -> Maybe (NonEmpty (DSum Route Identity))
     modifiedRoutesOnly old new =
       let oldMap = DMap.fromList old
@@ -134,7 +152,7 @@ reflexApp appEnv = do
           _removed = DMap.toList $ DMap.difference oldMap oldMap
        in nonEmpty modified
 
-writeRoutes :: NonEmpty (DSum Route Identity) -> App ()
+writeRoutes :: NonEmpty (DSum Route Identity) -> App Int
 writeRoutes new = do
   log D $ "Rendering routes (" <> show (length new) <> " slugs) ..."
   -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
@@ -147,10 +165,11 @@ writeRoutes new = do
     r@Z.Route_ImpulseStatic :=> Identity val ->
       (Some r,) <$> genRouteHtml r val
   -- log D "Writing to disk ..."
-  forM_ routeHtml $ \(someR, html) -> do
-    flip writeRouteHtml html `foldSome` someR
+  fmap sum $
+    forM routeHtml $ \(someR, html) -> do
+      fmap (bool 0 1) $ flip writeRouteHtml html `foldSome` someR
 
-copyStaticFiles :: (MonadApp m, MonadIO m, WithLog env Message m) => DC.DirTree FilePath -> m ()
+copyStaticFiles :: (MonadApp m, MonadIO m, WithLog env Message m) => DC.DirTree FilePath -> m Int
 copyStaticFiles fileTree = do
   case DC.walkContents "static" fileTree of
     Just staticTree@(DC.DirTree_Dir _ _) -> do
@@ -158,7 +177,7 @@ copyStaticFiles fileTree = do
       outputDir <- getOutputDir
       DC.rsyncDir notesDir outputDir staticTree
     _ ->
-      pure ()
+      pure 0
 
 buildDirTreeDyn :: (MonadIO (Performable m), MonadIO m, PerformEvent t m, TriggerEvent t m, PostBuild t m, MonadHold t m, MonadFix m) => Env App -> m (Dynamic t (Either Text (Config, DC.DirTree FilePath)))
 buildDirTreeDyn appEnv = do
@@ -176,29 +195,6 @@ buildDirTreeDyn appEnv = do
           -- with changed paths.
           locateZettelFiles
   holdDyn tree0 treeE
-
--- Do a one-off generation from top to bottom.
--- No incrementall stuff (yet)
--- TODO: Move the non-reflex IO engine to Neuron/Reactor/Builder.hs
-doGen :: App ()
-doGen = do
-  -- TODO: cache is used in reportError just to get zettrel title. Fix that.
-  -- Then build a dynamic of route data only
-  (cache, zs, fileTree) <- loadZettelkasten
-  -- Static files
-  -- TODO(reactive)
-  copyStaticFiles fileTree
-  -- Build all routes, and their data
-  routes <- buildRouteData fileTree zs cache
-  -- Render and write the routes
-  case nonEmpty routes of
-    Nothing -> log I "No routes to render"
-    Just r -> writeRoutes r
-  -- Report any errors and finish.
-  -- TODO(reactive)
-  reportAllErrors (Cache._neuronCache_errors cache)
-  getOutputDir >>= \(toText -> outputDir) ->
-    log (I' Done) $ "Finished generating at " <> outputDir
 
 buildRouteData :: (MonadIO m, MonadApp m, WithLog env Message m) => DC.DirTree FilePath -> [ZettelC] -> NeuronCache -> m [DSum Route Identity]
 buildRouteData fileTree zs cache = do
@@ -268,7 +264,7 @@ genRouteHtml r val = do
         let valDyn = constDyn $ W.availableData val
         Html.renderRoutePage r valDyn
 
-writeRouteHtml :: (MonadApp m, MonadIO m, WithLog env Message m) => Route a -> ByteString -> m ()
+writeRouteHtml :: (MonadApp m, MonadIO m, WithLog env Message m) => Route a -> ByteString -> m Bool
 writeRouteHtml r content = do
   outputDir <- getOutputDir
   let htmlFile = outputDir </> routeHtmlPath r
@@ -278,9 +274,12 @@ writeRouteHtml r content = do
     doesFileExist htmlFile >>= \case
       True -> Just <$> readFileText htmlFile
       False -> pure Nothing
-  unless (Just s == s0) $ do
-    log (I' Sent) $ toText $ DC.mkRelative outputDir htmlFile
-    writeFileText htmlFile s
+  if Just s /= s0
+    then do
+      log (I' Sent) $ toText $ DC.mkRelative outputDir htmlFile
+      writeFileText htmlFile s
+      pure True
+    else pure False
 
 -- | Like `watchDir` but batches file events
 --
