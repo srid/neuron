@@ -188,6 +188,7 @@ library neuron-app-lib
     Options.Applicative.Extra
     Neuron.Backend
     Neuron.Reactor
+    Neuron.Reactor.Build
     Neuron.CLI.App
     Neuron.CLI.Logging
     Neuron.CLI.New

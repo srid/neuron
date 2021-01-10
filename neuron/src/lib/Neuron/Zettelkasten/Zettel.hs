@@ -107,12 +107,6 @@ sansLinkContext z =
   where
     stripContextFromZettelQuery (someQ, _ctx) = (someQ, mempty)
 
--- instance Eq (ZettelT c) where
---   (==) = (==) `on` zettelID
-
---instance Ord (ZettelT c) where
---  compare = compare `on` zettelID
-
 instance Show (ZettelT c) where
   show Zettel {..} = "Zettel:" <> show zettelID
 

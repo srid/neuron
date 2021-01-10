@@ -43,7 +43,6 @@ getConfigFromFile configPath = do
           else mergeWithDefault s
   pure $ first toText $ parsePure configFile $ mergeWithDefault configVal
 
--- TODO: Start usin this in reflex app
 missingConfigError :: FilePath -> Text
 missingConfigError notesDir = do
   T.intercalate
