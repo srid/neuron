@@ -78,9 +78,6 @@ generateSite = \case
       runHeadlessApp $ do
         reflexApp appEnv
 
-awaitLog :: App ()
-awaitLog = log (D' Wait) "Awaiting file changes"
-
 reflexApp ::
   forall m t.
   (Monad m, MonadIO m, PerformEvent t m, MonadFix m, MonadHold t m, MonadIO (Performable m), TriggerEvent t m, PostBuild t m, Adjustable t m, NotReady t m) =>
@@ -90,15 +87,15 @@ reflexApp appEnv = do
   let run :: App a -> m a
       run a = liftIO $ runApp appEnv a
   -- Build a dynamic of directory tree
-  dtDyn <- buildDirTreeDyn appEnv
-  withConfig <- eitherDyn dtDyn
+  treeOrErrorDyn <- eitherDyn =<< buildDirTreeDyn appEnv
   dyn_ $
-    ffor withConfig $ \case
+    ffor treeOrErrorDyn $ \case
       Left errDyn ->
         dyn_ $
           ffor errDyn $ \err ->
             run $ log EE err
       Right treeDyn -> do
+        dyn_ $ run . copyStaticFiles . snd <$> treeDyn
         routeDataWithErrorsE <- dyn $
           ffor treeDyn $ \(cfg, tree') -> do
             (cache, zs, fileTree) <- run $ loadZettelkastenFromFiles cfg tree'
@@ -110,7 +107,7 @@ reflexApp appEnv = do
             let mModified = modifiedRoutesOnly old new
             run $ do
               whenJust mModified writeRoutes
-              awaitLog
+              log D "Finished writing all routes."
         widgetHold_ blank $
           ffor (snd <$> routeDataWithErrorsE) $ \errors ->
             run $ reportAllErrors errors
@@ -121,6 +118,7 @@ reflexApp appEnv = do
       let oldMap = DMap.fromList old
           modified :: [DSum Route Identity] =
             fforMaybe new $ \case
+              -- TODO: Refactor this for DRY
               rd@(r@(Route_Zettel _) :=> newVal) ->
                 case DMap.lookup r oldMap of
                   Just oldVal -> guard (oldVal /= newVal) >> pure rd
@@ -152,6 +150,16 @@ writeRoutes new = do
   forM_ routeHtml $ \(someR, html) -> do
     flip writeRouteHtml html `foldSome` someR
 
+copyStaticFiles :: (MonadApp m, MonadIO m, WithLog env Message m) => DC.DirTree FilePath -> m ()
+copyStaticFiles fileTree = do
+  case DC.walkContents "static" fileTree of
+    Just staticTree@(DC.DirTree_Dir _ _) -> do
+      notesDir <- getNotesDir
+      outputDir <- getOutputDir
+      DC.rsyncDir notesDir outputDir staticTree
+    _ ->
+      pure ()
+
 buildDirTreeDyn :: (MonadIO (Performable m), MonadIO m, PerformEvent t m, TriggerEvent t m, PostBuild t m, MonadHold t m, MonadFix m) => Env App -> m (Dynamic t (Either Text (Config, DC.DirTree FilePath)))
 buildDirTreeDyn appEnv = do
   (notesDir, tree0) <- liftIO $
@@ -179,13 +187,7 @@ doGen = do
   (cache, zs, fileTree) <- loadZettelkasten
   -- Static files
   -- TODO(reactive)
-  case DC.walkContents "static" fileTree of
-    Just staticTree@(DC.DirTree_Dir _ _) -> do
-      notesDir <- getNotesDir
-      outputDir <- getOutputDir
-      DC.rsyncDir notesDir outputDir staticTree
-    _ ->
-      pure ()
+  copyStaticFiles fileTree
   -- Build all routes, and their data
   routes <- buildRouteData fileTree zs cache
   -- Render and write the routes
