@@ -156,11 +156,13 @@ renderImpulse dataLDyn = do
         q <- mq
         -- HACK: We should "parse" the query text propertly into an ADT, the
         -- more complex the query will become. For now, just looking for "tag:???"
-        if "tag:" `T.isPrefixOf` q
-          then do
-            let ztag = T.drop 4 q
-            guard $ Tag ztag `Set.member` (zettelTags z)
-          else guard $ not $ T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
+        guard $
+          not $
+            if "tag:" `T.isPrefixOf` q
+              then
+                let ztag = T.drop 4 q
+                 in Tag ztag `Set.member` zettelTags z
+              else T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
     staticVersionNote = do
       el "p" $ do
         text "A static version of this page is available "
