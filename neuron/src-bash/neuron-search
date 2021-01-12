@@ -7,6 +7,13 @@ FILTERBY=${2}
 SEARCHFROMFIELD=${3}
 EXTENSIONS=${4}
 OPENCMD=$(envsubst -no-unset -no-empty <<<${5})
+EXACT=""
+
+# Use --exact for full text search
+if [ -z "${FILTERBY}" ]; then
+  EXACT="--exact"
+fi
+
 cd ${NOTESDIR}
 
 # The LC_ALL here is fix the "illegal byte sequence" error
@@ -16,7 +23,7 @@ cd ${NOTESDIR}
      --files-without-match | awk '{ printf "%s:# %s\n", $0, $0}'; } \
   | ( [ ${FILTERBY} ] && LC_ALL=C sort -t: -k1,2 -r || cat ) \
   | ( [ ${FILTERBY} ] && LC_ALL=C sort -t: -k1,1 -u || cat )\
-  | fzf --tac --no-sort -d ':' -n ${SEARCHFROMFIELD}.. \
+  | fzf ${EXACT} --tac --no-sort -d ':' -n ${SEARCHFROMFIELD}.. \
     --preview 'bat --style=plain --color=always {1}' \
   | awk -F: "{printf \"${NOTESDIR}/%s\", \$1}" \
   | xargs -I % ${OPENCMD} %
