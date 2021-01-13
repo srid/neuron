@@ -90,13 +90,13 @@ date: 2020-12-31
 
 
 
-#### The **Directory Tree** plugin only triggers on folders inside the Neuron project
+#### The **Directory Tree** plugin only triggers on folders inside the Neuron zettelksaten
 
-When enabled, the plugin will only work on the subfolders it finds **inside** the Neuron project. This means that it will **not** automatically create a [[folgezettel-heterarchy]] from the `index` of your project to every zettel in the project (whether you have an explicit `index.md` zettel or just rely on Neuron's [[impulse-feature]] as your home)[^man].
+When enabled, the plugin will only work on the subfolders it finds **inside** the Neuron zettelkasten. This means that it will **not** automatically create a [[folgezettel-heterarchy]] from the `index` of your project to every zettel in the project (whether you have an explicit `index.md` zettel or just rely on Neuron's [[impulse-feature]] as your home)[^man].
 
 ### Creating links and heterarchies outside the directory
 
-Directory Zettles just being normal zettels also means that you can link and create any [[folgezettel-heterarchy]] you like with the zettels created from directory trees. For example, we could create a new zettel called `Projects.md` at the 'top' of our Neuron project, to gather together all of our more focused project zettels, as a sort of gateway:
+Directory Zettles just being normal zettels also means that you can link and create any [[folgezettel-heterarchy]] you like with the zettels created from directory trees. For example, we could create a new zettel called `Projects.md` at the 'top' of our Neuron zettelkasten, to gather together all of our more focused project zettels, as a sort of gateway:
 
 ```
 # Directory structure
@@ -147,7 +147,7 @@ notes would be generated with these hierarchical tags that match their folder
 path:
 
 | Note                  | Tag                       |
-|-----------------------|---------------------------|
+| --------------------- | ------------------------- |
 | `Work.html`           | `#root`                   |
 | `WorkProjects.html`   | `#root/Work`              |
 | `FireZeMissiles.html` | `#root/Work/WorkProjects` |
