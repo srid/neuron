@@ -84,7 +84,10 @@ runAppCommand genAct = do
               Left e -> fail $ toString e
               Right (ch, _, _) -> pure ch
       case query of
-        Left someQ ->
+        Left (Left (_zid, _conn)) -> do
+          -- TODO
+          putStrLn "TODO"
+        Left (Right someQ) ->
           withSome someQ $ \q -> do
             let zsSmall = sansLinkContext <$> G.getZettels _neuronCache_graph
                 result = Q.runZettelQuery zsSmall q

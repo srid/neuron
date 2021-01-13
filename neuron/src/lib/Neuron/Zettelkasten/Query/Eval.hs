@@ -20,6 +20,7 @@ import Control.Monad.Writer
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
 import Data.Some (Some, withSome)
+import Data.Tagged
 import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Query (runZettelQuery)
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
@@ -29,6 +30,7 @@ import Neuron.Zettelkasten.Zettel
     ZettelQuery (..),
     ZettelT (..),
   )
+import qualified Neuron.Zettelkasten.Zettel as Z
 import Relude
 import qualified Text.URI as URI
 
@@ -50,11 +52,19 @@ queryConnections ::
   Zettel ->
   m [(ContextualConnection, Zettel)]
 queryConnections Zettel {..} = do
-  fmap concat $
-    forM zettelQueries $ \(someQ, ctx) -> do
+  zs :: [Zettel] <- ask
+  r1 <- fmap concat $
+    forM (fst zettelQueries) $ \((zid, conn), blk) -> do
+      case find ((== zid) . Z.zettelID) zs of
+        Nothing -> pure []
+        Just z ->
+          pure [((conn, blk), z)]
+  r2 <- fmap concat $
+    forM (snd zettelQueries) $ \someQ -> do
       qRes <- runSomeZettelQuery someQ
       links <- getConnections qRes
-      pure $ first (,ctx) <$> links
+      pure $ first (,mempty) <$> links
+  pure $ r1 <> r2
   where
     getConnections :: DSum ZettelQuery Identity -> m [(Connection, Zettel)]
     getConnections = \case
@@ -83,14 +93,20 @@ runSomeZettelQuery someQ =
     let res = runZettelQuery zs q
     pure $ q :=> Identity res
 
-type QueryUrlCache = Map Text (DSum ZettelQuery Identity)
+type QueryUrlCache = Map Text (Either (Either MissingZettel (Connection, Zettel)) (DSum ZettelQuery Identity))
 
-buildQueryUrlCache :: [Zettel] -> [Text] -> QueryUrlCache
-buildQueryUrlCache zs urls =
+buildQueryUrlCache :: [Zettel] -> [([(Text, Text)], Text)] -> QueryUrlCache
+buildQueryUrlCache zs urlsWithAttrs =
   Map.fromList $
     catMaybes $
-      urls <&> \url -> do
+      urlsWithAttrs <&> \(attrs, url) -> do
         uri <- URI.mkURI url
-        someQ <- parseQueryLink uri
-        res <- flip runReaderT zs $ runSomeZettelQuery someQ
-        pure (url, res)
+        parseQueryLink attrs uri >>= \case
+          Left (zid, conn) -> do
+            case find ((== zid) . Z.zettelID) zs of
+              Nothing -> pure (url, Left $ Left (Tagged zid))
+              Just z ->
+                pure (url, Left $ Right (conn, z))
+          Right someQ -> do
+            res <- flip runReaderT zs $ runSomeZettelQuery someQ
+            pure (url, Right res)

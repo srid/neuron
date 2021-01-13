@@ -113,16 +113,16 @@ renderPandocAsText qurlcache =
         fromMaybe x $ do
           readableInlines <-
             Map.lookup url qurlcache >>= \case
-              ZettelQuery_ZettelByID _zid _conn :=> Identity res -> do
+              Left v -> do
                 if inlines == [Str url]
                   then do
-                    case res of
-                      Left _zid ->
+                    case v of
+                      Left _ ->
                         pure inlines
-                      Right Zettel {..} ->
+                      Right (_conn, Zettel {..}) ->
                         pure [Str zettelTitle]
                   else pure inlines
-              ZettelQuery_TagZettel (unTag -> tag) :=> Identity () -> do
+              Right (ZettelQuery_TagZettel (unTag -> tag) :=> Identity ()) -> do
                 pure [Str $ "#" <> tag]
               _ ->
                 -- Ideally we should replace these with `[[..]]`

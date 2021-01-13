@@ -20,18 +20,14 @@ import Neuron.Plugin.PluginData (PluginZettelData)
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
-  ( ZettelC,
-    ZettelQuery (..),
-    ZettelT (Zettel),
-  )
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
 import Relude
-import Text.Pandoc.Definition (Block (Plain), Inline (Code, Str), Pandoc, nullAttr)
+import Text.Pandoc.Definition (Pandoc)
 import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
 import qualified Text.URI as URI
 
-type QueryExtractor = Pandoc -> [(Some ZettelQuery, [Block])]
+type QueryExtractor = Pandoc -> ZettelQueries
 
 parseZettel ::
   QueryExtractor ->
@@ -44,7 +40,7 @@ parseZettel queryExtractor fn zid s pluginData = do
   case parseMarkdown fn s of
     Left parseErr ->
       let slug = mkDefaultSlug $ unZettelID zid
-       in Left $ Zettel zid slug fn "Unknown" False Set.empty Nothing False [] (s, parseErr) pluginData
+       in Left $ Zettel zid slug fn "Unknown" False Set.empty Nothing False ([], []) (s, parseErr) pluginData
     Right (meta, doc) ->
       let -- Determine zettel title
           (title, titleInBody) = case Meta.title =<< meta of
@@ -52,10 +48,10 @@ parseZettel queryExtractor fn zid s pluginData = do
             Nothing -> fromMaybe (unZettelID zid, False) $ do
               (,True) . P.plainify . snd <$> P.getH1 doc
           -- Accumulate queries
-          queries = queryExtractor doc
+          queries@(_, tagQueries) = queryExtractor doc
           -- Determine zettel tags
           metaTags = fromMaybe [] $ Meta.tags =<< meta
-          queryTags = (getInlineTag . fst) `mapMaybe` queries
+          queryTags = getInlineTag `mapMaybe` tagQueries
           tags = Set.fromList $ metaTags <> queryTags
           -- Determine other metadata
           date = Meta.date =<< meta
@@ -88,18 +84,12 @@ parseZettels queryExtractor files =
 
 extractQueriesWithContext :: QueryExtractor
 extractQueriesWithContext doc =
-  mapMaybe (uncurry parseQueryLinkWithContext) $
-    Map.toList $ LC.queryLinksWithContext doc
+  (lefts &&& rights) $
+    mapMaybe (uncurry parseQueryLinkWithContext) $
+      Map.toList $ LC.queryLinksWithContext doc
   where
-    parseQueryLinkWithContext url ctx = do
+    parseQueryLinkWithContext url (attrs, ctx) = do
       uri <- URI.mkURI url
-      someQ <- parseQueryLink uri
-      pure (someQ, convertCtx ctx someQ)
-    convertCtx :: [Block] -> Some ZettelQuery -> [Block]
-    convertCtx ctx = \case
-      Some (ZettelQuery_ZettelByID _ _) ->
-        ctx
-      Some (ZettelQuery_ZettelsByTag (show -> qs) _ _) ->
-        one $ Plain [Str "Linking by tag: ", Code nullAttr qs]
-      _ ->
-        mempty
+      parseQueryLink attrs uri >>= \case
+        Left x -> pure $ Left (x, ctx)
+        Right x -> pure $ Right x

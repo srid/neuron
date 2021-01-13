@@ -57,6 +57,11 @@ data ZettelQuery r where
   ZettelQuery_Tags :: TagQuery -> ZettelQuery (Map Tag Natural)
   ZettelQuery_TagZettel :: Tag -> ZettelQuery ()
 
+type ZettelQueries =
+  ( [((ZettelID, Connection), [Block])],
+    [Some ZettelQuery]
+  )
+
 -- | A zettel note
 --
 -- The metadata could have been inferred from the content.
@@ -73,7 +78,7 @@ data ZettelT c = Zettel
     zettelDate :: Maybe DateMayTime,
     zettelUnlisted :: Bool,
     -- | List of all queries in the zettel
-    zettelQueries :: [(Some ZettelQuery, [Block])],
+    zettelQueries :: ZettelQueries,
     zettelContent :: c,
     zettelPluginData :: DMap PluginZettelData Identity
   }
@@ -103,7 +108,7 @@ sansContent = \case
 -- Useful to to minimize the impending JSON dump.
 sansLinkContext :: ZettelT c -> ZettelT c
 sansLinkContext z =
-  z {zettelQueries = stripContextFromZettelQuery <$> zettelQueries z}
+  z {zettelQueries = first (stripContextFromZettelQuery <$>) $ zettelQueries z}
   where
     stripContextFromZettelQuery (someQ, _ctx) = (someQ, mempty)
 

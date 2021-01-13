@@ -9,7 +9,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Frontend.Query.View
-  ( renderQueryResult,
+  ( renderQueryResult0,
+    renderQueryResult,
     renderZettelLink,
     renderZettelLinkIDOnly,
     renderMissingZettelLink,
@@ -44,7 +45,8 @@ import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.ID (Slug, ZettelID (), unZettelID)
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel
-  ( Zettel,
+  ( MissingZettel,
+    Zettel,
     ZettelQuery (..),
     ZettelT (..),
     sortZettelsReverseChronological,
@@ -53,6 +55,14 @@ import Reflex.Dom.Core hiding (count, tag)
 import Reflex.Dom.Pandoc (PandocBuilder, elPandocInlines)
 import Relude
 import Text.Pandoc.Definition (Inline)
+
+renderQueryResult0 ::
+  (PandocBuilder t m, PostBuild t m) => Maybe [Inline] -> Either MissingZettel (Connection, Zettel) -> NeuronWebT t m ()
+renderQueryResult0 minner = \case
+  Left (untag -> zid) ->
+    renderMissingZettelLink zid
+  Right (conn, target) ->
+    renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
 
 -- | Render the query results.
 renderQueryResult ::

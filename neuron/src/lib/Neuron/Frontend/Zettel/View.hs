@@ -164,8 +164,9 @@ mkReflexDomPandocConfig qurlcache =
     fromMaybe oldRender $ do
       -- TODO: replace with rd cache
       qres <- Map.lookup url qurlcache
-      pure $
-        Q.renderQueryResult minner qres
+      pure $ case qres of
+        Left r -> Q.renderQueryResult0 minner r
+        Right r -> Q.renderQueryResult minner r
 
 renderZettelContent ::
   forall t m.

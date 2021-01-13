@@ -19,10 +19,11 @@ module Neuron.Zettelkasten.Query.Parser
 where
 
 import Data.Default (Default (def))
+import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))
 import Data.TagTree (TagNode (..), TagPattern, constructTag, mkDefaultTagQuery, mkTagPattern)
 import Neuron.Zettelkasten.Connection (Connection (..))
-import Neuron.Zettelkasten.ID (getZettelID, parseZettelID)
+import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
 import Relude
@@ -32,13 +33,14 @@ import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam, hasQueryFlag)
 
 -- | Parse a query if any from a Markdown link
-parseQueryLink :: URI -> Maybe (Some ZettelQuery)
-parseQueryLink uri =
+parseQueryLink :: [(Text, Text)] -> URI -> Maybe (Either (ZettelID, Connection) (Some ZettelQuery))
+parseQueryLink attrs uri =
   case bareFileUrlPath uri of
     Just path -> do
       -- Allow raw filename (ending with ".md").
       zid <- getZettelID (toString path)
-      pure $ Some $ ZettelQuery_ZettelByID zid def
+      let conn = maybe OrdinaryConnection (const Folgezettel) (Map.lookup "rel" (Map.fromList attrs))
+      pure $ Left (zid, conn)
     Nothing -> do
       (URI.unRText -> "z") <- URI.uriScheme uri
       -- Non-relevant parts of the URI should be empty
@@ -56,26 +58,26 @@ parseQueryLink uri =
             case parseZettelID path of
               Left _ -> empty
               Right zid ->
-                pure $ Some $ ZettelQuery_ZettelByID zid conn
+                pure $ Left (zid, conn)
         -- Parse z:zettel/<id>
         (URI.unRText -> "zettel") :| [URI.unRText -> path]
           | noSlash -> do
             case parseZettelID path of
               Left _ -> empty
               Right zid ->
-                pure $ Some $ ZettelQuery_ZettelByID zid conn
+                pure $ Left (zid, conn)
         -- Parse z:zettels?...
         (URI.unRText -> "zettels") :| []
           | noSlash -> do
-            pure $ Some $ ZettelQuery_ZettelsByTag (mkDefaultTagQuery $ tagPatterns uri "tag") conn (queryView uri)
+            pure $ Right $ Some $ ZettelQuery_ZettelsByTag (mkDefaultTagQuery $ tagPatterns uri "tag") conn (queryView uri)
         -- Parse z:tags?...
         (URI.unRText -> "tags") :| []
           | noSlash -> do
-            pure $ Some $ ZettelQuery_Tags (mkDefaultTagQuery $ tagPatterns uri "filter")
+            pure $ Right $ Some $ ZettelQuery_Tags (mkDefaultTagQuery $ tagPatterns uri "filter")
         -- Parse z:tag/foo
         (URI.unRText -> "tag") :| (nonEmpty . fmap (TagNode . URI.unRText) -> Just tagNodes)
           | noSlash -> do
-            pure $ Some $ ZettelQuery_TagZettel (constructTag tagNodes)
+            pure $ Right $ Some $ ZettelQuery_TagZettel (constructTag tagNodes)
         _ -> empty
   where
     bareFileUrlPath u = do

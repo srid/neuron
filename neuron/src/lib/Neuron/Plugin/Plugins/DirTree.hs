@@ -80,7 +80,7 @@ addTagAndQuery z =
         zettelTags z `Set.union` dirZettelTags,
       -- Add the tag query for building graph connections.
       zettelQueries =
-        zettelQueries z <> fmap (,mempty) (maybeToList childrenTagQuery)
+        second (\qs -> qs <> maybeToList childrenTagQuery) (zettelQueries z)
     }
   where
     dirZettelTags = fromMaybe Set.empty $ do

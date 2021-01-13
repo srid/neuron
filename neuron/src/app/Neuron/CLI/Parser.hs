@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -102,10 +103,10 @@ commandParser defaultNotesDir now = do
         fmap
           Left
           ( fmap
-              (Some . flip Q.ZettelQuery_ZettelByID connDummy)
+              (Left . (,connDummy))
               (option zettelIDReader (long "id"))
               <|> fmap
-                (\x -> Some $ Q.ZettelQuery_ZettelsByTag (mkDefaultTagQuery x) connDummy def)
+                (\x -> Right $ Some $ Q.ZettelQuery_ZettelsByTag (mkDefaultTagQuery x) connDummy def)
                 (many (mkTagPattern <$> option str (long "tag" <> short 't')))
               <|> option queryReader (long "uri" <> short 'u')
           )
@@ -155,12 +156,12 @@ commandParser defaultNotesDir now = do
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
       eitherReader $ first show . parseZettelID . toText
-    queryReader :: ReadM (Some Q.ZettelQuery)
+    queryReader :: ReadM (Either (ZettelID, C.Connection) (Some Q.ZettelQuery))
     queryReader =
       eitherReader $ \(toText -> s) -> case URI.mkURI s of
         Right uri ->
           maybe (Left "Not a valid query") Right $
-            Q.parseQueryLink uri
+            Q.parseQueryLink mempty uri
         Left e ->
           Left $ displayException e
     dateReader :: ReadM DateMayTime
