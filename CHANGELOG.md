@@ -9,7 +9,9 @@
   - neuronignore: Exclude directories and markdown files via `.neuronignore`. (#499)
     - By default, recursively read Markdown files in notes directory. This behaviour can be disabled via the neuronignore plugin.
 - Reduce error verbosity (CLI & web) in the scenario of there being innumerous broken wiki-links.
-- `neuron rib` is renamed to `neuron gen` (neuron has migrated from rib/shake to reflex)
+- CLI
+  - `neuron rib` is renamed to `neuron gen` (neuron has migrated from rib/shake to reflex)
+  - `neuron search`: full-text search uses exact matching (#526)
 - Performance improvements:
   - Improve incremental generation performance (`-w) (#522)
 
