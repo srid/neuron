@@ -41,6 +41,7 @@ let
     reflex-fsnotify = thunkSource ./dep/reflex-fsnotify;
     co-log = thunkSource ./dep/co-log;
     chronos = thunkSource ./dep/chronos;
+    cm = thunkSource ./dep/commonmark;
   };
 
   searchBuilder = ''
@@ -66,6 +67,10 @@ let
       # Jailbreak to allow newer base
       doJailbreak (self.callCabal2nix "reflex-fsnotify" sources.reflex-fsnotify {});
     
+
+    commonmark = self.callCabal2nix "commonmark" (sources.cm + "/commonmark") {};
+    commonmark-pandoc = self.callCabal2nix "commonmark-pandoc" (sources.cm + "/commonmark-pandoc") {};
+    commonmark-extensions = self.callCabal2nix "commonmark-extensions" (sources.cm + "/commonmark-extensions") {};
     # Because co-log (and chronos) is broken on nixpkgs
     co-log-core =
       fuckSymlinkAbuse (self.callCabal2nix "co-log-core" (sources.co-log + "/co-log-core") {});

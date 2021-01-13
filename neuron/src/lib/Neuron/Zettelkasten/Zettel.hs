@@ -52,7 +52,6 @@ type MissingZettel = Tagged "MissingZettel" ZettelID
 -- NOTE: This type is defined in this module, rather than Zettel.Query, because
 -- of the mutual dependency with the `ZettelT` type.
 data ZettelQuery r where
-  ZettelQuery_ZettelByID :: ZettelID -> Connection -> ZettelQuery (Either MissingZettel Zettel)
   ZettelQuery_ZettelsByTag :: TagQuery -> Connection -> ZettelsView -> ZettelQuery [Zettel]
   ZettelQuery_Tags :: TagQuery -> ZettelQuery (Map Tag Natural)
   ZettelQuery_TagZettel :: Tag -> ZettelQuery ()

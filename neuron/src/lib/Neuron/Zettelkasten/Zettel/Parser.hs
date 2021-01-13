@@ -25,7 +25,6 @@ import Relude
 import Text.Pandoc.Definition (Pandoc)
 import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
-import qualified Text.URI as URI
 
 type QueryExtractor = Pandoc -> ZettelQueries
 
@@ -89,7 +88,6 @@ extractQueriesWithContext doc =
       Map.toList $ LC.queryLinksWithContext doc
   where
     parseQueryLinkWithContext url (attrs, ctx) = do
-      uri <- URI.mkURI url
-      parseQueryLink attrs uri >>= \case
+      parseQueryLink attrs url >>= \case
         Left x -> pure $ Left (x, ctx)
         Right x -> pure $ Right x

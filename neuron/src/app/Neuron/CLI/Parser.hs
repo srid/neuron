@@ -38,7 +38,6 @@ import Options.Applicative.Extra
     hostPortOption,
   )
 import Relude
-import qualified Text.URI as URI
 
 -- | optparse-applicative parser for neuron CLI
 commandParser :: FilePath -> LocalTime -> Parser AppConfig
@@ -158,12 +157,9 @@ commandParser defaultNotesDir now = do
       eitherReader $ first show . parseZettelID . toText
     queryReader :: ReadM (Either (ZettelID, C.Connection) (Some Q.ZettelQuery))
     queryReader =
-      eitherReader $ \(toText -> s) -> case URI.mkURI s of
-        Right uri ->
-          maybe (Left "Not a valid query") Right $
-            Q.parseQueryLink mempty uri
-        Left e ->
-          Left $ displayException e
+      eitherReader $ \(toText -> s) ->
+        maybe (Left "Not a valid query") Right $
+          Q.parseQueryLink mempty s
     dateReader :: ReadM DateMayTime
     dateReader =
       maybeReader (parseDateMayTime . toText)

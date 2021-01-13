@@ -47,8 +47,8 @@ getLinks = W.query go
     go = maybeToList . uriLinkFromInline
     uriLinkFromInline :: B.Inline -> Maybe ([(Text, Text)], Text)
     uriLinkFromInline inline = do
-      B.Link (_, _, attrs) _inlines (url, _title) <- pure inline
-      pure (attrs, url)
+      B.Link (_, _, attrs) _inlines (url, title) <- pure inline
+      pure (("title", title) : attrs, url)
 
 getFirstParagraphText :: Pandoc -> Maybe [B.Inline]
 getFirstParagraphText = listToMaybe . W.query go

@@ -22,26 +22,30 @@ import Data.Default (Default (def))
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))
 import Data.TagTree (TagNode (..), TagPattern, constructTag, mkDefaultTagQuery, mkTagPattern)
+import qualified Data.Text as T
 import Neuron.Zettelkasten.Connection (Connection (..))
 import Neuron.Zettelkasten.ID
 import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
 import Neuron.Zettelkasten.Zettel (ZettelQuery (..))
-import Relude
+import Relude hiding (traceShowId)
 import Text.URI (URI)
 import qualified Text.URI as URI
 import Text.URI.QQ (queryKey)
 import Text.URI.Util (getQueryParam, hasQueryFlag)
 
 -- | Parse a query if any from a Markdown link
-parseQueryLink :: [(Text, Text)] -> URI -> Maybe (Either (ZettelID, Connection) (Some ZettelQuery))
-parseQueryLink attrs uri =
-  case bareFileUrlPath uri of
-    Just path -> do
+-- TODO: queryConn should be read from link attribute!
+parseQueryLink :: [(Text, Text)] -> Text -> Maybe (Either (ZettelID, Connection) (Some ZettelQuery))
+parseQueryLink attrs url = do
+  let conn = case Map.lookup "title" (Map.fromList attrs) of
+        Just s -> if s == show Folgezettel then Folgezettel else def
+        _ -> def
+  determineLinkType url >>= \case
+    Left path -> do
       -- Allow raw filename (ending with ".md").
       zid <- getZettelID (toString path)
-      let conn = maybe OrdinaryConnection (const Folgezettel) (Map.lookup "rel" (Map.fromList attrs))
       pure $ Left (zid, conn)
-    Nothing -> do
+    Right uri -> do
       (URI.unRText -> "z") <- URI.uriScheme uri
       -- Non-relevant parts of the URI should be empty
       guard $ isNothing $ URI.uriFragment uri
@@ -50,7 +54,6 @@ parseQueryLink attrs uri =
           noSlash = URI.uriAuthority uri == Left False
           -- Found "z:/" instead of "z:"
           hasSlash = URI.uriAuthority uri == Left True
-          conn = fromMaybe def (queryConn uri)
       case zPath of
         -- Parse z:/<id>
         (URI.unRText -> path) :| []
@@ -80,11 +83,13 @@ parseQueryLink attrs uri =
             pure $ Right $ Some $ ZettelQuery_TagZettel (constructTag tagNodes)
         _ -> empty
   where
-    bareFileUrlPath u = do
-      guard $ isNothing $ URI.uriScheme u
-      guard $ URI.uriAuthority u == Left False
-      (False, path :| []) <- URI.uriPath u
-      pure $ URI.unRText path
+    -- NOTE: This treats "foo.html" as zettel ref (why shouldn't it?), but not
+    -- "./foo.html"
+    determineLinkType :: Text -> Maybe (Either Text URI)
+    determineLinkType s = do
+      if "/" `T.isInfixOf` s || ":" `T.isInfixOf` s
+        then Right <$> URI.mkURI s
+        else pure $ Left s
 
 tagPatterns :: URI -> Text -> [TagPattern]
 tagPatterns uri k =
@@ -113,9 +118,3 @@ queryView uri =
       | hasQueryFlag [queryKey|showid|] uri = LinkView_ShowID
       | otherwise = LinkView_Default
     limit = readMaybe . toString =<< getQueryParam [queryKey|limit|] uri
-
-queryConn :: URI -> Maybe Connection
-queryConn uri =
-  if getQueryParam [queryKey|type|] uri == Just "branch"
-    then Just Folgezettel
-    else Nothing

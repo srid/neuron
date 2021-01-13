@@ -14,7 +14,7 @@ let
       useWarp = true;
 
       packages = let 
-        cm = hackGet ./dep/commonmark;
+        cm = hackGet ../dep/commonmark;
       in {
         relude = hackGet ./dep/relude;
         # TODO: Ignore bin, .vscode, etc.

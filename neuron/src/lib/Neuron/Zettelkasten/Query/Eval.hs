@@ -32,7 +32,6 @@ import Neuron.Zettelkasten.Zettel
   )
 import qualified Neuron.Zettelkasten.Zettel as Z
 import Relude
-import qualified Text.URI as URI
 
 runQuery :: [Zettel] -> Some ZettelQuery -> DSum ZettelQuery Identity
 runQuery zs someQ =
@@ -56,7 +55,9 @@ queryConnections Zettel {..} = do
   r1 <- fmap concat $
     forM (fst zettelQueries) $ \((zid, conn), blk) -> do
       case find ((== zid) . Z.zettelID) zs of
-        Nothing -> pure []
+        Nothing -> do
+          tell [Tagged zid]
+          pure []
         Just z ->
           pure [((conn, blk), z)]
   r2 <- fmap concat $
@@ -68,13 +69,14 @@ queryConnections Zettel {..} = do
   where
     getConnections :: DSum ZettelQuery Identity -> m [(Connection, Zettel)]
     getConnections = \case
+      {-
       ZettelQuery_ZettelByID _ conn :=> Identity res ->
         case res of
           Left zid -> do
             tell [zid]
             pure []
           Right z ->
-            pure [(conn, z)]
+            pure [(conn, z)] -}
       ZettelQuery_ZettelsByTag _ conn _mview :=> Identity res ->
         pure $ (conn,) <$> res
       ZettelQuery_Tags _ :=> _ ->
@@ -100,8 +102,7 @@ buildQueryUrlCache zs urlsWithAttrs =
   Map.fromList $
     catMaybes $
       urlsWithAttrs <&> \(attrs, url) -> do
-        uri <- URI.mkURI url
-        parseQueryLink attrs uri >>= \case
+        parseQueryLink attrs url >>= \case
           Left (zid, conn) -> do
             case find ((== zid) . Z.zettelID) zs of
               Nothing -> pure (url, Left $ Left (Tagged zid))

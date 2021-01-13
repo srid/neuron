@@ -33,12 +33,6 @@ import Relude
 
 runZettelQuery :: [Zettel] -> ZettelQuery r -> r
 runZettelQuery zs = \case
-  ZettelQuery_ZettelByID zid _conn ->
-    case find ((== zid) . zettelID) zs of
-      Nothing ->
-        Left $ Tagged zid
-      Just z ->
-        Right z
   ZettelQuery_ZettelsByTag pats _mconn _mview ->
     zettelsByTag zs pats
   ZettelQuery_Tags pats ->
@@ -85,8 +79,6 @@ zettelQueryResultJson q r skippedZettels =
   where
     resultJson :: r -> Value
     resultJson res = case q of
-      ZettelQuery_ZettelByID _ _mconn ->
-        toJSON res
       ZettelQuery_ZettelsByTag _ _mconn _mview ->
         toJSON res
       ZettelQuery_Tags _ ->

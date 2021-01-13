@@ -53,7 +53,7 @@ import Reflex.Dom.Pandoc
     PandocBuilder,
     elPandoc,
   )
-import Relude hiding ((&))
+import Relude hiding (traceShowId, (&))
 import Text.Pandoc.Definition (Pandoc (Pandoc))
 
 -- TODO:L Get rid of graph argument which is only used to:
@@ -166,7 +166,7 @@ mkReflexDomPandocConfig qurlcache =
       qres <- Map.lookup url qurlcache
       pure $ case qres of
         Left r -> Q.renderQueryResult0 minner r
-        Right r -> Q.renderQueryResult minner r
+        Right r -> Q.renderQueryResult r
 
 renderZettelContent ::
   forall t m.

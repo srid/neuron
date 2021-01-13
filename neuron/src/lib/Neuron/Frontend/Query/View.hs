@@ -66,14 +66,8 @@ renderQueryResult0 minner = \case
 
 -- | Render the query results.
 renderQueryResult ::
-  (PandocBuilder t m, PostBuild t m) => Maybe [Inline] -> DSum ZettelQuery Identity -> NeuronWebT t m ()
-renderQueryResult minner = \case
-  ZettelQuery_ZettelByID _zid conn :=> Identity res -> do
-    case res of
-      Left (untag -> zid) ->
-        renderMissingZettelLink zid
-      Right target ->
-        renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
+  (PandocBuilder t m, PostBuild t m) => DSum ZettelQuery Identity -> NeuronWebT t m ()
+renderQueryResult = \case
   q@(ZettelQuery_ZettelsByTag pats conn view) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
@@ -119,8 +113,6 @@ renderQuery :: DomBuilder t m => Some ZettelQuery -> m ()
 renderQuery someQ =
   elAttr "div" ("class" =: "ui horizontal divider" <> "title" =: "Neuron ZettelQuery") $ do
     case someQ of
-      Some (ZettelQuery_ZettelByID _ _) ->
-        blank
       Some (ZettelQuery_ZettelsByTag q _mconn _mview) -> do
         let qs = show q
             desc = toText $ "Zettels tagged '" <> qs <> "'"

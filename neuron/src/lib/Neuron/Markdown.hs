@@ -28,6 +28,7 @@ import Control.Monad.Combinators (manyTill)
 import Data.Tagged (Tagged (..))
 import qualified Data.Text as T
 import qualified Data.YAML as YAML
+import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Zettel.Meta (Meta)
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
@@ -38,13 +39,8 @@ import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
 import Text.Show (Show (show))
 import Text.URI
-  ( QueryParam (QueryParam),
-    URI (URI, uriQuery),
-    mkPathPiece,
-    mkURI,
-  )
 import qualified Text.URI as URI
-import Text.URI.QQ (queryKey, queryValue, scheme)
+import Text.URI.QQ (scheme)
 
 type ZettelReader = FilePath -> Text -> Either ZettelParseError (Maybe Meta, Pandoc)
 
@@ -165,7 +161,7 @@ inlineTagSpec =
         Nothing ->
           fail "Not an inline tag"
         Just (URI.render -> url) ->
-          pure $! cmAutoLink url
+          pure $! cmAutoLink OrdinaryConnection url
     makeZTagURI :: Text -> Maybe URI
     makeZTagURI s = do
       tag <- mkPathPiece "tag"
@@ -173,11 +169,13 @@ inlineTagSpec =
       pure $ URI (Just [scheme|z|]) (Left False) (Just (False, tag :| path)) [] Nothing
 
 -- | Create a commonmark link element
-cmAutoLink :: CM.IsInline a => Text -> a
-cmAutoLink url =
+cmAutoLink :: CM.IsInline a => Connection -> Text -> a
+cmAutoLink conn url =
   CM.link url title $ CM.str url
   where
-    title = ""
+    -- Store connetion type in 'title' attribute
+    -- TODO: Put it in attrs instead; requires PR to commonmark
+    title = toText $ show conn
 
 wikiLinkSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
@@ -190,41 +188,20 @@ wikiLinkSpec =
     pLink ::
       (Monad m, CM.IsInline il) =>
       CM.InlineParser m il
-    pLink = P.try $ do
-      cmAutoLink
-        <$> P.choice
+    pLink =
+      P.try $
+        P.choice
           [ -- Folgezettel link: [[[...]]]
-            P.try (wikiLinkP 3),
+            cmAutoLink Folgezettel <$> P.try (wikiLinkP 3),
             -- Cf link: [[...]]
-            P.try (wikiLinkP 2)
+            cmAutoLink OrdinaryConnection <$> P.try (wikiLinkP 2)
           ]
     wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m Text
     wikiLinkP n = do
       void $ M.count n $ symbol '['
-      s <- fmap CM.untokenize $ some $ noneOfToks [Symbol ']', LineEnd]
-      -- Parse as URI, add connection type, and then render back. If parse fails, we
-      -- just ignore this inline.
-      case makeZLinkURI s of
-        Just uri -> do
-          void $ M.count n $ symbol ']'
-          pure $
-            URI.render $ case n of
-              3 ->
-                -- [[[..]]] adds type=branch in URI
-                uri {uriQuery = uriQuery uri <> [QueryParam [queryKey|type|] [queryValue|branch|]]}
-              _ -> uri
-        Nothing ->
-          fail "Not a neuron URI; ignoring"
-    -- Convert wiki-link to z: URI
-    makeZLinkURI :: Text -> Maybe URI
-    makeZLinkURI s =
-      case toString s of
-        ('z' : ':' : _) ->
-          mkURI s
-        _ -> do
-          -- Treat it as plain ID
-          path <- mkPathPiece s
-          pure $ URI (Just [scheme|z|]) (Left True) (Just (False, path :| [])) [] Nothing
+      s <- fmap CM.untokenize $ some $ noneOfToks [Symbol ']', Symbol '[', LineEnd]
+      void $ M.count n $ symbol ']'
+      pure s
 
 inlineTagP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
 inlineTagP =
