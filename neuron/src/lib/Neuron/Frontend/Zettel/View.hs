@@ -21,7 +21,6 @@ where
 import Control.Monad.Fix (MonadFix)
 import qualified Data.Dependent.Map as DMap
 import Data.List (maximum)
-import qualified Data.Map.Strict as Map
 import Data.Some (Some (Some))
 import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
@@ -39,7 +38,6 @@ import qualified Neuron.Frontend.Widget.InvertedTree as IT
 import Neuron.Markdown (ZettelParseError)
 import qualified Neuron.Plugin as Plugin
 import Neuron.Zettelkasten.Connection (ContextualConnection)
-import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelC,
@@ -161,15 +159,10 @@ mkReflexDomPandocConfig ::
   ZettelData ->
   Config t (NeuronWebT t m) ()
 mkReflexDomPandocConfig x =
-  Config $ \oldRender url minner -> do
-    let wikiLinkRender :: QueryUrlCache -> Text -> Maybe (NeuronWebT t m ())
-        wikiLinkRender cache url' = do
-          -- TODO: replace with rd cache
-          r <- Map.lookup url' cache
-          pure $ Q.renderQueryResult0 minner r
+  -- TODO: Handle minner??
+  Config $ \oldRender url _minner -> do
     fromMaybe oldRender $
       Plugin.renderHandleLink (R.zettelDataPlugin x) url
-        <|> wikiLinkRender (R.zettelDataQueryUrlCache x) url
 
 renderZettelContent ::
   forall t m.

@@ -11,7 +11,6 @@ module Neuron.Frontend.Route.Data where
 
 import qualified Data.Dependent.Map as DMap
 import Data.Foldable (Foldable (maximum))
-import qualified Data.Set as Set
 import Data.TagTree (mkDefaultTagQuery, mkTagPattern)
 import Data.Tree (Forest, Tree (..))
 import Neuron.Cache.Type (NeuronCache (..))
@@ -24,28 +23,18 @@ import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (indexZid)
-import qualified Neuron.Zettelkasten.Query.Eval as Q
 import Neuron.Zettelkasten.Zettel
 import Relude hiding (traceShowId)
-import qualified Text.Pandoc.Util as P
 
 mkZettelData :: NeuronCache -> ZettelC -> ZettelData
 mkZettelData NeuronCache {..} zC = do
   let z = sansContent zC
       upTree = G.backlinkForest Folgezettel z _neuronCache_graph
       backlinks = G.backlinks isJust z _neuronCache_graph
-      -- All URLs we expect to see in the final HTML.
-      allUrls =
-        Set.toList . Set.fromList $
-          -- Gather urls from zettel content, and ...
-          either (const []) (P.getLinks . zettelContent) zC
-            -- Gather urls from backlinks context.
-            <> concat (P.getLinks . snd . fst <$> backlinks)
-      qurlcache = Q.buildQueryUrlCache (G.getZettels _neuronCache_graph) allUrls
       pluginData =
         DMap.fromList $
           Plugin.routePluginData _neuronCache_graph zC <$> DMap.toList (zettelPluginData z)
-  ZettelData zC qurlcache upTree backlinks pluginData
+  ZettelData zC upTree backlinks pluginData
 
 mkImpulseData :: NeuronCache -> ImpulseData
 mkImpulseData NeuronCache {..} =

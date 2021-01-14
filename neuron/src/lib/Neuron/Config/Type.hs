@@ -67,7 +67,7 @@ defaultConfig =
   \, theme =\
   \   \"blue\"\
   \, plugins =\
-  \   [\"neuronignore\", \"dirtree\", \"tags\"] \
+  \   [\"neuronignore\", \"links\", \"dirtree\", \"tags\"] \
   \}"
 
 -- Dhall's combine operator (`//`) allows us to merge two records,

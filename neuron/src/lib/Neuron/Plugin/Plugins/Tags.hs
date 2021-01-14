@@ -22,6 +22,7 @@ module Neuron.Plugin.Plugins.Tags
 where
 
 import Control.Monad.Writer
+import Data.Default
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
@@ -42,7 +43,6 @@ import Neuron.Zettelkasten.Connection
   )
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.Query.Theme
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (count, mapMaybe, tag)
 import Reflex.Dom.Pandoc (PandocBuilder)
@@ -320,3 +320,6 @@ renderTagTree t =
             unTagNode n
           Just rest ->
             unTagNode n <> "/" <> renderTagNode rest
+
+-- View
+-- ----

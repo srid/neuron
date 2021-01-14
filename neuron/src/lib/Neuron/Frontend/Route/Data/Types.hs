@@ -27,9 +27,8 @@ import Data.Tagged (Tagged)
 import Data.Tree (Forest)
 import Neuron.Frontend.Manifest (Manifest)
 import Neuron.Frontend.Theme (Theme)
-import Neuron.Zettelkasten.Connection (ContextualConnection)
+import Neuron.Zettelkasten.Connection (Connection, ContextualConnection)
 import Neuron.Zettelkasten.ID (ZettelID)
-import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Relude
@@ -66,7 +65,6 @@ data SiteData = SiteData
 
 data ZettelData = ZettelData
   { zettelDataZettel :: ZettelC,
-    zettelDataQueryUrlCache :: QueryUrlCache,
     zettelDataUptree :: Forest Zettel,
     zettelDataBacklinks :: [(ContextualConnection, Zettel)],
     zettelDataPlugin :: DMap PluginZettelRouteData Identity
@@ -105,10 +103,13 @@ data DirZettelVal = DirZettelVal
 instance Default DirZettelVal where
   def = DirZettelVal mempty Nothing
 
+type LinkCache = Map Text (Either MissingZettel (Connection, Zettel))
+
 type TagQueryLinkCache = Map Text (DSum TagQueryLink Identity)
 
 data PluginZettelRouteData routeData where
   PluginZettelRouteData_DirTree :: PluginZettelRouteData DirZettelVal
+  PluginZettelRouteData_Links :: PluginZettelRouteData LinkCache
   PluginZettelRouteData_Tags :: PluginZettelRouteData TagQueryLinkCache
   PluginZettelRouteData_NeuronIgnore :: PluginZettelRouteData ()
 

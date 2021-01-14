@@ -7,6 +7,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- TODO: Rename to GraphQuery or just Query
 module Neuron.Zettelkasten.Query.Graph where
 
 import Data.Aeson.GADT.TH (deriveJSONGADT)

@@ -23,6 +23,7 @@ module Neuron.Zettelkasten.Zettel where
 import Data.Aeson
 import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Constraint.Extras.TH (deriveArgDict)
+import Data.Default
 import Data.Dependent.Map (DMap)
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
@@ -35,7 +36,6 @@ import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
-import Neuron.Zettelkasten.Query.Theme (ZettelsView)
 import Relude hiding (show)
 import Text.Pandoc.Builder (Block)
 import Text.Pandoc.Definition (Pandoc (..))
@@ -58,6 +58,27 @@ data DirZettel = DirZettel
   }
   deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON)
 
+data ZettelsView = ZettelsView
+  { zettelsViewLinkView :: LinkView,
+    zettelsViewGroupByTag :: Bool,
+    zettelsViewLimit :: Maybe Natural
+  }
+  deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
+
+type ZettelView = LinkView
+
+data LinkView
+  = LinkView_Default
+  | LinkView_ShowDate
+  | LinkView_ShowID
+  deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
+
+instance Default LinkView where
+  def = LinkView_Default
+
+instance Default ZettelsView where
+  def = ZettelsView def False def
+
 data TagQueryLink r where
   TagQueryLink_ZettelsByTag :: TagQuery -> Connection -> ZettelsView -> TagQueryLink [Zettel]
   TagQueryLink_Tags :: TagQuery -> TagQueryLink (Map Tag Natural)
@@ -70,13 +91,9 @@ data PluginZettelData a where
   -- positioned in a *different* directory) and parent zettel associated with a
   -- directory zettel
   PluginZettelData_DirTree :: PluginZettelData DirZettel
-  -- TODO: The `a` should ()
+  PluginZettelData_Links :: PluginZettelData [((ZettelID, Connection), [Block])]
   PluginZettelData_Tags :: PluginZettelData [Some TagQueryLink]
   PluginZettelData_NeuronIgnore :: PluginZettelData ()
-
--- TODO: Rename and normalzze as wiki-links list
-type ZettelQueries =
-  [((ZettelID, Connection), [Block])]
 
 -- ------------
 -- Zettel types
@@ -96,12 +113,11 @@ data ZettelT c = Zettel
     zettelTitle :: Text,
     -- | Whether the title was infered from the body
     zettelTitleInBody :: Bool,
+    -- | TODO: should be in plugin
     zettelTags :: Set Tag,
     -- | Date associated with the zettel if any
     zettelDate :: Maybe DateMayTime,
     zettelUnlisted :: Bool,
-    -- | List of all queries in the zettel
-    zettelQueries :: ZettelQueries,
     zettelContent :: c,
     zettelPluginData :: DMap PluginZettelData Identity
   }
@@ -131,9 +147,11 @@ sansContent = \case
 -- Useful to to minimize the impending JSON dump.
 sansLinkContext :: ZettelT c -> ZettelT c
 sansLinkContext z =
-  z {zettelQueries = stripContextFromZettelQuery <$> zettelQueries z}
-  where
-    stripContextFromZettelQuery (someQ, _ctx) = (someQ, mempty)
+  -- TODO: strip in plugin!
+  -- z {zettelQueries = stripContextFromZettelQuery <$> zettelQueries z}
+  -- where
+  -- stripContextFromZettelQuery (someQ, _ctx) = (someQ, mempty)
+  z
 
 instance Show (ZettelT c) where
   show Zettel {..} = "Zettel:" <> show zettelID

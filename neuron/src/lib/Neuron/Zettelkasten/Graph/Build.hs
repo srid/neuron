@@ -17,7 +17,6 @@ import qualified Neuron.Plugin as Plugin
 import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
-import qualified Neuron.Zettelkasten.Query.Eval as Q
 import Neuron.Zettelkasten.Zettel
   ( MissingZettel,
     Zettel,
@@ -93,9 +92,7 @@ runQueryConnections plugins zettels z =
   flip runReader zettels $ do
     -- TODO: Pluginify!
     runWriterT $ do
-      xs1 <- Q.queryConnectionsFromWikiLink z
-      xs2 <- Plugin.graphConnections plugins z
-      pure (xs1 <> xs2)
+      Plugin.graphConnections plugins z
 
 edgeFromConnection :: Zettel -> (e, Zettel) -> (Maybe e, Zettel, Zettel)
 edgeFromConnection z (c, z2) =

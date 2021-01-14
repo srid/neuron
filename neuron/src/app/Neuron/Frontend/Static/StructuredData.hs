@@ -13,7 +13,6 @@ module Neuron.Frontend.Static.StructuredData
 where
 
 import Control.Monad.Except (liftEither, runExcept)
-import qualified Data.Map.Strict as Map
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.Structured.OpenGraph
@@ -27,14 +26,13 @@ import qualified Network.URI.Encode as E
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
 import qualified Neuron.Frontend.Route.Data.Types as R
-import Neuron.Zettelkasten.Query.Eval
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelT (..),
   )
 import Reflex.Dom.Core (DomBuilder)
 import Relude
-import Text.Pandoc.Definition (Inline (Image, Link, Str), Pandoc (..))
+import Text.Pandoc.Definition (Inline (Image), Pandoc (..))
 import Text.Pandoc.Util (getFirstParagraphText, plainify)
 import qualified Text.Pandoc.Walk as W
 import Text.URI (URI, mkURI)
@@ -71,7 +69,7 @@ routeOpenGraph v r =
           let zData = snd v
           doc <- getPandocDoc $ R.zettelDataZettel zData
           para <- getFirstParagraphText doc
-          let paraText = renderPandocAsText (R.zettelDataQueryUrlCache zData) para
+          let paraText = plainify para
           pure $ T.take 300 paraText,
       _openGraph_author = R.siteDataSiteAuthor (R.routeSiteData v r),
       _openGraph_type = case r of
@@ -98,28 +96,6 @@ routeOpenGraph v r =
       flip W.query bs $ \case
         Image _ _ (url, _) -> [toText url]
         _ -> []
-
-renderPandocAsText :: QueryUrlCache -> [Inline] -> Text
-renderPandocAsText qurlcache =
-  plainify
-    . W.walk plainifyZQueries
-  where
-    plainifyZQueries :: Inline -> Inline
-    plainifyZQueries = \case
-      x@(Link attr inlines (url, title)) ->
-        fromMaybe x $ do
-          readableInlines <-
-            Map.lookup url qurlcache >>= \v ->
-              if inlines == [Str url]
-                then do
-                  case v of
-                    Left _ ->
-                      pure inlines
-                    Right (_conn, Zettel {..}) ->
-                      pure [Str zettelTitle]
-                else pure inlines
-          pure $ Link attr readableInlines (url, title)
-      x -> x
 
 data BaseUrlError
   = BaseUrlNotAbsolute

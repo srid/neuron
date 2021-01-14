@@ -8,9 +8,9 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
+-- TODO: Rename to Link View or something. Or move to Links plugin?
 module Neuron.Frontend.Query.View
-  ( renderQueryResult0,
-    renderZettelLink,
+  ( renderZettelLink,
     renderZettelLinkIDOnly,
     renderMissingZettelLink,
     style,
@@ -33,24 +33,9 @@ import Neuron.Frontend.Route
 import Neuron.Frontend.Widget (elNoSnippetSpan, elTime)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.ID (Slug, ZettelID (), unZettelID)
-import Neuron.Zettelkasten.Query.Theme (LinkView (..))
 import Neuron.Zettelkasten.Zettel
-  ( MissingZettel,
-    Zettel,
-    ZettelT (..),
-  )
 import Reflex.Dom.Core hiding (count, tag)
-import Reflex.Dom.Pandoc (PandocBuilder, elPandocInlines)
 import Relude
-import Text.Pandoc.Definition (Inline)
-
-renderQueryResult0 ::
-  (PandocBuilder t m, PostBuild t m) => Maybe [Inline] -> Either MissingZettel (Connection, Zettel) -> NeuronWebT t m ()
-renderQueryResult0 minner = \case
-  Left (untag -> zid) ->
-    renderMissingZettelLink zid
-  Right (conn, target) ->
-    renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
 
 -- | Render a link to an individual zettel.
 renderZettelLink ::

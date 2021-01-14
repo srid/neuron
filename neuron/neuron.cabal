@@ -79,6 +79,8 @@ library
     Neuron.Plugin.Type
     Neuron.Plugin.Plugins.DirTree
     Neuron.Plugin.Plugins.NeuronIgnore
+    Neuron.Plugin.Plugins.Tags
+    Neuron.Plugin.Plugins.Links
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Error
@@ -87,9 +89,6 @@ library
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Graph
-    Neuron.Zettelkasten.Query.Theme
-    Neuron.Zettelkasten.Query.Eval
-    Neuron.Zettelkasten.Query.Parser
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
     Neuron.Zettelkasten.Graph.Build
