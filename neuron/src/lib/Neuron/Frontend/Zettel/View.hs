@@ -78,7 +78,7 @@ renderZettel siteData zData = do
     -- We use -24px (instead of -14px) here so as to not scroll all the way to
     -- title, and as to leave some of the tree visible as "hint" to the user.
     lift $ AS.marker "zettel-container-anchor" (-24)
-    let rdpConfig = mkReflexDomPandocConfig $ R.zettelDataQueryUrlCache zData
+    let rdpConfig = mkReflexDomPandocConfig zData
     divClass "zettel-view" $ do
       let zc = R.zettelDataZettel zData
           z = sansContent zc
@@ -156,17 +156,22 @@ renderBottomMenu themeDyn mIndexZettel mEditUrl = do
       semanticIcon "wave square"
 
 mkReflexDomPandocConfig ::
+  forall t m.
   (PandocBuilder t m, PostBuild t m) =>
-  QueryUrlCache ->
+  ZettelData ->
   Config t (NeuronWebT t m) ()
-mkReflexDomPandocConfig qurlcache =
-  Config $ \oldRender url minner ->
-    fromMaybe oldRender $ do
-      -- TODO: replace with rd cache
-      qres <- Map.lookup url qurlcache
-      pure $ case qres of
-        Left r -> Q.renderQueryResult0 minner r
-        Right r -> Q.renderQueryResult r
+mkReflexDomPandocConfig x =
+  Config $ \oldRender url minner -> do
+    let wikiLinkRender :: QueryUrlCache -> Text -> Maybe (NeuronWebT t m ())
+        wikiLinkRender cache url' = do
+          -- TODO: replace with rd cache
+          qres <- Map.lookup url' cache
+          pure $ case qres of
+            Left r -> Q.renderQueryResult0 minner r
+            Right r -> Q.renderQueryResult r
+    fromMaybe oldRender $
+      Plugin.renderHandleLink (R.zettelDataPlugin x) url
+        <|> wikiLinkRender (R.zettelDataQueryUrlCache x) url
 
 renderZettelContent ::
   forall t m.

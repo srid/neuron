@@ -7,14 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Zettelkasten.Query.Eval
-  ( runQuery,
-    queryConnections,
-    -- TODO: Move to new module?
-    QueryUrlCache,
-    buildQueryUrlCache,
-  )
-where
+module Neuron.Zettelkasten.Query.Eval where
 
 import Control.Monad.Writer
 import Data.Dependent.Sum (DSum (..))

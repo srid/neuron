@@ -46,7 +46,7 @@ mkZettelData NeuronCache {..} zC = do
       qurlcache = buildQueryUrlCache (G.getZettels _neuronCache_graph) allUrls
       pluginData =
         DMap.fromList $
-          Plugin.routePluginData _neuronCache_graph <$> DMap.toList (zettelPluginData z)
+          Plugin.routePluginData _neuronCache_graph zC <$> DMap.toList (zettelPluginData z)
   ZettelData zC qurlcache upTree backlinks pluginData
 
 mkImpulseData :: NeuronCache -> ImpulseData

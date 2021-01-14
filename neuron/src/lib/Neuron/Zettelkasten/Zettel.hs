@@ -41,8 +41,9 @@ import Text.Pandoc.Builder (Block)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
 
--- | A zettel ID doesn't refer to an existing zettel
-type MissingZettel = Tagged "MissingZettel" ZettelID
+-- ------------
+-- Plugin types
+-- ------------
 
 data DirZettel = DirZettel
   { -- | What to tag this directory zettel.
@@ -57,6 +58,11 @@ data DirZettel = DirZettel
   }
   deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON)
 
+data TagQueryLink r where
+  TagQueryLink_ZettelsByTag :: TagQuery -> Connection -> ZettelsView -> TagQueryLink [Zettel]
+  TagQueryLink_Tags :: TagQuery -> TagQueryLink (Map Tag Natural)
+  TagQueryLink_TagZettel :: Tag -> TagQueryLink ()
+
 -- Every zettel is associated with custom data for each plugin.
 -- TODO: Rename to PluginZettelData
 data PluginZettelData a where
@@ -64,6 +70,8 @@ data PluginZettelData a where
   -- positioned in a *different* directory) and parent zettel associated with a
   -- directory zettel
   PluginZettelData_DirTree :: PluginZettelData DirZettel
+  -- TODO: The `a` should ()
+  PluginZettelData_Tags :: PluginZettelData [Some TagQueryLink]
   PluginZettelData_NeuronIgnore :: PluginZettelData ()
 
 -- TODO: Move this to Tags plugin
@@ -83,6 +91,13 @@ type ZettelQueries =
   ( [((ZettelID, Connection), [Block])],
     [Some ZettelQuery]
   )
+
+-- ------------
+-- Zettel types
+-- ------------
+
+-- | A zettel ID doesn't refer to an existing zettel
+type MissingZettel = Tagged "MissingZettel" ZettelID
 
 -- | A zettel note
 --
@@ -150,6 +165,12 @@ deriveGEq ''ZettelQuery
 deriveGShow ''ZettelQuery
 deriveGCompare ''ZettelQuery
 deriveArgDict ''ZettelQuery
+
+deriveJSONGADT ''TagQueryLink
+deriveGEq ''TagQueryLink
+deriveGShow ''TagQueryLink
+deriveGCompare ''TagQueryLink
+deriveArgDict ''TagQueryLink
 
 deriveArgDict ''PluginZettelData
 deriveJSONGADT ''PluginZettelData

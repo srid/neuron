@@ -17,6 +17,7 @@ import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Default (Default (..))
 import Data.Dependent.Map (DMap)
+import Data.Dependent.Sum
 import Data.GADT.Compare.TH
   ( DeriveGCompare (deriveGCompare),
     DeriveGEQ (deriveGEq),
@@ -30,9 +31,6 @@ import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
 import Neuron.Zettelkasten.Zettel
-  ( Zettel,
-    ZettelC,
-  )
 import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Relude
 import Text.URI (URI)
@@ -96,7 +94,7 @@ data Stats = Stats
   }
   deriving (Eq, Show)
 
--- Plugin types
+-- Plugin types for route data
 
 data DirZettelVal = DirZettelVal
   { dirZettelValChildren :: [Zettel],
@@ -107,8 +105,11 @@ data DirZettelVal = DirZettelVal
 instance Default DirZettelVal where
   def = DirZettelVal mempty Nothing
 
+type TagQueryLinkCache = Map Text (DSum TagQueryLink Identity)
+
 data PluginZettelRouteData routeData where
   PluginZettelRouteData_DirTree :: PluginZettelRouteData DirZettelVal
+  PluginZettelRouteData_Tags :: PluginZettelRouteData TagQueryLinkCache
   PluginZettelRouteData_NeuronIgnore :: PluginZettelRouteData ()
 
 deriveArgDict ''PluginZettelRouteData
