@@ -26,10 +26,6 @@ import Neuron.Frontend.Widget
   ( ListItem (ListItem_File, ListItem_Folder),
     listItem,
   )
-import Neuron.Plugin.PluginData
-  ( DirZettel (..),
-    PluginZettelData (PluginZettelData_DirTree),
-  )
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
@@ -38,7 +34,7 @@ import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import qualified Neuron.Zettelkasten.Query as Q
 import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
-import Neuron.Zettelkasten.Zettel (ZettelQuery (..), ZettelT (..))
+import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core
 import Relude hiding (trace, traceShow, traceShowId)
 import qualified System.Directory.Contents as DC

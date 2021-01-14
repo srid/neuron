@@ -14,14 +14,13 @@ import Data.Some (Some (..), withSome)
 import qualified Data.Text as T
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types
-import Neuron.Plugin.PluginData
 import qualified Neuron.Plugin.Plugins.DirTree as DirTree
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
-import Neuron.Zettelkasten.Zettel (ZettelC)
+import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Parser (extractQueriesWithContext, parseZettels)
 import Reflex.Dom.Core (DomBuilder, PostBuild)
 import Reflex.Dom.Widget (blank)

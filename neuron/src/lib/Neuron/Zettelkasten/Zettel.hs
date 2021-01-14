@@ -33,7 +33,6 @@ import Data.TagTree (Tag, TagQuery)
 import Data.Tagged (Tagged (Tagged))
 import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Markdown (ZettelParseError)
-import Neuron.Plugin.PluginData (PluginZettelData)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Query.Theme (ZettelsView)
@@ -44,6 +43,30 @@ import Text.Show (Show (show))
 
 -- | A zettel ID doesn't refer to an existing zettel
 type MissingZettel = Tagged "MissingZettel" ZettelID
+
+data DirZettel = DirZettel
+  { -- | What to tag this directory zettel.
+    -- We expect the arity here to be 1-2. 1 for the simplest case; and 2, if
+    -- both Foo/ and Foo.md exists, with the later being positioned *elsewhere*
+    -- in the tree, with its own parent directory.
+    _dirZettel_tags :: Set Tag,
+    -- | The tag used by its child zettels (directories and files)
+    _dirZettel_childrenTag :: Tag,
+    -- | The zettel associated with the parent directory.
+    _dirZettel_dirParent :: Maybe ZettelID
+  }
+  deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON)
+
+-- Every zettel is associated with custom data for each plugin.
+-- TODO: Rename to PluginZettelData
+data PluginZettelData a where
+  -- | Tag (and another optional tag, if the user's directory zettel is
+  -- positioned in a *different* directory) and parent zettel associated with a
+  -- directory zettel
+  PluginZettelData_DirTree :: PluginZettelData DirZettel
+  PluginZettelData_NeuronIgnore :: PluginZettelData ()
+
+-- TODO: Move this to Tags plugin
 
 -- | ZettelQuery queries individual zettels.
 --
@@ -123,13 +146,16 @@ sortZettelsReverseChronological =
   sortOn (Down . zettelDate)
 
 deriveJSONGADT ''ZettelQuery
-
 deriveGEq ''ZettelQuery
-
 deriveGShow ''ZettelQuery
 deriveGCompare ''ZettelQuery
-
 deriveArgDict ''ZettelQuery
+
+deriveArgDict ''PluginZettelData
+deriveJSONGADT ''PluginZettelData
+deriveGEq ''PluginZettelData
+deriveGShow ''PluginZettelData
+deriveGCompare ''PluginZettelData
 
 deriving instance Show (ZettelQuery (Maybe Zettel))
 

@@ -77,7 +77,6 @@ library
     Neuron.Markdown
     Neuron.Plugin
     Neuron.Plugin.Type
-    Neuron.Plugin.PluginData
     Neuron.Plugin.Plugins.DirTree
     Neuron.Plugin.Plugins.NeuronIgnore
     Neuron.Zettelkasten.ID

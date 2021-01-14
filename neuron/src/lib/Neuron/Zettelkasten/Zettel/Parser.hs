@@ -16,7 +16,6 @@ import Data.Some (Some (..))
 import Data.TagTree (Tag, unTag)
 import qualified Data.Text as T
 import Neuron.Markdown (parseMarkdown)
-import Neuron.Plugin.PluginData (PluginZettelData)
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Query.Parser (parseQueryLink)
 import Neuron.Zettelkasten.Zettel
