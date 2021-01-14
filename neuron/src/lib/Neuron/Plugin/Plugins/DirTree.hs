@@ -26,12 +26,12 @@ import Neuron.Frontend.Widget
   ( ListItem (ListItem_File, ListItem_Folder),
     listItem,
   )
+import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
-import qualified Neuron.Zettelkasten.Query as Q
 import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel
@@ -53,7 +53,7 @@ plugin =
 routePluginData :: ZettelGraph -> DirZettel -> DirZettelVal
 routePluginData g DirZettel {..} =
   let childrenQuery = mkDefaultTagQuery $ one $ Tag.mkTagPatternFromTag _dirZettel_childrenTag
-      children = Q.zettelsByTag (G.getZettels g) childrenQuery
+      children = Tags.zettelsByTag (G.getZettels g) childrenQuery
       mparent = flip G.getZettel g =<< _dirZettel_dirParent
    in DirZettelVal children mparent
 
@@ -73,10 +73,11 @@ addTagAndQuery :: forall c. HasCallStack => ZettelT c -> ZettelT c
 addTagAndQuery z =
   z
     { zettelTags =
-        zettelTags z `Set.union` dirZettelTags,
-      -- Add the tag query for building graph connections.
-      zettelQueries =
-        second (\qs -> qs <> maybeToList childrenTagQuery) (zettelQueries z)
+        zettelTags z `Set.union` dirZettelTags
+        -- Add the tag query for building graph connections.
+        -- TODO: SHIT, how to patch graph
+        -- zettelQueries =
+        --  second (\qs -> qs <> maybeToList childrenTagQuery) (zettelQueries z)
     }
   where
     dirZettelTags = fromMaybe Set.empty $ do
@@ -86,10 +87,11 @@ addTagAndQuery z =
         Nothing ->
           -- Regular zettel
           pure $ maybe Set.empty Set.singleton $ parentDirTag $ zettelPath z
-    childrenTagQuery = do
+    _childrenTagQuery = do
       DirZettel {..} <- runIdentity <$> DMap.lookup PluginZettelData_DirTree (zettelPluginData z)
       let q = TagQuery_Or $ one $ Tag.mkTagPatternFromTag _dirZettel_childrenTag
-      pure $ Some $ ZettelQuery_ZettelsByTag q Folgezettel def
+      -- Nope...
+      pure $ Some $ TagQueryLink_ZettelsByTag q Folgezettel def
 
 injectDirectoryZettels :: MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m ()
 injectDirectoryZettels = \case

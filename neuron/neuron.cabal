@@ -87,9 +87,9 @@ library
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Graph
+    Neuron.Zettelkasten.Query.Theme
     Neuron.Zettelkasten.Query.Eval
     Neuron.Zettelkasten.Query.Parser
-    Neuron.Zettelkasten.Query.Theme
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
     Neuron.Zettelkasten.Graph.Build

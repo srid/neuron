@@ -5,12 +5,14 @@
 
 module Neuron.Plugin.Type where
 
+import Control.Monad.Writer
 import Data.Default (Default (..))
 import Neuron.Frontend.Route (NeuronWebT)
+import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
-import Neuron.Zettelkasten.Zettel (ZettelC)
+import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core (DomBuilder, PostBuild)
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Widget (blank)
@@ -24,6 +26,16 @@ data Plugin routeData = Plugin
     _plugin_afterZettelRead :: forall m. MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m (),
     -- | Called after zettel files are fully parsed
     _plugin_afterZettelParse :: ZettelC -> ZettelC,
+    -- | Called before building the graph. Allows the plugin to create new connections on demand.
+    _plugin_graphConnections ::
+      forall m.
+      ( -- Running queries requires the zettels list.
+        MonadReader [Zettel] m,
+        -- Track missing zettel links in writer
+        MonadWriter [MissingZettel] m
+      ) =>
+      Zettel ->
+      m [(ContextualConnection, Zettel)],
     -- | Pre-compute all data required to render this plugin's view. Only at
     -- this stage, is the zettel graph made available.
     _plugin_routeData :: ZettelGraph -> ZettelC -> routeData,
@@ -39,6 +51,7 @@ instance Default a => Default (Plugin a) where
       { _plugin_filterSources = pure . Just,
         _plugin_afterZettelRead = void . pure,
         _plugin_afterZettelParse = id,
+        _plugin_graphConnections = const $ pure mempty,
         _plugin_routeData = def,
         _plugin_renderPanel = const blank,
         _plugin_renderHandleLink = \_ _ -> Nothing

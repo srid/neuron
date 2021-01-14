@@ -20,13 +20,11 @@ import Neuron.Frontend.Manifest (Manifest)
 import Neuron.Frontend.Route.Data.Types
 import qualified Neuron.Frontend.Theme as Theme
 import qualified Neuron.Plugin as Plugin
+import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.ID (indexZid)
-import Neuron.Zettelkasten.Query (zettelsByTag)
-import Neuron.Zettelkasten.Query.Eval
-  ( buildQueryUrlCache,
-  )
+import qualified Neuron.Zettelkasten.Query.Eval as Q
 import Neuron.Zettelkasten.Zettel
 import Relude hiding (traceShowId)
 import qualified Text.Pandoc.Util as P
@@ -43,7 +41,7 @@ mkZettelData NeuronCache {..} zC = do
           either (const []) (P.getLinks . zettelContent) zC
             -- Gather urls from backlinks context.
             <> concat (P.getLinks . snd . fst <$> backlinks)
-      qurlcache = buildQueryUrlCache (G.getZettels _neuronCache_graph) allUrls
+      qurlcache = Q.buildQueryUrlCache (G.getZettels _neuronCache_graph) allUrls
       pluginData =
         DMap.fromList $
           Plugin.routePluginData _neuronCache_graph zC <$> DMap.toList (zettelPluginData z)
@@ -63,7 +61,7 @@ mkImpulseData NeuronCache {..} =
             flip fmap clusters $ \(zs :: [Tree Zettel]) ->
               G.backlinksMulti Folgezettel zs graph
           stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
-          pinnedZettels = zettelsByTag (G.getZettels graph) $ mkDefaultTagQuery [mkTagPattern "pinned"]
+          pinnedZettels = Tags.zettelsByTag (G.getZettels graph) $ mkDefaultTagQuery [mkTagPattern "pinned"]
        in ImpulseData (fmap sortCluster clustersWithUplinks) orphans errors stats pinnedZettels
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortCluster fs =

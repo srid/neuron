@@ -31,9 +31,7 @@ import qualified Neuron.Cache as Cache
 import qualified Neuron.Cache.Type as Cache
 import qualified Neuron.Reactor as Reactor
 import qualified Neuron.Version as Version
-import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
-import Neuron.Zettelkasten.Zettel (sansLinkContext)
 import Options.Applicative
 import Relude
 import System.Directory (getCurrentDirectory)
@@ -84,14 +82,14 @@ runAppCommand genAct = do
               Left e -> fail $ toString e
               Right (ch, _, _) -> pure ch
       case query of
-        Left (Left (_zid, _conn)) -> do
+        Left (_zid, _conn) -> do
           -- TODO
           putStrLn "TODO"
-        Left (Right someQ) ->
+        {- Left (Right someQ) ->
           withSome someQ $ \q -> do
             let zsSmall = sansLinkContext <$> G.getZettels _neuronCache_graph
                 result = Q.runZettelQuery zsSmall q
-            putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson q result _neuronCache_errors
+            putLTextLn $ Aeson.encodeToLazyText $ Q.zettelQueryResultJson q result _neuronCache_errors -}
         Right someQ ->
           withSome someQ $ \q -> do
             let result = Q.runGraphQuery _neuronCache_graph q

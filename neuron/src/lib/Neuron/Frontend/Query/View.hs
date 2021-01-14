@@ -10,7 +10,6 @@
 
 module Neuron.Frontend.Query.View
   ( renderQueryResult0,
-    renderQueryResult,
     renderZettelLink,
     renderZettelLinkIDOnly,
     renderMissingZettelLink,
@@ -20,36 +19,25 @@ where
 
 import Clay (Css, em, (?))
 import qualified Clay as C
-import Data.Dependent.Sum (DSum (..))
-import qualified Data.Map.Strict as Map
 import Data.Some (Some (..))
 import Data.TagTree
   ( Tag (..),
-    TagNode (..),
-    constructTag,
-    foldTagTree,
-    matchTagQuery,
-    tagTree,
   )
 import Data.Tagged (untag)
 import qualified Data.Text as T
-import Data.Tree (Forest, Tree (Node))
-import GHC.Natural (naturalToInt)
 import Neuron.Frontend.Route
   ( NeuronWebT,
     Route (..),
     neuronRouteLink,
   )
-import Neuron.Frontend.Widget (elNoSnippetSpan, elTime, semanticIcon)
+import Neuron.Frontend.Widget (elNoSnippetSpan, elTime)
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import Neuron.Zettelkasten.ID (Slug, ZettelID (), unZettelID)
-import Neuron.Zettelkasten.Query.Theme (LinkView (..), ZettelsView (..))
+import Neuron.Zettelkasten.Query.Theme (LinkView (..))
 import Neuron.Zettelkasten.Zettel
   ( MissingZettel,
     Zettel,
-    ZettelQuery (..),
     ZettelT (..),
-    sortZettelsReverseChronological,
   )
 import Reflex.Dom.Core hiding (count, tag)
 import Reflex.Dom.Pandoc (PandocBuilder, elPandocInlines)
@@ -63,67 +51,6 @@ renderQueryResult0 minner = \case
     renderMissingZettelLink zid
   Right (conn, target) ->
     renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
-
--- | Render the query results.
-renderQueryResult ::
-  (PandocBuilder t m, PostBuild t m) => DSum ZettelQuery Identity -> NeuronWebT t m ()
-renderQueryResult = \case
-  q@(ZettelQuery_ZettelsByTag pats conn view) :=> Identity res -> do
-    el "section" $ do
-      renderQuery $ Some q
-      if zettelsViewGroupByTag view
-        then forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
-          el "section" $ do
-            elClass "span" "ui basic pointing below grey label" $ do
-              semanticIcon "tag"
-              text $ unTag tag
-            el "ul" $
-              forM_ zettelGrp $ \z ->
-                el "li" $
-                  renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
-        else el "ul" $ do
-          let resToDisplay =
-                case zettelsViewLimit view of
-                  Nothing -> res
-                  Just (naturalToInt -> limit) -> take limit res
-          forM_ resToDisplay $ \z -> do
-            el "li" $
-              renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
-          when (length resToDisplay /= length res) $ do
-            el "li" $
-              elClass "span" "ui grey text" $ do
-                text $ "(displaying only " <> show (length resToDisplay) <> " out of " <> show (length res) <> " zettels)"
-  q@(ZettelQuery_Tags _) :=> Identity res -> do
-    el "section" $ do
-      renderQuery $ Some q
-      renderTagTree $ foldTagTree $ tagTree res
-  ZettelQuery_TagZettel tag :=> Identity () ->
-    renderInlineTag tag mempty $ do
-      text "#"
-      text $ unTag tag
-  where
-    -- TODO: Instead of doing this here, group the results in runQuery itself.
-    groupZettelsByTagsMatching pats matches =
-      fmap sortZettelsReverseChronological $
-        Map.fromListWith (<>) $
-          flip concatMap matches $ \z ->
-            flip concatMap (zettelTags z) $ \t -> [(t, [z]) | matchTagQuery t pats]
-
-renderQuery :: DomBuilder t m => Some ZettelQuery -> m ()
-renderQuery someQ =
-  elAttr "div" ("class" =: "ui horizontal divider" <> "title" =: "Neuron ZettelQuery") $ do
-    case someQ of
-      Some (ZettelQuery_ZettelsByTag q _mconn _mview) -> do
-        let qs = show q
-            desc = toText $ "Zettels tagged '" <> qs <> "'"
-        elAttr "span" ("class" =: "ui basic pointing below black label" <> "title" =: desc) $ do
-          semanticIcon "tags"
-          text qs
-      Some (ZettelQuery_Tags q) -> do
-        let qs = show q
-        text $ "Tags matching '" <> qs <> "'"
-      Some (ZettelQuery_TagZettel _tag) -> do
-        blank
 
 -- | Render a link to an individual zettel.
 renderZettelLink ::
@@ -190,44 +117,7 @@ renderZettelLinkIDOnly zid slug =
     elClass "span" "zettel-link" $ do
       neuronRouteLink (Some $ Route_Zettel slug) mempty $ text $ unZettelID zid
 
-renderTagTree ::
-  forall t m.
-  (DomBuilder t m, PostBuild t m) =>
-  Forest (NonEmpty TagNode, Natural) ->
-  NeuronWebT t m ()
-renderTagTree t =
-  divClass "tag-tree" $
-    renderForest mempty t
-  where
-    renderForest :: [TagNode] -> Forest (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
-    renderForest ancestors forest =
-      el "ul" $ do
-        forM_ forest $ \tree ->
-          el "li" $ renderTree ancestors tree
-    renderTree :: [TagNode] -> Tree (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
-    renderTree ancestors (Node (tagNode, count) children) = do
-      renderTag ancestors (tagNode, count)
-      renderForest (ancestors <> toList tagNode) $ toList children
-    renderTag :: [TagNode] -> (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
-    renderTag ancestors (tagNode, count) = do
-      let tag = constructTag $ maybe tagNode (<> tagNode) $ nonEmpty ancestors
-          tit = show count <> " zettels tagged"
-          cls = bool "" "inactive" $ count == 0
-      divClass "node" $ do
-        renderInlineTag tag ("class" =: cls <> "title" =: tit) $
-          text $ renderTagNode tagNode
-    renderTagNode :: NonEmpty TagNode -> Text
-    renderTagNode = \case
-      n :| (nonEmpty -> mrest) ->
-        case mrest of
-          Nothing ->
-            unTagNode n
-          Just rest ->
-            unTagNode n <> "/" <> renderTagNode rest
-
-renderInlineTag :: (DomBuilder t m, PostBuild t m) => Tag -> Map Text Text -> m () -> NeuronWebT t m ()
-renderInlineTag tag = neuronRouteLink (Some $ Route_Impulse $ Just tag)
-
+-- TODO: To Tags.hs
 style :: Css
 style = do
   zettelLinkCss

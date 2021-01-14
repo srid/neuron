@@ -23,6 +23,7 @@ import Relude
 -- | YAML metadata in a zettel markdown file
 data Meta = Meta
   { title :: Maybe Text,
+    -- TODO: Move to Tags Plugin!
     tags :: Maybe [Tag],
     -- | Creation day
     date :: Maybe DateMayTime,

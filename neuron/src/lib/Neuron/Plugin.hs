@@ -8,6 +8,7 @@
 
 module Neuron.Plugin where
 
+import Control.Monad.Writer
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum (..))
@@ -20,6 +21,7 @@ import qualified Neuron.Plugin.Plugins.DirTree as DirTree
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Plugin.Type (Plugin (..))
+import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
@@ -67,6 +69,20 @@ afterZettelRead :: MonadState (Map ZettelID ZIDRef) m => PluginRegistry -> DC.Di
 afterZettelRead plugins fileTree = do
   forM_ (plugins <&> \sp -> withSome sp _plugin_afterZettelRead) $ \f -> f fileTree
 
+graphConnections ::
+  forall m.
+  ( -- Running queries requires the zettels list.
+    MonadReader [Zettel] m,
+    -- Track missing zettel links in writer
+    MonadWriter [MissingZettel] m
+  ) =>
+  PluginRegistry ->
+  Zettel ->
+  m [(ContextualConnection, Zettel)]
+graphConnections plugins z = do
+  fmap concat $ forM (plugins <&> \sp -> withSome sp _plugin_graphConnections) $ \f -> f z
+
+-- TODO: Use _plugin_* functions directly!
 routePluginData :: ZettelGraph -> ZettelC -> DSum PluginZettelData Identity -> DSum PluginZettelRouteData Identity
 routePluginData g z = \case
   PluginZettelData_DirTree :=> Identity dirTree ->

@@ -13,7 +13,6 @@ module Neuron.Frontend.Static.StructuredData
 where
 
 import Control.Monad.Except (liftEither, runExcept)
-import Data.Dependent.Sum
 import qualified Data.Map.Strict as Map
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
@@ -23,7 +22,6 @@ import Data.Structured.OpenGraph
     OpenGraph (..),
   )
 import Data.Structured.OpenGraph.Render (renderOpenGraph)
-import Data.TagTree (Tag (unTag))
 import qualified Data.Text as T
 import qualified Network.URI.Encode as E
 import Neuron.Frontend.Route (Route (..))
@@ -32,7 +30,6 @@ import qualified Neuron.Frontend.Route.Data.Types as R
 import Neuron.Zettelkasten.Query.Eval
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
-    ZettelQuery (..),
     ZettelT (..),
   )
 import Reflex.Dom.Core (DomBuilder)
@@ -112,21 +109,15 @@ renderPandocAsText qurlcache =
       x@(Link attr inlines (url, title)) ->
         fromMaybe x $ do
           readableInlines <-
-            Map.lookup url qurlcache >>= \case
-              Left v -> do
-                if inlines == [Str url]
-                  then do
-                    case v of
-                      Left _ ->
-                        pure inlines
-                      Right (_conn, Zettel {..}) ->
-                        pure [Str zettelTitle]
-                  else pure inlines
-              Right (ZettelQuery_TagZettel (unTag -> tag) :=> Identity ()) -> do
-                pure [Str $ "#" <> tag]
-              _ ->
-                -- Ideally we should replace these with `[[..]]`
-                Nothing
+            Map.lookup url qurlcache >>= \v ->
+              if inlines == [Str url]
+                then do
+                  case v of
+                    Left _ ->
+                      pure inlines
+                    Right (_conn, Zettel {..}) ->
+                      pure [Str zettelTitle]
+                else pure inlines
           pure $ Link attr readableInlines (url, title)
       x -> x
 

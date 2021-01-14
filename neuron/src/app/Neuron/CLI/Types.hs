@@ -48,9 +48,6 @@ import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import Neuron.Zettelkasten.Query.Graph as Q (GraphQuery (..))
-import Neuron.Zettelkasten.Zettel as Q
-  ( ZettelQuery (..),
-  )
 import Relude
 import System.FilePath ((</>))
 
@@ -135,7 +132,7 @@ newtype OpenCommand = OpenCommand
 data QueryCommand = QueryCommand
   { -- Use cache instead of building the zettelkasten from scratch
     cached :: Bool,
-    query :: Either (Either (ZettelID, Connection) (Some Q.ZettelQuery)) (Some Q.GraphQuery)
+    query :: Either (ZettelID, Connection) (Some Q.GraphQuery)
   }
   deriving (Eq, Show)
 

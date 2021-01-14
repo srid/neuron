@@ -12,24 +12,34 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Plugin.Plugins.Tags where
+module Neuron.Plugin.Plugins.Tags
+  ( plugin,
+    routePluginData,
+    renderHandleLink,
+    -- TODO: why expose
+    zettelsByTag,
+  )
+where
 
 import Control.Monad.Writer
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import Data.Some
+import Data.Some (Some (..), withSome)
 import Data.TagTree
 import qualified Data.TagTree as Tag
 import Data.Tree (Forest, Tree (Node))
 import GHC.Natural (naturalToInt)
 import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route
-import Neuron.Frontend.Route.Data.Types
-import Neuron.Frontend.Widget
+import Neuron.Frontend.Route.Data.Types (TagQueryLinkCache)
+import Neuron.Frontend.Widget (semanticIcon)
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
+  ( Connection (Folgezettel),
+    ContextualConnection,
+  )
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.Query.Theme
@@ -37,6 +47,7 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (count, mapMaybe, tag)
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding (trace, traceShow, traceShowId)
+import Text.Pandoc.Definition (Pandoc)
 import qualified Text.Pandoc.Util as P
 import Text.URI (URI)
 import qualified Text.URI as URI
@@ -49,18 +60,25 @@ plugin :: Plugin TagQueryLinkCache
 plugin =
   def
     { _plugin_afterZettelParse = second parseTagQueryLinks,
+      _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink
     }
 
-parseTagQueryLinks :: forall c. HasCallStack => ZettelT c -> ZettelT c
+parseTagQueryLinks :: HasCallStack => ZettelT Pandoc -> ZettelT Pandoc
 parseTagQueryLinks z =
-  z
+  let allUrls =
+        Set.toList . Set.fromList $
+          P.getLinks $ zettelContent z
+      tagLinks =
+        catMaybes $
+          allUrls <&> \(attrs, url) -> do
+            parseQueryLink attrs url
+   in z {zettelPluginData = DMap.insert PluginZettelData_Tags (Identity tagLinks) (zettelPluginData z)}
 
 routePluginData :: ZettelGraph -> ZettelC -> [Some TagQueryLink] -> TagQueryLinkCache
 routePluginData g z _qs =
   let allUrls =
         Set.toList . Set.fromList $
-          -- Gather urls from zettel content, and ...
           either (const []) (P.getLinks . zettelContent) z
    in buildTagQueryLinkCache (G.getZettels g) allUrls
 
@@ -133,11 +151,6 @@ parseQueryLink attrs url = do
 
 -- Query evaluation
 -- ----------------
-
-runQuery :: [Zettel] -> Some TagQueryLink -> DSum TagQueryLink Identity
-runQuery zs someQ =
-  flip runReader zs $ runSomeTagQueryLink someQ
-
 -- Query connections in the given zettel
 --
 -- Tell all errors; query parse errors (as already stored in `Zettel`) as well
@@ -185,6 +198,7 @@ runTagQueryLink :: [Zettel] -> TagQueryLink r -> r
 runTagQueryLink zs = \case
   TagQueryLink_ZettelsByTag pats _mconn _mview ->
     zettelsByTag zs pats
+  -- TODO: Remove this constructor, not going to bother with allTags, can implement later.
   TagQueryLink_Tags pats ->
     Map.filterWithKey (const . flip matchTagQuery pats) allTags
   TagQueryLink_TagZettel _tag ->

@@ -53,7 +53,7 @@ data DirZettel = DirZettel
     _dirZettel_tags :: Set Tag,
     -- | The tag used by its child zettels (directories and files)
     _dirZettel_childrenTag :: Tag,
-    -- | The zettel associated with the parent directory.
+    -- | The directory zettel associated with the parent directory.
     _dirZettel_dirParent :: Maybe ZettelID
   }
   deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON)
@@ -74,23 +74,9 @@ data PluginZettelData a where
   PluginZettelData_Tags :: PluginZettelData [Some TagQueryLink]
   PluginZettelData_NeuronIgnore :: PluginZettelData ()
 
--- TODO: Move this to Tags plugin
-
--- | ZettelQuery queries individual zettels.
---
--- It does not care about the relationship *between* those zettels; for that use `GraphQuery`.
---
--- NOTE: This type is defined in this module, rather than Zettel.Query, because
--- of the mutual dependency with the `ZettelT` type.
-data ZettelQuery r where
-  ZettelQuery_ZettelsByTag :: TagQuery -> Connection -> ZettelsView -> ZettelQuery [Zettel]
-  ZettelQuery_Tags :: TagQuery -> ZettelQuery (Map Tag Natural)
-  ZettelQuery_TagZettel :: Tag -> ZettelQuery ()
-
+-- TODO: Rename and normalzze as wiki-links list
 type ZettelQueries =
-  ( [((ZettelID, Connection), [Block])],
-    [Some ZettelQuery]
-  )
+  [((ZettelID, Connection), [Block])]
 
 -- ------------
 -- Zettel types
@@ -145,7 +131,7 @@ sansContent = \case
 -- Useful to to minimize the impending JSON dump.
 sansLinkContext :: ZettelT c -> ZettelT c
 sansLinkContext z =
-  z {zettelQueries = first (stripContextFromZettelQuery <$>) $ zettelQueries z}
+  z {zettelQueries = stripContextFromZettelQuery <$> zettelQueries z}
   where
     stripContextFromZettelQuery (someQ, _ctx) = (someQ, mempty)
 
@@ -160,12 +146,6 @@ sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
   sortOn (Down . zettelDate)
 
-deriveJSONGADT ''ZettelQuery
-deriveGEq ''ZettelQuery
-deriveGShow ''ZettelQuery
-deriveGCompare ''ZettelQuery
-deriveArgDict ''ZettelQuery
-
 deriveJSONGADT ''TagQueryLink
 deriveGEq ''TagQueryLink
 deriveGShow ''TagQueryLink
@@ -177,18 +157,6 @@ deriveJSONGADT ''PluginZettelData
 deriveGEq ''PluginZettelData
 deriveGShow ''PluginZettelData
 deriveGCompare ''PluginZettelData
-
-deriving instance Show (ZettelQuery (Maybe Zettel))
-
-deriving instance Show (ZettelQuery [Zettel])
-
-deriving instance Show (ZettelQuery (Map Tag Natural))
-
-deriving instance Eq (ZettelQuery (Maybe Zettel))
-
-deriving instance Eq (ZettelQuery [Zettel])
-
-deriving instance Eq (ZettelQuery (Map Tag Natural))
 
 deriving instance Eq (ZettelT Pandoc)
 

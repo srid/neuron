@@ -165,10 +165,8 @@ mkReflexDomPandocConfig x =
     let wikiLinkRender :: QueryUrlCache -> Text -> Maybe (NeuronWebT t m ())
         wikiLinkRender cache url' = do
           -- TODO: replace with rd cache
-          qres <- Map.lookup url' cache
-          pure $ case qres of
-            Left r -> Q.renderQueryResult0 minner r
-            Right r -> Q.renderQueryResult r
+          r <- Map.lookup url' cache
+          pure $ Q.renderQueryResult0 minner r
     fromMaybe oldRender $
       Plugin.renderHandleLink (R.zettelDataPlugin x) url
         <|> wikiLinkRender (R.zettelDataQueryUrlCache x) url

@@ -12,8 +12,7 @@ module Neuron.Zettelkasten.Zettel.Parser where
 import Data.Dependent.Map (DMap)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import Data.Some (Some (..))
-import Data.TagTree (Tag, unTag)
+import Data.TagTree (unTag)
 import qualified Data.Text as T
 import Neuron.Markdown (parseMarkdown)
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
@@ -38,7 +37,7 @@ parseZettel queryExtractor fn zid s pluginData = do
   case parseMarkdown fn s of
     Left parseErr ->
       let slug = mkDefaultSlug $ unZettelID zid
-       in Left $ Zettel zid slug fn "Unknown" False Set.empty Nothing False ([], []) (s, parseErr) pluginData
+       in Left $ Zettel zid slug fn "Unknown" False Set.empty Nothing False [] (s, parseErr) pluginData
     Right (meta, doc) ->
       let -- Determine zettel title
           (title, titleInBody) = case Meta.title =<< meta of
@@ -46,11 +45,11 @@ parseZettel queryExtractor fn zid s pluginData = do
             Nothing -> fromMaybe (unZettelID zid, False) $ do
               (,True) . P.plainify . snd <$> P.getH1 doc
           -- Accumulate queries
-          queries@(_, tagQueries) = queryExtractor doc
+          queries = queryExtractor doc
           -- Determine zettel tags
+          -- TODO: Move to Tags plugin!
           metaTags = fromMaybe [] $ Meta.tags =<< meta
-          queryTags = getInlineTag `mapMaybe` tagQueries
-          tags = Set.fromList $ metaTags <> queryTags
+          tags = Set.fromList metaTags
           -- Determine other metadata
           date = Meta.date =<< meta
           slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
@@ -60,10 +59,6 @@ parseZettel queryExtractor fn zid s pluginData = do
   where
     _dirFolgezettelMarkdown (unTag -> tag) =
       "\n\n" <> "[[[z:zettels?tag=" <> tag <> "/*]]]"
-    getInlineTag :: Some ZettelQuery -> Maybe Tag
-    getInlineTag = \case
-      Some (ZettelQuery_TagZettel tag) -> Just tag
-      _ -> Nothing
     mkDefaultSlug :: Text -> Slug
     mkDefaultSlug ss =
       foldl' (\s' x -> T.replace x "_" s') ss (charsDisallowedInURL <> [" "])
@@ -82,11 +77,8 @@ parseZettels queryExtractor files =
 
 extractQueriesWithContext :: QueryExtractor
 extractQueriesWithContext doc =
-  (lefts &&& rights) $
-    mapMaybe (uncurry parseQueryLinkWithContext) $
-      Map.toList $ LC.queryLinksWithContext doc
+  mapMaybe (uncurry parseQueryLinkWithContext) $
+    Map.toList $ LC.queryLinksWithContext doc
   where
     parseQueryLinkWithContext url (attrs, ctx) = do
-      parseQueryLink attrs url >>= \case
-        Left x -> pure $ Left (x, ctx)
-        Right x -> pure $ Right x
+      (,ctx) <$> parseQueryLink attrs url

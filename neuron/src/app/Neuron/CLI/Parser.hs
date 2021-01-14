@@ -12,9 +12,7 @@ module Neuron.CLI.Parser
   )
 where
 
-import Data.Default (def)
 import Data.Some (Some (..))
-import Data.TagTree (mkDefaultTagQuery, mkTagPattern)
 import Data.Time (LocalTime)
 import Data.Time.DateMayTime
   ( DateMayTime,
@@ -28,10 +26,6 @@ import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import Neuron.Zettelkasten.Query.Graph as Q (GraphQuery (..))
-import qualified Neuron.Zettelkasten.Query.Parser as Q
-import Neuron.Zettelkasten.Zettel as Q
-  ( ZettelQuery (..),
-  )
 import Options.Applicative
 import Options.Applicative.Extra
   ( directoryReader,
@@ -100,14 +94,8 @@ commandParser defaultNotesDir now = do
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
       query <-
         fmap
-          Left
-          ( fmap
-              (Left . (,connDummy))
-              (option zettelIDReader (long "id"))
-              <|> fmap
-                (\x -> Right $ Some $ Q.ZettelQuery_ZettelsByTag (mkDefaultTagQuery x) connDummy def)
-                (many (mkTagPattern <$> option str (long "tag" <> short 't')))
-              <|> option queryReader (long "uri" <> short 'u')
+          (Left . (,connDummy))
+          ( option zettelIDReader (long "id")
           )
           <|> fmap
             Right
@@ -155,11 +143,6 @@ commandParser defaultNotesDir now = do
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
       eitherReader $ first show . parseZettelID . toText
-    queryReader :: ReadM (Either (ZettelID, C.Connection) (Some Q.ZettelQuery))
-    queryReader =
-      eitherReader $ \(toText -> s) ->
-        maybe (Left "Not a valid query") Right $
-          Q.parseQueryLink mempty s
     dateReader :: ReadM DateMayTime
     dateReader =
       maybeReader (parseDateMayTime . toText)

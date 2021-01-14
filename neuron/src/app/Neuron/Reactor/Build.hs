@@ -248,5 +248,5 @@ loadZettelkastenFromFilesWithPlugins plugins fileTree = do
           R.ZIDRef_Available fp s pluginData ->
             pure $ Just (fp, (s, pluginData))
       let !zs = Plugin.afterZettelParse plugins (Map.toList filesWithContent)
-      !g <- G.buildZettelkasten zs
+      !g <- G.buildZettelkasten plugins zs
       pure (g, zs)
