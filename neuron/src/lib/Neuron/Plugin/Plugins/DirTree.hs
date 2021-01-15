@@ -47,7 +47,7 @@ plugin =
   def
     { _plugin_afterZettelRead = injectDirectoryZettels,
       _plugin_afterZettelParse = bimap addTagAndQuery addTagAndQuery,
-      _plugin_renderPanel = renderPanel
+      _plugin_renderPanel = const renderPanel
     }
 
 routePluginData :: ZettelGraph -> DirZettel -> DirZettelVal

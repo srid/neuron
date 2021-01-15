@@ -65,8 +65,8 @@ data SiteData = SiteData
 
 data ZettelData = ZettelData
   { zettelDataZettel :: ZettelC,
+    -- TODO: Make uptree a plugin; add PanelLocation ADT for "top" and "bottom" position.
     zettelDataUptree :: Forest Zettel,
-    zettelDataBacklinks :: [(ContextualConnection, Zettel)],
     zettelDataPlugin :: DMap PluginZettelRouteData Identity
   }
 
@@ -103,13 +103,20 @@ data DirZettelVal = DirZettelVal
 instance Default DirZettelVal where
   def = DirZettelVal mempty Nothing
 
-type LinkCache = Map Text (Either MissingZettel (Connection, Zettel))
+data LinksData = LinksData
+  { linksDataLinkCache :: Map Text (Either MissingZettel (Connection, Zettel)),
+    linksDataBacklinks :: [(ContextualConnection, Zettel)]
+  }
+  deriving (Eq, Show)
+
+instance Default LinksData where
+  def = LinksData mempty mempty
 
 type TagQueryLinkCache = Map Text (DSum TagQueryLink Identity)
 
 data PluginZettelRouteData routeData where
   PluginZettelRouteData_DirTree :: PluginZettelRouteData DirZettelVal
-  PluginZettelRouteData_Links :: PluginZettelRouteData LinkCache
+  PluginZettelRouteData_Links :: PluginZettelRouteData LinksData
   PluginZettelRouteData_Tags :: PluginZettelRouteData TagQueryLinkCache
   PluginZettelRouteData_NeuronIgnore :: PluginZettelRouteData ()
 

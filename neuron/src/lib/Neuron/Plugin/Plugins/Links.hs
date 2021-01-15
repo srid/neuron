@@ -27,11 +27,11 @@ import Control.Monad.Writer
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import Data.Tagged
+import Data.Tagged (Tagged (Tagged), untag)
 import qualified Data.Text as T
 import qualified Neuron.Frontend.Query.View as Q
-import Neuron.Frontend.Route
-import Neuron.Frontend.Route.Data.Types (LinkCache)
+import Neuron.Frontend.Route (NeuronWebT)
+import Neuron.Frontend.Route.Data.Types (LinksData (..))
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
   ( Connection (Folgezettel, OrdinaryConnection),
@@ -39,21 +39,22 @@ import Neuron.Zettelkasten.Connection
   )
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID
+import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel as Z
 import Reflex.Dom.Core hiding (count, mapMaybe, tag)
 import Reflex.Dom.Pandoc (PandocBuilder, elPandocInlines)
 import Relude hiding (trace, traceShow, traceShowId)
 import qualified Text.Megaparsec as M
-import Text.Pandoc.Definition (Block, Inline, Pandoc)
+import Text.Pandoc.Builder (Pandoc (Pandoc))
+import Text.Pandoc.Definition (Block, Inline)
 import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
 import qualified Text.Parsec as P
 
 -- Directory zettels using this plugin are associated with a `Tag` that
 -- corresponds to the directory contents.
-plugin :: Plugin LinkCache
+plugin :: Plugin LinksData
 plugin =
   def
     { _plugin_markdownSpec = wikiLinkSpec,
@@ -74,17 +75,40 @@ parseTagQueryLinks z =
         parseQueryLinkWithContext url (attrs, ctx) = do
           (,ctx) <$> parseQueryLink attrs url
 
-renderPanel :: (DomBuilder t m, PostBuild t m) => LinkCache -> NeuronWebT t m ()
-renderPanel _x = do
-  -- TODO: backlinks
-  text "TODO Linkjs plugin"
+renderPanel ::
+  forall t m.
+  (DomBuilder t m, PostBuild t m) =>
+  (Pandoc -> NeuronWebT t m ()) ->
+  LinksData ->
+  NeuronWebT t m ()
+renderPanel elNeuronPandoc LinksData {..} = do
+  whenNotNull linksDataBacklinks $ \backlinks -> do
+    elClass "nav" "ui attached segment deemphasized backlinksPane" $ do
+      renderBacklinks backlinks
+  where
+    renderBacklinks ::
+      (DomBuilder t m, PostBuild t m) =>
+      NonEmpty (ContextualConnection, Zettel) ->
+      NeuronWebT t m ()
+    renderBacklinks links = do
+      elClass "h3" "ui header" $ text "Backlinks"
+      elClass "ul" "backlinks" $ do
+        forM_ links $ \((conn, ctxList), zl) ->
+          el "li" $ do
+            Q.renderZettelLink Nothing (Just conn) def zl
+            elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
+              forM_ ctxList $ \ctx -> do
+                elClass "li" "item" $ do
+                  void $ elNeuronPandoc $ Pandoc mempty [ctx]
 
-routePluginData :: ZettelGraph -> ZettelC -> [((ZettelID, Connection), [Block])] -> LinkCache
+routePluginData :: ZettelGraph -> ZettelC -> [((ZettelID, Connection), [Block])] -> LinksData
 routePluginData g z _qs =
   let allUrls =
         Set.toList . Set.fromList $
           either (const []) (P.getLinks . zettelContent) z
-   in buildQueryUrlCache (G.getZettels g) allUrls
+      linkCache = buildQueryUrlCache (G.getZettels g) allUrls
+      backlinks = G.backlinks isJust (sansContent z) g
+   in LinksData linkCache backlinks
 
 type QueryUrlCache = Map Text (Either MissingZettel (Connection, Zettel))
 
@@ -143,9 +167,9 @@ queryConnections Zettel {..} = do
 -- UI
 -- --
 
-renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => LinkCache -> Text -> Maybe (NeuronWebT t m ())
-renderHandleLink cache url = do
-  r <- Map.lookup url cache
+renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => LinksData -> Text -> Maybe (NeuronWebT t m ())
+renderHandleLink LinksData {..} url = do
+  r <- Map.lookup url linksDataLinkCache
   pure $ renderZettelLinkMay Nothing r
 
 renderZettelLinkMay ::

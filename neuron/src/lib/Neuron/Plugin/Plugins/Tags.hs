@@ -88,15 +88,15 @@ routePluginData g z _qs =
         Set.toList . Set.fromList $
           either (const []) (Pandoc.getLinks . zettelContent) z
    in buildTagQueryLinkCache (G.getZettels g) allUrls
-
-buildTagQueryLinkCache :: [Zettel] -> [([(Text, Text)], Text)] -> TagQueryLinkCache
-buildTagQueryLinkCache zs urlsWithAttrs =
-  Map.fromList $
-    catMaybes $
-      urlsWithAttrs <&> \(attrs, url) -> do
-        parseQueryLink attrs url >>= \someQ -> do
-          res <- flip runReaderT zs $ runSomeTagQueryLink someQ
-          pure (url, res)
+  where
+    buildTagQueryLinkCache :: [Zettel] -> [([(Text, Text)], Text)] -> TagQueryLinkCache
+    buildTagQueryLinkCache zs urlsWithAttrs =
+      Map.fromList $
+        catMaybes $
+          urlsWithAttrs <&> \(attrs, url) -> do
+            parseQueryLink attrs url >>= \someQ -> do
+              res <- flip runReaderT zs $ runSomeTagQueryLink someQ
+              pure (url, res)
 
 -- | Parse a query if any from a Markdown link
 -- TODO: queryConn should be read from link attribute!

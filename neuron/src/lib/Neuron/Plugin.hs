@@ -35,6 +35,7 @@ import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Widget (blank)
 import Relude
 import qualified System.Directory.Contents.Types as DC
+import Text.Pandoc.Definition (Pandoc)
 
 type PluginRegistry = Map (Some PluginZettelData) (Some Plugin)
 
@@ -103,12 +104,16 @@ routePluginData g z = \case
   PluginZettelData_NeuronIgnore :=> Identity () ->
     PluginZettelRouteData_NeuronIgnore :=> Identity ()
 
-renderPluginPanel :: (DomBuilder t m, PostBuild t m) => DSum PluginZettelRouteData Identity -> NeuronWebT t m ()
-renderPluginPanel = \case
+renderPluginPanel ::
+  (DomBuilder t m, PostBuild t m) =>
+  (Pandoc -> NeuronWebT t m ()) ->
+  DSum PluginZettelRouteData Identity ->
+  NeuronWebT t m ()
+renderPluginPanel elNeuronPandoc = \case
   PluginZettelRouteData_DirTree :=> Identity t ->
     DirTree.renderPanel t
   PluginZettelRouteData_Links :=> Identity x ->
-    Links.renderPanel x
+    Links.renderPanel elNeuronPandoc x
   PluginZettelRouteData_Tags :=> Identity _ ->
     blank
   PluginZettelRouteData_NeuronIgnore :=> Identity () ->

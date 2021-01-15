@@ -30,11 +30,10 @@ mkZettelData :: NeuronCache -> ZettelC -> ZettelData
 mkZettelData NeuronCache {..} zC = do
   let z = sansContent zC
       upTree = G.backlinkForest Folgezettel z _neuronCache_graph
-      backlinks = G.backlinks isJust z _neuronCache_graph
       pluginData =
         DMap.fromList $
           Plugin.routePluginData _neuronCache_graph zC <$> DMap.toList (zettelPluginData z)
-  ZettelData zC upTree backlinks pluginData
+  ZettelData zC upTree pluginData
 
 mkImpulseData :: NeuronCache -> ImpulseData
 mkImpulseData NeuronCache {..} =

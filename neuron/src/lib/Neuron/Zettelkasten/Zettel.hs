@@ -45,6 +45,9 @@ import Text.Show (Show (show))
 -- Plugin types
 -- ------------
 
+-- NOTE: Ideally we want to put this in Plugin modules, but there is a mutual
+-- dependency with the Zettel type. :/
+
 data DirZettel = DirZettel
   { -- | What to tag this directory zettel.
     -- We expect the arity here to be 1-2. 1 for the simplest case; and 2, if
@@ -64,8 +67,6 @@ data ZettelsView = ZettelsView
     zettelsViewLimit :: Maybe Natural
   }
   deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
-
-type ZettelView = LinkView
 
 data LinkView
   = LinkView_Default
@@ -92,6 +93,8 @@ data PluginZettelData a where
   -- directory zettel
   PluginZettelData_DirTree :: PluginZettelData DirZettel
   PluginZettelData_Links :: PluginZettelData [((ZettelID, Connection), [Block])]
+  -- TODO: Change to `[(Text, Some TagQueryLink)]`, so it can be directly
+  -- converted to url cache in route data, without having to re-walk Pandoc
   PluginZettelData_Tags :: PluginZettelData [Some TagQueryLink]
   PluginZettelData_NeuronIgnore :: PluginZettelData ()
 

@@ -21,6 +21,7 @@ import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Widget (blank)
 import Relude
 import qualified System.Directory.Contents.Types as DC
+import Text.Pandoc.Definition (Pandoc)
 
 data Plugin routeData = Plugin
   { -- | Markdown, custom parser
@@ -45,7 +46,7 @@ data Plugin routeData = Plugin
     -- this stage, is the zettel graph made available.
     _plugin_routeData :: ZettelGraph -> ZettelC -> routeData,
     -- | Plugin-specific HTML rendering to do on the zettel pages.
-    _plugin_renderPanel :: forall t m. (DomBuilder t m, PostBuild t m) => routeData -> NeuronWebT t m (),
+    _plugin_renderPanel :: forall t m. (DomBuilder t m, PostBuild t m) => (Pandoc -> NeuronWebT t m ()) -> routeData -> NeuronWebT t m (),
     -- | Hooks for rendering custom DOM elements; here, url links.
     _plugin_renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => routeData -> Text -> Maybe (NeuronWebT t m ())
   }
@@ -59,6 +60,6 @@ instance Default a => Default (Plugin a) where
         _plugin_afterZettelParse = id,
         _plugin_graphConnections = const $ pure mempty,
         _plugin_routeData = def,
-        _plugin_renderPanel = const blank,
+        _plugin_renderPanel = \_ _ -> blank,
         _plugin_renderHandleLink = \_ _ -> Nothing
       }

@@ -37,7 +37,6 @@ import qualified Neuron.Frontend.Widget.AutoScroll as AS
 import qualified Neuron.Frontend.Widget.InvertedTree as IT
 import Neuron.Markdown (ZettelParseError)
 import qualified Neuron.Plugin as Plugin
-import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelC,
@@ -52,7 +51,7 @@ import Reflex.Dom.Pandoc
     elPandoc,
   )
 import Relude hiding (traceShowId, (&))
-import Text.Pandoc.Definition (Pandoc (Pandoc))
+import Text.Pandoc.Definition (Pandoc)
 
 -- TODO:L Get rid of graph argument which is only used to:
 -- - lookup link queries in Pandoc docs
@@ -76,14 +75,14 @@ renderZettel siteData zData = do
     -- We use -24px (instead of -14px) here so as to not scroll all the way to
     -- title, and as to leave some of the tree visible as "hint" to the user.
     lift $ AS.marker "zettel-container-anchor" (-24)
-    let rdpConfig = mkReflexDomPandocConfig zData
+    let elNeuronPandoc = elPandoc $ mkReflexDomPandocConfig zData
     divClass "zettel-view" $ do
       let zc = R.zettelDataZettel zData
           z = sansContent zc
-      renderZettelContentCard rdpConfig zc
+      renderZettelContentCard elNeuronPandoc zc
       forM_ (DMap.toList $ zettelDataPlugin zData) $ \pluginData ->
-        Plugin.renderPluginPanel pluginData
-      renderZettelBottomPane zData rdpConfig z
+        Plugin.renderPluginPanel elNeuronPandoc pluginData
+      renderZettelBottomPane z
       renderBottomMenu
         (constDyn $ R.siteDataTheme siteData)
         (constDyn $ R.siteDataIndexZettel siteData)
@@ -100,28 +99,25 @@ renderZettel siteData zData = do
 
 renderZettelContentCard ::
   (PandocBuilder t m, PostBuild t m) =>
-  Config t (NeuronWebT t m) () ->
+  (Pandoc -> NeuronWebT t m ()) ->
   ZettelC ->
   NeuronWebT t m ()
-renderZettelContentCard rdpConfig zc =
+renderZettelContentCard elNeuronPandoc zc =
   case zc of
     Right z -> do
-      renderZettelContent rdpConfig z
+      renderZettelContent elNeuronPandoc z
     Left z -> do
       renderZettelRawContent z
 
+-- TODO Move to Tags plugin
 renderZettelBottomPane ::
   (PandocBuilder t m, PostBuild t m) =>
-  ZettelData ->
-  Config t (NeuronWebT t m) () ->
   Zettel ->
   NeuronWebT t m ()
-renderZettelBottomPane zData rdpConfig Zettel {..} = do
-  let backlinks = nonEmpty $ R.zettelDataBacklinks zData
-      tags = nonEmpty $ toList zettelTags
-  when (isJust backlinks || isJust tags) $ do
+renderZettelBottomPane Zettel {..} = do
+  let tags = nonEmpty $ toList zettelTags
+  when (isJust tags) $ do
     elClass "nav" "ui attached segment deemphasized bottomPane" $ do
-      whenJust backlinks (renderBacklinks rdpConfig)
       whenJust tags renderTags
 
 renderBottomMenu ::
@@ -167,14 +163,14 @@ mkReflexDomPandocConfig x =
 renderZettelContent ::
   forall t m.
   (PandocBuilder t m) =>
-  Config t (NeuronWebT t m) () ->
+  (Pandoc -> NeuronWebT t m ()) ->
   ZettelT Pandoc ->
   NeuronWebT t m ()
-renderZettelContent renderCfg Zettel {..} = do
+renderZettelContent elNeuronPandoc Zettel {..} = do
   elClass "article" "ui raised attached segment zettel-content" $ do
     unless zettelTitleInBody $ do
       el "h1" $ text zettelTitle
-    void $ elPandoc renderCfg zettelContent
+    void $ elNeuronPandoc zettelContent
     whenJust zettelDate $ \date ->
       divClass "metadata" $ do
         elAttr "div" ("class" =: "date" <> "title" =: "Zettel date") $ do
@@ -191,22 +187,6 @@ renderZettelRawContent Zettel {..} = do
 renderZettelParseError :: DomBuilder t m => ZettelParseError -> m ()
 renderZettelParseError err =
   el "p" $ elPreOverflowing $ text $ untag err
-
-renderBacklinks ::
-  (PandocBuilder t m, PostBuild t m) =>
-  Config t (NeuronWebT t m) () ->
-  NonEmpty (ContextualConnection, Zettel) ->
-  NeuronWebT t m ()
-renderBacklinks rdpConfig links = do
-  elClass "h3" "ui header" $ text "Backlinks"
-  elClass "ul" "backlinks" $ do
-    forM_ links $ \((conn, ctxList), zl) ->
-      el "li" $ do
-        Q.renderZettelLink Nothing (Just conn) def zl
-        elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
-          forM_ ctxList $ \ctx -> do
-            elClass "li" "item" $ do
-              void $ elPandoc rdpConfig $ Pandoc mempty [ctx]
 
 renderTags :: (DomBuilder t m, PostBuild t m) => NonEmpty Tag -> NeuronWebT t m ()
 renderTags tags = do
