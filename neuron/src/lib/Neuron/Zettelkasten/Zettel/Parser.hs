@@ -13,7 +13,7 @@ import Data.Dependent.Map (DMap)
 import qualified Data.Set as Set
 import Data.TagTree (unTag)
 import qualified Data.Text as T
-import Neuron.Markdown (parseMarkdown)
+import Neuron.Markdown (ZettelParser)
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
@@ -21,13 +21,14 @@ import Relude
 import qualified Text.Pandoc.Util as P
 
 parseZettel ::
+  ZettelParser ->
   FilePath ->
   ZettelID ->
   Text ->
   DMap PluginZettelData Identity ->
   ZettelC
-parseZettel fn zid s pluginData = do
-  case parseMarkdown fn s of
+parseZettel parser fn zid s pluginData = do
+  case parser fn s of
     Left parseErr ->
       let slug = mkDefaultSlug $ unZettelID zid
        in Left $ Zettel zid slug fn "Unknown" False Set.empty Nothing False (s, parseErr) pluginData
@@ -59,8 +60,9 @@ parseZettel fn zid s pluginData = do
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
+  ZettelParser ->
   [(ZettelID, (FilePath, (Text, DMap PluginZettelData Identity)))] ->
   [ZettelC]
-parseZettels files =
+parseZettels p files =
   flip fmap files $ \(zid, (path, (s, pluginData))) ->
-    parseZettel path zid s pluginData
+    parseZettel p path zid s pluginData

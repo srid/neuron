@@ -21,6 +21,10 @@ module Neuron.Plugin.Plugins.Tags
   )
 where
 
+import qualified Commonmark as CM
+import qualified Commonmark.Inlines as CM
+import Commonmark.TokParsers (noneOfToks, symbol)
+import Commonmark.Tokens
 import Control.Monad.Writer
 import Data.Default
 import qualified Data.Dependent.Map as DMap
@@ -30,6 +34,7 @@ import qualified Data.Set as Set
 import Data.Some (Some (..), withSome)
 import Data.TagTree
 import qualified Data.TagTree as Tag
+import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
 import GHC.Natural (naturalToInt)
 import qualified Neuron.Frontend.Query.View as Q
@@ -38,7 +43,7 @@ import Neuron.Frontend.Route.Data.Types (TagQueryLinkCache)
 import Neuron.Frontend.Widget (semanticIcon)
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
-  ( Connection (Folgezettel),
+  ( Connection (Folgezettel, OrdinaryConnection),
     ContextualConnection,
   )
 import qualified Neuron.Zettelkasten.Graph as G
@@ -48,10 +53,11 @@ import Reflex.Dom.Core hiding (count, mapMaybe, tag)
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding (trace, traceShow, traceShowId)
 import Text.Pandoc.Definition (Pandoc)
-import qualified Text.Pandoc.Util as P
+import qualified Text.Pandoc.Util as Pandoc
+import qualified Text.Parsec as P
 import Text.URI (URI)
 import qualified Text.URI as URI
-import Text.URI.QQ (queryKey)
+import Text.URI.QQ (queryKey, scheme)
 import Text.URI.Util (getQueryParam, hasQueryFlag)
 
 -- Directory zettels using this plugin are associated with a `Tag` that
@@ -59,7 +65,8 @@ import Text.URI.Util (getQueryParam, hasQueryFlag)
 plugin :: Plugin TagQueryLinkCache
 plugin =
   def
-    { _plugin_afterZettelParse = second parseTagQueryLinks,
+    { _plugin_markdownSpec = inlineTagSpec,
+      _plugin_afterZettelParse = second parseTagQueryLinks,
       _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink
     }
@@ -68,7 +75,7 @@ parseTagQueryLinks :: HasCallStack => ZettelT Pandoc -> ZettelT Pandoc
 parseTagQueryLinks z =
   let allUrls =
         Set.toList . Set.fromList $
-          P.getLinks $ zettelContent z
+          Pandoc.getLinks $ zettelContent z
       tagLinks =
         catMaybes $
           allUrls <&> \(attrs, url) -> do
@@ -79,7 +86,7 @@ routePluginData :: ZettelGraph -> ZettelC -> [Some TagQueryLink] -> TagQueryLink
 routePluginData g z _qs =
   let allUrls =
         Set.toList . Set.fromList $
-          either (const []) (P.getLinks . zettelContent) z
+          either (const []) (Pandoc.getLinks . zettelContent) z
    in buildTagQueryLinkCache (G.getZettels g) allUrls
 
 buildTagQueryLinkCache :: [Zettel] -> [([(Text, Text)], Text)] -> TagQueryLinkCache
@@ -323,3 +330,46 @@ renderTagTree t =
 
 -- View
 -- ----
+
+-- Parser
+-- ------
+
+inlineTagSpec ::
+  (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
+  CM.SyntaxSpec m il bl
+inlineTagSpec =
+  mempty
+    { CM.syntaxInlineParsers = [pInlineTag]
+    }
+  where
+    pInlineTag ::
+      (Monad m, CM.IsInline il) =>
+      CM.InlineParser m il
+    pInlineTag = P.try $ do
+      _ <- symbol '#'
+      tag <- CM.untokenize <$> inlineTagP
+      case makeZTagURI tag of
+        Nothing ->
+          fail "Not an inline tag"
+        Just (URI.render -> url) ->
+          pure $! cmAutoLink OrdinaryConnection url
+    makeZTagURI :: Text -> Maybe URI
+    makeZTagURI s = do
+      tag <- URI.mkPathPiece "tag"
+      path <- traverse URI.mkPathPiece $ T.splitOn "/" s
+      pure $ URI.URI (Just [scheme|z|]) (Left False) (Just (False, tag :| path)) [] Nothing
+
+-- | Create a commonmark link element
+cmAutoLink :: CM.IsInline a => Connection -> Text -> a
+cmAutoLink conn url =
+  CM.link url title $ CM.str url
+  where
+    -- Store connetion type in 'title' attribute
+    -- TODO: Put it in attrs instead; requires PR to commonmark
+    title = show conn
+
+inlineTagP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
+inlineTagP =
+  some (noneOfToks $ [Spaces, UnicodeSpace, LineEnd] <> fmap Symbol punctuation)
+  where
+    punctuation = "[];:,.?!"

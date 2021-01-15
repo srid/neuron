@@ -20,6 +20,9 @@ module Neuron.Plugin.Plugins.Links
   )
 where
 
+import qualified Commonmark as CM
+import qualified Commonmark.Inlines as CM
+import Commonmark.TokParsers (noneOfToks, symbol)
 import Control.Monad.Writer
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
@@ -31,7 +34,7 @@ import Neuron.Frontend.Route
 import Neuron.Frontend.Route.Data.Types (LinkCache)
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
-  ( Connection (Folgezettel),
+  ( Connection (Folgezettel, OrdinaryConnection),
     ContextualConnection,
   )
 import qualified Neuron.Zettelkasten.Graph as G
@@ -42,16 +45,19 @@ import qualified Neuron.Zettelkasten.Zettel as Z
 import Reflex.Dom.Core hiding (count, mapMaybe, tag)
 import Reflex.Dom.Pandoc (PandocBuilder, elPandocInlines)
 import Relude hiding (trace, traceShow, traceShowId)
+import qualified Text.Megaparsec as M
 import Text.Pandoc.Definition (Block, Inline, Pandoc)
 import qualified Text.Pandoc.LinkContext as LC
 import qualified Text.Pandoc.Util as P
+import qualified Text.Parsec as P
 
 -- Directory zettels using this plugin are associated with a `Tag` that
 -- corresponds to the directory contents.
 plugin :: Plugin LinkCache
 plugin =
   def
-    { _plugin_afterZettelParse = second parseTagQueryLinks,
+    { _plugin_markdownSpec = wikiLinkSpec,
+      _plugin_afterZettelParse = second parseTagQueryLinks,
       _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink
     }
@@ -149,3 +155,39 @@ renderZettelLinkMay minner = \case
     Q.renderMissingZettelLink zid
   Right (conn, target) ->
     Q.renderZettelLink (elPandocInlines <$> minner) (Just conn) Nothing target
+
+-- Markdown parsing
+-- ----------------
+
+wikiLinkSpec ::
+  (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
+  CM.SyntaxSpec m il bl
+wikiLinkSpec =
+  mempty
+    { CM.syntaxInlineParsers = [pLink]
+    }
+  where
+    pLink ::
+      (Monad m, CM.IsInline il) =>
+      CM.InlineParser m il
+    pLink =
+      P.try $
+        P.choice
+          [ -- Folgezettel link: [[[...]]]
+            cmAutoLink Folgezettel <$> P.try (wikiLinkP 3),
+            -- Cf link: [[...]]
+            cmAutoLink OrdinaryConnection <$> P.try (wikiLinkP 2)
+          ]
+    wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m Text
+    wikiLinkP n = do
+      void $ M.count n $ symbol '['
+      s <- fmap CM.untokenize $ some $ noneOfToks [CM.Symbol ']', CM.Symbol '[', CM.LineEnd]
+      void $ M.count n $ symbol ']'
+      pure s
+    cmAutoLink :: CM.IsInline a => Connection -> Text -> a
+    cmAutoLink conn url =
+      CM.link url title $ CM.str url
+      where
+        -- Store connetion type in 'title' attribute
+        -- TODO: Put it in attrs instead; requires PR to commonmark
+        title = show conn

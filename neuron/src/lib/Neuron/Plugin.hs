@@ -8,6 +8,7 @@
 
 module Neuron.Plugin where
 
+import qualified Commonmark as CM
 import Control.Monad.Writer
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
@@ -17,6 +18,7 @@ import Data.Some (Some (..), withSome)
 import qualified Data.Text as T
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types
+import Neuron.Markdown (NeuronSyntaxSpec, parseMarkdown)
 import qualified Neuron.Plugin.Plugins.DirTree as DirTree
 import qualified Neuron.Plugin.Plugins.Links as Links
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
@@ -56,6 +58,10 @@ lookupPlugins = Map.fromList . mapMaybe lookupPlugin
       "neuronignore" -> Just (Some PluginZettelData_NeuronIgnore, Some NeuronIgnore.plugin)
       _ -> Nothing
 
+markdownSpec :: NeuronSyntaxSpec m il bl => PluginRegistry -> CM.SyntaxSpec m il bl
+markdownSpec plugins =
+  mconcat $ Map.elems plugins <&> \sp -> withSome sp _plugin_markdownSpec
+
 filterSources :: PluginRegistry -> DC.DirTree FilePath -> IO (Maybe (DC.DirTree FilePath))
 filterSources plugins t = do
   let applyF = Map.elems plugins <&> \sp -> withSome sp _plugin_filterSources
@@ -65,7 +71,7 @@ filterSources plugins t = do
 
 afterZettelParse :: PluginRegistry -> [(ZettelID, (FilePath, (Text, DMap PluginZettelData Identity)))] -> [ZettelC]
 afterZettelParse plugins fs = do
-  parseZettels fs <&> \z ->
+  parseZettels (parseMarkdown $ markdownSpec plugins) fs <&> \z ->
     foldl' (\z1 f -> f z1) z (plugins <&> \sp -> withSome sp _plugin_afterZettelParse)
 
 afterZettelRead :: MonadState (Map ZettelID ZIDRef) m => PluginRegistry -> DC.DirTree FilePath -> m ()

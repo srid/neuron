@@ -1,13 +1,16 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Plugin.Type where
 
+import qualified Commonmark as CM
 import Control.Monad.Writer
 import Data.Default (Default (..))
 import Neuron.Frontend.Route (NeuronWebT)
+import Neuron.Markdown
 import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
@@ -20,7 +23,9 @@ import Relude
 import qualified System.Directory.Contents.Types as DC
 
 data Plugin routeData = Plugin
-  { -- | Apply any filter on the source tree before beginning any processing
+  { -- | Markdown, custom parser
+    _plugin_markdownSpec :: forall m il bl. NeuronSyntaxSpec m il bl => CM.SyntaxSpec m il bl,
+    -- | Apply any filter on the source tree before beginning any processing
     _plugin_filterSources :: DC.DirTree FilePath -> IO (Maybe (DC.DirTree FilePath)),
     -- | Called after zettel files read into memory
     _plugin_afterZettelRead :: forall m. MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m (),
@@ -48,7 +53,8 @@ data Plugin routeData = Plugin
 instance Default a => Default (Plugin a) where
   def =
     Plugin
-      { _plugin_filterSources = pure . Just,
+      { _plugin_markdownSpec = mempty,
+        _plugin_filterSources = pure . Just,
         _plugin_afterZettelRead = void . pure,
         _plugin_afterZettelParse = id,
         _plugin_graphConnections = const $ pure mempty,

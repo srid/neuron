@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -6,12 +7,15 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Markdown
   ( parseMarkdown,
     highlightStyle,
+    NeuronSyntaxSpec,
+    ZettelParser,
     ZettelParseError,
   )
 where
@@ -22,13 +26,9 @@ import qualified Commonmark as CM
 import qualified Commonmark.Extensions as CE
 import qualified Commonmark.Inlines as CM
 import qualified Commonmark.Pandoc as CP
-import Commonmark.TokParsers (noneOfToks, symbol)
-import Commonmark.Tokens (TokType (..))
 import Control.Monad.Combinators (manyTill)
 import Data.Tagged (Tagged (..))
-import qualified Data.Text as T
 import qualified Data.YAML as YAML
-import Neuron.Zettelkasten.Connection
 import Neuron.Zettelkasten.Zettel.Meta (Meta)
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
@@ -38,11 +38,8 @@ import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
 import Text.Show (Show (show))
-import Text.URI
-import qualified Text.URI as URI
-import Text.URI.QQ (scheme)
 
-type ZettelReader = FilePath -> Text -> Either ZettelParseError (Maybe Meta, Pandoc)
+type ZettelParser = FilePath -> Text -> Either ZettelParseError (Maybe Meta, Pandoc)
 
 type ZettelParseError = Tagged "ZettelParserError" Text
 
@@ -51,14 +48,17 @@ type ZettelParseError = Tagged "ZettelParserError" Text
 -- We are not using the Pandoc AST "metadata" field (as it is not clear whether
 -- we actually need it), and instead directly decoding the metadata as Haskell
 -- object.
-parseMarkdown :: ZettelReader
-parseMarkdown fn s = do
+parseMarkdown ::
+  NeuronSyntaxSpec m il bl =>
+  CM.SyntaxSpec m il bl ->
+  ZettelParser
+parseMarkdown extraSpec fn s = do
   (metaVal, markdown) <-
     first (Tagged . ("Unable to determine YAML region: " <>)) $
       partitionMarkdown fn s
   v <-
     first (Tagged . toText . show) $
-      commonmarkPandocWith neuronSpec fn markdown
+      commonmarkPandocWith (extraSpec <> neuronSpec) fn markdown
   meta <- traverse (parseMeta fn) metaVal
   pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
   where
@@ -70,14 +70,16 @@ parseMarkdown fn s = do
       let mkError (loc, emsg) =
             Tagged $ toText $ n <> ":" <> YAML.prettyPosWithSource loc raw " error" <> emsg
       first mkError $ YAML.decode1 raw
-    -- Like commonmarkWith, but parses directly into the Pandoc AST.
-    commonmarkPandocWith ::
-      CM.SyntaxSpec (Either P.ParseError) (CP.Cm () B.Inlines) (CP.Cm () B.Blocks) ->
-      String ->
-      Text ->
-      Either P.ParseError (CP.Cm () B.Blocks)
-    commonmarkPandocWith spec n =
-      join . CM.commonmarkWith spec n
+
+-- Like commonmarkWith, but parses directly into the Pandoc AST.
+commonmarkPandocWith ::
+  NeuronSyntaxSpec m il bl =>
+  CM.SyntaxSpec m il bl ->
+  FilePath ->
+  Text ->
+  m bl
+commonmarkPandocWith spec fn s =
+  join $ CM.commonmarkWith spec fn s
 
 -- | Identify metadata block at the top, and split it from markdown body.
 partitionMarkdown :: FilePath -> Text -> Either Text (Maybe Text, Text)
@@ -94,7 +96,14 @@ partitionMarkdown =
       b <- M.takeRest
       pure (Just a, b)
 
-neuronSpec ::
+-- | Like `NeuronSyntaxSpec'` but specialized to Pandoc
+type NeuronSyntaxSpec m il bl =
+  ( NeuronSyntaxSpec' m il bl,
+    m ~ Either P.ParseError,
+    bl ~ CP.Cm () B.Blocks
+  )
+
+type NeuronSyntaxSpec' m il bl =
   ( Monad m,
     CM.IsBlock il bl,
     CM.IsInline il,
@@ -113,13 +122,15 @@ neuronSpec ::
     CE.HasQuoted il,
     CE.HasSpan il,
     HasHighlight il
-  ) =>
+  )
+
+neuronSpec ::
+  NeuronSyntaxSpec' m il bl =>
   CM.SyntaxSpec m il bl
 neuronSpec =
+  -- TODO: Move the bulk of markdown extensions to a neuron extension
   mconcat
-    [ wikiLinkSpec,
-      inlineTagSpec,
-      highlightSpec,
+    [ highlightSpec,
       gfmExtensionsSansEmoji,
       CE.fancyListSpec,
       CE.footnoteSpec,
@@ -143,72 +154,7 @@ neuronSpec =
         <> CE.autoIdentifiersSpec
         <> CE.taskListSpec
 
-inlineTagSpec ::
-  (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
-  CM.SyntaxSpec m il bl
-inlineTagSpec =
-  mempty
-    { CM.syntaxInlineParsers = [pInlineTag]
-    }
-  where
-    pInlineTag ::
-      (Monad m, CM.IsInline il) =>
-      CM.InlineParser m il
-    pInlineTag = P.try $ do
-      _ <- symbol '#'
-      tag <- CM.untokenize <$> inlineTagP
-      case makeZTagURI tag of
-        Nothing ->
-          fail "Not an inline tag"
-        Just (URI.render -> url) ->
-          pure $! cmAutoLink OrdinaryConnection url
-    makeZTagURI :: Text -> Maybe URI
-    makeZTagURI s = do
-      tag <- mkPathPiece "tag"
-      path <- traverse mkPathPiece $ T.splitOn "/" s
-      pure $ URI (Just [scheme|z|]) (Left False) (Just (False, tag :| path)) [] Nothing
-
--- | Create a commonmark link element
-cmAutoLink :: CM.IsInline a => Connection -> Text -> a
-cmAutoLink conn url =
-  CM.link url title $ CM.str url
-  where
-    -- Store connetion type in 'title' attribute
-    -- TODO: Put it in attrs instead; requires PR to commonmark
-    title = toText $ show conn
-
-wikiLinkSpec ::
-  (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
-  CM.SyntaxSpec m il bl
-wikiLinkSpec =
-  mempty
-    { CM.syntaxInlineParsers = [pLink]
-    }
-  where
-    pLink ::
-      (Monad m, CM.IsInline il) =>
-      CM.InlineParser m il
-    pLink =
-      P.try $
-        P.choice
-          [ -- Folgezettel link: [[[...]]]
-            cmAutoLink Folgezettel <$> P.try (wikiLinkP 3),
-            -- Cf link: [[...]]
-            cmAutoLink OrdinaryConnection <$> P.try (wikiLinkP 2)
-          ]
-    wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m Text
-    wikiLinkP n = do
-      void $ M.count n $ symbol '['
-      s <- fmap CM.untokenize $ some $ noneOfToks [Symbol ']', Symbol '[', LineEnd]
-      void $ M.count n $ symbol ']'
-      pure s
-
-inlineTagP :: Monad m => P.ParsecT [CM.Tok] s m [CM.Tok]
-inlineTagP =
-  some (noneOfToks $ [Spaces, UnicodeSpace, LineEnd] <> fmap Symbol punctuation)
-  where
-    punctuation = "[];:,.?!"
-
+-- TODO: Move to a plugin
 highlightSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il, HasHighlight il) =>
   CM.SyntaxSpec m il bl
