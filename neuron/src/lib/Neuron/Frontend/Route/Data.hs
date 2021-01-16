@@ -49,7 +49,8 @@ mkImpulseData NeuronCache {..} =
             flip fmap clusters $ \(zs :: [Tree Zettel]) ->
               G.backlinksMulti Folgezettel zs graph
           stats = Stats (length $ G.getZettels graph) (G.connectionCount graph)
-          pinnedZettels = Tags.zettelsByTag (G.getZettels graph) $ mkDefaultTagQuery [mkTagPattern "pinned"]
+          -- TODO: Uhh, plugin complecet
+          pinnedZettels = Tags.zettelsByTag Tags.getZettelTags (G.getZettels graph) $ mkDefaultTagQuery [mkTagPattern "pinned"]
        in ImpulseData (fmap sortCluster clustersWithUplinks) orphans errors stats pinnedZettels
     -- TODO: Either optimize or get rid of this (or normalize the sorting somehow)
     sortCluster fs =

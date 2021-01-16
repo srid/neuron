@@ -156,7 +156,6 @@ parseQueryLink attrs url = do
                 else Nothing
             _ -> Nothing
 
-    -- TODO: move ZettelsView here
     queryView :: URI -> ZettelsView
     queryView uri =
       ZettelsView linkView isGrouped limit
@@ -216,26 +215,26 @@ runSomeTagQueryLink someQ =
     zs <- ask
     let res = runTagQueryLink zs q
     pure $ q :=> Identity res
-
-runTagQueryLink :: [Zettel] -> TagQueryLink r -> r
-runTagQueryLink zs = \case
-  TagQueryLink_ZettelsByTag pats _mconn _mview ->
-    zettelsByTag zs pats
-  -- TODO: Remove this constructor, not going to bother with allTags, can implement later.
-  TagQueryLink_Tags pats ->
-    Map.filterWithKey (const . flip matchTagQuery pats) allTags
-  TagQueryLink_TagZettel _tag ->
-    ()
   where
-    allTags :: Map.Map Tag Natural
-    allTags =
-      Map.fromListWith (+) $
-        concatMap (\z -> (,1) <$> toList (getZettelTags z)) zs
+    runTagQueryLink :: [Zettel] -> TagQueryLink r -> r
+    runTagQueryLink zs = \case
+      TagQueryLink_ZettelsByTag pats _mconn _mview ->
+        zettelsByTag getZettelTags zs pats
+      -- TODO: Remove this constructor, not going to bother with allTags, can implement later.
+      TagQueryLink_Tags pats ->
+        Map.filterWithKey (const . flip matchTagQuery pats) allTags
+      TagQueryLink_TagZettel _tag ->
+        ()
+      where
+        allTags :: Map.Map Tag Natural
+        allTags =
+          Map.fromListWith (+) $
+            concatMap (\z -> (,1) <$> toList (getZettelTags z)) zs
 
-zettelsByTag :: [Zettel] -> TagQuery -> [Zettel]
-zettelsByTag zs q =
+zettelsByTag :: (Zettel -> Set Tag) -> [Zettel] -> TagQuery -> [Zettel]
+zettelsByTag getTags zs q =
   sortZettelsReverseChronological $
-    flip filter zs $ \(getZettelTags -> tags) ->
+    flip filter zs $ \(getTags -> tags) ->
       matchTagQueryMulti (toList tags) q
 
 getZettelTags :: ZettelT c -> Set Tag

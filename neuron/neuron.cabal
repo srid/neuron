@@ -67,6 +67,7 @@ common library-common
     reflex-dom-pandoc >= 0.7.0.1,
     clay,
     tagged,
+    shower,
     directory-contents
 
 library
@@ -156,7 +157,6 @@ common app-common
     data-default,
     uuid,
     with-utf8,
-    shower,
     either,
     uri-encode,
     timeit,

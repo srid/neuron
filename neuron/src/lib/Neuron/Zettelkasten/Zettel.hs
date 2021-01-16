@@ -48,6 +48,11 @@ import Text.Show (Show (show))
 -- NOTE: Ideally we want to put this in Plugin modules, but there is a mutual
 -- dependency with the Zettel type. :/
 
+data DirTreeZettel
+  = DirTreeZettel_Dir DirZettel
+  | DirTreeZettel_Regular (Set Tag) (Maybe ZettelID) -- with parent zettel; TODO: refactor
+  deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON)
+
 data DirZettel = DirZettel
   { -- | What to tag this directory zettel.
     -- We expect the arity here to be 1-2. 1 for the simplest case; and 2, if
@@ -91,16 +96,13 @@ data ZettelTags = ZettelTags
   }
   deriving (Generic)
 
--- Every zettel is associated with custom data for each plugin.
--- TODO: Rename to PluginZettelData
+-- | Plugin-specific data stored in `ZettelT`
+--
+-- See also `PluginZettelRouteData` which corresponds to post-graph data (used
+-- in rendering).
 data PluginZettelData a where
-  -- | Tag (and another optional tag, if the user's directory zettel is
-  -- positioned in a *different* directory) and parent zettel associated with a
-  -- directory zettel
-  PluginZettelData_DirTree :: PluginZettelData DirZettel
+  PluginZettelData_DirTree :: PluginZettelData DirTreeZettel
   PluginZettelData_Links :: PluginZettelData [((ZettelID, Connection), [Block])]
-  -- TODO: Change to `[(Text, Some TagQueryLink)]`, so it can be directly
-  -- converted to url cache in route data, without having to re-walk Pandoc
   PluginZettelData_Tags :: PluginZettelData ZettelTags
   PluginZettelData_NeuronIgnore :: PluginZettelData ()
 
