@@ -4,16 +4,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.Zettel.Parser where
 
 import Data.Dependent.Map (DMap)
-import qualified Data.Set as Set
 import Data.TagTree (unTag)
 import qualified Data.Text as T
-import Neuron.Markdown (ZettelParser)
+import qualified Data.YAML as Y
+import Neuron.Markdown
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
@@ -26,29 +27,25 @@ parseZettel ::
   ZettelID ->
   Text ->
   DMap PluginZettelData Identity ->
-  ZettelC
-parseZettel parser fn zid s pluginData = do
-  case parser fn s of
-    Left parseErr ->
-      let slug = mkDefaultSlug $ unZettelID zid
-       in Left $ Zettel zid slug fn "Unknown" False Set.empty Nothing False (s, parseErr) pluginData
-    Right (meta, doc) ->
-      let -- Determine zettel title
-          (title, titleInBody) = case Meta.title =<< meta of
-            Just tit -> (tit, False)
-            Nothing -> fromMaybe (unZettelID zid, False) $ do
-              (,True) . P.plainify . snd <$> P.getH1 doc
-          -- Determine zettel tags
-          -- TODO: Move to Tags plugin!
-          metaTags = fromMaybe [] $ Meta.tags =<< meta
-          tags = Set.fromList metaTags
-          -- Determine other metadata
-          date = Meta.date =<< meta
-          slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
-          unlisted = Just True == (Meta.unlisted =<< meta)
-       in Right $
-            Zettel zid slug fn title titleInBody tags date unlisted doc pluginData
+  (Maybe (Y.Node Y.Pos), ZettelC)
+parseZettel parser fn zid s pluginData =
+  either unparseableZettel id $ do
+    (yamlNode, doc) <- parser fn s
+    meta :: Maybe Meta.Meta <- parseYamlNode @Meta.Meta `traverse` yamlNode
+    let -- Determine zettel title
+        (title, titleInBody) = case Meta.title =<< meta of
+          Just tit -> (tit, False)
+          Nothing -> fromMaybe (unZettelID zid, False) $ do
+            (,True) . P.plainify . snd <$> P.getH1 doc
+        -- Determine other metadata
+        date = Meta.date =<< meta
+        slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
+        unlisted = Just True == (Meta.unlisted =<< meta)
+    pure $ (yamlNode,) $ Right $ Zettel zid slug fn title titleInBody date unlisted doc pluginData
   where
+    unparseableZettel err =
+      let slug = mkDefaultSlug $ unZettelID zid
+       in (Nothing,) $ Left $ Zettel zid slug fn "Unknown" False Nothing False (s, err) pluginData
     _dirFolgezettelMarkdown (unTag -> tag) =
       "\n\n" <> "[[[z:zettels?tag=" <> tag <> "/*]]]"
     mkDefaultSlug :: Text -> Slug
@@ -62,7 +59,7 @@ parseZettel parser fn zid s pluginData = do
 parseZettels ::
   ZettelParser ->
   [(ZettelID, (FilePath, (Text, DMap PluginZettelData Identity)))] ->
-  [ZettelC]
+  [(Maybe (Y.Node Y.Pos), ZettelC)]
 parseZettels p files =
   flip fmap files $ \(zid, (path, (s, pluginData))) ->
     parseZettel p path zid s pluginData

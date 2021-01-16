@@ -58,13 +58,13 @@ plugin :: Plugin LinksData
 plugin =
   def
     { _plugin_markdownSpec = wikiLinkSpec,
-      _plugin_afterZettelParse = second parseTagQueryLinks,
+      _plugin_afterZettelParse = second . const parseLinks,
       _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink
     }
 
-parseTagQueryLinks :: HasCallStack => ZettelT Pandoc -> ZettelT Pandoc
-parseTagQueryLinks z =
+parseLinks :: ZettelT Pandoc -> ZettelT Pandoc
+parseLinks z =
   let xs = extractLinkswithContext (zettelContent z)
    in z {zettelPluginData = DMap.insert PluginZettelData_Links (Identity xs) (zettelPluginData z)}
   where

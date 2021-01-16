@@ -46,7 +46,7 @@ plugin :: Plugin DirZettelVal
 plugin =
   def
     { _plugin_afterZettelRead = injectDirectoryZettels,
-      _plugin_afterZettelParse = bimap addTagAndQuery addTagAndQuery,
+      _plugin_afterZettelParse = const $ bimap addTagAndQuery addTagAndQuery,
       _plugin_renderPanel = const renderPanel
     }
 
@@ -69,18 +69,20 @@ renderPanel DirZettelVal {..} = do
         listItem (bool ListItem_File ListItem_Folder $ isDirectoryZettel cz) $
           Q.renderZettelLink Nothing (Just Folgezettel) Nothing cz
 
-addTagAndQuery :: forall c. HasCallStack => ZettelT c -> ZettelT c
+addTagAndQuery :: forall c. ZettelT c -> ZettelT c
 addTagAndQuery z =
   z
-    { zettelTags =
-        zettelTags z `Set.union` dirZettelTags
-        -- Add the tag query for building graph connections.
-        -- TODO: SHIT, how to patch graph
-        -- zettelQueries =
-        --  second (\qs -> qs <> maybeToList childrenTagQuery) (zettelQueries z)
-    }
   where
-    dirZettelTags = fromMaybe Set.empty $ do
+    -- zettelTags =
+    -- zettelTags z `Set.union` dirZettelTags
+    -- Add the tag query for building graph connections.
+    -- TODO: SHIT, how to patch graph
+    -- zettelQueries =
+    --  second (\qs -> qs <> maybeToList childrenTagQuery) (zettelQueries z)
+    -- {
+    -- }
+
+    _dirZettelTags = fromMaybe Set.empty $ do
       case runIdentity <$> DMap.lookup PluginZettelData_DirTree (zettelPluginData z) of
         Just DirZettel {..} ->
           pure _dirZettel_tags

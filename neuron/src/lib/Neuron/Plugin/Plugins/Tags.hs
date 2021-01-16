@@ -16,6 +16,9 @@ module Neuron.Plugin.Plugins.Tags
   ( plugin,
     routePluginData,
     renderHandleLink,
+    renderPanel,
+    -- TODO: Nope! Shouldn't complecting with Impulse
+    getZettelTags,
     -- TODO: why expose
     zettelsByTag,
   )
@@ -36,11 +39,15 @@ import Data.TagTree
 import qualified Data.TagTree as Tag
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
+import Data.YAML ((.:?))
+import qualified Data.YAML as Y
 import GHC.Natural (naturalToInt)
 import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route
+import qualified Neuron.Frontend.Route as R
 import Neuron.Frontend.Route.Data.Types (TagQueryLinkCache)
 import Neuron.Frontend.Widget (semanticIcon)
+import qualified Neuron.Markdown as M
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
   ( Connection (Folgezettel, OrdinaryConnection),
@@ -66,13 +73,13 @@ plugin :: Plugin TagQueryLinkCache
 plugin =
   def
     { _plugin_markdownSpec = inlineTagSpec,
-      _plugin_afterZettelParse = second parseTagQueryLinks,
+      _plugin_afterZettelParse = second . parseTagQueryLinks,
       _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink
     }
 
-parseTagQueryLinks :: HasCallStack => ZettelT Pandoc -> ZettelT Pandoc
-parseTagQueryLinks z =
+parseTagQueryLinks :: Maybe (Y.Node Y.Pos) -> ZettelT Pandoc -> ZettelT Pandoc
+parseTagQueryLinks myaml z =
   let allUrls =
         Set.toList . Set.fromList $
           Pandoc.getLinks $ zettelContent z
@@ -80,9 +87,18 @@ parseTagQueryLinks z =
         catMaybes $
           allUrls <&> \(attrs, url) -> do
             parseQueryLink attrs url
-   in z {zettelPluginData = DMap.insert PluginZettelData_Tags (Identity tagLinks) (zettelPluginData z)}
+      tags = fromRight Set.empty $ case myaml of
+        Nothing -> pure Set.empty
+        Just yaml -> Set.fromList <$> M.runYamlParser (tagsParser yaml)
+      tagsData = ZettelTags tags tagLinks
+   in z {zettelPluginData = DMap.insert PluginZettelData_Tags (Identity tagsData) (zettelPluginData z)}
 
-routePluginData :: ZettelGraph -> ZettelC -> [Some TagQueryLink] -> TagQueryLinkCache
+tagsParser :: Y.Node Y.Pos -> Y.Parser [Tag]
+tagsParser yaml = do
+  flip (Y.withMap @[Tag] "tags") yaml $ \m -> do
+    fromMaybe mempty <$> liftA2 (<|>) (m .:? "tags") (m .:? "keywords")
+
+routePluginData :: ZettelGraph -> ZettelC -> ZettelTags -> TagQueryLinkCache
 routePluginData g z _qs =
   let allUrls =
         Set.toList . Set.fromList $
@@ -174,9 +190,9 @@ queryConnections ::
 queryConnections Zettel {..} = do
   case DMap.lookup PluginZettelData_Tags zettelPluginData of
     Nothing -> pure mempty
-    Just (Identity tagQueryLinks) -> do
+    Just (Identity ZettelTags {..}) -> do
       fmap concat $
-        forM tagQueryLinks $ \someQ -> do
+        forM zettelTagsQueryLinks $ \someQ -> do
           qRes <- runSomeTagQueryLink someQ
           links <- getConnections qRes
           pure $ first (,mempty) <$> links
@@ -214,16 +230,48 @@ runTagQueryLink zs = \case
     allTags :: Map.Map Tag Natural
     allTags =
       Map.fromListWith (+) $
-        concatMap (\Zettel {..} -> (,1) <$> toList zettelTags) zs
+        concatMap (\z -> (,1) <$> toList (getZettelTags z)) zs
 
 zettelsByTag :: [Zettel] -> TagQuery -> [Zettel]
 zettelsByTag zs q =
   sortZettelsReverseChronological $
-    flip filter zs $ \Zettel {..} ->
-      matchTagQueryMulti (toList zettelTags) q
+    flip filter zs $ \(getZettelTags -> tags) ->
+      matchTagQueryMulti (toList tags) q
+
+getZettelTags :: ZettelT c -> Set Tag
+getZettelTags Zettel {..} =
+  fromMaybe Set.empty $ do
+    Identity ZettelTags {..} <- DMap.lookup PluginZettelData_Tags zettelPluginData
+    pure zettelTagsTagged
 
 -- UI
 -- --
+
+renderPanel ::
+  forall t m.
+  (DomBuilder t m, PostBuild t m) =>
+  (Pandoc -> NeuronWebT t m ()) ->
+  Zettel ->
+  TagQueryLinkCache ->
+  NeuronWebT t m ()
+renderPanel _elNeuronPandoc z _routeData = do
+  whenNotNull (Set.toList $ getZettelTags z) $ \tags -> do
+    elClass "nav" "ui attached segment deemphasized bottomPane" $ do
+      renderTags tags
+  where
+    renderTags :: (DomBuilder t m, PostBuild t m) => NonEmpty Tag -> NeuronWebT t m ()
+    renderTags tags = do
+      el "div" $ do
+        forM_ tags $ \t -> do
+          -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
+          -- the top pushes the zettel content down, introducing unnecessary white
+          -- space below the title. So we put it at the bottom for now.
+          R.neuronRouteLink
+            (Some $ Route_Impulse $ Just t)
+            ( "class" =: "ui basic label zettel-tag"
+                <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
+            )
+            $ text $ unTag t
 
 renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => TagQueryLinkCache -> Text -> Maybe (NeuronWebT t m ())
 renderHandleLink cache url = do
@@ -275,7 +323,7 @@ renderQueryResult = \case
       fmap sortZettelsReverseChronological $
         Map.fromListWith (<>) $
           flip concatMap matches $ \z ->
-            flip concatMap (zettelTags z) $ \t -> [(t, [z]) | matchTagQuery t pats]
+            flip concatMap (getZettelTags z) $ \t -> [(t, [z]) | matchTagQuery t pats]
 
 renderQuery :: DomBuilder t m => Some TagQueryLink -> m ()
 renderQuery someQ =

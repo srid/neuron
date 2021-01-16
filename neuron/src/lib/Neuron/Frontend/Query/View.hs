@@ -20,9 +20,6 @@ where
 import Clay (Css, em, (?))
 import qualified Clay as C
 import Data.Some (Some (..))
-import Data.TagTree
-  ( Tag (..),
-  )
 import Data.Tagged (untag)
 import qualified Data.Text as T
 import Neuron.Frontend.Route
@@ -73,11 +70,9 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
       elConnSuffix conn
   where
     -- If there is custom inner text, put zettel title in tooltip.
-    -- Otherwise put tags if any.
     linkTooltip
       | isJust mInner = Just $ "Zettel: " <> zettelTitle
-      | null zettelTags = Nothing
-      | otherwise = Just $ "Tags: " <> T.intercalate "; " (unTag <$> toList zettelTags)
+      | otherwise = Nothing
 
 elConnSuffix :: DomBuilder t m => Maybe Connection -> m ()
 elConnSuffix mconn =

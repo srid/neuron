@@ -35,11 +35,11 @@ import Neuron.Frontend.Widget (LoadableData, divClassVisible, elVisible)
 import qualified Neuron.Frontend.Widget as W
 import Neuron.Frontend.Zettel.View (renderZettelParseError)
 import qualified Neuron.Frontend.Zettel.View as ZettelView
+import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelT (zettelTitle),
-    zettelTags,
   )
 import Neuron.Zettelkasten.Zettel.Error (ZettelError (..), ZettelIssue (..), splitZettelIssues)
 import Reflex.Dom.Core
@@ -161,7 +161,7 @@ renderImpulse dataLDyn = do
             if "tag:" `T.isPrefixOf` q
               then
                 let ztag = T.drop 4 q
-                 in Tag ztag `Set.member` zettelTags z
+                 in Tag ztag `Set.member` Tags.getZettelTags z
               else T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
     staticVersionNote = do
       el "p" $ do

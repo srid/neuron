@@ -13,6 +13,9 @@
 
 module Neuron.Markdown
   ( parseMarkdown,
+    parseYaml,
+    parseYamlNode,
+    runYamlParser,
     highlightStyle,
     NeuronSyntaxSpec,
     ZettelParser,
@@ -28,8 +31,7 @@ import qualified Commonmark.Inlines as CM
 import qualified Commonmark.Pandoc as CP
 import Control.Monad.Combinators (manyTill)
 import Data.Tagged (Tagged (..))
-import qualified Data.YAML as YAML
-import Neuron.Zettelkasten.Zettel.Meta (Meta)
+import qualified Data.YAML as Y
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
@@ -39,7 +41,7 @@ import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
 import Text.Show (Show (show))
 
-type ZettelParser = FilePath -> Text -> Either ZettelParseError (Maybe Meta, Pandoc)
+type ZettelParser = FilePath -> Text -> Either ZettelParseError (Maybe (Y.Node Y.Pos), Pandoc)
 
 type ZettelParseError = Tagged "ZettelParserError" Text
 
@@ -59,17 +61,24 @@ parseMarkdown extraSpec fn s = do
   v <-
     first (Tagged . toText . show) $
       commonmarkPandocWith (extraSpec <> neuronSpec) fn markdown
-  meta <- traverse (parseMeta fn) metaVal
+  meta <- traverse (parseYaml fn) metaVal
   pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
-  where
-    -- NOTE: HsYAML parsing is rather slow due to its use of DList.
-    -- See https://github.com/haskell-hvr/HsYAML/issues/40
-    parseMeta :: FilePath -> Text -> Either ZettelParseError Meta
-    parseMeta n v = do
-      let raw = encodeUtf8 v
-      let mkError (loc, emsg) =
-            Tagged $ toText $ n <> ":" <> YAML.prettyPosWithSource loc raw " error" <> emsg
-      first mkError $ YAML.decode1 raw
+
+-- NOTE: HsYAML parsing is rather slow due to its use of DList.
+-- See https://github.com/haskell-hvr/HsYAML/issues/40
+parseYaml :: Y.FromYAML a => FilePath -> Text -> Either ZettelParseError a
+parseYaml n (encodeUtf8 -> v) = do
+  let mkError (loc, emsg) =
+        Tagged $ toText $ n <> ":" <> Y.prettyPosWithSource loc v " error" <> emsg
+  first mkError $ Y.decode1 v
+
+parseYamlNode :: Y.FromYAML a => Y.Node Y.Pos -> Either ZettelParseError a
+parseYamlNode =
+  runYamlParser . Y.parseYAML
+
+runYamlParser :: Y.FromYAML a => Y.Parser a -> Either ZettelParseError a
+runYamlParser p =
+  first (Tagged . toText . show) $ Y.parseEither p
 
 -- Like commonmarkWith, but parses directly into the Pandoc AST.
 commonmarkPandocWith ::

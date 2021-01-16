@@ -22,7 +22,6 @@ import Control.Monad.Fix (MonadFix)
 import qualified Data.Dependent.Map as DMap
 import Data.List (maximum)
 import Data.Some (Some (Some))
-import Data.TagTree (Tag (unTag))
 import Data.Tagged (untag)
 import qualified Data.Tree as Tree
 import qualified Neuron.Frontend.Query.View as Q
@@ -81,8 +80,7 @@ renderZettel siteData zData = do
           z = sansContent zc
       renderZettelContentCard elNeuronPandoc zc
       forM_ (DMap.toList $ zettelDataPlugin zData) $ \pluginData ->
-        Plugin.renderPluginPanel elNeuronPandoc pluginData
-      renderZettelBottomPane z
+        Plugin.renderPluginPanel elNeuronPandoc z pluginData
       renderBottomMenu
         (constDyn $ R.siteDataTheme siteData)
         (constDyn $ R.siteDataIndexZettel siteData)
@@ -108,17 +106,6 @@ renderZettelContentCard elNeuronPandoc zc =
       renderZettelContent elNeuronPandoc z
     Left z -> do
       renderZettelRawContent z
-
--- TODO Move to Tags plugin
-renderZettelBottomPane ::
-  (PandocBuilder t m, PostBuild t m) =>
-  Zettel ->
-  NeuronWebT t m ()
-renderZettelBottomPane Zettel {..} = do
-  let tags = nonEmpty $ toList zettelTags
-  when (isJust tags) $ do
-    elClass "nav" "ui attached segment deemphasized bottomPane" $ do
-      whenJust tags renderTags
 
 renderBottomMenu ::
   (DomBuilder t m, PostBuild t m, MonadFix m, MonadHold t m) =>
@@ -187,17 +174,3 @@ renderZettelRawContent Zettel {..} = do
 renderZettelParseError :: DomBuilder t m => ZettelParseError -> m ()
 renderZettelParseError err =
   el "p" $ elPreOverflowing $ text $ untag err
-
-renderTags :: (DomBuilder t m, PostBuild t m) => NonEmpty Tag -> NeuronWebT t m ()
-renderTags tags = do
-  el "div" $ do
-    forM_ tags $ \t -> do
-      -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
-      -- the top pushes the zettel content down, introducing unnecessary white
-      -- space below the title. So we put it at the bottom for now.
-      R.neuronRouteLink
-        (Some $ Route_Impulse $ Just t)
-        ( "class" =: "ui basic label zettel-tag"
-            <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
-        )
-        $ text $ unTag t

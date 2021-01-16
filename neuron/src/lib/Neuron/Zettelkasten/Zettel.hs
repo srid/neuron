@@ -85,6 +85,12 @@ data TagQueryLink r where
   TagQueryLink_Tags :: TagQuery -> TagQueryLink (Map Tag Natural)
   TagQueryLink_TagZettel :: Tag -> TagQueryLink ()
 
+data ZettelTags = ZettelTags
+  { zettelTagsTagged :: Set Tag,
+    zettelTagsQueryLinks :: [Some TagQueryLink]
+  }
+  deriving (Generic)
+
 -- Every zettel is associated with custom data for each plugin.
 -- TODO: Rename to PluginZettelData
 data PluginZettelData a where
@@ -95,7 +101,7 @@ data PluginZettelData a where
   PluginZettelData_Links :: PluginZettelData [((ZettelID, Connection), [Block])]
   -- TODO: Change to `[(Text, Some TagQueryLink)]`, so it can be directly
   -- converted to url cache in route data, without having to re-walk Pandoc
-  PluginZettelData_Tags :: PluginZettelData [Some TagQueryLink]
+  PluginZettelData_Tags :: PluginZettelData ZettelTags
   PluginZettelData_NeuronIgnore :: PluginZettelData ()
 
 -- ------------
@@ -116,8 +122,6 @@ data ZettelT c = Zettel
     zettelTitle :: Text,
     -- | Whether the title was infered from the body
     zettelTitleInBody :: Bool,
-    -- | TODO: should be in plugin
-    zettelTags :: Set Tag,
     -- | Date associated with the zettel if any
     zettelDate :: Maybe DateMayTime,
     zettelUnlisted :: Bool,
@@ -178,6 +182,16 @@ deriveJSONGADT ''PluginZettelData
 deriveGEq ''PluginZettelData
 deriveGShow ''PluginZettelData
 deriveGCompare ''PluginZettelData
+
+deriving instance Eq ZettelTags
+
+deriving instance Ord ZettelTags
+
+deriving instance ToJSON ZettelTags
+
+deriving instance FromJSON ZettelTags
+
+deriving instance Show ZettelTags
 
 deriving instance Eq (ZettelT Pandoc)
 

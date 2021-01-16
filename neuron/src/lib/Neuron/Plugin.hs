@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -72,8 +73,11 @@ filterSources plugins t = do
 
 afterZettelParse :: PluginRegistry -> [(ZettelID, (FilePath, (Text, DMap PluginZettelData Identity)))] -> [ZettelC]
 afterZettelParse plugins fs = do
-  parseZettels (parseMarkdown $ markdownSpec plugins) fs <&> \z ->
-    foldl' (\z1 f -> f z1) z (plugins <&> \sp -> withSome sp _plugin_afterZettelParse)
+  let h =
+        Map.elems plugins <&> \sp ->
+          withSome sp $ \p (m, x) -> (m,) $ _plugin_afterZettelParse p m x
+  parseZettels (parseMarkdown $ markdownSpec plugins) fs <&> \x ->
+    snd $ foldl' (\x1 f -> f x1) x h
 
 afterZettelRead :: MonadState (Map ZettelID ZIDRef) m => PluginRegistry -> DC.DirTree FilePath -> m ()
 afterZettelRead plugins fileTree = do
@@ -99,23 +103,24 @@ routePluginData g z = \case
     PluginZettelRouteData_DirTree :=> Identity (DirTree.routePluginData g dirTree)
   PluginZettelData_Links :=> Identity x ->
     PluginZettelRouteData_Links :=> Identity (Links.routePluginData g z x)
-  PluginZettelData_Tags :=> Identity dirTree ->
-    PluginZettelRouteData_Tags :=> Identity (Tags.routePluginData g z dirTree)
+  PluginZettelData_Tags :=> Identity x ->
+    PluginZettelRouteData_Tags :=> Identity (Tags.routePluginData g z x)
   PluginZettelData_NeuronIgnore :=> Identity () ->
     PluginZettelRouteData_NeuronIgnore :=> Identity ()
 
 renderPluginPanel ::
   (DomBuilder t m, PostBuild t m) =>
   (Pandoc -> NeuronWebT t m ()) ->
+  Zettel ->
   DSum PluginZettelRouteData Identity ->
   NeuronWebT t m ()
-renderPluginPanel elNeuronPandoc = \case
+renderPluginPanel elNeuronPandoc z = \case
   PluginZettelRouteData_DirTree :=> Identity t ->
     DirTree.renderPanel t
   PluginZettelRouteData_Links :=> Identity x ->
     Links.renderPanel elNeuronPandoc x
-  PluginZettelRouteData_Tags :=> Identity _ ->
-    blank
+  PluginZettelRouteData_Tags :=> Identity x ->
+    Tags.renderPanel elNeuronPandoc z x
   PluginZettelRouteData_NeuronIgnore :=> Identity () ->
     blank
 

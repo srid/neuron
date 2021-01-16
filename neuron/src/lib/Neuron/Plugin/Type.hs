@@ -9,6 +9,7 @@ module Neuron.Plugin.Type where
 import qualified Commonmark as CM
 import Control.Monad.Writer
 import Data.Default (Default (..))
+import qualified Data.YAML as Y
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Markdown
 import Neuron.Zettelkasten.Connection (ContextualConnection)
@@ -31,7 +32,7 @@ data Plugin routeData = Plugin
     -- | Called after zettel files read into memory
     _plugin_afterZettelRead :: forall m. MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m (),
     -- | Called after zettel files are fully parsed
-    _plugin_afterZettelParse :: ZettelC -> ZettelC,
+    _plugin_afterZettelParse :: Maybe (Y.Node Y.Pos) -> ZettelC -> ZettelC,
     -- | Called before building the graph. Allows the plugin to create new connections on demand.
     _plugin_graphConnections ::
       forall m.
@@ -57,7 +58,7 @@ instance Default a => Default (Plugin a) where
       { _plugin_markdownSpec = mempty,
         _plugin_filterSources = pure . Just,
         _plugin_afterZettelRead = void . pure,
-        _plugin_afterZettelParse = id,
+        _plugin_afterZettelParse = const id,
         _plugin_graphConnections = const $ pure mempty,
         _plugin_routeData = def,
         _plugin_renderPanel = \_ _ -> blank,
