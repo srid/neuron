@@ -1,4 +1,6 @@
-# Philosophy
+---
+slug: philosophy
+---
 
 Neuron was designed with these criteria in mind:
 

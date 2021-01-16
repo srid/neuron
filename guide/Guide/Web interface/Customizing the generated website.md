@@ -1,4 +1,6 @@
-# Customizing the generated website
+---
+slug: customize-site
+---
 
 Although neuron uses fixed HTML & CSS structure, you can customize the final site in one of the few ways.
 
@@ -19,4 +21,4 @@ If a [web app manifest](https://web.dev/add-manifest/) file named `static/manife
 
 ## Custom JavaScript / CSS
 
-[[[custom-head]]]
+[[[Custom JavaScript and CSS]]]

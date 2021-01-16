@@ -1,4 +1,6 @@
-# Heterarchy
+---
+slug: heterarchy
+---
 
 Traditional note taking methods, including outliners (Workflowy, Dynalist) necessitate creation of *preconceived* hierarchies, built "top-down". In contrast, the **heterarchy** of Zettelkasten is built organically from "bottom-up" via gradual forming of links between the notes.
 

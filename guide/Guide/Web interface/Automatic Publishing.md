@@ -1,4 +1,6 @@
-# Automatic Publishing
+---
+slug: publishing
+---
 
 You can configure your neuron notes to be **automatically published** on the web. The simplest approach to achieve this is to store your notes in GitHub[^gitlab], and use their GitHub Pages + GitHub Actions[^this]. You can give this a try instantly with zero-configuration by using [`neuron-template`](https://github.com/srid/neuron-template). Follow the instructions in that link to get started. 
 

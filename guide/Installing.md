@@ -80,6 +80,6 @@ Available commands:
 
 ## What's next?
 
-Proceed to the [[tutorial]].
+Proceed to the [[Tutorial]].
 
 [^nix]: Nix is a general package manager that you can use to manage other software and services as well. [See here](https://github.com/srid/neuron/issues/193#issuecomment-629557917).

@@ -6,7 +6,7 @@ tags: [custom-head-recipe]
 
 [Mermaid](https://mermaid-js.github.io/mermaid/) provides markdownish syntax for generating flowcharts, sequence diagrams, class diagrams, gantt charts and git graphs. To 
 
-Render mermaid content in neuron by including the following HTML snippet in your `head.html` file ([[custom-head]]) or the zettel file ([[raw-html]]):
+Render mermaid content in neuron by including the following HTML snippet in your `head.html` file ([[Custom JavaScript and CSS]]) or the zettel file ([[raw-html]]):
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>

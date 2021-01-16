@@ -1,4 +1,6 @@
-# Graph visualization
+---
+slug: graph-visualize
+---
 
 A zettelkasten is a [directed graph](https://en.wikipedia.org/wiki/Directed_graph). Neuron also has an unique notion of [[[folgezettel-heterarchy]]], which is a *subset* of this graph established by having zettels "branch off" to other zettels.
 
@@ -10,4 +12,4 @@ In an otherwise statically-generated neuron site, [[[impulse-feature]]] represen
 
 ## Uplinks and Backlinks
 
-A backlink of a zettel is a zettel that links to it. If that link is a folgezettel link, it is called an "uplink". Each zettel has its [[5e41fd32]] displayed at the top.
+A backlink of a zettel is a zettel that links to it. If that link is a folgezettel link, it is called an "uplink". Each zettel has its [[Uplink Tree]] displayed at the top.

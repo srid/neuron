@@ -1,4 +1,5 @@
 ---
+slug: create
 tags:
   - walkthrough
 ---

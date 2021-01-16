@@ -1,6 +1,6 @@
 # Folgezettel Heterarchy
 
-Neuron allows you to organically build a [[heterarchy]] out of your Zettelkasten
+Neuron allows you to organically build a [[Heterarchy]] out of your Zettelkasten
 over time. When a zettel links (see [[linking]]) to another, it "branches
 off"[^1] to that zettel ... using `[[[...]]]` (i.e, three brackets, instead
 of two).
@@ -15,7 +15,7 @@ ways:
 The heterarchy is displayed in the following places
 
 * [[impulse-feature]]: Full folgezettel heterarchy of the zettelkasten.
-* [[[5e41fd32]]]: Subset of the above, branching off to the zettel.
+* [[[Uplink Tree]]]: Subset of the above, branching off to the zettel.
 
 ## See also
 

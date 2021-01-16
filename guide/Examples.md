@@ -1,4 +1,6 @@
-# Examples
+---
+slug: examples
+---
 
 Here are some public Zettelkastens managed by neuron:
 

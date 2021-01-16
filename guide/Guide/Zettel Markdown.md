@@ -1,4 +1,6 @@
-# Zettel Markdown
+---
+slug: markdown
+---
 
 Zettel files are written in Markdown, per [CommonMark](https://commonmark.org/) and [GFM](https://github.github.com/gfm/) spec, along with most of [commonmark extensions](https://github.com/jgm/commonmark-hs/tree/master/commonmark-extensions) enabled.[^tech]
 

@@ -1,4 +1,6 @@
-# Atomic and autonomous
+---
+slug: atomic
+---
 
 Zettelkasten notes are atomic and autonomous.
 

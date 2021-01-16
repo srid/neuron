@@ -1,9 +1,8 @@
 ---
+slug: tutorial
 tags:
   - walkthrough
 ---
-
-# Tutorial
 
 Make sure you have already installed neuron (see [[Installing]]). Then follow this tutorial to get your own Zettelkasten up and running.
 
@@ -18,7 +17,7 @@ git clone https://github.com/srid/neuron.git
 cd neuron
 ```
 
-Now run the neuron [[web]] on the `./guide` Zettelkasten:
+Now run the neuron [[Web interface]] on the `./guide` Zettelkasten:
 
 ```bash
 cd ./guide
@@ -32,12 +31,12 @@ It can be accessed at [localhost:8080](http://localhost:8080). It should match w
 There a few ways to do this.
 
 1. Copy the `./guide` directory and work from there; or
-1. Use the template repository in [[778816d3]]; or
+1. Use the template repository in [[Automatic Publishing]]; or
 1. Create one from scratch.
 
 For this tutorial, we choose the last option.
 
-Neuron expects the Zettelkasten directory to contain a `neuron.dhall`, as well as a list of [[markdown]] notes. By default, the current working directory will be used as your Zettelkasten directory (which you can override using the `-d` option). Create this directory first, and add a basic `neuron.dhall` (see [[configuration]]):
+Neuron expects the Zettelkasten directory to contain a `neuron.dhall`, as well as a list of [[Zettel Markdown]] notes. By default, the current working directory will be used as your Zettelkasten directory (which you can override using the `-d` option). Create this directory first, and add a basic `neuron.dhall` (see [[configuration]]):
 
 ```bash
 mkdir ~/zettelkasten
@@ -45,7 +44,7 @@ cd ~/zettelkasten
 touch neuron.dhall
 ```
 
-Now create (see [[create]]) your first zettel file:
+Now create (see [[Creating and Editing zettels]]) your first zettel file:
 
 ```bash
 neuron new -e
@@ -69,7 +68,7 @@ In the text editor, link it (see [[linking]]) to your first zettel. It should lo
 From here, you can visit: [[6479cd5e]]
 ```
 
-Your Zettelkasten directory should now contain two zettels--named `6479cd5e.md` and `index.md`.  Now it is time to run the neuron [[web]]:
+Your Zettelkasten directory should now contain two zettels--named `6479cd5e.md` and `index.md`.  Now it is time to run the neuron [[Web interface]]:
 
 ```bash
 neuron gen -wS
@@ -79,7 +78,7 @@ neuron gen -wS
 * The `-S` option runs a HTTP server serving the generated HTML files. 
   * You can ignore it, and use `neuron open` instead.
 
-Access it at [localhost:8080](http://localhost:8080) (or use `neuron open`). You should expect to see the contents of your overview zettel, which should link to the first zettel created. Clicking the tree icon in the nav bar should take you to the [[graph-visualize]] of your Zettelkasten. 
+Access it at [localhost:8080](http://localhost:8080) (or use `neuron open`). You should expect to see the contents of your overview zettel, which should link to the first zettel created. Clicking the tree icon in the nav bar should take you to the [[Graph visualization]] of your Zettelkasten. 
 
 ## Growing your Zettelkasten
 
@@ -87,4 +86,4 @@ Congratulations, you have created your first Zettelkasten using neuron! From thi
 
 ## What's next?
 
-Read [[guide]] next to learn all the concepts and features in Neuron.
+Read [[Guide]] next to learn all the concepts and features in Neuron.

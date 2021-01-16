@@ -1,4 +1,6 @@
-# Web interface
+---
+slug: web
+---
 
 Neuron can generate a fully-functional and self-sufficient web site out of your zettelkasten. It generates the HTML files under your Zettelkasten directory, in `.neuron/output/`, as well as spin up a server that will serve that generated site at [localhost:8080](http://localhost:8080).
 
@@ -36,12 +38,12 @@ When using `neuron open` to access the generated site *locally*, do note that [[
 
 ## Publishing to the web
 
-See [[[778816d3]]]
+See [[[Automatic Publishing]]]
 
 ## Features 
 
 * [[[configuration]]]
 * [[[2014601]]]
-* [[[customize-site]]]
-* [[[graph-visualize]]]
+* [[[Customizing the generated website]]]
+* [[[Graph visualization]]]
 

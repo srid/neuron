@@ -10,9 +10,9 @@ The *Directory Tree* plugin automatically creates a [[folgezettel-heterarchy]] r
 
 ## Using and creating Directory Zettels
 
-Given a file `./Home/Projects/HouseWarming.md` this plugin will create three zettels with [[id]]s `Home`, `Projects`, and `HouseWarming`. In the [[web]], neuron will display the "contents" of a directory beneath the zettel content.
+Given a file `./Home/Projects/HouseWarming.md` this plugin will create three zettels with [[id]]s `Home`, `Projects`, and `HouseWarming`. In the [[Web interface]], neuron will display the "contents" of a directory beneath the zettel content.
 
-Directory names must be **globally** unique across the entire zettelkasten, inasmuch they directly reflect [[id]] which must also be unique. This means that two directories or zettels with the same name but in different paths will not work: having both `./Home/Projects/HouseWarming` and `./Work/Projects/FireZeMissiles` will cause Neuron to attempt to generate two zettels with the ID `Projects`, which will cause an error. In order to resolve this error, and to keep the zettel IDs [[atomic]], it would be better to rename **both** notes to `./Home/HomeProjects/` and `./Work/WorkProjects/`.
+Directory names must be **globally** unique across the entire zettelkasten, inasmuch they directly reflect [[id]] which must also be unique. This means that two directories or zettels with the same name but in different paths will not work: having both `./Home/Projects/HouseWarming` and `./Work/Projects/FireZeMissiles` will cause Neuron to attempt to generate two zettels with the ID `Projects`, which will cause an error. In order to resolve this error, and to keep the zettel IDs [[Atomic and autonomous]], it would be better to rename **both** notes to `./Home/HomeProjects/` and `./Work/WorkProjects/`.
 
 ### Adding content to a Directory Zettel
 
@@ -35,7 +35,7 @@ The zettel content for directory zettels are by default empty, only showing a li
 - HouseWarming.html
 ```
 
-No addtional zettels are generated, but any content in the `HomeProjects.md` file will be shown in the generated `HomeProjects.html` file in the [[web]].
+No addtional zettels are generated, but any content in the `HomeProjects.md` file will be shown in the generated `HomeProjects.html` file in the [[Web interface]].
 
 ## Directory Zettels are normal zettels
 
@@ -46,9 +46,9 @@ The directory structure you have on disk is used to do 2 things:
 - automatically create a [[folgezettel-heterarchy]] from a directory zettel with the zettels for its contents
 - automatically tag the zettels created with their on-disk path
 
-Once Neuron generates the [[zettelkasten]], the directory structure is discarded from memory and not used in the [[web]]. All of the generated notes are made accessible at the 'top' level of the generated site--you don't need to navigate down the on-disk directory structure in the [[web]].
+Once Neuron generates the [[Zettelkasten]], the directory structure is discarded from memory and not used in the [[Web interface]]. All of the generated notes are made accessible at the 'top' level of the generated site--you don't need to navigate down the on-disk directory structure in the [[Web interface]].
 
-This is one reason why it's good practice to give your directories an [[atomic]] [[id]]--once you've generated your zettelkasten, you no longer have the parent directories around to provide context. The example from before, `./Home/Projects`, would create a note for your home projects with the ID `Projects`--we can no longer tell that it is specifically **home** projects. (The other reason it is good to have unique IDs is to avoid ID clash, as covered above.)
+This is one reason why it's good practice to give your directories an [[Atomic and autonomous]] [[id]]--once you've generated your zettelkasten, you no longer have the parent directories around to provide context. The example from before, `./Home/Projects`, would create a note for your home projects with the ID `Projects`--we can no longer tell that it is specifically **home** projects. (The other reason it is good to have unique IDs is to avoid ID clash, as covered above.)
 
 ### Automatically created folgezettel heterarchies
 

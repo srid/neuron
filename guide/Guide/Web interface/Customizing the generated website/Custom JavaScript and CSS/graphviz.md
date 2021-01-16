@@ -6,7 +6,7 @@ tags: [custom-head-recipe]
 
 [Graphviz](https://graphviz.org/) is visualization software for representing structural information like abstract graphs and networks.
 
-Render Graphviz content in neuron by including the following HTML snippet in your `head.html` file ([[custom-head]]) or the zettel file ([[raw-html]]):
+Render Graphviz content in neuron by including the following HTML snippet in your `head.html` file ([[Custom JavaScript and CSS]]) or the zettel file ([[raw-html]]):
 
 ```html
 <script src="https://cdnjs.cloudflare.com/ajax/libs/viz.js/2.1.2/viz.js" integrity="sha512-vnRdmX8ZxbU+IhA2gLhZqXkX1neJISG10xy0iP0WauuClu3AIMknxyDjYHEpEhi8fTZPyOCWgqUCnEafDB/jVQ==" crossorigin="anonymous"></script>
