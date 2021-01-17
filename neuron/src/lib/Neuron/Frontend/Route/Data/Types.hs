@@ -95,7 +95,7 @@ data Stats = Stats
 -- Plugin types for route data
 
 data DirZettelVal = DirZettelVal
-  { dirZettelValChildren :: [Zettel],
+  { dirZettelValChildren :: [(ContextualConnection, Zettel)],
     dirZettelValParent :: Maybe Zettel
   }
   deriving (Eq, Show)
