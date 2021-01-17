@@ -76,7 +76,7 @@ routePluginData g = \case
 getChildZettels :: [Zettel] -> Tag -> [(ContextualConnection, Zettel)]
 getChildZettels zs t =
   let childrenQuery = mkDefaultTagQuery $ one $ Tag.mkTagPatternFromTag t
-      ctx = one $ P.Plain $ one $ P.Emph $ one $ P.Str "Directory Zettel"
+      ctx = one $ P.Plain $ one $ P.Emph $ one $ P.Str "Parent"
       -- Child zettels are folgezettel, with the exception of the children of
       -- root dir zettel. Why? Because we don't want one huge cluster glued
       -- together by the index.

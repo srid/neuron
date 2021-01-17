@@ -103,11 +103,11 @@ renderPanel elNeuronPandoc LinksData {..} = do
 
 routePluginData :: ZettelGraph -> ZettelC -> [((ZettelID, Connection), [Block])] -> LinksData
 routePluginData g z _qs =
-  let allUrls =
-        Set.toList . Set.fromList $
-          either (const []) (P.getLinks . zettelContent) z
-      linkCache = buildQueryUrlCache (G.getZettels g) allUrls
+  let noteUrls = either (const []) (P.getLinks . zettelContent) z
       backlinks = G.backlinks isJust (sansContent z) g
+      backlinksUrls = P.getLinks `concatMap` fmap (snd . fst) backlinks
+      allUrls = Set.toList $ Set.fromList $ noteUrls <> backlinksUrls
+      linkCache = buildQueryUrlCache (G.getZettels g) allUrls
    in LinksData linkCache backlinks
 
 type QueryUrlCache = Map Text (Either MissingZettel (Connection, Zettel))
