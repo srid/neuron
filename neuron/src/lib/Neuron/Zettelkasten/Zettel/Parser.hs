@@ -50,7 +50,7 @@ parseZettel parser fn zid s pluginData =
       "\n\n" <> "[[[z:zettels?tag=" <> tag <> "/*]]]"
     mkDefaultSlug :: Text -> Slug
     mkDefaultSlug ss =
-      foldl' (\s' x -> T.replace x "_" s') ss (charsDisallowedInURL <> [" "])
+      foldl' (\s' x -> T.replace x "-" s') (T.toLower ss) (charsDisallowedInURL <> [" "])
     charsDisallowedInURL :: [Text]
     charsDisallowedInURL =
       [":"]
