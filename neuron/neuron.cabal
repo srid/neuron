@@ -234,9 +234,7 @@ test-suite neuron-test
       Neuron.VersionSpec
       Neuron.Zettelkasten.ID.SchemeSpec
       Neuron.Zettelkasten.IDSpec
-      Neuron.Zettelkasten.Query.ParserSpec
       Neuron.Zettelkasten.ZettelSpec
-      Neuron.Zettelkasten.Zettel.ParserSpec
 
 -- To profile: ghc-options: -fexternal-interpreter -prof -fprof-auto -rtsopts
 executable neuron
