@@ -2,6 +2,10 @@
 slug: dirtree
 ---
 
+:::{.ui .message}
+This plugin must be manually enabled in [[configuration]]
+:::
+
 The *Directory Tree* plugin automatically creates a [[folgezettel-heterarchy]] reflecting the dirtectory tree of your notes. In effect, it does the following:
 
 1. Create a "directory zettel" on the fly for each sub-directory containing zettels
