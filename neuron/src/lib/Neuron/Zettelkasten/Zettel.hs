@@ -20,7 +20,7 @@
 
 module Neuron.Zettelkasten.Zettel where
 
-import Data.Aeson
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Default
@@ -33,6 +33,8 @@ import Data.Some (Some)
 import Data.TagTree (Tag, TagQuery)
 import Data.Tagged (Tagged (Tagged))
 import Data.Time.DateMayTime (DateMayTime)
+import Data.YAML (FromYAML (parseYAML), (.:))
+import qualified Data.YAML as Y
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
@@ -48,21 +50,33 @@ import Text.Show (Show (show))
 -- NOTE: Ideally we want to put this in Plugin modules, but there is a mutual
 -- dependency with the Zettel type. :/
 
-data DirTreeZettel
-  = DirTreeZettel_Dir DirZettel
-  | DirTreeZettel_Regular (Set Tag) (Maybe ZettelID) -- with parent zettel; TODO: refactor
+data DirTreeMeta = DirTreeMeta
+  { dirTreeMetaDisplay :: Bool
+  }
   deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON)
 
+instance Y.FromYAML DirTreeMeta where
+  parseYAML =
+    Y.withMap "Meta" $ \m ->
+      DirTreeMeta
+        <$> m .: "display"
+
+instance Default DirTreeMeta where
+  def = DirTreeMeta True
+
+-- | Extended metadata on Zettel managed by DirTree plugin
 data DirZettel = DirZettel
-  { -- | What to tag this directory zettel.
+  { -- | What to tag this zettel.
     -- We expect the arity here to be 1-2. 1 for the simplest case; and 2, if
     -- both Foo/ and Foo.md exists, with the later being positioned *elsewhere*
     -- in the tree, with its own parent directory.
     _dirZettel_tags :: Set Tag,
-    -- | The tag used by its child zettels (directories and files)
-    _dirZettel_childrenTag :: Tag,
-    -- | The directory zettel associated with the parent directory.
-    _dirZettel_dirParent :: Maybe ZettelID
+    -- | The directory zettel associated with the parent directory if any.
+    _dirZettel_dirParent :: Maybe ZettelID,
+    -- | The tag used by its child zettels (directories and files) if any.
+    -- This is Nothing for "terminal" zettels
+    _dirZettel_childrenTag :: Maybe Tag,
+    _dirZettel_meta :: Maybe DirTreeMeta
   }
   deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON)
 
@@ -101,7 +115,7 @@ data ZettelTags = ZettelTags
 -- See also `PluginZettelRouteData` which corresponds to post-graph data (used
 -- in rendering).
 data PluginZettelData a where
-  PluginZettelData_DirTree :: PluginZettelData DirTreeZettel
+  PluginZettelData_DirTree :: PluginZettelData DirZettel
   PluginZettelData_Links :: PluginZettelData [((ZettelID, Connection), [Block])]
   PluginZettelData_Tags :: PluginZettelData ZettelTags
   PluginZettelData_NeuronIgnore :: PluginZettelData ()

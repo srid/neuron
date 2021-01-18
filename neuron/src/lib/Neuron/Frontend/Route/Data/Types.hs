@@ -96,12 +96,13 @@ data Stats = Stats
 
 data DirZettelVal = DirZettelVal
   { dirZettelValChildren :: [(ContextualConnection, Zettel)],
-    dirZettelValParent :: Maybe Zettel
+    dirZettelValParent :: Maybe Zettel,
+    dirZettelValMeta :: DirTreeMeta
   }
   deriving (Eq, Show)
 
 instance Default DirZettelVal where
-  def = DirZettelVal mempty Nothing
+  def = DirZettelVal mempty Nothing def
 
 data LinksData = LinksData
   { linksDataLinkCache :: Map Text (Either MissingZettel (Connection, Zettel)),
