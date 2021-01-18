@@ -127,6 +127,9 @@ afterZettelParse myaml z =
     Just (DirZettel _ _ (Just _) _) ->
       -- This is a directory zettel; nothing to modify.
       z
+    _
+      | zettelID z == indexZettelID ->
+        z
     _ ->
       -- Regular zettel; add the tag based on path.
       let tags = maybe Set.empty Set.singleton $ parentDirTag $ zettelPath z
@@ -174,7 +177,13 @@ injectDirectoryZettels = \case
             R.markAmbiguous dirZettelId $ absPath :| [p]
           Nothing -> do
             -- A file zettel (DIRNAME.md) already exists on disk. Merge with it.
-            let pluginData = mkPluginData $ Set.fromList $ catMaybes [parentDirTag absPath, parentDirTag p]
+            let pluginData =
+                  mkPluginData $
+                    Set.fromList $
+                      catMaybes
+                        [ guard (dirZettelId /= indexZettelID) >> parentDirTag absPath,
+                          parentDirTag p
+                        ]
                 newRef = ZIDRef_Available p s (DMap.union pluginData pluginDataPrev)
             modify $ Map.update (const $ Just newRef) dirZettelId
       Just ZIDRef_Ambiguous {} ->
