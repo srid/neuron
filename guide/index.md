@@ -13,7 +13,9 @@
 
 ## External links
 
-* [Neuron source code](https://github.com/srid/neuron)
-* [Neuron blog posts](https://www.srid.ca/neuron.html)
-* [Project Discussion Chat](https://github.com/srid/neuron#discussion)
+* [Source code](https://github.com/srid/neuron)
+* [Announcements](https://www.srid.ca/neuron.html)
+* Discussion & updates:
+    * [Microblog / Forum](https://gab.com/groups/19445)
+    * [Matrix Chat](https://app.element.io/#/room/#neuron:matrix.org)
 * [Sponsor the project](https://github.com/sponsors/srid)
