@@ -17,9 +17,9 @@ module Neuron.Plugin.Plugins.Tags
     routePluginData,
     renderHandleLink,
     renderPanel,
-    -- TODO: Nope! Shouldn't complecting with Impulse
+    -- TODO: Nope! Shouldn't be complecting with Impulse
     getZettelTags,
-    -- TODO: why expose
+    -- TODO: why expose?
     zettelsByTag,
   )
 where
@@ -28,8 +28,8 @@ import qualified Commonmark as CM
 import qualified Commonmark.Inlines as CM
 import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens
-import Control.Monad.Writer
-import Data.Default
+    ( TokType(Symbol, Spaces, UnicodeSpace, LineEnd) )
+import Control.Monad.Writer (MonadWriter)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
@@ -44,13 +44,14 @@ import qualified Data.YAML as Y
 import GHC.Natural (naturalToInt)
 import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route
+    ( neuronRouteLink, NeuronWebT, Route(Route_Impulse) )
 import qualified Neuron.Frontend.Route as R
 import Neuron.Frontend.Route.Data.Types (TagQueryLinkCache)
 import Neuron.Frontend.Widget (semanticIcon)
 import qualified Neuron.Markdown as M
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
-  ( Connection (Folgezettel, OrdinaryConnection),
+  ( Connection (..),
     ContextualConnection,
   )
 import qualified Neuron.Zettelkasten.Graph as G
