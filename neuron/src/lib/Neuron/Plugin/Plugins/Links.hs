@@ -160,7 +160,9 @@ queryConnections Zettel {..} = do
       fmap concat $
         forM xs $ \((zid, conn), ctx) -> do
           case find ((== zid) . Z.zettelID) zs of
-            Nothing -> pure mempty
+            Nothing -> do
+              tell $ one $ Tagged zid
+              pure mempty
             Just z2 -> do
               pure [((conn, ctx), z2)]
 
