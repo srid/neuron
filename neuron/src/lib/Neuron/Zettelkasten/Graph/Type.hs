@@ -6,14 +6,12 @@
 module Neuron.Zettelkasten.Graph.Type
   ( -- * Graph type
     ZettelGraph,
-    stripSurroundingContext,
   )
 where
 
 import Data.Graph.Labelled (LabelledGraph)
-import qualified Data.Graph.Labelled as Algo
 import Neuron.Zettelkasten.Connection
-import Neuron.Zettelkasten.Zettel (Zettel, sansLinkContext)
+import Neuron.Zettelkasten.Zettel (Zettel)
 import Relude
 
 -- | The Zettelkasten graph
@@ -23,9 +21,3 @@ import Relude
 -- our case, and is effectively the same as there not being an edge between
 -- those vertices.
 type ZettelGraph = LabelledGraph Zettel (Maybe ContextualConnection)
-
--- | Compress the graph to save space, by eliminating the unnecessary
--- surrounding context Pandoc blocks.
-stripSurroundingContext :: ZettelGraph -> ZettelGraph
-stripSurroundingContext =
-  Algo.emap (fmap (second $ const mempty)) . Algo.vmap sansLinkContext

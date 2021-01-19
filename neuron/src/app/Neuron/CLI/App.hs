@@ -75,12 +75,13 @@ runAppCommand genAct = do
       openLocallyGeneratedFile openCommand
     Query QueryCommand {..} -> do
       Cache.NeuronCache {..} <-
-        if cached
-          then Cache.getCache
-          else do
-            Reactor.loadZettelkasten >>= \case
-              Left e -> fail $ toString e
-              Right (ch, _, _) -> pure ch
+        fmap Cache.stripCache $
+          if cached
+            then Cache.getCache
+            else do
+              Reactor.loadZettelkasten >>= \case
+                Left e -> fail $ toString e
+                Right (ch, _, _) -> pure ch
       case query of
         Left (_zid, _conn) -> do
           -- TODO

@@ -49,7 +49,9 @@ data Plugin routeData = Plugin
     -- | Plugin-specific HTML rendering to do on the zettel pages.
     _plugin_renderPanel :: forall t m. (DomBuilder t m, PostBuild t m) => (Pandoc -> NeuronWebT t m ()) -> routeData -> NeuronWebT t m (),
     -- | Hooks for rendering custom DOM elements; here, url links.
-    _plugin_renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => routeData -> Text -> Maybe (NeuronWebT t m ())
+    _plugin_renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => routeData -> Text -> Maybe (NeuronWebT t m ()),
+    -- | Strip data you don't want in JSON dumps
+    _plugin_preJsonStrip :: Zettel -> Zettel
   }
 
 instance Default a => Default (Plugin a) where
@@ -62,5 +64,6 @@ instance Default a => Default (Plugin a) where
         _plugin_graphConnections = const $ pure mempty,
         _plugin_routeData = def,
         _plugin_renderPanel = \_ _ -> blank,
-        _plugin_renderHandleLink = \_ _ -> Nothing
+        _plugin_renderHandleLink = \_ _ -> Nothing,
+        _plugin_preJsonStrip = id
       }

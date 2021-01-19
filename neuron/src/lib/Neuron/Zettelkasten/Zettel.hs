@@ -165,17 +165,6 @@ sansContent = \case
       { zettelContent = Tagged Nothing
       }
 
--- | Strip out the link context data
---
--- Useful to to minimize the impending JSON dump.
-sansLinkContext :: ZettelT c -> ZettelT c
-sansLinkContext z =
-  -- TODO: strip in plugin!
-  -- z {zettelQueries = stripContextFromZettelQuery <$> zettelQueries z}
-  -- where
-  -- stripContextFromZettelQuery (someQ, _ctx) = (someQ, mempty)
-  z
-
 instance Show (ZettelT c) where
   show Zettel {..} = "Zettel:" <> show zettelID
 

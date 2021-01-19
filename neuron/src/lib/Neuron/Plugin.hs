@@ -14,8 +14,9 @@ import Control.Monad.Writer
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum (..))
+import qualified Data.Graph.Labelled as Algo
 import qualified Data.Map.Strict as Map
-import Data.Some (Some (..), withSome)
+import Data.Some
 import qualified Data.Text as T
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types
@@ -146,3 +147,22 @@ renderHandleLink' = \case
     Tags.renderHandleLink x
   PluginZettelRouteData_NeuronIgnore :=> _ ->
     const Nothing
+
+preJsonStrip :: Zettel -> Zettel
+preJsonStrip z =
+  let pluginData' = flip fmap (DMap.toList $ zettelPluginData z) $ \case
+        x@(PluginZettelData_NeuronIgnore :=> Identity ()) ->
+          x
+        x@(PluginZettelData_DirTree :=> Identity _) ->
+          x
+        x@(PluginZettelData_Tags :=> Identity _) ->
+          x
+        PluginZettelData_Links :=> Identity x ->
+          PluginZettelData_Links :=> Identity (Links.preJsonStrip x)
+   in z {zettelPluginData = DMap.fromList pluginData'}
+
+-- | Compress the graph to save space, by eliminating the unnecessary
+-- surrounding context Pandoc blocks.
+stripSurroundingContext :: ZettelGraph -> ZettelGraph
+stripSurroundingContext =
+  Algo.emap (fmap (second $ const mempty)) . Algo.vmap preJsonStrip

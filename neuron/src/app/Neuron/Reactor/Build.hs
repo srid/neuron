@@ -39,7 +39,7 @@ import Neuron.Plugin (PluginRegistry)
 import qualified Neuron.Plugin as Plugin
 import Neuron.Version (neuronVersion)
 import qualified Neuron.Zettelkasten.Graph.Build as G
-import Neuron.Zettelkasten.Graph.Type (ZettelGraph, stripSurroundingContext)
+import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel (ZettelC)
@@ -178,8 +178,7 @@ loadZettelkastenFromFiles config fileTree = do
   log D $ "Plugins enabled: " <> Plugin.pluginRegistryShow plugins
   ((g, zs), errs) <- loadZettelkastenFromFilesWithPlugins plugins fileTree
   let cache = Cache.NeuronCache g errs config neuronVersion
-      cacheSmall = cache {Cache._neuronCache_graph = stripSurroundingContext g}
-  Cache.updateCache cacheSmall
+  Cache.updateCache $ Cache.stripCache cache
   pure (cache, zs, fileTree)
 
 locateZettelFiles :: (MonadIO m, MonadApp m) => m (Either Text (Config, DC.DirTree FilePath))

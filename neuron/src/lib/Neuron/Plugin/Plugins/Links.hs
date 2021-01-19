@@ -17,6 +17,7 @@ module Neuron.Plugin.Plugins.Links
     routePluginData,
     renderHandleLink,
     renderPanel,
+    preJsonStrip,
   )
 where
 
@@ -139,6 +140,11 @@ parseQueryLink attrs url = do
     determineLinkType s = do
       guard $ not $ "/" `T.isInfixOf` s || ":" `T.isInfixOf` s
       pure s
+
+preJsonStrip :: [((ZettelID, Connection), [Block])] -> [((ZettelID, Connection), [Block])]
+preJsonStrip conns =
+  -- Discard surrounding context
+  conns <&> second (const empty)
 
 -- Query evaluation
 -- ----------------
