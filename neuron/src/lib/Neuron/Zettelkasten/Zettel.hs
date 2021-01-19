@@ -20,8 +20,9 @@
 
 module Neuron.Zettelkasten.Zettel where
 
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson hiding ((.:))
 import Data.Aeson.GADT.TH (deriveJSONGADT)
+import Data.Char (isLower)
 import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Default
 import Data.Dependent.Map (DMap)
@@ -30,7 +31,8 @@ import Data.GADT.Compare.TH
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
-import Data.TagTree (Tag, TagQuery)
+import Data.TagTree (Tag)
+import qualified Data.TagTree as TagTree
 import Data.Tagged (Tagged (Tagged))
 import Data.Time.DateMayTime (DateMayTime)
 import Data.YAML (FromYAML (parseYAML), (.:))
@@ -51,9 +53,9 @@ import Text.Show (Show (show))
 -- dependency with the Zettel type. :/
 
 data DirTreeMeta = DirTreeMeta
-  { dirTreeMetaDisplay :: Bool
+  { dirtreemetaDisplay :: Bool
   }
-  deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON)
+  deriving (Eq, Ord, Show, Generic)
 
 instance Y.FromYAML DirTreeMeta where
   parseYAML =
@@ -78,12 +80,12 @@ data DirZettel = DirZettel
     _dirZettel_childrenTag :: Maybe Tag,
     _dirZettel_meta :: Maybe DirTreeMeta
   }
-  deriving (Eq, Ord, Show, Generic, ToJSON, FromJSON)
+  deriving (Eq, Ord, Show, Generic)
 
 data ZettelsView = ZettelsView
-  { zettelsViewLinkView :: LinkView,
-    zettelsViewGroupByTag :: Bool,
-    zettelsViewLimit :: Maybe Natural
+  { zettelsviewLinkView :: LinkView,
+    zettelsviewGroupByTag :: Bool,
+    zettelsviewLimit :: Maybe Natural
   }
   deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
 
@@ -99,14 +101,14 @@ instance Default LinkView where
 instance Default ZettelsView where
   def = ZettelsView def False def
 
-data TagQueryLink r where
-  TagQueryLink_ZettelsByTag :: TagQuery -> Connection -> ZettelsView -> TagQueryLink [Zettel]
-  TagQueryLink_Tags :: TagQuery -> TagQueryLink (Map Tag Natural)
-  TagQueryLink_TagZettel :: Tag -> TagQueryLink ()
+data TagQuery r where
+  TagQuery_ZettelsByTag :: TagTree.Query -> Connection -> ZettelsView -> TagQuery [Zettel]
+  TagQuery_Tags :: TagTree.Query -> TagQuery (Map Tag Natural)
+  TagQuery_TagZettel :: Tag -> TagQuery ()
 
 data ZettelTags = ZettelTags
-  { zettelTagsTagged :: Set Tag,
-    zettelTagsQueryLinks :: [Some TagQueryLink]
+  { zetteltagsTagged :: Set Tag,
+    zetteltagsQueries :: [Some TagQuery]
   }
   deriving (Generic)
 
@@ -114,11 +116,14 @@ data ZettelTags = ZettelTags
 --
 -- See also `PluginZettelRouteData` which corresponds to post-graph data (used
 -- in rendering).
+--
+-- NOTE: The constructors deliberately are kept short, so as to have shorter
+-- JSON
 data PluginZettelData a where
-  PluginZettelData_DirTree :: PluginZettelData DirZettel
-  PluginZettelData_Links :: PluginZettelData [((ZettelID, Connection), [Block])]
-  PluginZettelData_Tags :: PluginZettelData ZettelTags
-  PluginZettelData_NeuronIgnore :: PluginZettelData ()
+  DirTree :: PluginZettelData DirZettel
+  Links :: PluginZettelData [((ZettelID, Connection), [Block])]
+  Tags :: PluginZettelData ZettelTags
+  NeuronIgnore :: PluginZettelData ()
 
 -- ------------
 -- Zettel types
@@ -136,7 +141,8 @@ data ZettelT c = Zettel
     -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
     zettelTitle :: Text,
-    -- | Whether the title was infered from the body
+    -- | Whether the title was infered from the body. Used when conditionally
+    -- rendering the title in HTML.
     zettelTitleInBody :: Bool,
     -- | Date associated with the zettel if any
     zettelDate :: Maybe DateMayTime,
@@ -176,11 +182,11 @@ sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
   sortOn (Down . zettelDate)
 
-deriveJSONGADT ''TagQueryLink
-deriveGEq ''TagQueryLink
-deriveGShow ''TagQueryLink
-deriveGCompare ''TagQueryLink
-deriveArgDict ''TagQueryLink
+deriveJSONGADT ''TagQuery
+deriveGEq ''TagQuery
+deriveGShow ''TagQuery
+deriveGCompare ''TagQuery
+deriveArgDict ''TagQuery
 
 deriveArgDict ''PluginZettelData
 deriveJSONGADT ''PluginZettelData
@@ -192,9 +198,11 @@ deriving instance Eq ZettelTags
 
 deriving instance Ord ZettelTags
 
-deriving instance ToJSON ZettelTags
+instance ToJSON ZettelTags where
+  toJSON = genericToJSON shortRecordFields
 
-deriving instance FromJSON ZettelTags
+instance FromJSON ZettelTags where
+  parseJSON = genericParseJSON shortRecordFields
 
 deriving instance Show ZettelTags
 
@@ -210,6 +218,31 @@ deriving instance Ord (ZettelT MetadataOnly)
 
 deriving instance Ord (ZettelT (Text, ZettelParseError))
 
-deriving instance ToJSON Zettel
+instance ToJSON DirTreeMeta where
+  toJSON = genericToJSON shortRecordFields
 
-deriving instance FromJSON Zettel
+instance FromJSON DirTreeMeta where
+  parseJSON = genericParseJSON shortRecordFields
+
+instance ToJSON DirZettel where
+  toJSON = genericToJSON shortRecordFields
+
+instance FromJSON DirZettel where
+  parseJSON = genericParseJSON shortRecordFields
+
+instance ToJSON Zettel where
+  toJSON = genericToJSON shortRecordFields
+
+instance FromJSON Zettel where
+  parseJSON = genericParseJSON shortRecordFields
+
+shortRecordFields :: Options
+shortRecordFields =
+  defaultOptions
+    { fieldLabelModifier =
+        \case
+          -- Drop the "_foo_" prefix
+          '_' : rest -> drop 1 $ dropWhile (/= '_') rest
+          -- Drop "zettel" prefix
+          s -> dropWhile isLower s
+    }

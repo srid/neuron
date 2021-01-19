@@ -28,15 +28,17 @@ import qualified Commonmark as CM
 import qualified Commonmark.Inlines as CM
 import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens
-    ( TokType(Symbol, Spaces, UnicodeSpace, LineEnd) )
+  ( TokType (LineEnd, Spaces, Symbol, UnicodeSpace),
+  )
 import Control.Monad.Writer (MonadWriter)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Some (Some (..), withSome)
-import Data.TagTree
+import Data.TagTree (Tag (..), TagNode (..), TagPattern (..))
 import qualified Data.TagTree as Tag
+import qualified Data.TagTree as TagTree
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
 import Data.YAML ((.:?))
@@ -44,9 +46,12 @@ import qualified Data.YAML as Y
 import GHC.Natural (naturalToInt)
 import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route
-    ( neuronRouteLink, NeuronWebT, Route(Route_Impulse) )
+  ( NeuronWebT,
+    Route (Route_Impulse),
+    neuronRouteLink,
+  )
 import qualified Neuron.Frontend.Route as R
-import Neuron.Frontend.Route.Data.Types (TagQueryLinkCache)
+import Neuron.Frontend.Route.Data.Types (TagQueryCache)
 import Neuron.Frontend.Widget (semanticIcon)
 import qualified Neuron.Markdown as M
 import Neuron.Plugin.Type (Plugin (..))
@@ -70,17 +75,17 @@ import Text.URI.Util (getQueryParam, hasQueryFlag)
 
 -- Directory zettels using this plugin are associated with a `Tag` that
 -- corresponds to the directory contents.
-plugin :: Plugin TagQueryLinkCache
+plugin :: Plugin TagQueryCache
 plugin =
   def
     { _plugin_markdownSpec = inlineTagSpec,
-      _plugin_afterZettelParse = second . parseTagQueryLinks,
+      _plugin_afterZettelParse = second . parseTagQuerys,
       _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink
     }
 
-parseTagQueryLinks :: Maybe (Y.Node Y.Pos) -> ZettelT Pandoc -> ZettelT Pandoc
-parseTagQueryLinks myaml z =
+parseTagQuerys :: Maybe (Y.Node Y.Pos) -> ZettelT Pandoc -> ZettelT Pandoc
+parseTagQuerys myaml z =
   let allUrls =
         Set.toList . Set.fromList $
           Pandoc.getLinks $ zettelContent z
@@ -92,32 +97,32 @@ parseTagQueryLinks myaml z =
         Nothing -> pure Set.empty
         Just yaml -> Set.fromList <$> M.runYamlParser (tagsParser yaml)
       tagsData = ZettelTags tags tagLinks
-   in z {zettelPluginData = DMap.insert PluginZettelData_Tags (Identity tagsData) (zettelPluginData z)}
+   in z {zettelPluginData = DMap.insert Tags (Identity tagsData) (zettelPluginData z)}
 
 tagsParser :: Y.Node Y.Pos -> Y.Parser [Tag]
 tagsParser yaml = do
   flip (Y.withMap @[Tag] "tags") yaml $ \m -> do
     fromMaybe mempty <$> liftA2 (<|>) (m .:? "tags") (m .:? "keywords")
 
-routePluginData :: ZettelGraph -> ZettelC -> ZettelTags -> TagQueryLinkCache
+routePluginData :: ZettelGraph -> ZettelC -> ZettelTags -> TagQueryCache
 routePluginData g z _qs =
   let allUrls =
         Set.toList . Set.fromList $
           either (const []) (Pandoc.getLinks . zettelContent) z
-   in buildTagQueryLinkCache (G.getZettels g) allUrls
+   in buildTagQueryCache (G.getZettels g) allUrls
   where
-    buildTagQueryLinkCache :: [Zettel] -> [([(Text, Text)], Text)] -> TagQueryLinkCache
-    buildTagQueryLinkCache zs urlsWithAttrs =
+    buildTagQueryCache :: [Zettel] -> [([(Text, Text)], Text)] -> TagQueryCache
+    buildTagQueryCache zs urlsWithAttrs =
       Map.fromList $
         catMaybes $
           urlsWithAttrs <&> \(attrs, url) -> do
             parseQueryLink attrs url >>= \someQ -> do
-              res <- flip runReaderT zs $ runSomeTagQueryLink someQ
+              res <- flip runReaderT zs $ runSomeTagQuery someQ
               pure (url, res)
 
 -- | Parse a query if any from a Markdown link
 -- TODO: queryConn should be read from link attribute!
-parseQueryLink :: [(Text, Text)] -> Text -> Maybe (Some TagQueryLink)
+parseQueryLink :: [(Text, Text)] -> Text -> Maybe (Some TagQuery)
 parseQueryLink attrs url = do
   let conn = case Map.lookup "title" (Map.fromList attrs) of
         Just s -> if s == show Folgezettel then Folgezettel else def
@@ -133,20 +138,20 @@ parseQueryLink attrs url = do
     -- Parse z:zettels?...
     (URI.unRText -> "zettels") :| []
       | noSlash -> do
-        pure $ Some $ TagQueryLink_ZettelsByTag (Tag.mkDefaultTagQuery $ tagPatterns uri "tag") conn (queryView uri)
+        pure $ Some $ TagQuery_ZettelsByTag (Tag.mkDefaultTagQuery $ tagPatterns uri "tag") conn (queryView uri)
     -- Parse z:tags?...
     (URI.unRText -> "tags") :| []
       | noSlash -> do
-        pure $ Some $ TagQueryLink_Tags (Tag.mkDefaultTagQuery $ tagPatterns uri "filter")
+        pure $ Some $ TagQuery_Tags (Tag.mkDefaultTagQuery $ tagPatterns uri "filter")
     -- Parse z:tag/foo
     (URI.unRText -> "tag") :| (nonEmpty . fmap (TagNode . URI.unRText) -> Just tagNodes)
       | noSlash -> do
-        pure $ Some $ TagQueryLink_TagZettel (constructTag tagNodes)
+        pure $ Some $ TagQuery_TagZettel (TagTree.constructTag tagNodes)
     _ -> empty
   where
     tagPatterns :: URI -> Text -> [TagPattern]
     tagPatterns uri k =
-      mkTagPattern <$> getParamValues uri
+      TagTree.mkTagPattern <$> getParamValues uri
       where
         getParamValues :: URI -> [Text]
         getParamValues u =
@@ -188,43 +193,43 @@ queryConnections ::
   Zettel ->
   m [(ContextualConnection, Zettel)]
 queryConnections Zettel {..} = do
-  case DMap.lookup PluginZettelData_Tags zettelPluginData of
+  case DMap.lookup Tags zettelPluginData of
     Nothing -> pure mempty
     Just (Identity ZettelTags {..}) -> do
       fmap concat $
-        forM zettelTagsQueryLinks $ \someQ -> do
-          qRes <- runSomeTagQueryLink someQ
+        forM zetteltagsQueries $ \someQ -> do
+          qRes <- runSomeTagQuery someQ
           links <- getConnections qRes
           pure $ first (,mempty) <$> links
   where
-    getConnections :: DSum TagQueryLink Identity -> m [(Connection, Zettel)]
+    getConnections :: DSum TagQuery Identity -> m [(Connection, Zettel)]
     getConnections = \case
-      TagQueryLink_ZettelsByTag _ conn _mview :=> Identity res ->
+      TagQuery_ZettelsByTag _ conn _mview :=> Identity res ->
         pure $ (conn,) <$> res
-      TagQueryLink_Tags _ :=> _ ->
+      TagQuery_Tags _ :=> _ ->
         pure mempty
-      TagQueryLink_TagZettel _ :=> _ ->
+      TagQuery_TagZettel _ :=> _ ->
         pure mempty
 
-runSomeTagQueryLink ::
+runSomeTagQuery ::
   ( MonadReader [Zettel] m
   ) =>
-  Some TagQueryLink ->
-  m (DSum TagQueryLink Identity)
-runSomeTagQueryLink someQ =
+  Some TagQuery ->
+  m (DSum TagQuery Identity)
+runSomeTagQuery someQ =
   withSome someQ $ \q -> do
     zs <- ask
-    let res = runTagQueryLink zs q
+    let res = runTagQuery zs q
     pure $ q :=> Identity res
   where
-    runTagQueryLink :: [Zettel] -> TagQueryLink r -> r
-    runTagQueryLink zs = \case
-      TagQueryLink_ZettelsByTag pats _mconn _mview ->
+    runTagQuery :: [Zettel] -> TagQuery r -> r
+    runTagQuery zs = \case
+      TagQuery_ZettelsByTag pats _mconn _mview ->
         zettelsByTag getZettelTags zs pats
       -- TODO: Remove this constructor, not going to bother with allTags, can implement later.
-      TagQueryLink_Tags pats ->
-        Map.filterWithKey (const . flip matchTagQuery pats) allTags
-      TagQueryLink_TagZettel _tag ->
+      TagQuery_Tags pats ->
+        Map.filterWithKey (const . flip TagTree.matchTagQuery pats) allTags
+      TagQuery_TagZettel _tag ->
         ()
       where
         allTags :: Map.Map Tag Natural
@@ -232,17 +237,17 @@ runSomeTagQueryLink someQ =
           Map.fromListWith (+) $
             concatMap (\z -> (,1) <$> toList (getZettelTags z)) zs
 
-zettelsByTag :: (Zettel -> Set Tag) -> [Zettel] -> TagQuery -> [Zettel]
+zettelsByTag :: (Zettel -> Set Tag) -> [Zettel] -> TagTree.Query -> [Zettel]
 zettelsByTag getTags zs q =
   sortZettelsReverseChronological $
     flip filter zs $ \(getTags -> tags) ->
-      matchTagQueryMulti (toList tags) q
+      TagTree.matchTagQueryMulti (toList tags) q
 
 getZettelTags :: ZettelT c -> Set Tag
 getZettelTags Zettel {..} =
   fromMaybe Set.empty $ do
-    Identity ZettelTags {..} <- DMap.lookup PluginZettelData_Tags zettelPluginData
-    pure zettelTagsTagged
+    Identity ZettelTags {..} <- DMap.lookup Tags zettelPluginData
+    pure zetteltagsTagged
 
 -- UI
 -- --
@@ -252,7 +257,7 @@ renderPanel ::
   (DomBuilder t m, PostBuild t m) =>
   (Pandoc -> NeuronWebT t m ()) ->
   Zettel ->
-  TagQueryLinkCache ->
+  TagQueryCache ->
   NeuronWebT t m ()
 renderPanel _elNeuronPandoc z _routeData = do
   whenNotNull (Set.toList $ getZettelTags z) $ \tags -> do
@@ -273,7 +278,7 @@ renderPanel _elNeuronPandoc z _routeData = do
             )
             $ text $ unTag t
 
-renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => TagQueryLinkCache -> Text -> Maybe (NeuronWebT t m ())
+renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => TagQueryCache -> Text -> Maybe (NeuronWebT t m ())
 renderHandleLink cache url = do
   r <- Map.lookup url cache
   pure $ renderQueryResult r
@@ -282,12 +287,12 @@ renderInlineTag :: (DomBuilder t m, PostBuild t m) => Tag -> Map Text Text -> m 
 renderInlineTag tag = neuronRouteLink (Some $ Route_Impulse $ Just tag)
 
 renderQueryResult ::
-  (PandocBuilder t m, PostBuild t m) => DSum TagQueryLink Identity -> NeuronWebT t m ()
+  (PandocBuilder t m, PostBuild t m) => DSum TagQuery Identity -> NeuronWebT t m ()
 renderQueryResult = \case
-  q@(TagQueryLink_ZettelsByTag pats conn view) :=> Identity res -> do
+  q@(TagQuery_ZettelsByTag pats conn view) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
-      if zettelsViewGroupByTag view
+      if zettelsviewGroupByTag view
         then forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
           el "section" $ do
             elClass "span" "ui basic pointing below grey label" $ do
@@ -296,24 +301,24 @@ renderQueryResult = \case
             el "ul" $
               forM_ zettelGrp $ \z ->
                 el "li" $
-                  Q.renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
+                  Q.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z
         else el "ul" $ do
           let resToDisplay =
-                case zettelsViewLimit view of
+                case zettelsviewLimit view of
                   Nothing -> res
                   Just (naturalToInt -> limit) -> take limit res
           forM_ resToDisplay $ \z -> do
             el "li" $
-              Q.renderZettelLink Nothing (Just conn) (Just $ zettelsViewLinkView view) z
+              Q.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z
           when (length resToDisplay /= length res) $ do
             el "li" $
               elClass "span" "ui grey text" $ do
                 text $ "(displaying only " <> show (length resToDisplay) <> " out of " <> show (length res) <> " zettels)"
-  q@(TagQueryLink_Tags _) :=> Identity res -> do
+  q@(TagQuery_Tags _) :=> Identity res -> do
     el "section" $ do
       renderQuery $ Some q
-      renderTagTree $ foldTagTree $ tagTree res
-  TagQueryLink_TagZettel tag :=> Identity () ->
+      renderTagTree $ TagTree.foldTagTree $ TagTree.tagTree res
+  TagQuery_TagZettel tag :=> Identity () ->
     renderInlineTag tag mempty $ do
       text "#"
       text $ unTag tag
@@ -323,22 +328,22 @@ renderQueryResult = \case
       fmap sortZettelsReverseChronological $
         Map.fromListWith (<>) $
           flip concatMap matches $ \z ->
-            flip concatMap (getZettelTags z) $ \t -> [(t, [z]) | matchTagQuery t pats]
+            flip concatMap (getZettelTags z) $ \t -> [(t, [z]) | TagTree.matchTagQuery t pats]
 
-renderQuery :: DomBuilder t m => Some TagQueryLink -> m ()
+renderQuery :: DomBuilder t m => Some TagQuery -> m ()
 renderQuery someQ =
-  elAttr "div" ("class" =: "ui horizontal divider" <> "title" =: "Neuron TagQueryLink") $ do
+  elAttr "div" ("class" =: "ui horizontal divider" <> "title" =: "Neuron TagQuery") $ do
     case someQ of
-      Some (TagQueryLink_ZettelsByTag q _mconn _mview) -> do
+      Some (TagQuery_ZettelsByTag q _mconn _mview) -> do
         let qs = show q
             desc = toText $ "Zettels tagged '" <> qs <> "'"
         elAttr "span" ("class" =: "ui basic pointing below black label" <> "title" =: desc) $ do
           semanticIcon "tags"
           text qs
-      Some (TagQueryLink_Tags q) -> do
+      Some (TagQuery_Tags q) -> do
         let qs = show q
         text $ "Tags matching '" <> qs <> "'"
-      Some (TagQueryLink_TagZettel _tag) -> do
+      Some (TagQuery_TagZettel _tag) -> do
         blank
 
 renderTagTree ::
@@ -361,7 +366,7 @@ renderTagTree t =
       renderForest (ancestors <> toList tagNode) $ toList children
     renderTag :: [TagNode] -> (NonEmpty TagNode, Natural) -> NeuronWebT t m ()
     renderTag ancestors (tagNode, count) = do
-      let tag = constructTag $ maybe tagNode (<> tagNode) $ nonEmpty ancestors
+      let tag = TagTree.constructTag $ maybe tagNode (<> tagNode) $ nonEmpty ancestors
           tit = show count <> " zettels tagged"
           cls = bool "" "inactive" $ count == 0
       divClass "node" $ do

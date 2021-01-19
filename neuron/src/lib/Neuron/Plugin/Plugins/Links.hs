@@ -67,7 +67,7 @@ plugin =
 parseLinks :: ZettelT Pandoc -> ZettelT Pandoc
 parseLinks z =
   let xs = extractLinkswithContext (zettelContent z)
-   in z {zettelPluginData = DMap.insert PluginZettelData_Links (Identity xs) (zettelPluginData z)}
+   in z {zettelPluginData = DMap.insert Links (Identity xs) (zettelPluginData z)}
   where
     extractLinkswithContext doc =
       mapMaybe (uncurry parseQueryLinkWithContext) $
@@ -159,7 +159,7 @@ queryConnections ::
   Zettel ->
   m [(ContextualConnection, Zettel)]
 queryConnections Zettel {..} = do
-  case DMap.lookup PluginZettelData_Links zettelPluginData of
+  case DMap.lookup Links zettelPluginData of
     Nothing -> pure mempty
     Just (Identity xs) -> do
       zs <- ask

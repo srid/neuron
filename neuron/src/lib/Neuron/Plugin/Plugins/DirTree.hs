@@ -62,7 +62,7 @@ queryConnections ::
   m [(ContextualConnection, Zettel)]
 queryConnections Zettel {..} = do
   zs <- ask
-  case DMap.lookup PluginZettelData_DirTree zettelPluginData of
+  case DMap.lookup DirTree zettelPluginData of
     Just (Identity (DirZettel _ _ (Just childTag) _)) -> do
       pure $ getChildZettels zs childTag
     _ -> pure mempty
@@ -96,11 +96,11 @@ getChildZettels zs t =
 getZettelDirTags :: ZettelT c -> Set Tag
 getZettelDirTags Zettel {..} =
   fromMaybe Set.empty $ do
-    _dirZettel_tags . runIdentity <$> DMap.lookup PluginZettelData_DirTree zettelPluginData
+    _dirZettel_tags . runIdentity <$> DMap.lookup DirTree zettelPluginData
 
 renderPanel :: (DomBuilder t m, PostBuild t m) => DirZettelVal -> NeuronWebT t m ()
 renderPanel DirZettelVal {..} = do
-  when (dirTreeMetaDisplay dirZettelValMeta) $ do
+  when (dirtreemetaDisplay dirZettelValMeta) $ do
     when (isJust dirZettelValParent || not (null dirZettelValChildren)) $ do
       elClass "nav" "ui attached segment dirfolge" $ do
         divClass "ui list" $ do
@@ -116,14 +116,14 @@ renderPanel DirZettelVal {..} = do
 
 afterZettelParse :: forall c. Maybe (Y.Node Y.Pos) -> ZettelT c -> ZettelT c
 afterZettelParse myaml z =
-  case runIdentity <$> DMap.lookup PluginZettelData_DirTree (zettelPluginData z) of
+  case runIdentity <$> DMap.lookup DirTree (zettelPluginData z) of
     Just (DirZettel tags mparent (Just childTag) Nothing) ->
       -- Parse YAML
       let meta = fromRight Nothing $ case myaml of
             Nothing -> pure Nothing
             Just yaml -> M.runYamlParser (metaParser yaml)
           pluginData = DirZettel tags mparent (Just childTag) meta
-       in z {zettelPluginData = DMap.insert PluginZettelData_DirTree (Identity pluginData) (zettelPluginData z)}
+       in z {zettelPluginData = DMap.insert DirTree (Identity pluginData) (zettelPluginData z)}
     Just (DirZettel _ _ (Just _) _) ->
       -- This is a directory zettel; nothing to modify.
       z
@@ -143,7 +143,7 @@ afterZettelParse myaml z =
             { -- TODO ??
               zettelPluginData =
                 DMap.insert
-                  PluginZettelData_DirTree
+                  DirTree
                   (Identity $ DirZettel tags mparent Nothing meta)
                   (zettelPluginData z)
             }
@@ -164,12 +164,12 @@ injectDirectoryZettels = \case
           pure $ parentZettelIDFromPath absPath
         meta = Nothing -- if $dirname.md exists that will be handled by `afterZettelParse`
         mkPluginData tags =
-          DMap.singleton PluginZettelData_DirTree $
+          DMap.singleton DirTree $
             Identity $ DirZettel tags mparent (Just $ tagFromPath absPath) meta
     gets (Map.lookup dirZettelId) >>= \case
       Just (ZIDRef_Available p s pluginDataPrev) -> do
         -- A zettel with this directory name was already registered. Deal with it.
-        case runIdentity <$> DMap.lookup PluginZettelData_DirTree pluginDataPrev of
+        case runIdentity <$> DMap.lookup DirTree pluginDataPrev of
           Just _ -> do
             -- A *directory* zettel of this name was already added.
             -- Ambiguous directories disallowed! For eg., you can't have
@@ -233,7 +233,7 @@ rootTag = TagNode "root"
 
 isDirectoryZettel :: ZettelT c -> Bool
 isDirectoryZettel (zettelPluginData -> pluginData) =
-  case DMap.lookup PluginZettelData_DirTree pluginData of
+  case DMap.lookup DirTree pluginData of
     Just (Identity (DirZettel _ _ (Just _childTag) _)) ->
       True
     _ ->

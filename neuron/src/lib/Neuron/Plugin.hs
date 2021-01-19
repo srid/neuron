@@ -45,20 +45,20 @@ pluginRegistryShow :: PluginRegistry -> Text
 pluginRegistryShow r =
   T.intercalate ", " $
     Map.keys r <&> \case
-      Some PluginZettelData_DirTree -> "dirtree"
-      Some PluginZettelData_Links -> "links"
-      Some PluginZettelData_Tags -> "tags"
-      Some PluginZettelData_NeuronIgnore -> "neuronignore"
+      Some DirTree -> "dirtree"
+      Some Links -> "links"
+      Some Tags -> "tags"
+      Some NeuronIgnore -> "neuronignore"
 
 lookupPlugins :: [Text] -> PluginRegistry
 lookupPlugins = Map.fromList . mapMaybe lookupPlugin
   where
     lookupPlugin :: Text -> Maybe (Some PluginZettelData, Some Plugin)
     lookupPlugin = \case
-      "dirtree" -> Just (Some PluginZettelData_DirTree, Some DirTree.plugin)
-      "links" -> Just (Some PluginZettelData_Links, Some Links.plugin)
-      "tags" -> Just (Some PluginZettelData_Tags, Some Tags.plugin)
-      "neuronignore" -> Just (Some PluginZettelData_NeuronIgnore, Some NeuronIgnore.plugin)
+      "dirtree" -> Just (Some DirTree, Some DirTree.plugin)
+      "links" -> Just (Some Links, Some Links.plugin)
+      "tags" -> Just (Some Tags, Some Tags.plugin)
+      "neuronignore" -> Just (Some NeuronIgnore, Some NeuronIgnore.plugin)
       _ -> Nothing
 
 markdownSpec :: NeuronSyntaxSpec m il bl => PluginRegistry -> CM.SyntaxSpec m il bl
@@ -100,13 +100,13 @@ graphConnections plugins z = do
 -- TODO: Use _plugin_* functions directly!
 routePluginData :: ZettelGraph -> ZettelC -> DSum PluginZettelData Identity -> DSum PluginZettelRouteData Identity
 routePluginData g z = \case
-  PluginZettelData_DirTree :=> Identity dirTree ->
+  DirTree :=> Identity dirTree ->
     PluginZettelRouteData_DirTree :=> Identity (DirTree.routePluginData g dirTree)
-  PluginZettelData_Links :=> Identity x ->
+  Links :=> Identity x ->
     PluginZettelRouteData_Links :=> Identity (Links.routePluginData g z x)
-  PluginZettelData_Tags :=> Identity x ->
+  Tags :=> Identity x ->
     PluginZettelRouteData_Tags :=> Identity (Tags.routePluginData g z x)
-  PluginZettelData_NeuronIgnore :=> Identity () ->
+  NeuronIgnore :=> Identity () ->
     PluginZettelRouteData_NeuronIgnore :=> Identity ()
 
 renderPluginPanel ::
@@ -151,14 +151,14 @@ renderHandleLink' = \case
 preJsonStrip :: Zettel -> Zettel
 preJsonStrip z =
   let pluginData' = flip fmap (DMap.toList $ zettelPluginData z) $ \case
-        x@(PluginZettelData_NeuronIgnore :=> Identity ()) ->
+        x@(NeuronIgnore :=> Identity ()) ->
           x
-        x@(PluginZettelData_DirTree :=> Identity _) ->
+        x@(DirTree :=> Identity _) ->
           x
-        x@(PluginZettelData_Tags :=> Identity _) ->
+        x@(Tags :=> Identity _) ->
           x
-        PluginZettelData_Links :=> Identity x ->
-          PluginZettelData_Links :=> Identity (Links.preJsonStrip x)
+        Links :=> Identity x ->
+          Links :=> Identity (Links.preJsonStrip x)
    in z {zettelPluginData = DMap.fromList pluginData'}
 
 -- | Compress the graph to save space, by eliminating the unnecessary

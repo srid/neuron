@@ -113,12 +113,12 @@ data LinksData = LinksData
 instance Default LinksData where
   def = LinksData mempty mempty
 
-type TagQueryLinkCache = Map Text (DSum TagQueryLink Identity)
+type TagQueryCache = Map Text (DSum TagQuery Identity)
 
 data PluginZettelRouteData routeData where
   PluginZettelRouteData_DirTree :: PluginZettelRouteData DirZettelVal
   PluginZettelRouteData_Links :: PluginZettelRouteData LinksData
-  PluginZettelRouteData_Tags :: PluginZettelRouteData TagQueryLinkCache
+  PluginZettelRouteData_Tags :: PluginZettelRouteData TagQueryCache
   PluginZettelRouteData_NeuronIgnore :: PluginZettelRouteData ()
 
 deriveArgDict ''PluginZettelRouteData
