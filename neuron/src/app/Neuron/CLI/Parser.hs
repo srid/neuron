@@ -94,7 +94,7 @@ commandParser defaultNotesDir now = do
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
       query <-
         fmap
-          (Left . (,connDummy))
+          Left
           ( option zettelIDReader (long "id")
           )
           <|> fmap
@@ -146,6 +146,3 @@ commandParser defaultNotesDir now = do
     dateReader :: ReadM DateMayTime
     dateReader =
       maybeReader (parseDateMayTime . toText)
-    -- We don't care about connections in the CLI, but the query requires one -
-    -- so pass a dummy value.
-    connDummy = C.OrdinaryConnection
