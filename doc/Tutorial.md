@@ -60,7 +60,7 @@ Next, create an "overview" zettel called `index.md` --- it would be the welcomin
 neuron new -e index
 ```
 
-In the text editor, link it (see [[linking]]) to your first zettel. It should look like this:
+In the text editor, link it (see [[Linking]]) to your first zettel. It should look like this:
 
 ```
 # My Zettelkasten

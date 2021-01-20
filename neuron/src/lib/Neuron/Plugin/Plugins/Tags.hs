@@ -80,26 +80,6 @@ plugin =
       _plugin_css = style
     }
 
-parseTagQuerys :: Maybe (Y.Node Y.Pos) -> ZettelT Pandoc -> ZettelT Pandoc
-parseTagQuerys myaml z =
-  let allUrls =
-        Set.toList . Set.fromList $
-          Pandoc.getLinks $ zettelContent z
-      tagLinks =
-        catMaybes $
-          allUrls <&> \(attrs, url) -> do
-            parseQueryLink attrs url
-      tags = fromRight Set.empty $ case myaml of
-        Nothing -> pure Set.empty
-        Just yaml -> Set.fromList <$> M.runYamlParser (tagsParser yaml)
-      tagsData = ZettelTags tags tagLinks
-   in z {zettelPluginData = DMap.insert Tags (Identity tagsData) (zettelPluginData z)}
-
-tagsParser :: Y.Node Y.Pos -> Y.Parser [Tag]
-tagsParser yaml = do
-  flip (Y.withMap @[Tag] "tags") yaml $ \m -> do
-    fromMaybe mempty <$> liftA2 (<|>) (m .:? "tags") (m .:? "keywords")
-
 routePluginData :: ZettelGraph -> ZettelC -> ZettelTags -> TagQueryCache
 routePluginData g z _qs =
   let allUrls =
@@ -115,63 +95,6 @@ routePluginData g z _qs =
             parseQueryLink attrs url >>= \someQ -> do
               res <- flip runReaderT zs $ runSomeTagQuery someQ
               pure (url, res)
-
--- | Parse a query if any from a Markdown link
--- TODO: queryConn should be read from link attribute!
-parseQueryLink :: [(Text, Text)] -> Text -> Maybe (Some TagQuery)
-parseQueryLink attrs url = do
-  let conn = case Map.lookup "title" (Map.fromList attrs) of
-        Just s -> if s == show Folgezettel then Folgezettel else def
-        _ -> def
-  uri <- URI.mkURI url
-  (URI.unRText -> "z") <- URI.uriScheme uri
-  -- Non-relevant parts of the URI should be empty
-  guard $ isNothing $ URI.uriFragment uri
-  zPath <- fmap snd (URI.uriPath uri)
-  let -- Found "z:" without a trailing slash
-      noSlash = URI.uriAuthority uri == Left False
-  case zPath of
-    -- Parse z:zettels?...
-    (URI.unRText -> "zettels") :| []
-      | noSlash -> do
-        pure $ Some $ TagQuery_ZettelsByTag (Tag.mkDefaultTagQuery $ tagPatterns uri "tag") conn (queryView uri)
-    -- Parse z:tags?...
-    (URI.unRText -> "tags") :| []
-      | noSlash -> do
-        pure $ Some $ TagQuery_Tags (Tag.mkDefaultTagQuery $ tagPatterns uri "filter")
-    -- Parse z:tag/foo
-    (URI.unRText -> "tag") :| (nonEmpty . fmap (TagNode . URI.unRText) -> Just tagNodes)
-      | noSlash -> do
-        pure $ Some $ TagQuery_TagZettel (TagTree.constructTag tagNodes)
-    _ -> empty
-  where
-    tagPatterns :: URI -> Text -> [TagPattern]
-    tagPatterns uri k =
-      TagTree.mkTagPattern <$> getParamValues uri
-      where
-        getParamValues :: URI -> [Text]
-        getParamValues u =
-          flip mapMaybe (URI.uriQuery u) $ \case
-            URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
-              if key == k
-                then Just val
-                else Nothing
-            _ -> Nothing
-
-    queryView :: URI -> ZettelsView
-    queryView uri =
-      ZettelsView linkView isGrouped limit
-      where
-        isTimeline =
-          -- linkTheme=withDate is legacy format; timeline is current standard.
-          getQueryParam [queryKey|linkTheme|] uri == Just "withDate"
-            || hasQueryFlag [queryKey|timeline|] uri
-        isGrouped = hasQueryFlag [queryKey|grouped|] uri
-        linkView
-          | isTimeline = LinkView_ShowDate
-          | hasQueryFlag [queryKey|showid|] uri = LinkView_ShowID
-          | otherwise = LinkView_Default
-        limit = readMaybe . toString =<< getQueryParam [queryKey|limit|] uri
 
 -- Query evaluation
 -- ----------------
@@ -222,7 +145,6 @@ runSomeTagQuery someQ =
     runTagQuery zs = \case
       TagQuery_ZettelsByTag pats _mconn _mview ->
         zettelsByTag getZettelTags zs pats
-      -- TODO: Remove this constructor, not going to bother with allTags, can implement later.
       TagQuery_Tags pats ->
         Map.filterWithKey (const . flip TagTree.matchTagQuery pats) allTags
       TagQuery_TagZettel _tag ->
@@ -378,11 +300,92 @@ renderTagTree t =
           Just rest ->
             unTagNode n <> "/" <> renderTagNode rest
 
--- View
--- ----
+style :: Css
+style = do
+  "div.tag-tree" ? do
+    "div.node" ? do
+      C.fontWeight C.bold
+      "a.inactive" ? do
+        C.color "#555"
 
 -- Parser
 -- ------
+
+parseTagQuerys :: Maybe (Y.Node Y.Pos) -> ZettelT Pandoc -> ZettelT Pandoc
+parseTagQuerys myaml z =
+  let allUrls =
+        Set.toList . Set.fromList $
+          Pandoc.getLinks $ zettelContent z
+      tagLinks =
+        catMaybes $
+          allUrls <&> \(attrs, url) -> do
+            parseQueryLink attrs url
+      tags = fromRight Set.empty $ case myaml of
+        Nothing -> pure Set.empty
+        Just yaml -> Set.fromList <$> M.runYamlParser (tagsParser yaml)
+      tagsData = ZettelTags tags tagLinks
+   in z {zettelPluginData = DMap.insert Tags (Identity tagsData) (zettelPluginData z)}
+
+tagsParser :: Y.Node Y.Pos -> Y.Parser [Tag]
+tagsParser yaml = do
+  flip (Y.withMap @[Tag] "tags") yaml $ \m -> do
+    fromMaybe mempty <$> liftA2 (<|>) (m .:? "tags") (m .:? "keywords")
+
+-- | Parse a query if any from a Markdown link
+parseQueryLink :: [(Text, Text)] -> Text -> Maybe (Some TagQuery)
+parseQueryLink attrs url = do
+  let conn = case Map.lookup "title" (Map.fromList attrs) of
+        Just s -> if s == show Folgezettel then Folgezettel else def
+        _ -> def
+  uri <- URI.mkURI url
+  (URI.unRText -> "z") <- URI.uriScheme uri
+  -- Non-relevant parts of the URI should be empty
+  guard $ isNothing $ URI.uriFragment uri
+  zPath <- fmap snd (URI.uriPath uri)
+  let -- Found "z:" without a trailing slash
+      noSlash = URI.uriAuthority uri == Left False
+  case zPath of
+    -- Parse z:zettels?...
+    (URI.unRText -> "zettels") :| []
+      | noSlash -> do
+        pure $ Some $ TagQuery_ZettelsByTag (Tag.mkDefaultTagQuery $ tagPatterns uri "tag") conn (queryView uri)
+    -- Parse z:tags?...
+    (URI.unRText -> "tags") :| []
+      | noSlash -> do
+        pure $ Some $ TagQuery_Tags (Tag.mkDefaultTagQuery $ tagPatterns uri "filter")
+    -- Parse z:tag/foo
+    (URI.unRText -> "tag") :| (nonEmpty . fmap (TagNode . URI.unRText) -> Just tagNodes)
+      | noSlash -> do
+        pure $ Some $ TagQuery_TagZettel (TagTree.constructTag tagNodes)
+    _ -> empty
+  where
+    tagPatterns :: URI -> Text -> [TagPattern]
+    tagPatterns uri k =
+      TagTree.mkTagPattern <$> getParamValues uri
+      where
+        getParamValues :: URI -> [Text]
+        getParamValues u =
+          flip mapMaybe (URI.uriQuery u) $ \case
+            URI.QueryParam (URI.unRText -> key) (URI.unRText -> val) ->
+              if key == k
+                then Just val
+                else Nothing
+            _ -> Nothing
+
+    queryView :: URI -> ZettelsView
+    queryView uri =
+      ZettelsView linkView isGrouped limit
+      where
+        isTimeline =
+          -- linkTheme=withDate is legacy format; timeline is current standard.
+          getQueryParam [queryKey|linkTheme|] uri == Just "withDate"
+            || hasQueryFlag [queryKey|timeline|] uri
+        isGrouped = hasQueryFlag [queryKey|grouped|] uri
+        linkView
+          | isTimeline = LinkView_ShowDate
+          | hasQueryFlag [queryKey|showid|] uri = LinkView_ShowID
+          | otherwise = LinkView_Default
+        limit = readMaybe . toString =<< getQueryParam [queryKey|limit|] uri
 
 inlineTagSpec ::
   (Monad m, CM.IsBlock il bl, CM.IsInline il) =>
@@ -423,11 +426,3 @@ inlineTagP =
   some (noneOfToks $ [Spaces, UnicodeSpace, LineEnd] <> fmap Symbol punctuation)
   where
     punctuation = "[];:,.?!"
-
-style :: Css
-style = do
-  "div.tag-tree" ? do
-    "div.node" ? do
-      C.fontWeight C.bold
-      "a.inactive" ? do
-        C.color "#555"

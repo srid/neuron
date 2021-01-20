@@ -7,27 +7,13 @@ Use the `query` command to query your Zettelkasten and return the matches in JSO
 neuron query
 ```
 
-```bash
-# Returns zettels with the specified tag
-neuron query -t science
-```
-
-You may also pass the same URI you use in [[[link-query]]]:
-
-```bash
-# Search using link URI
-neuron query --uri="z:zettels?tag=science"
-```
-
 Use `jq` to extract needed information from the JSON output. For example, to
 extract only the IDs:
 
 ```bash
-$ neuron query -t purescript | jq -r '.result | .[] | .zettelID'
-2015302
-2015303
-2015304
-2015305
+$ neuron query | jq -r '.result | .vertices | .[] | .zettelID'
+index
+Tag Queries
+extras
 $
 ```
-

@@ -3,7 +3,7 @@
 Some neuron users have developed scripts and tools to improve on the base functionality of neuron.
 
 [neuron-extras](https://github.com/b0o/neuron-extras) by Maddison Hellstrom
-: auto-generate a Table of Contents / hierarchical index based on hierarchical [[tags]]
+: auto-generate a Table of Contents / hierarchical index based on hierarchical [[Tags]]
 
 [neuron-helper] by ybaumy
 : export ebook and article highlights from Readwise.io to neuron Markdown, etc.

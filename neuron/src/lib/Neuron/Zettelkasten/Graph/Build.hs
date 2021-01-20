@@ -74,7 +74,6 @@ mkZettelGraph ::
   [Zettel] ->
   Writer (Map ZettelID (Slug, NonEmpty MissingZettel)) ZettelGraph
 mkZettelGraph plugins zettels = do
-  -- TODO: Also get connections via PluginData
   let res :: [(Zettel, ([(ContextualConnection, Zettel)], [MissingZettel]))] =
         flip fmap zettels $ \z ->
           (z, runQueryConnections plugins zettels z)
@@ -90,7 +89,6 @@ mkZettelGraph plugins zettels = do
 runQueryConnections :: PluginRegistry -> [Zettel] -> Zettel -> ([(ContextualConnection, Zettel)], [MissingZettel])
 runQueryConnections plugins zettels z =
   flip runReader zettels $ do
-    -- TODO: Pluginify!
     runWriterT $ do
       Plugin.graphConnections plugins z
 

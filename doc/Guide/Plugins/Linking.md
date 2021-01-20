@@ -36,4 +36,4 @@ zettel is displayed.
 
 ## Advanced linking
 
-* [[[link-query]]]
+If you use the [[Tags]] plugin, you can link automatically based on the tag (see [[[Tag Queries]]]).

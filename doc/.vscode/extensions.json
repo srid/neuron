@@ -1,0 +1,28 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=827846
+	// for the documentation about the extensions.json format
+	"recommendations": [
+		// Main markdown support
+		"yzhang.markdown-all-in-one",
+
+		// Zettelkasten wiki-links, backlinks, etc.
+		"svsool.markdown-memo",
+
+		// Graph view 
+		// Disabled until https://github.com/tchayen/markdown-links/issues/28 is done
+		// "tchayen.markdown-links",
+
+		// For expanding title in daily note
+		"gruntfuggly.auto-snippet",
+
+		// Commands for bold, italic, etc.
+		"mdickin.markdown-shortcuts",
+
+		// Goodies:
+		// - Checkboxes
+		"bierner.markdown-checkbox",
+		// - Footnote
+		"houkanshan.vscode-markdown-footnote"
+"
+	]
+}

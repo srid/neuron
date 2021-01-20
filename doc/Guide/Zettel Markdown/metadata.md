@@ -12,7 +12,7 @@ date: 2020-08-21T13:06
 ---
 ```
 
-This date can be made to display in a query result by using the `timeline` flag (see [[link-query]]). The time part is optional.
+This date can be made to display in a query result by using the `timeline` flag (see [[Tag Queries]]). The time part is optional.
 
 ## Slug
 
@@ -26,7 +26,7 @@ slug: foo-bar
 
 ## Pinning
 
-Zettels can be pinned in [[impulse-feature]] so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[tags]]) to it.
+Zettels can be pinned in [[impulse-feature]] so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[Tags]]) to it.
 
 ```markdown
 ---
@@ -49,5 +49,5 @@ unlisted: true
 
 You can explicitly specify a title using the `title` metadata; otherwise, Neuron will infer it from the Markdown heading or [[id]].
 
-The metadata key `tags` or `keywords` can be used to specify tags, although neuron supports inline tags as well (see [[[tags]]]).
+The metadata key `tags` or `keywords` can be used to specify tags, although neuron supports inline tags as well (see [[[Tags]]]).
 

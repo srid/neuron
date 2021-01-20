@@ -18,7 +18,7 @@ This command will print the path to the file created. Use `-e` to also open the 
 neuron new -e
 ```
 
-Do not forget to link your new zettel to the rest of your Zettelkasten. See [[linking]].
+Do not forget to link your new zettel to the rest of your Zettelkasten. See [[Linking]].
 
 ## Opening a Zettel by title
 

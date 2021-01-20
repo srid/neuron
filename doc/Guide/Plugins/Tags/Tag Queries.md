@@ -1,6 +1,4 @@
-# Link Queries
-
-Neuron supports *link queries* that can be used to *dynamically* create links based on a tag (see [[tags]]).
+Neuron supports *tag link queries* that can be used to *dynamically* create links based on a tag (see [[Tags]]).
 
 For example, to link to all zettels with the "science" tag (from the example at [[metadata]]), you would add the following to your note:
 
@@ -26,7 +24,7 @@ See [[experimental]] for a real-world example of link queries on this site.
 
 ## Hierarchical tags
 
-Queries can also link to zettels whose [[tags]] match a glob pattern. Two kinds of patterns in particular are noteworthy:
+Queries can also link to zettels whose [[Tags]] match a glob pattern. Two kinds of patterns in particular are noteworthy:
 
 1. **Simple globs**: Simple globs (`*`) can be used to query all tags at a particular level in the hierarchy. For instance, `[[z:zettels?tag=science/*]]` will link to all zettels tagged "science/physics" *and* "science/biology", but *not* "science/physics/kinematics".
 

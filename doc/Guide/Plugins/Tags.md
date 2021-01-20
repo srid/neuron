@@ -19,7 +19,7 @@ tags:
 
 ## Hierarchical tags
 
-Tags can be nested using a "tag/subtag" syntax, to allow a more fine-grained organization of your Zettelkasten, especially when using advanced queries as shown in [[link-query]].
+Tags can be nested using a "tag/subtag" syntax, to allow a more fine-grained organization of your Zettelkasten, especially when using advanced queries as shown in [[Tag Queries]].
 
 For example, the following zettel is tagged "math/calculus/definition"
 
@@ -39,8 +39,4 @@ It will be included in the following tag queries:
 - `math/calculus/definition`
 - `**/definition`
 
-See [[link-query]] to understand how to link zettels automatically based on tag patterns as above.
-
-## Tag trees
-
-Use `[[z:tags?filter=**]]` to render your entire tags set as a tree. Note that this only *renders* the tags; whereas `[[z:zettels?tag=...]]` of [[link-query]] exists to *link* to the zettels tagged with matching tags.
+See [[Tag Queries]] to understand how to link zettels automatically based on tag patterns as above.

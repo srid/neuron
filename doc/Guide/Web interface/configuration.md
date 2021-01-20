@@ -5,7 +5,7 @@ You may configure the parameters of your web interface by adding an optional con
 ## Supported fields
 
 | Field name        | Description                                                                                                                                                                                |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **`siteTitle`**   | Your Neuron site's title                                                                                                                                                                   |
 | **`siteBaseUrl`** | The base URL of your published Neuron site. Setting the base URL will enable [breadcrumbs](https://developers.google.com/search/docs/data-types/breadcrumb) in your site's structured data |
 | **`author`**      | Author name                                                                                                                                                                                |

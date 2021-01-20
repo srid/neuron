@@ -8,11 +8,13 @@ This plugin must be manually enabled in [[configuration]]
 
 The *Directory Tree* plugin automatically creates a [[folgezettel-heterarchy]] reflecting the dirtectory tree of your notes. In effect, it does the following:
 
-1. Create a "directory zettel" on the fly for each sub-directory containing zettels
-2. Tag every zettel with a hierarchical [[tags]] (`root/**`) corresponding to its path
-3. Create folgezettel links (see [[linking]]) automatically reflecting the directory tree
+1. Create a "directory zettel" *on the fly* for each sub-directory containing zettels
+2. Create *folgezettel* links (see [[Linking]]) automatically reflecting the directory tree
+3. Display the directory contents below the zettel note.
 
-## Using and creating Directory Zettels
+The intention is to allow the user to define the bulk of their [[folgezettel-heterarchy]] using filesystem layout.
+
+## Working with Directory Zettels
 
 Given a file `./Home/Projects/HouseWarming.md` this plugin will create three zettels with [[id]]s `Home`, `Projects`, and `HouseWarming`. In the [[Web interface]], neuron will display the "contents" of a directory beneath the zettel content.
 
@@ -43,16 +45,13 @@ No addtional zettels are generated, but any content in the `HomeProjects.md` fil
 
 ## Directory Zettels are normal zettels
 
-When Neuron is configured to use the **Directory Tree** plugin, it looks for all the markdown files in your repository, regardless of how many folders deep they are (unless you are using the [[Ignoring files]] plugin).
+When Neuron is configured to use the **Directory Tree** plugin, it looks for all the markdown files in your repository, regardless of how many folders deep they are (but filtered out if the [[Ignoring files]] plugin is in use).
 
-The directory structure you have on disk is used to do 2 things:
-
-- automatically create a [[folgezettel-heterarchy]] from a directory zettel with the zettels for its contents
-- automatically tag the zettels created with their on-disk path
+The directory structure you have on disk is used to automatically create a [[folgezettel-heterarchy]].
 
 Once Neuron generates the [[Zettelkasten]], the directory structure is discarded from memory and not used in the [[Web interface]]. All of the generated notes are made accessible at the 'top' level of the generated site--you don't need to navigate down the on-disk directory structure in the [[Web interface]].
 
-This is one reason why it's good practice to give your directories an [[Atomic and autonomous]] [[id]]--once you've generated your zettelkasten, you no longer have the parent directories around to provide context. The example from before, `./Home/Projects`, would create a note for your home projects with the ID `Projects`--we can no longer tell that it is specifically **home** projects. (The other reason it is good to have unique IDs is to avoid ID clash, as covered above.)
+This is one reason why it's good practice to give your directories an [[Atomic and autonomous]] [[id]]--once you've generated your zettelkasten, you no longer have the parent directories around to provide context, because the context is provided by the zettel's location in the [[folgezettel-heterarchy]] (as can be visually seen in [[Uplink Tree]]). The example from before, `./Home/Projects`, would create a note for your home projects with the ID `Projects`--we can no longer tell that it is specifically **home** projects. (The other reason it is good to have unique IDs is to avoid ID clash, as covered above.)
 
 ### Automatically created folgezettel heterarchies
 
@@ -92,11 +91,9 @@ date: 2020-12-31
 - paint the bathroom
 ```
 
-
-
 #### The **Directory Tree** plugin only triggers on folders inside the Neuron zettelksaten
 
-When enabled, the plugin will only work on the subfolders it finds **inside** the Neuron zettelkasten. This means that it will **not** automatically create a [[folgezettel-heterarchy]] from the `index` of your project to every zettel in the project (whether you have an explicit `index.md` zettel or just rely on Neuron's [[impulse-feature]] as your home)[^man].
+The [[folgezettel-heterarchy]] is created from the level 1 subfolders. The `index` zettel will display its contents, but they will be non-folgezettel. 
 
 ### Creating links and heterarchies outside the directory
 
@@ -131,33 +128,13 @@ my focus and energy, and not leaving much time to focus
 on my [[[HomeProjects]]].
 ```
 
-### Automatically created tags
+## Disabling directory listing
 
-In addition to creating automatic a [[folgezettel-heterarchy]] for each directory, the plugin also [[tags]] the notes with their on-disk path, up to, but **not including** their own ID. So the note at `./Home/HomeProjects/HouseWarming.md` would get the **hierarchical** tag `#root/Home/HomeProjects`. These tags always start at the `#root` tag.
+To disable showing the branching zettels in a directory zettel, you can add the following to the YAML frontmatter ([[metadata]]):
 
-Given our work-and-home project:
-
+```yaml
+---
+dirtree:
+  display: False
+---
 ```
-├── Work/
-│   └── WorkProjects/
-│      └── FireZeMissiles.md
-└─ Home/
-   ├── HomeProjects/
-   │   └── HouseWarming.md
-   └── HomeProjects.md
-```
-
-notes would be generated with these hierarchical tags that match their folder
-path:
-
-| Note                  | Tag                       |
-| --------------------- | ------------------------- |
-| `Work.html`           | `#root`                   |
-| `WorkProjects.html`   | `#root/Work`              |
-| `FireZeMissiles.html` | `#root/Work/WorkProjects` |
-| `Home.html`           | `#root`                   |
-| `HomeProjects.html`   | `#root/Home`              |
-| `HouseWarming.html`   | `#root/Home/HomeProjects` |
-
-[^man]: You may manually form these relationships by adding `[[[z:zettels?tag=root]]]` to the top-level `index.md`, since all the generated Directory Zettels are tagged with `#root`
-

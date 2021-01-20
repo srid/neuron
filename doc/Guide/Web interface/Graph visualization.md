@@ -12,4 +12,4 @@ In an otherwise statically-generated neuron site, [[[impulse-feature]]] represen
 
 ## Uplinks and Backlinks
 
-A backlink of a zettel is a zettel that links to it. If that link is a folgezettel link, it is called an "uplink". Each zettel has its [[Uplink Tree]] displayed at the top.
+A backlink of a zettel is a zettel that links to it. If that link is a folgezettel link, it is called an "uplink". Each zettel has its [[[Uplink Tree]]] displayed at the top.

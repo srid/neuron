@@ -70,44 +70,6 @@ plugin =
       _plugin_css = zettelLinkCss
     }
 
-parseLinks :: ZettelT Pandoc -> ZettelT Pandoc
-parseLinks z =
-  let xs = extractLinkswithContext (zettelContent z)
-   in z {zettelPluginData = DMap.insert Links (Identity xs) (zettelPluginData z)}
-  where
-    extractLinkswithContext doc =
-      mapMaybe (uncurry parseQueryLinkWithContext) $
-        Map.toList $ LC.queryLinksWithContext doc
-      where
-        parseQueryLinkWithContext url (attrs, ctx) = do
-          (,ctx) <$> parseQueryLink attrs url
-
-renderPanel ::
-  forall t m.
-  (DomBuilder t m, PostBuild t m) =>
-  (Pandoc -> NeuronWebT t m ()) ->
-  LinksData ->
-  NeuronWebT t m ()
-renderPanel elNeuronPandoc LinksData {..} = do
-  whenNotNull linksDataBacklinks $ \backlinks -> do
-    elClass "nav" "ui attached segment deemphasized backlinksPane" $ do
-      renderBacklinks backlinks
-  where
-    renderBacklinks ::
-      (DomBuilder t m, PostBuild t m) =>
-      NonEmpty (ContextualConnection, Zettel) ->
-      NeuronWebT t m ()
-    renderBacklinks links = do
-      elClass "h3" "ui header" $ text "Backlinks"
-      elClass "ul" "backlinks" $ do
-        forM_ links $ \((conn, ctxList), zl) ->
-          el "li" $ do
-            renderZettelLink Nothing (Just conn) def zl
-            elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
-              forM_ ctxList $ \ctx -> do
-                elClass "li" "item" $ do
-                  void $ elNeuronPandoc $ Pandoc mempty [ctx]
-
 routePluginData :: ZettelGraph -> ZettelC -> [((ZettelID, Connection), [Block])] -> LinksData
 routePluginData g z _qs =
   let noteUrls = either (const []) (P.getLinks . zettelContent) z
@@ -129,6 +91,18 @@ buildQueryUrlCache zs urlsWithAttrs =
           Nothing -> pure (url, Left (Tagged zid))
           Just z ->
             pure (url, Right (conn, z))
+
+parseLinks :: ZettelT Pandoc -> ZettelT Pandoc
+parseLinks z =
+  let xs = extractLinkswithContext (zettelContent z)
+   in z {zettelPluginData = DMap.insert Links (Identity xs) (zettelPluginData z)}
+  where
+    extractLinkswithContext doc =
+      mapMaybe (uncurry parseQueryLinkWithContext) $
+        Map.toList $ LC.queryLinksWithContext doc
+      where
+        parseQueryLinkWithContext url (attrs, ctx) = do
+          (,ctx) <$> parseQueryLink attrs url
 
 parseQueryLink :: [(Text, Text)] -> Text -> Maybe (ZettelID, Connection)
 parseQueryLink attrs url = do
@@ -180,6 +154,32 @@ queryConnections Zettel {..} = do
 
 -- UI
 -- --
+
+renderPanel ::
+  forall t m.
+  (DomBuilder t m, PostBuild t m) =>
+  (Pandoc -> NeuronWebT t m ()) ->
+  LinksData ->
+  NeuronWebT t m ()
+renderPanel elNeuronPandoc LinksData {..} = do
+  whenNotNull linksDataBacklinks $ \backlinks -> do
+    elClass "nav" "ui attached segment deemphasized backlinksPane" $ do
+      renderBacklinks backlinks
+  where
+    renderBacklinks ::
+      (DomBuilder t m, PostBuild t m) =>
+      NonEmpty (ContextualConnection, Zettel) ->
+      NeuronWebT t m ()
+    renderBacklinks links = do
+      elClass "h3" "ui header" $ text "Backlinks"
+      elClass "ul" "backlinks" $ do
+        forM_ links $ \((conn, ctxList), zl) ->
+          el "li" $ do
+            renderZettelLink Nothing (Just conn) def zl
+            elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
+              forM_ ctxList $ \ctx -> do
+                elClass "li" "item" $ do
+                  void $ elNeuronPandoc $ Pandoc mempty [ctx]
 
 renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => LinksData -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ())
 renderHandleLink LinksData {..} url mInline = do

@@ -6,7 +6,7 @@ By default, `neuron new`[^new] will use random alphanumeric IDs of length 8, cal
 
 ## When to use *title IDs*
 
-A title ID is one that uses arbitrary text, typically denoting the title of the note. For example, in the link `[[Some note title]]` (see [[linking]]), "Some note title" is the title ID, corresponding to the note filename `Some note title.md`, that is generated in the [[Web interface]] as the HTML file named `Some_note_title.html` (unless you override this slug in [[metadata]]).
+A title ID is one that uses arbitrary text, typically denoting the title of the note. For example, in the link `[[Some note title]]` (see [[Linking]]), "Some note title" is the title ID, corresponding to the note filename `Some note title.md`, that is generated in the [[Web interface]] as the HTML file named `Some_note_title.html` (unless you override this slug in [[metadata]]).
 
 Use title IDs when you want truly future-proof[^futureproof] link IDs that work on any text editor. However, note that this comes at the cost that you are willing to rename them (manually or using a script[^rename]) across your Zettelkasten if the title ID of any of your notes changes.
 
