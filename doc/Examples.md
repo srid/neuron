@@ -4,7 +4,7 @@ slug: examples
 
 Here are some public Zettelkastens managed by neuron:
 
-- [neuron.zettel.page](https://neuron.zettel.page/) ([source](https://github.com/srid/neuron/tree/master/guide)): This very site you are viewing.
+- [neuron.zettel.page](https://neuron.zettel.page/) ([source](https://github.com/srid/neuron/tree/master/doc)): This very site you are viewing.
 - [inariksit.github.io/cclaw-zettelkasten](https://inariksit.github.io/cclaw-zettelkasten/) ([source](https://github.com/inariksit/cclaw-zettelkasten)): Zettelkasten for the reading list of CCLAW@SMU
 - [zk.zettel.page](https://zk.zettel.page/) ([source](https://github.com/Kuratoro/zk.zettel.page)): Public Zettelkasten for the r/Zettelkasten subreddit
 - [Le note di azazel](http://azazel.it/): Personal Zettelkasten in Italian.
