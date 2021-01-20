@@ -9,6 +9,7 @@
 
 module Neuron.Frontend.Route.Data where
 
+import qualified Clay.Render as C
 import qualified Data.Dependent.Map as DMap
 import Data.Foldable (Foldable (maximum))
 import Data.TagTree (mkDefaultTagQuery, mkTagPattern)
@@ -68,4 +69,5 @@ mkSiteData NeuronCache {..} headHtml manifest =
       baseUrl = join $ Config.getSiteBaseUrl _neuronCache_config
       indexZettel = G.getZettel indexZid _neuronCache_graph
       editUrl = Config.editUrl _neuronCache_config
-   in SiteData theme siteTitle siteAuthor baseUrl editUrl headHtml manifest _neuronCache_neuronVersion indexZettel
+      bodyCss = toText $ C.renderWith C.compact [] $ Plugin.pluginStyles (Config.getPlugins _neuronCache_config)
+   in SiteData theme siteTitle siteAuthor baseUrl editUrl bodyCss headHtml manifest _neuronCache_neuronVersion indexZettel

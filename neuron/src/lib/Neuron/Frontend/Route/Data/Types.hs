@@ -53,6 +53,7 @@ data SiteData = SiteData
     siteDataSiteAuthor :: Maybe Text,
     siteDataSiteBaseUrl :: Maybe URI,
     siteDataEditUrl :: Maybe Text,
+    siteDataBodyCss :: Text,
     -- Data from filesystem
     siteDataHeadHtml :: HeadHtml,
     siteDataManifest :: Manifest,

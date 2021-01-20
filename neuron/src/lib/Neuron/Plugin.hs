@@ -9,6 +9,8 @@
 
 module Neuron.Plugin where
 
+import Clay (Css, (?))
+import qualified Clay as C
 import qualified Commonmark as CM
 import Control.Monad.Writer
 import Data.Dependent.Map (DMap)
@@ -32,6 +34,12 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
 import Neuron.Zettelkasten.Zettel
+  ( MissingZettel,
+    PluginZettelData (..),
+    Zettel,
+    ZettelC,
+    ZettelT (zettelPluginData),
+  )
 import Neuron.Zettelkasten.Zettel.Parser (parseZettels)
 import Reflex.Dom.Core (DomBuilder, PostBuild)
 import Reflex.Dom.Pandoc (PandocBuilder)
@@ -99,6 +107,13 @@ graphConnections ::
   m [(ContextualConnection, Zettel)]
 graphConnections plugins z = do
   fmap concat $ forM (plugins <&> \sp -> withSome sp _plugin_graphConnections) $ \f -> f z
+
+pluginStyles ::
+  PluginRegistry ->
+  Css
+pluginStyles plugins =
+  C.body ? do
+    mconcat $ Map.elems plugins <&> \sp -> withSome sp _plugin_css
 
 -- TODO: Use _plugin_* functions directly!
 routePluginData :: ZettelGraph -> ZettelC -> DSum PluginZettelData Identity -> DSum PluginZettelRouteData Identity

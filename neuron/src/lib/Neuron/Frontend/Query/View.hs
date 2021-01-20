@@ -13,12 +13,9 @@ module Neuron.Frontend.Query.View
   ( renderZettelLink,
     renderZettelLinkIDOnly,
     renderMissingZettelLink,
-    style,
   )
 where
 
-import Clay (Css, em, (?))
-import qualified Clay as C
 import Data.Some (Some (..))
 import Data.Tagged (untag)
 import qualified Data.Text as T
@@ -96,25 +93,3 @@ renderZettelLinkIDOnly zid slug =
   elClass "span" "zettel-link-container" $ do
     elClass "span" "zettel-link" $ do
       neuronRouteLink (Some $ Route_Zettel slug) mempty $ text $ unZettelID zid
-
--- TODO: To Tags.hs
-style :: Css
-style = do
-  zettelLinkCss
-  "div.tag-tree" ? do
-    "div.node" ? do
-      C.fontWeight C.bold
-      "a.inactive" ? do
-        C.color "#555"
-
-zettelLinkCss :: Css
-zettelLinkCss = do
-  "span.zettel-link-container span.zettel-link a" ? do
-    C.fontWeight C.bold
-    C.textDecoration C.none
-  "span.zettel-link-container span.extra" ? do
-    C.color C.auto
-  "span.zettel-link-container.errors" ? do
-    C.border C.solid (C.px 1) C.red
-  "[data-tooltip]:after" ? do
-    C.fontSize $ em 0.7

@@ -6,6 +6,7 @@
 
 module Neuron.Plugin.Type where
 
+import Clay (Css)
 import qualified Commonmark as CM
 import Control.Monad.Writer
 import Data.Default (Default (..))
@@ -48,6 +49,8 @@ data Plugin routeData = Plugin
     _plugin_routeData :: ZettelGraph -> ZettelC -> routeData,
     -- | Plugin-specific HTML rendering to do on the zettel pages.
     _plugin_renderPanel :: forall t m. (DomBuilder t m, PostBuild t m) => (Pandoc -> NeuronWebT t m ()) -> routeData -> NeuronWebT t m (),
+    -- | CSS to inject
+    _plugin_css :: Css,
     -- | Hooks for rendering custom DOM elements; here, url links.
     _plugin_renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => routeData -> Text -> Maybe (NeuronWebT t m ()),
     -- | Strip data you don't want in JSON dumps
@@ -64,6 +67,7 @@ instance Default a => Default (Plugin a) where
         _plugin_graphConnections = const $ pure mempty,
         _plugin_routeData = def,
         _plugin_renderPanel = \_ _ -> blank,
+        _plugin_css = mempty,
         _plugin_renderHandleLink = \_ _ -> Nothing,
         _plugin_preJsonStrip = id
       }

@@ -52,7 +52,13 @@ renderRoutePage r val = do
         Route_Impulse ->
           blank
         Route_Zettel {} -> do
-          elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
+          elAttr "style" ("type" =: "text/css") $ do
+            text $ toText $ Skylighting.styleToCss Skylighting.tango
+          W.loadingWidget' val blank (const blank) $ \valDyn ->
+            dyn_ $
+              ffor valDyn $ \v ->
+                elAttr "style" ("type" =: "text/css") $ do
+                  text $ R.siteDataBodyCss (R.routeSiteData v r)
       pure ()
     el "body" $ do
       () <- case r of

@@ -21,6 +21,8 @@ module Neuron.Plugin.Plugins.Links
   )
 where
 
+import Clay (Css, em, (?))
+import qualified Clay as C
 import qualified Commonmark as CM
 import qualified Commonmark.Inlines as CM
 import Commonmark.TokParsers (noneOfToks, symbol)
@@ -61,7 +63,8 @@ plugin =
     { _plugin_markdownSpec = wikiLinkSpec,
       _plugin_afterZettelParse = second . const parseLinks,
       _plugin_graphConnections = queryConnections,
-      _plugin_renderHandleLink = renderHandleLink
+      _plugin_renderHandleLink = renderHandleLink,
+      _plugin_css = zettelLinkCss
     }
 
 parseLinks :: ZettelT Pandoc -> ZettelT Pandoc
@@ -223,3 +226,15 @@ wikiLinkSpec =
         -- Store connetion type in 'title' attribute
         -- TODO: Put it in attrs instead; requires PR to commonmark
         title = show conn
+
+zettelLinkCss :: Css
+zettelLinkCss = do
+  "span.zettel-link-container span.zettel-link a" ? do
+    C.fontWeight C.bold
+    C.textDecoration C.none
+  "span.zettel-link-container span.extra" ? do
+    C.color C.auto
+  "span.zettel-link-container.errors" ? do
+    C.border C.solid (C.px 1) C.red
+  "[data-tooltip]:after" ? do
+    C.fontSize $ em 0.7

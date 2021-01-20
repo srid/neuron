@@ -28,7 +28,8 @@ plugin =
   def
     { _plugin_afterZettelParse = const $ bimap enable enable,
       _plugin_routeData = routePluginData,
-      _plugin_renderPanel = const render
+      _plugin_renderPanel = const render,
+      _plugin_css = IT.style
     }
 
 enable :: ZettelT c -> ZettelT c
@@ -39,7 +40,6 @@ routePluginData :: ZettelGraph -> ZettelC -> Forest Zettel
 routePluginData g (sansContent -> z) =
   G.backlinkForest Folgezettel z g
 
--- TODO: Expose IT's CSS in a plugin way.
 render :: (DomBuilder t m, PostBuild t m) => Forest Zettel -> NeuronWebT t m ()
 render upTree = do
   unless (null upTree) $ do

@@ -24,6 +24,8 @@ module Neuron.Plugin.Plugins.Tags
   )
 where
 
+import Clay (Css, (?))
+import qualified Clay as C
 import qualified Commonmark as CM
 import qualified Commonmark.Inlines as CM
 import Commonmark.TokParsers (noneOfToks, symbol)
@@ -76,7 +78,8 @@ plugin =
     { _plugin_markdownSpec = inlineTagSpec,
       _plugin_afterZettelParse = second . parseTagQuerys,
       _plugin_graphConnections = queryConnections,
-      _plugin_renderHandleLink = renderHandleLink
+      _plugin_renderHandleLink = renderHandleLink,
+      _plugin_css = style
     }
 
 parseTagQuerys :: Maybe (Y.Node Y.Pos) -> ZettelT Pandoc -> ZettelT Pandoc
@@ -422,3 +425,11 @@ inlineTagP =
   some (noneOfToks $ [Spaces, UnicodeSpace, LineEnd] <> fmap Symbol punctuation)
   where
     punctuation = "[];:,.?!"
+
+style :: Css
+style = do
+  "div.tag-tree" ? do
+    "div.node" ? do
+      C.fontWeight C.bold
+      "a.inactive" ? do
+        C.color "#555"
