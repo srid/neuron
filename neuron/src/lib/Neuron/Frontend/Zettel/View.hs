@@ -20,10 +20,8 @@ where
 
 import Control.Monad.Fix (MonadFix)
 import qualified Data.Dependent.Map as DMap
-import Data.List (maximum)
 import Data.Some (Some (Some))
 import Data.Tagged (untag)
-import qualified Data.Tree as Tree
 import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route (NeuronWebT, Route (..))
 import qualified Neuron.Frontend.Route as R
@@ -32,7 +30,6 @@ import qualified Neuron.Frontend.Route.Data.Types as R
 import Neuron.Frontend.Theme (Theme)
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (elPreOverflowing, elTime, semanticIcon)
-import qualified Neuron.Frontend.Widget.AutoScroll as AS
 import qualified Neuron.Frontend.Widget.InvertedTree as IT
 import Neuron.Markdown (ZettelParseError)
 import qualified Neuron.Plugin as Plugin
@@ -71,9 +68,6 @@ renderZettel siteData zData = do
       Q.renderZettelLink Nothing Nothing def z2
   -- Main content
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-    -- We use -24px (instead of -14px) here so as to not scroll all the way to
-    -- title, and as to leave some of the tree visible as "hint" to the user.
-    lift $ AS.marker "zettel-container-anchor" (-24)
     let elNeuronPandoc = elPandoc $ mkReflexDomPandocConfig zData
     divClass "zettel-view" $ do
       let zc = R.zettelDataZettel zData
@@ -85,15 +79,6 @@ renderZettel siteData zData = do
         (constDyn $ R.siteDataTheme siteData)
         (constDyn $ R.siteDataIndexZettel siteData)
         ((<> toText (zettelPath z)) <$> R.siteDataEditUrl siteData)
-  -- Because the tree above can be pretty large (4+ height), we scroll past it
-  -- automatically when the page loads.
-  when (forestDepth upTree > 3) $
-    AS.script "zettel-container-anchor"
-  where
-    forestDepth :: Tree.Forest a -> Int
-    forestDepth = \case
-      [] -> 0
-      ts -> maximum $ fmap (length . Tree.levels) ts
 
 renderZettelContentCard ::
   (PandocBuilder t m, PostBuild t m) =>

@@ -101,7 +101,6 @@ library
     Neuron.Frontend.Manifest
     Neuron.Frontend.Common
     Neuron.Frontend.Widget
-    Neuron.Frontend.Widget.AutoScroll
     Neuron.Frontend.Widget.InvertedTree
     Neuron.Frontend.Query.View
     Neuron.Frontend.Zettel.View
