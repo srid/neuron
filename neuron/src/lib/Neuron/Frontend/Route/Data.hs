@@ -30,11 +30,10 @@ import Relude hiding (traceShowId)
 mkZettelData :: NeuronCache -> ZettelC -> ZettelData
 mkZettelData NeuronCache {..} zC = do
   let z = sansContent zC
-      upTree = G.backlinkForest Folgezettel z _neuronCache_graph
       pluginData =
         DMap.fromList $
           Plugin.routePluginData _neuronCache_graph zC <$> DMap.toList (zettelPluginData z)
-  ZettelData zC upTree pluginData
+  ZettelData zC pluginData
 
 mkImpulseData :: NeuronCache -> ImpulseData
 mkImpulseData NeuronCache {..} =

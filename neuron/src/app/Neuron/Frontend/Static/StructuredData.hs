@@ -13,6 +13,7 @@ module Neuron.Frontend.Static.StructuredData
 where
 
 import Control.Monad.Except (liftEither, runExcept)
+import qualified Data.Dependent.Map as DMap
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.Structured.OpenGraph
@@ -53,9 +54,14 @@ routeStructuredData v = \case
             mkCrumb Zettel {..} =
               Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelSlug)
          in Breadcrumb.fromForest $
-              fmap mkCrumb <$> R.zettelDataUptree (snd v)
+              fmap mkCrumb <$> getUpTree (R.zettelDataPlugin (snd v))
   _ ->
     []
+  where
+    -- HACK: This should really be belonging in the plugin.
+    getUpTree m = fromMaybe mempty $ do
+      Identity upTree <- DMap.lookup R.PluginZettelRouteData_UpTree m
+      pure upTree
 
 routeOpenGraph :: a -> Route a -> OpenGraph
 routeOpenGraph v r =

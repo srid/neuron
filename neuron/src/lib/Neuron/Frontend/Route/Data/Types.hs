@@ -66,8 +66,6 @@ data SiteData = SiteData
 
 data ZettelData = ZettelData
   { zettelDataZettel :: ZettelC,
-    -- TODO: Make uptree a plugin; add PanelLocation ADT for "top" and "bottom" position.
-    zettelDataUptree :: Forest Zettel,
     zettelDataPlugin :: DMap PluginZettelRouteData Identity
   }
 
