@@ -150,7 +150,7 @@ queryConnections Zettel {..} = do
               tell $ one $ Tagged zid
               pure mempty
             Just z2 -> do
-              pure [((conn, ctx), z2)]
+              pure $ one ((conn, ctx), z2)
 
 -- UI
 -- --

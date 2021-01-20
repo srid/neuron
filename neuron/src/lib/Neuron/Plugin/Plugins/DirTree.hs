@@ -11,7 +11,12 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Plugin.Plugins.DirTree (plugin, routePluginData, renderPanel) where
+module Neuron.Plugin.Plugins.DirTree
+  ( plugin,
+    routePluginData,
+    renderPanel,
+  )
+where
 
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
@@ -34,7 +39,7 @@ import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel, OrdinaryConnection), ContextualConnection)
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
+import Neuron.Zettelkasten.ID (ZettelID (ZettelID, unZettelID), indexZid)
 import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel
@@ -73,20 +78,15 @@ metaParser yaml = do
     m .:? "dirtree"
 
 routePluginData :: ZettelGraph -> DirZettel -> DirZettelVal
-routePluginData g = \case
-  -- TODO: refactor
-  DirZettel _ parent (Just childTag) mMeta -> do
-    let children = getChildZettels (G.getZettels g) childTag
-        mparent = flip G.getZettel g =<< parent
-     in DirZettelVal children mparent (fromMaybe def mMeta)
-  DirZettel _ parent Nothing mMeta ->
-    let mparent = flip G.getZettel g =<< parent
-     in DirZettelVal mempty mparent (fromMaybe def mMeta)
+routePluginData g (DirZettel _ parent mChildTag mMeta) =
+  let children = maybe mempty (getChildZettels (G.getZettels g)) mChildTag
+      mparent = flip G.getZettel g =<< parent
+   in DirZettelVal children mparent (fromMaybe def mMeta)
 
 getChildZettels :: [Zettel] -> Tag -> [(ContextualConnection, Zettel)]
 getChildZettels zs t =
   let childrenQuery = mkDefaultTagQuery $ one $ Tag.mkTagPatternFromTag t
-      ctx = one $ P.Plain $ one $ P.Emph $ one $ P.Str "Parent"
+      ctx = one $ P.Plain $ one $ P.Emph $ one $ P.Str "Parent directory zettel"
       -- Child zettels are folgezettel, with the exception of the children of
       -- root dir zettel. Why? Because we don't want one huge cluster glued
       -- together by the index.
@@ -128,20 +128,19 @@ afterZettelParse myaml z =
       -- This is a directory zettel; nothing to modify.
       z
     _
-      | zettelID z == indexZettelID ->
+      | zettelID z == indexZid ->
         z
     _ ->
       -- Regular zettel; add the tag based on path.
       let tags = maybe Set.empty Set.singleton $ parentDirTag $ zettelPath z
           mparent = do
-            guard $ zettelID z /= indexZettelID
+            guard $ zettelID z /= indexZid
             pure $ parentZettelIDFromPath (zettelPath z)
           meta = fromRight Nothing $ case myaml of
             Nothing -> pure Nothing
             Just yaml -> M.runYamlParser (metaParser yaml)
        in z
-            { -- TODO ??
-              zettelPluginData =
+            { zettelPluginData =
                 DMap.insert
                   DirTree
                   (Identity $ DirZettel tags mparent Nothing meta)
@@ -151,14 +150,13 @@ afterZettelParse myaml z =
 parentZettelIDFromPath :: FilePath -> ZettelID
 parentZettelIDFromPath p =
   let parDirName = takeFileName (takeDirectory p)
-      parDirZettelId = if parDirName == "." then indexZettelID else ZettelID (toText parDirName)
-   in parDirZettelId
+   in if parDirName == "." then indexZid else ZettelID (toText parDirName)
 
 injectDirectoryZettels :: MonadState (Map ZettelID ZIDRef) m => DC.DirTree FilePath -> m ()
 injectDirectoryZettels = \case
   DC.DirTree_Dir absPath contents -> do
     let dirName = takeFileName absPath
-        dirZettelId = ZettelID $ if dirName == "." then indexZettelName else toText dirName
+        dirZettelId = ZettelID $ if dirName == "." then unZettelID indexZid else toText dirName
         mparent = do
           guard $ absPath /= "."
           pure $ parentZettelIDFromPath absPath
@@ -181,7 +179,7 @@ injectDirectoryZettels = \case
                   mkPluginData $
                     Set.fromList $
                       catMaybes
-                        [ guard (dirZettelId /= indexZettelID) >> parentDirTag absPath,
+                        [ guard (dirZettelId /= indexZid) >> parentDirTag absPath,
                           parentDirTag p
                         ]
                 newRef = ZIDRef_Available p s (DMap.union pluginData pluginDataPrev)
@@ -220,13 +218,6 @@ tagFromPath = \case
      in Tag.constructTag $ rootTag :| tagNodes
   relPath ->
     error $ "Invalid relPath passed to parseZettel: " <> toText relPath
-
--- TODO: Replace with indexZid from ID.hs
-indexZettelName :: Text
-indexZettelName = "index"
-
-indexZettelID :: ZettelID
-indexZettelID = ZettelID indexZettelName
 
 rootTag :: TagNode
 rootTag = TagNode "root"

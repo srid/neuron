@@ -2,27 +2,10 @@
 slug: guide
 ---
 
-Neuron includes a web interface for your notes that update automatically. This very site you are viewing is managed by neuron; and you may access its notes [here](https://github.com/srid/neuron/tree/master/doc). The "zettel" you are viewing currently is conceptually termed an "overview zettel", as it provides a portal into the other zettels. 
+**Basics**: A neuron notebook is just a directory of [[Zettel Markdown]] files, which are identified by [[id]]. Neuron transforms it into a [[Web interface]], that is generated statically (self-contained HTML files). Advanced functionality are added via [[Plugins]].
 
-Neuron also generates a complete index (at [[impulse-feature]]) of *all* Zettels visualized as a [[folgezettel-heterarchy]].
+**Managing**: See [[Creating and Editing zettels]], [[searching]] and [[query]]
 
-Core concepts:
+**Publishing**: [[Automatic Publishing]]
 
-- [[[id]]]
-- [[[Zettel Markdown]]]
-- [[[Plugins]]]
-
-For generating static sites:
-
-- [[[Web interface]]]
-
-For working with your Zettelkasten:
-
-- [[[Creating and Editing zettels]]]
-- [[[searching]]]
-- [[[query]]]
-
-Other pages of interest:
-
-- [[[experimental]]]
-- [[[extras]]]
+**Extras**: [[extras]]

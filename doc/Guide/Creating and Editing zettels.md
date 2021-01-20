@@ -18,6 +18,12 @@ This command will print the path to the file created. Use `-e` to also open the 
 neuron new -e
 ```
 
+Of course, you can also start with an empty file and begin writing:
+
+```bash
+echo "Hello world ..." > "My new note.md"
+```
+
 Do not forget to link your new zettel to the rest of your Zettelkasten. See [[Linking]].
 
 ## Opening a Zettel by title

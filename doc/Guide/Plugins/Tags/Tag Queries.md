@@ -20,8 +20,6 @@ Here is a list of zettels tagged "walkthrough" on this very Zettelkasten:
 
 The above list was produced by the link query `[[z:zettels?tag=walkthrough]]`.[^folge]
 
-See [[experimental]] for a real-world example of link queries on this site.
-
 ## Hierarchical tags
 
 Queries can also link to zettels whose [[Tags]] match a glob pattern. Two kinds of patterns in particular are noteworthy:

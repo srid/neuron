@@ -26,7 +26,7 @@ slug: foo-bar
 
 ## Pinning
 
-Zettels can be pinned in [[impulse-feature]] so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[Tags]]) to it.
+Zettels can be pinned in [[impulse-feature]] so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[[Tags]]]) to it.
 
 ```markdown
 ---

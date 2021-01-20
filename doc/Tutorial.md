@@ -41,7 +41,7 @@ Neuron expects the Zettelkasten directory to contain a `neuron.dhall`, as well a
 ```bash
 mkdir ~/zettelkasten
 cd ~/zettelkasten
-touch neuron.dhall
+touch neuron.dhall  # Empty file is accepted
 ```
 
 Now create (see [[Creating and Editing zettels]]) your first zettel file:
@@ -58,6 +58,8 @@ Next, create an "overview" zettel called `index.md` --- it would be the welcomin
 
 ```bash
 neuron new -e index
+# Note that you can also create this file manually, i.e.: 
+#   echo "Hello" > index.md
 ```
 
 In the text editor, link it (see [[Linking]]) to your first zettel. It should look like this:
