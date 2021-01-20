@@ -25,6 +25,7 @@ import qualified Neuron.Plugin.Plugins.DirTree as DirTree
 import qualified Neuron.Plugin.Plugins.Links as Links
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import qualified Neuron.Plugin.Plugins.Tags as Tags
+import qualified Neuron.Plugin.Plugins.UpTree as UpTree
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
@@ -49,6 +50,7 @@ pluginRegistryShow r =
       Some Links -> "links"
       Some Tags -> "tags"
       Some NeuronIgnore -> "neuronignore"
+      Some UpTree -> "uptree"
 
 lookupPlugins :: [Text] -> PluginRegistry
 lookupPlugins = Map.fromList . mapMaybe lookupPlugin
@@ -59,6 +61,7 @@ lookupPlugins = Map.fromList . mapMaybe lookupPlugin
       "links" -> Just (Some Links, Some Links.plugin)
       "tags" -> Just (Some Tags, Some Tags.plugin)
       "neuronignore" -> Just (Some NeuronIgnore, Some NeuronIgnore.plugin)
+      "uptree" -> Just (Some UpTree, Some UpTree.plugin)
       _ -> Nothing
 
 markdownSpec :: NeuronSyntaxSpec m il bl => PluginRegistry -> CM.SyntaxSpec m il bl
@@ -108,6 +111,8 @@ routePluginData g z = \case
     PluginZettelRouteData_Tags :=> Identity (Tags.routePluginData g z x)
   NeuronIgnore :=> Identity () ->
     PluginZettelRouteData_NeuronIgnore :=> Identity ()
+  UpTree :=> Identity () ->
+    PluginZettelRouteData_UpTree :=> Identity (UpTree.routePluginData g z)
 
 renderPluginPanel ::
   (DomBuilder t m, PostBuild t m) =>
@@ -122,7 +127,20 @@ renderPluginPanel elNeuronPandoc z = \case
     Links.renderPanel elNeuronPandoc x
   PluginZettelRouteData_Tags :=> Identity x ->
     Tags.renderPanel elNeuronPandoc z x
-  PluginZettelRouteData_NeuronIgnore :=> Identity () ->
+  _ ->
+    blank
+
+-- TODO: Consolidate this, and renderPluginPanel, into one renderer function,
+-- possibly using an ADT do differentiate between different "locations" in UI
+-- tree.
+renderPluginTop ::
+  (DomBuilder t m, PostBuild t m) =>
+  DSum PluginZettelRouteData Identity ->
+  NeuronWebT t m ()
+renderPluginTop = \case
+  PluginZettelRouteData_UpTree :=> Identity t ->
+    UpTree.render t
+  _ ->
     blank
 
 renderHandleLink ::
@@ -147,6 +165,8 @@ renderHandleLink' = \case
     Tags.renderHandleLink x
   PluginZettelRouteData_NeuronIgnore :=> _ ->
     const Nothing
+  PluginZettelRouteData_UpTree :=> _ ->
+    const Nothing
 
 preJsonStrip :: Zettel -> Zettel
 preJsonStrip z =
@@ -156,6 +176,8 @@ preJsonStrip z =
         x@(DirTree :=> Identity _) ->
           x
         x@(Tags :=> Identity _) ->
+          x
+        x@(UpTree :=> Identity _) ->
           x
         Links :=> Identity x ->
           Links :=> Identity (Links.preJsonStrip x)

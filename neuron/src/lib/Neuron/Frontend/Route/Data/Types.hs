@@ -120,6 +120,7 @@ data PluginZettelRouteData routeData where
   PluginZettelRouteData_Links :: PluginZettelRouteData LinksData
   PluginZettelRouteData_Tags :: PluginZettelRouteData TagQueryCache
   PluginZettelRouteData_NeuronIgnore :: PluginZettelRouteData ()
+  PluginZettelRouteData_UpTree :: PluginZettelRouteData (Forest Zettel)
 
 deriveArgDict ''PluginZettelRouteData
 deriveJSONGADT ''PluginZettelRouteData

@@ -81,6 +81,7 @@ library
     Neuron.Plugin.Plugins.NeuronIgnore
     Neuron.Plugin.Plugins.Tags
     Neuron.Plugin.Plugins.Links
+    Neuron.Plugin.Plugins.UpTree
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Error

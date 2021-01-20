@@ -124,6 +124,7 @@ data PluginZettelData a where
   Links :: PluginZettelData [((ZettelID, Connection), [Block])]
   Tags :: PluginZettelData ZettelTags
   NeuronIgnore :: PluginZettelData ()
+  UpTree :: PluginZettelData ()
 
 -- ------------
 -- Zettel types
@@ -174,6 +175,10 @@ sansContent = \case
 instance Show (ZettelT c) where
   show Zettel {..} = "Zettel:" <> show zettelID
 
+instance Eq (ZettelT c) => Ord (ZettelT c) where
+  z1 <= z2 =
+    (zettelDate z1, zettelID z1) <= (zettelDate z2, zettelID z2)
+
 instance Vertex (ZettelT c) where
   type VertexID (ZettelT c) = ZettelID
   vertexID = zettelID
@@ -211,12 +216,6 @@ deriving instance Eq (ZettelT Pandoc)
 deriving instance Eq (ZettelT MetadataOnly)
 
 deriving instance Eq (ZettelT (Text, ZettelParseError))
-
-deriving instance Ord (ZettelT Pandoc)
-
-deriving instance Ord (ZettelT MetadataOnly)
-
-deriving instance Ord (ZettelT (Text, ZettelParseError))
 
 instance ToJSON DirTreeMeta where
   toJSON = genericToJSON shortRecordFields

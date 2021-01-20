@@ -22,7 +22,6 @@ import Control.Monad.Fix (MonadFix)
 import qualified Data.Dependent.Map as DMap
 import Data.Some (Some (Some))
 import Data.Tagged (untag)
-import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route (NeuronWebT, Route (..))
 import qualified Neuron.Frontend.Route as R
 import Neuron.Frontend.Route.Data.Types (SiteData, ZettelData (zettelDataPlugin))
@@ -30,7 +29,6 @@ import qualified Neuron.Frontend.Route.Data.Types as R
 import Neuron.Frontend.Theme (Theme)
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (elPreOverflowing, elTime, semanticIcon)
-import qualified Neuron.Frontend.Widget.InvertedTree as IT
 import Neuron.Markdown (ZettelParseError)
 import qualified Neuron.Plugin as Plugin
 import Neuron.Zettelkasten.Zettel
@@ -55,10 +53,8 @@ renderZettel ::
   ZettelData ->
   NeuronWebT t m ()
 renderZettel siteData zData = do
-  let upTree = R.zettelDataUptree zData
-  unless (null upTree) $ do
-    IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
-      Q.renderZettelLink Nothing Nothing def z2
+  forM_ (DMap.toList $ zettelDataPlugin zData) $ \pluginData ->
+    Plugin.renderPluginTop pluginData
   -- Main content
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     let elNeuronPandoc = elPandoc $ mkReflexDomPandocConfig zData
