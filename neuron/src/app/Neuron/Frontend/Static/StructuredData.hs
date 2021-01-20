@@ -63,8 +63,7 @@ routeOpenGraph v r =
     { _openGraph_title = R.routeTitle' v r,
       _openGraph_siteName = R.siteDataSiteTitle (R.routeSiteData v r),
       _openGraph_description = case r of
-        (Route_Impulse _mtag) -> Just "Impulse"
-        Route_ImpulseStatic -> Just "Impulse (static)"
+        Route_Impulse -> Just "Impulse"
         Route_Zettel _slug -> do
           let zData = snd v
           doc <- getPandocDoc $ R.zettelDataZettel zData

@@ -29,7 +29,7 @@ import Neuron.CLI.Types
 import Neuron.Cache.Type (NeuronCache)
 import qualified Neuron.Cache.Type as Cache
 import Neuron.Config.Type (Config)
-import Neuron.Frontend.Route (Route (Route_Impulse, Route_ImpulseStatic, Route_Zettel))
+import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import qualified Neuron.Reactor.Build as RB
 import Neuron.Zettelkasten.Zettel (ZettelC)
@@ -116,10 +116,7 @@ reflexApp appEnv = do
               rd@(r@(Route_Zettel _) :=> newVal) -> do
                 needsRebuild r newVal
                 pure rd
-              rd@(r@(Route_Impulse _) :=> newVal) -> do
-                needsRebuild r newVal
-                pure rd
-              rd@(r@Route_ImpulseStatic :=> newVal) -> do
+              rd@(r@Route_Impulse :=> newVal) -> do
                 needsRebuild r newVal
                 pure rd
 

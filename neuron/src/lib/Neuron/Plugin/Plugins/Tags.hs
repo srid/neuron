@@ -45,12 +45,7 @@ import Data.YAML ((.:?))
 import qualified Data.YAML as Y
 import GHC.Natural (naturalToInt)
 import qualified Neuron.Frontend.Query.View as Q
-import Neuron.Frontend.Route
-  ( NeuronWebT,
-    Route (Route_Impulse),
-    neuronRouteLink,
-  )
-import qualified Neuron.Frontend.Route as R
+import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types (TagQueryCache)
 import Neuron.Frontend.Widget (semanticIcon)
 import qualified Neuron.Markdown as M
@@ -271,8 +266,8 @@ renderPanel _elNeuronPandoc z _routeData = do
           -- NOTE(ui): Ideally this should be at the top, not bottom. But putting it at
           -- the top pushes the zettel content down, introducing unnecessary white
           -- space below the title. So we put it at the bottom for now.
-          R.neuronRouteLink
-            (Some $ Route_Impulse $ Just t)
+          elAttr
+            "span"
             ( "class" =: "ui basic label zettel-tag"
                 <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
             )
@@ -284,7 +279,8 @@ renderHandleLink cache url = do
   pure $ renderQueryResult r
 
 renderInlineTag :: (DomBuilder t m, PostBuild t m) => Tag -> Map Text Text -> m () -> NeuronWebT t m ()
-renderInlineTag tag = neuronRouteLink (Some $ Route_Impulse $ Just tag)
+renderInlineTag _tag attr w =
+  lift $ elAttr "span" attr w
 
 renderQueryResult ::
   (PandocBuilder t m, PostBuild t m) => DSum TagQuery Identity -> NeuronWebT t m ()

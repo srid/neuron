@@ -11,7 +11,6 @@
 module Neuron.Frontend.Static.Html where
 
 import Control.Monad.Fix (MonadFix)
-import Data.FileEmbed (embedOneStringFileOf)
 import Neuron.Frontend.Manifest (renderManifest)
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
@@ -24,13 +23,6 @@ import Reflex.Dom.Core
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude
 import qualified Skylighting.Core as Skylighting
-
--- | The contents of GHCJS compiled JS.
---
--- We specify an alternate path, that is relative to project root, so that
--- ghcide will be able to compile this module.
-impulseJS :: Text
-impulseJS = $(embedOneStringFileOf ["./ghcjs/impulse.js", "./neuron/ghcjs/impulse.js"])
 
 -- | Render the given route
 renderRoutePage ::
@@ -57,9 +49,7 @@ renderRoutePage r val = do
             renderManifest $ R.siteDataManifest (R.routeSiteData v r)
             renderStructuredData r v
       () <- case r of
-        Route_Impulse {} ->
-          elImpulseJS
-        Route_ImpulseStatic ->
+        Route_Impulse ->
           blank
         Route_Zettel {} -> do
           elAttr "style" ("type" =: "text/css") $ text $ toText $ Skylighting.styleToCss Skylighting.tango
@@ -69,29 +59,7 @@ renderRoutePage r val = do
         Route_Impulse {} -> do
           R.runNeuronWeb R.routeConfig $
             V.renderRouteImpulse val
-        Route_ImpulseStatic {} -> do
-          R.runNeuronWeb R.routeConfig $
-            V.renderRouteImpulse val
         Route_Zettel {} -> do
           R.runNeuronWeb R.routeConfig $
             V.renderRouteZettel val
       pure ()
-
-elImpulseJS :: DomBuilder t m => m ()
-elImpulseJS = do
-  -- XXX: Disabling JSON cache, because we don't yet know of a performant
-  -- way to load it in GHCJS.
-  -- ...
-  -- The JSON cache being injected here will be accessed at runtime by
-  -- Impulse. It is also available on disk as `cache.json`, which Impulse
-  -- retrieves in development mode (as no injection can happen in the
-  -- GHC/jsaddle context).
-  {-
-  let cacheJsonJson =
-        TL.toStrict $
-          encodeToLazyText $
-            TL.toStrict $ encodeToLazyText cache
-  el "script" $ text $ "\nvar cacheText = " <> cacheJsonJson <> ";\n"
-  -- el "script" $ text $ "\nvar cache = " <> (TL.toStrict . encodeToLazyText) cache <> ";\n"
-  -}
-  el "script" $ text impulseJS

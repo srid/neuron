@@ -24,11 +24,7 @@ import Data.Tagged
 import qualified Data.Text as T
 import Data.Tree (Tree (..))
 import qualified Neuron.Frontend.Query.View as QueryView
-import Neuron.Frontend.Route
-  ( NeuronWebT,
-    Route (Route_ImpulseStatic),
-    routeHtmlPath,
-  )
+import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (LoadableData, divClassVisible, elVisible)
@@ -87,9 +83,6 @@ renderImpulse dataLDyn = do
           text " ["
           el "tt" $ text q
           text "]"
-  -- Don't put static note in the static part of prerender; else it will appear on
-  -- the static version as well, which is confusing.
-  prerender_ blank staticVersionNote
   W.loadingWidget dataLDyn $ \dataDyn -> do
     let impulseDyn = snd <$> dataDyn
         themeDyn = siteDataTheme . fst <$> dataDyn
@@ -163,11 +156,6 @@ renderImpulse dataLDyn = do
                 let ztag = T.drop 4 q
                  in Tag ztag `Set.member` Tags.getZettelTags z
               else T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
-    staticVersionNote = do
-      el "p" $ do
-        text "A static version of this page is available "
-        elAttr "a" ("href" =: toText (routeHtmlPath Route_ImpulseStatic)) $ text "here"
-        text "."
 
 renderErrors ::
   (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) =>

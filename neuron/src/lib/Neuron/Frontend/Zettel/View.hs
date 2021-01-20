@@ -49,19 +49,12 @@ import Reflex.Dom.Pandoc
 import Relude hiding (traceShowId, (&))
 import Text.Pandoc.Definition (Pandoc)
 
--- TODO:L Get rid of graph argument which is only used to:
--- - lookup link queries in Pandoc docs
--- - backlinks and uptree data
--- - plugin data (plugin route data)
 renderZettel ::
   (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
   SiteData ->
   ZettelData ->
   NeuronWebT t m ()
 renderZettel siteData zData = do
-  -- Open impulse on pressing the forward slash key.
-  el "script" $ do
-    text "document.onkeyup = function(e) { if ([\"/\", \"s\"].includes(e.key)) { document.location.href = \"impulse.html\"; } }"
   let upTree = R.zettelDataUptree zData
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
@@ -118,7 +111,7 @@ renderBottomMenu themeDyn mIndexZettel mEditUrl = do
       elAttr "a" ("class" =: "item" <> attrs) $ do
         semanticIcon "edit"
     -- Impulse
-    R.neuronRouteLink (Some $ Route_Impulse Nothing) ("class" =: "right item" <> "title" =: "Open Impulse (press /)") $ do
+    R.neuronRouteLink (Some Route_Impulse) ("class" =: "right item" <> "title" =: "Open Impulse") $ do
       semanticIcon "wave square"
 
 mkReflexDomPandocConfig ::

@@ -85,7 +85,7 @@ commandParser defaultNotesDir now = do
     openCommand = do
       fmap Open $
         fmap
-          (const $ OpenCommand $ Some R.Route_ImpulseStatic)
+          (const $ OpenCommand $ Some R.Route_Impulse)
           (switch (long "search" <> help "Open the search page"))
           <|> fmap
             (OpenCommand . Some . R.Route_Zettel)
