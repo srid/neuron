@@ -2,12 +2,16 @@
 
 ## Unreleased (v2)
 
-- Introducing *impulse* -- foundation for upcoming advanced search, replacing both z-index and legacy JS search (#108)
+- Web interface
+  - Introducing *impulse* -- foundation for upcoming advanced search, replacing both z-index and legacy JS search (#108)
+  - Remove autoscroll behaviour (which had questionable value to begin with)
 - Remove (experimental) support for org-mode in v2 (use `v1` branch if you need org-mode)
 - Plugin support
   - dirtree: Treat directories as zettels, forming automatic folgezettel connections to their children. (#497)
   - neuronignore: Exclude directories and markdown files via `.neuronignore`. (#499)
     - By default, recursively read Markdown files in notes directory. This behaviour can be disabled via the neuronignore plugin.
+  - link queries & tags are now plugins
+- Change default slug to use all lower-case (#527)
 - Reduce error verbosity (CLI & web) in the scenario of there being innumerous broken wiki-links.
 - CLI
   - `neuron rib` is renamed to `neuron gen` (neuron has migrated from rib/shake to reflex)

@@ -13,8 +13,7 @@ module Neuron.Frontend.Static.StructuredData
 where
 
 import Control.Monad.Except (liftEither, runExcept)
-import Data.Dependent.Sum
-import qualified Data.Map.Strict as Map
+import qualified Data.Dependent.Map as DMap
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.Structured.OpenGraph
@@ -23,21 +22,18 @@ import Data.Structured.OpenGraph
     OpenGraph (..),
   )
 import Data.Structured.OpenGraph.Render (renderOpenGraph)
-import Data.TagTree (Tag (unTag))
 import qualified Data.Text as T
 import qualified Network.URI.Encode as E
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
 import qualified Neuron.Frontend.Route.Data.Types as R
-import Neuron.Zettelkasten.Query.Eval
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
-    ZettelQuery (..),
     ZettelT (..),
   )
 import Reflex.Dom.Core (DomBuilder)
 import Relude
-import Text.Pandoc.Definition (Inline (Image, Link, Str), Pandoc (..))
+import Text.Pandoc.Definition (Inline (Image), Pandoc (..))
 import Text.Pandoc.Util (getFirstParagraphText, plainify)
 import qualified Text.Pandoc.Walk as W
 import Text.URI (URI, mkURI)
@@ -58,9 +54,14 @@ routeStructuredData v = \case
             mkCrumb Zettel {..} =
               Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelSlug)
          in Breadcrumb.fromForest $
-              fmap mkCrumb <$> R.zettelDataUptree (snd v)
+              fmap mkCrumb <$> getUpTree (R.zettelDataPlugin (snd v))
   _ ->
     []
+  where
+    -- HACK: This should really be belonging in the plugin.
+    getUpTree m = fromMaybe mempty $ do
+      Identity upTree <- DMap.lookup R.PluginZettelRouteData_UpTree m
+      pure upTree
 
 routeOpenGraph :: a -> Route a -> OpenGraph
 routeOpenGraph v r =
@@ -68,13 +69,12 @@ routeOpenGraph v r =
     { _openGraph_title = R.routeTitle' v r,
       _openGraph_siteName = R.siteDataSiteTitle (R.routeSiteData v r),
       _openGraph_description = case r of
-        (Route_Impulse _mtag) -> Just "Impulse"
-        Route_ImpulseStatic -> Just "Impulse (static)"
+        Route_Impulse -> Just "Impulse"
         Route_Zettel _slug -> do
           let zData = snd v
           doc <- getPandocDoc $ R.zettelDataZettel zData
           para <- getFirstParagraphText doc
-          let paraText = renderPandocAsText (R.zettelDataQueryUrlCache zData) para
+          let paraText = plainify para
           pure $ T.take 300 paraText,
       _openGraph_author = R.siteDataSiteAuthor (R.routeSiteData v r),
       _openGraph_type = case r of
@@ -101,34 +101,6 @@ routeOpenGraph v r =
       flip W.query bs $ \case
         Image _ _ (url, _) -> [toText url]
         _ -> []
-
-renderPandocAsText :: QueryUrlCache -> [Inline] -> Text
-renderPandocAsText qurlcache =
-  plainify
-    . W.walk plainifyZQueries
-  where
-    plainifyZQueries :: Inline -> Inline
-    plainifyZQueries = \case
-      x@(Link attr inlines (url, title)) ->
-        fromMaybe x $ do
-          readableInlines <-
-            Map.lookup url qurlcache >>= \case
-              ZettelQuery_ZettelByID _zid _conn :=> Identity res -> do
-                if inlines == [Str url]
-                  then do
-                    case res of
-                      Left _zid ->
-                        pure inlines
-                      Right Zettel {..} ->
-                        pure [Str zettelTitle]
-                  else pure inlines
-              ZettelQuery_TagZettel (unTag -> tag) :=> Identity () -> do
-                pure [Str $ "#" <> tag]
-              _ ->
-                -- Ideally we should replace these with `[[..]]`
-                Nothing
-          pure $ Link attr readableInlines (url, title)
-      x -> x
 
 data BaseUrlError
   = BaseUrlNotAbsolute

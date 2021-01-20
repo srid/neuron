@@ -12,8 +12,8 @@ module Neuron.Zettelkasten.Resolver where
 
 import Data.Dependent.Map (DMap)
 import qualified Data.Map.Strict as Map
-import Neuron.Plugin.PluginData (PluginZettelData)
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
+import Neuron.Zettelkasten.Zettel (PluginZettelData)
 import Relude
 import qualified System.Directory.Contents.Types as DC
 

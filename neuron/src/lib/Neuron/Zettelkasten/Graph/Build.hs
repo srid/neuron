@@ -12,10 +12,11 @@ where
 import Control.Monad.Writer.Strict
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
+import Neuron.Plugin (PluginRegistry)
+import qualified Neuron.Plugin as Plugin
 import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
-import Neuron.Zettelkasten.Query.Eval (queryConnections)
 import Neuron.Zettelkasten.Zettel
   ( MissingZettel,
     Zettel,
@@ -34,9 +35,10 @@ import Relude
 --   - Query errors
 -- The errors are gathered in the `snd` of the tuple.
 buildZettelkasten ::
+  PluginRegistry ->
   [ZettelC] ->
   Writer (Map ZettelID ZettelIssue) ZettelGraph
-buildZettelkasten parsedZettels = do
+buildZettelkasten plugins parsedZettels = do
   -- Tell parse errors that are recorded in `zettelParseError` field.
   tell $
     Map.fromList $
@@ -61,20 +63,20 @@ buildZettelkasten parsedZettels = do
         pure []
   -- Build a graph from the final zettels list
   mapWriter (second $ fmap ZettelIssue_MissingLinks) $
-    mkZettelGraph $ filter (not . zettelUnlisted) zs
+    mkZettelGraph plugins $ filter (not . zettelUnlisted) zs
 
 -- | Build the Zettelkasten graph from a list of zettels
 --
 -- If there are any errors during parsing of queries (to determine connections),
 -- return them as well.
 mkZettelGraph ::
+  PluginRegistry ->
   [Zettel] ->
   Writer (Map ZettelID (Slug, NonEmpty MissingZettel)) ZettelGraph
-mkZettelGraph zettels = do
-  -- TODO: Also get connections via PluginData
+mkZettelGraph plugins zettels = do
   let res :: [(Zettel, ([(ContextualConnection, Zettel)], [MissingZettel]))] =
         flip fmap zettels $ \z ->
-          (z, runQueryConnections zettels z)
+          (z, runQueryConnections plugins zettels z)
   tell $
     Map.fromList $
       flip mapMaybe res $ \(z, nonEmpty . snd -> merrs) ->
@@ -84,10 +86,11 @@ mkZettelGraph zettels = do
       flip concatMap res $ \(z1, fst -> conns) ->
         edgeFromConnection z1 <$> conns
 
-runQueryConnections :: [Zettel] -> Zettel -> ([(ContextualConnection, Zettel)], [MissingZettel])
-runQueryConnections zettels z =
+runQueryConnections :: PluginRegistry -> [Zettel] -> Zettel -> ([(ContextualConnection, Zettel)], [MissingZettel])
+runQueryConnections plugins zettels z =
   flip runReader zettels $ do
-    runWriterT $ queryConnections z
+    runWriterT $ do
+      Plugin.graphConnections plugins z
 
 edgeFromConnection :: Zettel -> (e, Zettel) -> (Maybe e, Zettel, Zettel)
 edgeFromConnection z (c, z2) =

@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -11,9 +12,7 @@ module Neuron.CLI.Parser
   )
 where
 
-import Data.Default (def)
 import Data.Some (Some (..))
-import Data.TagTree (mkDefaultTagQuery, mkTagPattern)
 import Data.Time (LocalTime)
 import Data.Time.DateMayTime
   ( DateMayTime,
@@ -27,17 +26,12 @@ import qualified Neuron.Zettelkasten.Connection as C
 import Neuron.Zettelkasten.ID (ZettelID, parseZettelID)
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import Neuron.Zettelkasten.Query.Graph as Q (GraphQuery (..))
-import qualified Neuron.Zettelkasten.Query.Parser as Q
-import Neuron.Zettelkasten.Zettel as Q
-  ( ZettelQuery (..),
-  )
 import Options.Applicative
 import Options.Applicative.Extra
   ( directoryReader,
     hostPortOption,
   )
 import Relude
-import qualified Text.URI as URI
 
 -- | optparse-applicative parser for neuron CLI
 commandParser :: FilePath -> LocalTime -> Parser AppConfig
@@ -91,7 +85,7 @@ commandParser defaultNotesDir now = do
     openCommand = do
       fmap Open $
         fmap
-          (const $ OpenCommand $ Some R.Route_ImpulseStatic)
+          (const $ OpenCommand $ Some R.Route_Impulse)
           (switch (long "search" <> help "Open the search page"))
           <|> fmap
             (OpenCommand . Some . R.Route_Zettel)
@@ -101,13 +95,7 @@ commandParser defaultNotesDir now = do
       query <-
         fmap
           Left
-          ( fmap
-              (Some . flip Q.ZettelQuery_ZettelByID connDummy)
-              (option zettelIDReader (long "id"))
-              <|> fmap
-                (\x -> Some $ Q.ZettelQuery_ZettelsByTag (mkDefaultTagQuery x) connDummy def)
-                (many (mkTagPattern <$> option str (long "tag" <> short 't')))
-              <|> option queryReader (long "uri" <> short 'u')
+          ( option zettelIDReader (long "id")
           )
           <|> fmap
             Right
@@ -155,17 +143,6 @@ commandParser defaultNotesDir now = do
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
       eitherReader $ first show . parseZettelID . toText
-    queryReader :: ReadM (Some Q.ZettelQuery)
-    queryReader =
-      eitherReader $ \(toText -> s) -> case URI.mkURI s of
-        Right uri ->
-          maybe (Left "Not a valid query") Right $
-            Q.parseQueryLink uri
-        Left e ->
-          Left $ displayException e
     dateReader :: ReadM DateMayTime
     dateReader =
       maybeReader (parseDateMayTime . toText)
-    -- We don't care about connections in the CLI, but the query requires one -
-    -- so pass a dummy value.
-    connDummy = C.OrdinaryConnection

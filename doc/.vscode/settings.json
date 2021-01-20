@@ -1,0 +1,23 @@
+{
+    // Avoid having to explicitly save notes
+    "files.autoSave": "afterDelay",
+    
+    // Minimap is not useful for Markdown notes
+    "editor.minimap.enabled": false,
+    
+    // Generally note files are not opened in duplicate tabs.
+    // This also enables you to navigate to already open note in other split pane
+    "workbench.editor.revealIfOpen": true,
+    
+    // For those that use daily notes, via vscode-memo extension
+    "autoSnippet.snippets": [
+        {
+            "pattern": "**/\\d{4}-\\d{2}-\\d{2}.md",
+            "snippet": "daily"
+        }
+    ]
+    
+    // If use Git, these might be interesting:
+    // "git.autofetch": true,
+    // "git.postCommitCommand": "push"
+}

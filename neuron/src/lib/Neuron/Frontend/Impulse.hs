@@ -23,23 +23,19 @@ import Data.TagTree (Tag (..))
 import Data.Tagged
 import qualified Data.Text as T
 import Data.Tree (Tree (..))
-import qualified Neuron.Frontend.Query.View as QueryView
-import Neuron.Frontend.Route
-  ( NeuronWebT,
-    Route (Route_ImpulseStatic),
-    routeHtmlPath,
-  )
+import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (LoadableData, divClassVisible, elVisible)
 import qualified Neuron.Frontend.Widget as W
 import Neuron.Frontend.Zettel.View (renderZettelParseError)
 import qualified Neuron.Frontend.Zettel.View as ZettelView
+import qualified Neuron.Plugin.Plugins.Links as Links
+import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Zettelkasten.ID (ZettelID (..))
 import Neuron.Zettelkasten.Zettel
   ( Zettel,
     ZettelT (zettelTitle),
-    zettelTags,
   )
 import Neuron.Zettelkasten.Zettel.Error (ZettelError (..), ZettelIssue (..), splitZettelIssues)
 import Reflex.Dom.Core
@@ -87,9 +83,6 @@ renderImpulse dataLDyn = do
           text " ["
           el "tt" $ text q
           text "]"
-  -- Don't put static note in the static part of prerender; else it will appear on
-  -- the static version as well, which is confusing.
-  prerender_ blank staticVersionNote
   W.loadingWidget dataLDyn $ \dataDyn -> do
     let impulseDyn = snd <$> dataDyn
         themeDyn = siteDataTheme . fst <$> dataDyn
@@ -161,13 +154,8 @@ renderImpulse dataLDyn = do
             if "tag:" `T.isPrefixOf` q
               then
                 let ztag = T.drop 4 q
-                 in Tag ztag `Set.member` zettelTags z
+                 in Tag ztag `Set.member` Tags.getZettelTags z
               else T.toLower q `T.isInfixOf` T.toLower (zettelTitle z)
-    staticVersionNote = do
-      el "p" $ do
-        text "A static version of this page is available "
-        elAttr "a" ("href" =: toText (routeHtmlPath Route_ImpulseStatic)) $ text "here"
-        text "."
 
 renderErrors ::
   (DomBuilder t m, MonadHold t m, PostBuild t m, MonadFix m) =>
@@ -197,7 +185,7 @@ renderErrors issues = do
                               "Links in vain to: "
                                 <> T.intercalate ", " (toList $ unZettelID . untag <$> missingZids)
                         elAttr "span" ("title" =: tooltip) $ do
-                          QueryView.renderZettelLinkIDOnly zid slug
+                          Links.renderZettelLinkIDOnly zid slug
   where
     renderError zid zError = do
       case zError of
@@ -220,7 +208,7 @@ renderErrors issues = do
     errorMessageHeader zid = \case
       ZettelError_ParseError (slug, _) -> do
         text "Zettel "
-        QueryView.renderZettelLinkIDOnly zid slug
+        Links.renderZettelLinkIDOnly zid slug
         text " failed to parse"
       ZettelError_AmbiguousID _files -> do
         text $
@@ -258,7 +246,7 @@ renderForest treesDyn = do
 zettelLink :: (DomBuilder t m, PostBuild t m) => Zettel -> NeuronWebT t m () -> NeuronWebT t m ()
 zettelLink z w = do
   el "li" $ do
-    QueryView.renderZettelLink Nothing Nothing def z
+    Links.renderZettelLink Nothing Nothing def z
     w
 
 searchInput ::

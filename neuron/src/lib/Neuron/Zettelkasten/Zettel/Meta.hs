@@ -15,7 +15,6 @@ module Neuron.Zettelkasten.Zettel.Meta
   )
 where
 
-import Data.TagTree (Tag)
 import Data.Time.DateMayTime (DateMayTime)
 import Data.YAML (FromYAML (..), withMap, (.:?))
 import Relude
@@ -23,7 +22,6 @@ import Relude
 -- | YAML metadata in a zettel markdown file
 data Meta = Meta
   { title :: Maybe Text,
-    tags :: Maybe [Tag],
     -- | Creation day
     date :: Maybe DateMayTime,
     -- | List in impulse
@@ -37,8 +35,6 @@ instance FromYAML Meta where
     withMap "Meta" $ \m ->
       Meta
         <$> m .:? "title"
-        -- "keywords" is an alias for "tags"
-        <*> liftA2 (<|>) (m .:? "tags") (m .:? "keywords")
         <*> m .:? "date"
         <*> m .:? "unlisted"
         <*> m .:? "slug"

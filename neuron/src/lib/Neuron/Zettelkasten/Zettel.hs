@@ -20,42 +20,118 @@
 
 module Neuron.Zettelkasten.Zettel where
 
-import Data.Aeson
+import Data.Aeson hiding ((.:))
 import Data.Aeson.GADT.TH (deriveJSONGADT)
+import Data.Char (isLower)
 import Data.Constraint.Extras.TH (deriveArgDict)
+import Data.Default
 import Data.Dependent.Map (DMap)
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
-import Data.TagTree (Tag, TagQuery)
+import Data.TagTree (Tag)
+import qualified Data.TagTree as TagTree
 import Data.Tagged (Tagged (Tagged))
 import Data.Time.DateMayTime (DateMayTime)
+import Data.YAML (FromYAML (parseYAML), (.:))
+import qualified Data.YAML as Y
 import Neuron.Markdown (ZettelParseError)
-import Neuron.Plugin.PluginData (PluginZettelData)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
-import Neuron.Zettelkasten.Query.Theme (ZettelsView)
 import Relude hiding (show)
 import Text.Pandoc.Builder (Block)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
 
+-- ------------
+-- Plugin types
+-- ------------
+
+-- NOTE: Ideally we want to put this in Plugin modules, but there is a mutual
+-- dependency with the Zettel type. :/
+
+data DirTreeMeta = DirTreeMeta
+  { dirtreemetaDisplay :: Bool
+  }
+  deriving (Eq, Ord, Show, Generic)
+
+instance Y.FromYAML DirTreeMeta where
+  parseYAML =
+    Y.withMap "Meta" $ \m ->
+      DirTreeMeta
+        <$> m .: "display"
+
+instance Default DirTreeMeta where
+  def = DirTreeMeta True
+
+-- | Extended metadata on Zettel managed by DirTree plugin
+data DirZettel = DirZettel
+  { -- | What to tag this zettel.
+    -- We expect the arity here to be 1-2. 1 for the simplest case; and 2, if
+    -- both Foo/ and Foo.md exists, with the later being positioned *elsewhere*
+    -- in the tree, with its own parent directory.
+    _dirZettel_tags :: Set Tag,
+    -- | The directory zettel associated with the parent directory if any.
+    _dirZettel_dirParent :: Maybe ZettelID,
+    -- | The tag used by its child zettels (directories and files) if any.
+    -- This is Nothing for "terminal" zettels
+    _dirZettel_childrenTag :: Maybe Tag,
+    _dirZettel_meta :: Maybe DirTreeMeta
+  }
+  deriving (Eq, Ord, Show, Generic)
+
+data ZettelsView = ZettelsView
+  { zettelsviewLinkView :: LinkView,
+    zettelsviewGroupByTag :: Bool,
+    zettelsviewLimit :: Maybe Natural
+  }
+  deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
+
+data LinkView
+  = LinkView_Default
+  | LinkView_ShowDate
+  | LinkView_ShowID
+  deriving (Eq, Show, Ord, Generic, ToJSON, FromJSON)
+
+instance Default LinkView where
+  def = LinkView_Default
+
+instance Default ZettelsView where
+  def = ZettelsView def False def
+
+data TagQuery r where
+  TagQuery_ZettelsByTag :: TagTree.Query -> Connection -> ZettelsView -> TagQuery [Zettel]
+  TagQuery_Tags :: TagTree.Query -> TagQuery (Map Tag Natural)
+  TagQuery_TagZettel :: Tag -> TagQuery ()
+
+data ZettelTags = ZettelTags
+  { zetteltagsTagged :: Set Tag,
+    zetteltagsQueries :: [Some TagQuery]
+  }
+  deriving (Generic)
+
+-- | Plugin-specific data stored in `ZettelT`
+--
+-- See also `PluginZettelRouteData` which corresponds to post-graph data (used
+-- in rendering).
+--
+-- NOTE: The constructors deliberately are kept short, so as to have shorter
+-- JSON
+data PluginZettelData a where
+  DirTree :: PluginZettelData DirZettel
+  Links :: PluginZettelData [((ZettelID, Connection), [Block])]
+  Tags :: PluginZettelData ZettelTags
+  NeuronIgnore :: PluginZettelData ()
+  UpTree :: PluginZettelData ()
+
+-- ------------
+-- Zettel types
+-- ------------
+
 -- | A zettel ID doesn't refer to an existing zettel
 type MissingZettel = Tagged "MissingZettel" ZettelID
-
--- | ZettelQuery queries individual zettels.
---
--- It does not care about the relationship *between* those zettels; for that use `GraphQuery`.
---
--- NOTE: This type is defined in this module, rather than Zettel.Query, because
--- of the mutual dependency with the `ZettelT` type.
-data ZettelQuery r where
-  ZettelQuery_ZettelByID :: ZettelID -> Connection -> ZettelQuery (Either MissingZettel Zettel)
-  ZettelQuery_ZettelsByTag :: TagQuery -> Connection -> ZettelsView -> ZettelQuery [Zettel]
-  ZettelQuery_Tags :: TagQuery -> ZettelQuery (Map Tag Natural)
-  ZettelQuery_TagZettel :: Tag -> ZettelQuery ()
 
 -- | A zettel note
 --
@@ -66,14 +142,12 @@ data ZettelT c = Zettel
     -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
     zettelTitle :: Text,
-    -- | Whether the title was infered from the body
+    -- | Whether the title was infered from the body. Used when conditionally
+    -- rendering the title in HTML.
     zettelTitleInBody :: Bool,
-    zettelTags :: Set Tag,
     -- | Date associated with the zettel if any
     zettelDate :: Maybe DateMayTime,
     zettelUnlisted :: Bool,
-    -- | List of all queries in the zettel
-    zettelQueries :: [(Some ZettelQuery, [Block])],
     zettelContent :: c,
     zettelPluginData :: DMap PluginZettelData Identity
   }
@@ -98,17 +172,12 @@ sansContent = \case
       { zettelContent = Tagged Nothing
       }
 
--- | Strip out the link context data
---
--- Useful to to minimize the impending JSON dump.
-sansLinkContext :: ZettelT c -> ZettelT c
-sansLinkContext z =
-  z {zettelQueries = stripContextFromZettelQuery <$> zettelQueries z}
-  where
-    stripContextFromZettelQuery (someQ, _ctx) = (someQ, mempty)
-
 instance Show (ZettelT c) where
   show Zettel {..} = "Zettel:" <> show zettelID
+
+instance Eq (ZettelT c) => Ord (ZettelT c) where
+  z1 <= z2 =
+    (zettelDate z1, zettelID z1) <= (zettelDate z2, zettelID z2)
 
 instance Vertex (ZettelT c) where
   type VertexID (ZettelT c) = ZettelID
@@ -118,26 +187,29 @@ sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
   sortOn (Down . zettelDate)
 
-deriveJSONGADT ''ZettelQuery
+deriveJSONGADT ''TagQuery
+deriveGEq ''TagQuery
+deriveGShow ''TagQuery
+deriveGCompare ''TagQuery
+deriveArgDict ''TagQuery
 
-deriveGEq ''ZettelQuery
+deriveArgDict ''PluginZettelData
+deriveJSONGADT ''PluginZettelData
+deriveGEq ''PluginZettelData
+deriveGShow ''PluginZettelData
+deriveGCompare ''PluginZettelData
 
-deriveGShow ''ZettelQuery
-deriveGCompare ''ZettelQuery
+deriving instance Eq ZettelTags
 
-deriveArgDict ''ZettelQuery
+deriving instance Ord ZettelTags
 
-deriving instance Show (ZettelQuery (Maybe Zettel))
+instance ToJSON ZettelTags where
+  toJSON = genericToJSON shortRecordFields
 
-deriving instance Show (ZettelQuery [Zettel])
+instance FromJSON ZettelTags where
+  parseJSON = genericParseJSON shortRecordFields
 
-deriving instance Show (ZettelQuery (Map Tag Natural))
-
-deriving instance Eq (ZettelQuery (Maybe Zettel))
-
-deriving instance Eq (ZettelQuery [Zettel])
-
-deriving instance Eq (ZettelQuery (Map Tag Natural))
+deriving instance Show ZettelTags
 
 deriving instance Eq (ZettelT Pandoc)
 
@@ -145,12 +217,31 @@ deriving instance Eq (ZettelT MetadataOnly)
 
 deriving instance Eq (ZettelT (Text, ZettelParseError))
 
-deriving instance Ord (ZettelT Pandoc)
+instance ToJSON DirTreeMeta where
+  toJSON = genericToJSON shortRecordFields
 
-deriving instance Ord (ZettelT MetadataOnly)
+instance FromJSON DirTreeMeta where
+  parseJSON = genericParseJSON shortRecordFields
 
-deriving instance Ord (ZettelT (Text, ZettelParseError))
+instance ToJSON DirZettel where
+  toJSON = genericToJSON shortRecordFields
 
-deriving instance ToJSON Zettel
+instance FromJSON DirZettel where
+  parseJSON = genericParseJSON shortRecordFields
 
-deriving instance FromJSON Zettel
+instance ToJSON Zettel where
+  toJSON = genericToJSON shortRecordFields
+
+instance FromJSON Zettel where
+  parseJSON = genericParseJSON shortRecordFields
+
+shortRecordFields :: Options
+shortRecordFields =
+  defaultOptions
+    { fieldLabelModifier =
+        \case
+          -- Drop the "_foo_" prefix
+          '_' : rest -> drop 1 $ dropWhile (/= '_') rest
+          -- Drop "zettel" prefix
+          s -> dropWhile isLower s
+    }

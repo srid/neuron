@@ -39,15 +39,16 @@ isAutoLink PandocLink {..} =
   isNothing _pandocLink_inner
 
 -- | Get all links that have a valid URI
-getLinks :: W.Walkable B.Inline b => b -> [Text]
+-- TODO: Move to pandoc-link-context
+getLinks :: W.Walkable B.Inline b => b -> [([(Text, Text)], Text)]
 getLinks = W.query go
   where
-    go :: B.Inline -> [Text]
+    go :: B.Inline -> [([(Text, Text)], Text)]
     go = maybeToList . uriLinkFromInline
-    uriLinkFromInline :: B.Inline -> Maybe Text
+    uriLinkFromInline :: B.Inline -> Maybe ([(Text, Text)], Text)
     uriLinkFromInline inline = do
-      B.Link _attr _inlines (url, _title) <- pure inline
-      pure url
+      B.Link (_, _, attrs) _inlines (url, title) <- pure inline
+      pure (("title", title) : attrs, url)
 
 getFirstParagraphText :: Pandoc -> Maybe [B.Inline]
 getFirstParagraphText = listToMaybe . W.query go

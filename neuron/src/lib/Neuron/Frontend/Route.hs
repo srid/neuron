@@ -19,8 +19,11 @@ import Data.GADT.Compare.TH
   )
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some, withSome)
-import Data.TagTree (Tag, unTag)
 import Neuron.Frontend.Route.Data.Types
+  ( ImpulseData,
+    SiteData,
+    ZettelData (zettelDataZettel),
+  )
 import Neuron.Zettelkasten.ID (Slug)
 import Neuron.Zettelkasten.Zettel
   ( ZettelT (zettelTitle),
@@ -30,26 +33,17 @@ import Relude
 
 data Route routeData where
   Route_Zettel :: Slug -> Route (SiteData, ZettelData)
-  -- | Impulse is implemented in github.com/srid/rememorate
-  -- The tag argument is only used in rendering the URL, and not when writing the file.
-  -- TODO: Fix this bad use of types.
-  Route_Impulse :: Maybe Tag -> Route (SiteData, ImpulseData)
-  Route_ImpulseStatic :: Route (SiteData, ImpulseData)
+  Route_Impulse :: Route (SiteData, ImpulseData)
 
 routeSiteData :: a -> Route a -> SiteData
 routeSiteData val = \case
   Route_Zettel _ -> fst val
-  Route_Impulse _ -> fst val
-  Route_ImpulseStatic -> fst val
+  Route_Impulse -> fst val
 
 routeHtmlPath :: Route a -> FilePath
 routeHtmlPath = \case
-  Route_Impulse (Just t) ->
-    "impulse.html?q=tag:" <> toString (unTag t)
-  Route_Impulse Nothing ->
+  Route_Impulse ->
     "impulse.html"
-  Route_ImpulseStatic ->
-    "impulse-static.html"
   Route_Zettel slug ->
     toString slug <> ".html"
 
@@ -95,8 +89,7 @@ neuronRouteURL someR = do
 
 routeTitle' :: a -> Route a -> Text
 routeTitle' v = \case
-  Route_Impulse _mtag -> "Impulse"
-  Route_ImpulseStatic -> "Impulse (static)"
+  Route_Impulse -> "Impulse"
   Route_Zettel _ ->
     either zettelTitle zettelTitle $ zettelDataZettel . snd $ v
 

@@ -9,9 +9,8 @@ where
 import Clay hiding (id, ms, not, object, reverse, s, style, type_)
 import qualified Clay as C
 import qualified Clay.Media as CM
-import qualified Neuron.Markdown as Markdown
 import qualified Neuron.Frontend.Theme as Theme
-import Neuron.Frontend.Widget.InvertedTree as IT (style)
+import qualified Neuron.Markdown as Markdown
 import Relude hiding ((&))
 
 zettelCss :: Css
@@ -36,7 +35,6 @@ zettelCss = do
       C.li ? do
         mempty -- C.paddingBottom $ em 1
     zettelContentCss
-  IT.style
   ".ui.label.zettel-tag" ? do
     C.color black
     "a" ? do

@@ -1,0 +1,10 @@
+---
+slug: atomic
+---
+
+Zettelkasten notes are atomic and autonomous.
+
+Per [David Clear](https://writingcooperative.com/zettelkasten-how-one-german-scholar-was-so-freakishly-productive-997e4e0ca125):
+
+* **The principle of atomicity**: The term [was coined by Christian Tietze](https://zettelkasten.de/posts/create-zettel-from-reading-notes/). It means that each note should contain one idea and one idea only. This makes it possible to link ideas with a laser focus.
+* **The principle of autonomy**: Each note should be autonomous, meaning it should be self-contained and comprehensible on its own. [This allows](http://web.archive.org/web/20170407030848/https://omxi.se/2015-06-21-living-with-a-zettelkasten.html) notes to be moved, processed, separated, and concatenated independently of its neighbors. It also ensures that notes remain useful even if the original source of information disappears.

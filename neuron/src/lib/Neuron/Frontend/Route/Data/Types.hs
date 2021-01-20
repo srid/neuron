@@ -17,6 +17,7 @@ import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Default (Default (..))
 import Data.Dependent.Map (DMap)
+import Data.Dependent.Sum
 import Data.GADT.Compare.TH
   ( DeriveGCompare (deriveGCompare),
     DeriveGEQ (deriveGEq),
@@ -26,13 +27,9 @@ import Data.Tagged (Tagged)
 import Data.Tree (Forest)
 import Neuron.Frontend.Manifest (Manifest)
 import Neuron.Frontend.Theme (Theme)
-import Neuron.Zettelkasten.Connection (ContextualConnection)
+import Neuron.Zettelkasten.Connection (Connection, ContextualConnection)
 import Neuron.Zettelkasten.ID (ZettelID)
-import Neuron.Zettelkasten.Query.Eval (QueryUrlCache)
 import Neuron.Zettelkasten.Zettel
-  ( Zettel,
-    ZettelC,
-  )
 import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Relude
 import Text.URI (URI)
@@ -56,6 +53,7 @@ data SiteData = SiteData
     siteDataSiteAuthor :: Maybe Text,
     siteDataSiteBaseUrl :: Maybe URI,
     siteDataEditUrl :: Maybe Text,
+    siteDataBodyCss :: Text,
     -- Data from filesystem
     siteDataHeadHtml :: HeadHtml,
     siteDataManifest :: Manifest,
@@ -68,9 +66,6 @@ data SiteData = SiteData
 
 data ZettelData = ZettelData
   { zettelDataZettel :: ZettelC,
-    zettelDataQueryUrlCache :: QueryUrlCache,
-    zettelDataUptree :: Forest Zettel,
-    zettelDataBacklinks :: [(ContextualConnection, Zettel)],
     zettelDataPlugin :: DMap PluginZettelRouteData Identity
   }
 
@@ -96,20 +91,35 @@ data Stats = Stats
   }
   deriving (Eq, Show)
 
--- Plugin types
+-- Plugin types for route data
 
 data DirZettelVal = DirZettelVal
-  { dirZettelValChildren :: [Zettel],
-    dirZettelValParent :: Maybe Zettel
+  { dirZettelValChildren :: [(ContextualConnection, Zettel)],
+    dirZettelValParent :: Maybe Zettel,
+    dirZettelValMeta :: DirTreeMeta
   }
   deriving (Eq, Show)
 
 instance Default DirZettelVal where
-  def = DirZettelVal mempty Nothing
+  def = DirZettelVal mempty Nothing def
+
+data LinksData = LinksData
+  { linksDataLinkCache :: Map Text (Either MissingZettel (Connection, Zettel)),
+    linksDataBacklinks :: [(ContextualConnection, Zettel)]
+  }
+  deriving (Eq, Show)
+
+instance Default LinksData where
+  def = LinksData mempty mempty
+
+type TagQueryCache = Map Text (DSum TagQuery Identity)
 
 data PluginZettelRouteData routeData where
   PluginZettelRouteData_DirTree :: PluginZettelRouteData DirZettelVal
+  PluginZettelRouteData_Links :: PluginZettelRouteData LinksData
+  PluginZettelRouteData_Tags :: PluginZettelRouteData TagQueryCache
   PluginZettelRouteData_NeuronIgnore :: PluginZettelRouteData ()
+  PluginZettelRouteData_UpTree :: PluginZettelRouteData (Forest Zettel)
 
 deriveArgDict ''PluginZettelRouteData
 deriveJSONGADT ''PluginZettelRouteData

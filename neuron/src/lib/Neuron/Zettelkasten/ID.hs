@@ -109,5 +109,7 @@ idParser' cs = do
 getZettelID :: FilePath -> Maybe ZettelID
 getZettelID fp = do
   let (name, ext) = splitExtension $ takeFileName fp
-  guard $ ".md" == toText ext
+      isAPath = '/' `elem` name
+  -- Accept either foo.md or foo (but not foo/bar)
+  guard $ ".md" == toText ext || not isAPath
   rightToMaybe $ parseZettelID $ toText name

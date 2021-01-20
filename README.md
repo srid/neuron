@@ -17,14 +17,7 @@ neuron is a **future-proof** command-line app for managing your plain-text [Zett
 
 ## Getting started
 
-See [neuron.zettel.page](https://neuron.zettel.page/) for the full guide to installing and using neuron.
-
-## Discussion
-
-To share your thoughts and ask questions on neuron, you may join one of the following:
-
-- Forum: [GitHub Discussions](https://github.com/srid/neuron/discussions)
-- Chat: [Matrix room Neuron](https://app.element.io/#/room/#neuron:matrix.org)
+See [neuron.zettel.page](https://neuron.zettel.page/) for the full guide to installing and using neuron, as well as for other resources.
 
 ## Developing
 

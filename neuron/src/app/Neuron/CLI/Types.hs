@@ -44,11 +44,9 @@ import Data.Time.DateMayTime
   )
 import Neuron.CLI.Logging
 import qualified Neuron.Frontend.Route as R
+import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.ID.Scheme (IDScheme (..))
 import Neuron.Zettelkasten.Query.Graph as Q (GraphQuery (..))
-import Neuron.Zettelkasten.Zettel as Q
-  ( ZettelQuery (..),
-  )
 import Relude
 import System.FilePath ((</>))
 
@@ -133,7 +131,7 @@ newtype OpenCommand = OpenCommand
 data QueryCommand = QueryCommand
   { -- Use cache instead of building the zettelkasten from scratch
     cached :: Bool,
-    query :: Either (Some Q.ZettelQuery) (Some Q.GraphQuery)
+    query :: Either ZettelID (Some Q.GraphQuery)
   }
   deriving (Eq, Show)
 

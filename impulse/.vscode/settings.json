@@ -1,5 +1,0 @@
-{
-    "editor.formatOnType": true,
-    "editor.formatOnSave": true,
-    "nixEnvSelector.nixShellConfig": "${workspaceRoot}/shell.nix"
-}

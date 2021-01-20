@@ -21,7 +21,6 @@ import Control.Monad.Fix (MonadFix)
 import Data.Tagged (untag)
 import Neuron.Frontend.Common (neuronCommonStyle, neuronFonts)
 import qualified Neuron.Frontend.Impulse as Impulse
-import qualified Neuron.Frontend.Query.View as QueryView
 import Neuron.Frontend.Route
   ( NeuronWebT,
     Route,
@@ -123,7 +122,6 @@ style = do
     neuronCommonStyle
     Impulse.style
     ZettelCSS.zettelCss
-    QueryView.style
     footerStyle
   where
     footerStyle = do

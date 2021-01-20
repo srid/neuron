@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 1.9.4.3
+version: 1.9.5.1
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -14,7 +14,6 @@ synopsis:
 description:
   neuron is a future-proof system for managing your plain-text Zettelkasten notes.
 data-files:
-  ghcjs/impulse.js
   src-bash/neuron-search
 
 source-repository head
@@ -67,6 +66,7 @@ common library-common
     reflex-dom-pandoc >= 0.7.0.1,
     clay,
     tagged,
+    shower,
     directory-contents
 
 library
@@ -77,9 +77,11 @@ library
     Neuron.Markdown
     Neuron.Plugin
     Neuron.Plugin.Type
-    Neuron.Plugin.PluginData
     Neuron.Plugin.Plugins.DirTree
     Neuron.Plugin.Plugins.NeuronIgnore
+    Neuron.Plugin.Plugins.Tags
+    Neuron.Plugin.Plugins.Links
+    Neuron.Plugin.Plugins.UpTree
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Error
@@ -88,9 +90,6 @@ library
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
     Neuron.Zettelkasten.Query.Graph
-    Neuron.Zettelkasten.Query.Eval
-    Neuron.Zettelkasten.Query.Parser
-    Neuron.Zettelkasten.Query.Theme
     Neuron.Zettelkasten.Graph
     Neuron.Zettelkasten.Graph.Type
     Neuron.Zettelkasten.Graph.Build
@@ -102,9 +101,7 @@ library
     Neuron.Frontend.Manifest
     Neuron.Frontend.Common
     Neuron.Frontend.Widget
-    Neuron.Frontend.Widget.AutoScroll
     Neuron.Frontend.Widget.InvertedTree
-    Neuron.Frontend.Query.View
     Neuron.Frontend.Zettel.View
     Neuron.Frontend.Zettel.CSS
     Neuron.Frontend.Impulse
@@ -158,7 +155,6 @@ common app-common
     data-default,
     uuid,
     with-utf8,
-    shower,
     either,
     uri-encode,
     timeit,
@@ -236,9 +232,7 @@ test-suite neuron-test
       Neuron.VersionSpec
       Neuron.Zettelkasten.ID.SchemeSpec
       Neuron.Zettelkasten.IDSpec
-      Neuron.Zettelkasten.Query.ParserSpec
       Neuron.Zettelkasten.ZettelSpec
-      Neuron.Zettelkasten.Zettel.ParserSpec
 
 -- To profile: ghc-options: -fexternal-interpreter -prof -fprof-auto -rtsopts
 executable neuron
