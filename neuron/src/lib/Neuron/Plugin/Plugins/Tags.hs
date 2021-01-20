@@ -17,9 +17,7 @@ module Neuron.Plugin.Plugins.Tags
     routePluginData,
     renderHandleLink,
     renderPanel,
-    -- TODO: Nope! Shouldn't be complecting with Impulse
     getZettelTags,
-    -- TODO: why expose?
     zettelsByTag,
   )
 where
@@ -62,7 +60,7 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (count, mapMaybe, tag)
 import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude hiding (trace, traceShow, traceShowId)
-import Text.Pandoc.Definition (Pandoc)
+import Text.Pandoc.Definition (Inline, Pandoc)
 import qualified Text.Pandoc.Util as Pandoc
 import qualified Text.Parsec as P
 import Text.URI (URI)
@@ -276,8 +274,8 @@ renderPanel _elNeuronPandoc z _routeData = do
             )
             $ text $ unTag t
 
-renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => TagQueryCache -> Text -> Maybe (NeuronWebT t m ())
-renderHandleLink cache url = do
+renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => TagQueryCache -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ())
+renderHandleLink cache url _mInline = do
   r <- Map.lookup url cache
   pure $ renderQueryResult r
 

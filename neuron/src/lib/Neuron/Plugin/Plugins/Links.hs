@@ -181,10 +181,10 @@ queryConnections Zettel {..} = do
 -- UI
 -- --
 
-renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => LinksData -> Text -> Maybe (NeuronWebT t m ())
-renderHandleLink LinksData {..} url = do
+renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => LinksData -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ())
+renderHandleLink LinksData {..} url mInline = do
   r <- Map.lookup url linksDataLinkCache
-  pure $ renderZettelLinkMay Nothing r
+  pure $ renderZettelLinkMay mInline r
 
 renderZettelLinkMay ::
   (PandocBuilder t m, PostBuild t m) => Maybe [Inline] -> Either MissingZettel (Connection, Zettel) -> NeuronWebT t m ()

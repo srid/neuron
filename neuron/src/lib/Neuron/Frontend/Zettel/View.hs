@@ -116,10 +116,9 @@ mkReflexDomPandocConfig ::
   ZettelData ->
   Config t (NeuronWebT t m) ()
 mkReflexDomPandocConfig x =
-  -- TODO: Handle minner??
-  Config $ \oldRender url _minner -> do
+  Config $ \oldRender url minner -> do
     fromMaybe oldRender $
-      Plugin.renderHandleLink (R.zettelDataPlugin x) url
+      Plugin.renderHandleLink (R.zettelDataPlugin x) url minner
 
 renderZettelContent ::
   forall t m.

@@ -46,7 +46,7 @@ import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Widget (blank)
 import Relude
 import qualified System.Directory.Contents.Types as DC
-import Text.Pandoc.Definition (Pandoc)
+import Text.Pandoc.Definition (Inline, Pandoc)
 
 type PluginRegistry = Map (Some PluginZettelData) (Some Plugin)
 
@@ -162,26 +162,24 @@ renderHandleLink ::
   (PandocBuilder t m, PostBuild t m) =>
   DMap PluginZettelRouteData Identity ->
   Text ->
+  Maybe [Inline] ->
   Maybe (NeuronWebT t m ())
-renderHandleLink pluginData x =
-  asum $ flip renderHandleLink' x <$> DMap.toList pluginData
+renderHandleLink pluginData url mInline =
+  asum $ DMap.toList pluginData <&> \x -> renderHandleLink' x url mInline
 
 renderHandleLink' ::
   (PandocBuilder t m, PostBuild t m) =>
   DSum PluginZettelRouteData Identity ->
   Text ->
+  Maybe [Inline] ->
   Maybe (NeuronWebT t m ())
 renderHandleLink' = \case
-  PluginZettelRouteData_DirTree :=> _ ->
-    const Nothing
   PluginZettelRouteData_Links :=> Identity x ->
     Links.renderHandleLink x
   PluginZettelRouteData_Tags :=> Identity x ->
     Tags.renderHandleLink x
-  PluginZettelRouteData_NeuronIgnore :=> _ ->
-    const Nothing
-  PluginZettelRouteData_UpTree :=> _ ->
-    const Nothing
+  _ ->
+    const $ const Nothing
 
 preJsonStrip :: Zettel -> Zettel
 preJsonStrip z =
