@@ -102,7 +102,6 @@ library
     Neuron.Frontend.Common
     Neuron.Frontend.Widget
     Neuron.Frontend.Widget.InvertedTree
-    Neuron.Frontend.Query.View
     Neuron.Frontend.Zettel.View
     Neuron.Frontend.Zettel.CSS
     Neuron.Frontend.Impulse

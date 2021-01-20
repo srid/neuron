@@ -21,7 +21,6 @@ import qualified Data.TagTree as Tag
 import qualified Data.Text as T
 import Data.YAML ((.:?))
 import qualified Data.YAML as Y
-import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types (DirZettelVal (..))
 import Neuron.Frontend.Widget
@@ -29,6 +28,7 @@ import Neuron.Frontend.Widget
     listItem,
   )
 import qualified Neuron.Markdown as M
+import qualified Neuron.Plugin.Plugins.Links as Links
 import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel, OrdinaryConnection), ContextualConnection)
@@ -106,10 +106,10 @@ renderPanel DirZettelVal {..} = do
         divClass "ui list" $ do
           whenJust dirZettelValParent $ \parZ ->
             listItem ListItem_Folder $
-              Q.renderZettelLink (Just $ elClass "i" "level up alternate icon" blank) Nothing Nothing parZ
+              Links.renderZettelLink (Just $ elClass "i" "level up alternate icon" blank) Nothing Nothing parZ
           forM_ dirZettelValChildren $ \((conn, _ctx), cz) ->
             listItem (bool ListItem_File ListItem_Folder $ isDirectoryZettel cz) $
-              Q.renderZettelLink Nothing (Just conn) Nothing cz
+              Links.renderZettelLink Nothing (Just conn) Nothing cz
         elAttr "a" ("href" =: pluginDoc <> "title" =: "What is this section about?") $ elClass "i" "question circle outline icon" blank
   where
     pluginDoc = "https://neuron.zettel.page/dirtree.html"

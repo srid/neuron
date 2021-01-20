@@ -12,9 +12,9 @@ module Neuron.Plugin.Plugins.UpTree (plugin, routePluginData, render) where
 
 import qualified Data.Dependent.Map as DMap
 import Data.Tree (Forest)
-import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route (NeuronWebT)
 import qualified Neuron.Frontend.Widget.InvertedTree as IT
+import qualified Neuron.Plugin.Plugins.Links as Links
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
@@ -44,4 +44,4 @@ render :: (DomBuilder t m, PostBuild t m) => Forest Zettel -> NeuronWebT t m ()
 render upTree = do
   unless (null upTree) $ do
     IT.renderInvertedHeadlessTree "zettel-uptree" "deemphasized" upTree $ \z2 ->
-      Q.renderZettelLink Nothing Nothing def z2
+      Links.renderZettelLink Nothing Nothing def z2

@@ -46,11 +46,11 @@ import Data.Tree (Forest, Tree (Node))
 import Data.YAML ((.:?))
 import qualified Data.YAML as Y
 import GHC.Natural (naturalToInt)
-import qualified Neuron.Frontend.Query.View as Q
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types (TagQueryCache)
 import Neuron.Frontend.Widget (semanticIcon)
 import qualified Neuron.Markdown as M
+import qualified Neuron.Plugin.Plugins.Links as Links
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
   ( Connection (..),
@@ -300,7 +300,7 @@ renderQueryResult = \case
             el "ul" $
               forM_ zettelGrp $ \z ->
                 el "li" $
-                  Q.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z
+                  Links.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z
         else el "ul" $ do
           let resToDisplay =
                 case zettelsviewLimit view of
@@ -308,7 +308,7 @@ renderQueryResult = \case
                   Just (naturalToInt -> limit) -> take limit res
           forM_ resToDisplay $ \z -> do
             el "li" $
-              Q.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z
+              Links.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z
           when (length resToDisplay /= length res) $ do
             el "li" $
               elClass "span" "ui grey text" $ do
