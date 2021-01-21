@@ -24,10 +24,10 @@ neuronFonts :: [Text]
 neuronFonts = [headerFont, bodyFont, monoFont]
 
 headerFont :: Text
-headerFont = "Crimson Text"
+headerFont = "Merriweather"
 
 bodyFont :: Text
-bodyFont = "Open Sans"
+bodyFont = "Libre Franklin"
 
 monoFont :: Text
 monoFont = "Roboto Mono"
