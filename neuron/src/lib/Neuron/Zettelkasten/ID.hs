@@ -29,7 +29,7 @@ import Data.Aeson
     ToJSONKey (toJSONKey),
   )
 import Data.Aeson.Types (toJSONKeyText)
-import Relude
+import Relude hiding (traceShowId)
 import System.FilePath (splitExtension, takeFileName)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
@@ -105,11 +105,9 @@ idParser' cs = do
   s <- M.some $ M.alphaNumChar <|> M.choice (M.char <$> cs)
   pure $ ZettelID $ toText s
 
--- | Parse the ZettelID if the given filepath is a zettel.
+-- | Parse the ZettelID if the given filepath is a Markdown zettel.
 getZettelID :: FilePath -> Maybe ZettelID
 getZettelID fp = do
-  let (name, ext) = splitExtension $ takeFileName fp
-      isAPath = '/' `elem` name
-  -- Accept either foo.md or foo (but not foo/bar)
-  guard $ ".md" == toText ext || not isAPath
-  rightToMaybe $ parseZettelID $ toText name
+  let (fileName, ext) = splitExtension $ takeFileName fp
+  guard $ ".md" == toText ext
+  rightToMaybe $ parseZettelID (toText fileName)

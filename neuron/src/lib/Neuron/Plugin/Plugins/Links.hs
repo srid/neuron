@@ -109,14 +109,14 @@ parseQueryLink attrs url = do
   let conn = case Map.lookup "title" (Map.fromList attrs) of
         Just s -> if s == show Folgezettel then Folgezettel else def
         _ -> def
-  path <- determineLinkType url
+  path <- asMarkdownPath url
   zid <- getZettelID (toString path)
   pure (zid, conn)
   where
     -- Return .md file path, for the given link text.
     -- Supports "foo" or "foo.md", but not relative paths or URLs.
-    determineLinkType :: Text -> Maybe Text
-    determineLinkType s = do
+    asMarkdownPath :: Text -> Maybe Text
+    asMarkdownPath s = do
       -- Exclude relative URLs or paths.
       guard $ not $ "/" `T.isInfixOf` s || ":" `T.isInfixOf` s
       -- Add .md extension

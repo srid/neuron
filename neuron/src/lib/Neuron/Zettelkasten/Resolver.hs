@@ -14,7 +14,7 @@ import Data.Dependent.Map (DMap)
 import qualified Data.Map.Strict as Map
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
 import Neuron.Zettelkasten.Zettel (PluginZettelData)
-import Relude
+import Relude hiding (traceShowId)
 import qualified System.Directory.Contents.Types as DC
 
 -- | What does a Zettel ID refer to?
