@@ -110,16 +110,19 @@ parseQueryLink attrs url = do
         Just s -> if s == show Folgezettel then Folgezettel else def
         _ -> def
   path <- determineLinkType url
-  -- Allow raw filename (ending with ".md").
   zid <- getZettelID (toString path)
   pure (zid, conn)
   where
-    -- NOTE: This treats "foo.html" as zettel ref (why shouldn't it?), but not
-    -- "./foo.html"
+    -- Return .md file path, for the given link text.
+    -- Supports "foo" or "foo.md", but not relative paths or URLs.
     determineLinkType :: Text -> Maybe Text
     determineLinkType s = do
+      -- Exclude relative URLs or paths.
       guard $ not $ "/" `T.isInfixOf` s || ":" `T.isInfixOf` s
-      pure s
+      -- Add .md extension
+      if ".md" `T.isSuffixOf` s
+        then pure s
+        else pure (s <> ".md")
 
 preJsonStrip :: [((ZettelID, Connection), [Block])] -> [((ZettelID, Connection), [Block])]
 preJsonStrip conns =
