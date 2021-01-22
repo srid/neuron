@@ -28,6 +28,7 @@ module Data.Graph.Labelled
     bfsForestBackwards,
     obviateRootUnlessForest,
     induceOnEdge,
+    induceOnEdgeReplacing,
     induce,
     emap,
     vmap,

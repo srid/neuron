@@ -16,7 +16,6 @@ import Neuron.Frontend.Route (NeuronWebT)
 import qualified Neuron.Frontend.Widget.InvertedTree as IT
 import qualified Neuron.Plugin.Plugins.Links as Links
 import Neuron.Plugin.Type (Plugin (..))
-import Neuron.Zettelkasten.Connection (Connection (Folgezettel))
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.Zettel
@@ -38,7 +37,7 @@ enable z =
 
 routePluginData :: ZettelGraph -> ZettelC -> Forest Zettel
 routePluginData g (sansContent -> z) =
-  G.backlinkForest Folgezettel z g
+  G.uplinkForest z g
 
 render :: (DomBuilder t m, PostBuild t m) => Forest Zettel -> NeuronWebT t m ()
 render upTree = do

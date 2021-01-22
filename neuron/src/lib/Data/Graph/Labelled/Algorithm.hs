@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -136,13 +137,21 @@ induce f (LabelledGraph g v) =
     g' = LAM.induce f g
 
 -- | Like `induce` but operates on edges instead of vertices
-induceOnEdge :: Ord (VertexID v) => (e -> Bool) -> LabelledGraph v e -> LabelledGraph v e
-induceOnEdge f (LabelledGraph g v) =
+induceOnEdge :: (Eq e, Monoid e, Ord (VertexID v)) => (e -> Bool) -> LabelledGraph v e -> LabelledGraph v e
+induceOnEdge f =
+  induceOnEdgeReplacing (\x@(e, _, _) -> if f e then Just x else Nothing)
+
+-- | Like `induceOnEdge` but also replaces the edge label in the process
+induceOnEdgeReplacing ::
+  (Eq e, Monoid e, Ord (VertexID v), vid ~ VertexID v) =>
+  ((e, vid, vid) -> Maybe (e, vid, vid)) ->
+  LabelledGraph v e ->
+  LabelledGraph v e
+induceOnEdgeReplacing f (LabelledGraph g v) =
   LabelledGraph g' v
   where
     g' =
-      let es = mapMaybe (\(e, a, b) -> if f e then Nothing else Just (a, b)) $ LAM.edgeList g
-       in foldl' (\h (a, b) -> LAM.removeEdge a b h) g es
+      LAM.edges $ mapMaybe f $ LAM.edgeList g
 
 -- | Get the clusters in a graph, as a list of the mother vertices in each
 -- cluster.

@@ -14,8 +14,7 @@ module Neuron.Zettelkasten.Graph
     getZettels,
     getZettel,
     getConnection,
-    frontlinkForest,
-    backlinkForest,
+    uplinkForest,
     backlinks,
     backlinksMulti,
     categoryClusters,
@@ -28,23 +27,27 @@ import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
 import qualified Data.Set as Set
 import Data.Tree (Forest, flatten)
-import Neuron.Zettelkasten.Connection (Connection (Folgezettel), ContextualConnection)
+import Neuron.Zettelkasten.Connection (Connection (..), ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Zettel (Zettel, ZettelT (zettelID))
 import Relude
 
-frontlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
-frontlinkForest conn z =
-  G.obviateRootUnlessForest z
-    . G.bfsForestFrom [z]
-    . G.induceOnEdge ((== Just conn) . fmap fst)
-
-backlinkForest :: Connection -> Zettel -> ZettelGraph -> Forest Zettel
-backlinkForest conn z =
+-- | TOD: move to Links
+uplinkForest :: Zettel -> ZettelGraph -> Forest Zettel
+uplinkForest z =
   G.obviateRootUnlessForest z
     . G.bfsForestBackwards z
-    . G.induceOnEdge ((== Just conn) . fmap fst)
+    . G.induceOnEdgeReplacing selectEdge
+  where
+    selectEdge (mconn, z1, z2) =
+      case mconn of
+        Just (Folgezettel, _) ->
+          Just (mconn, z1, z2)
+        Just (FolgezettelInverse, _) ->
+          let ctx = mempty -- one $ B.Plain $ one $ B.Str "Folge Tag"
+           in Just (Just (Folgezettel, ctx), z2, z1)
+        _ -> Nothing
 
 backlinks ::
   (Maybe Connection -> Bool) ->

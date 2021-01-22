@@ -40,7 +40,7 @@ import Neuron.Frontend.Route.Data.Types (LinksData (..))
 import Neuron.Frontend.Widget (elNoSnippetSpan, elTime)
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
-  ( Connection (Folgezettel, OrdinaryConnection),
+  ( Connection (..),
     ContextualConnection,
   )
 import qualified Neuron.Zettelkasten.Graph as G
@@ -76,13 +76,17 @@ routePluginData g z _qs =
       backlinks = G.backlinks isJust (sansContent z) g
       backlinksUrls = P.getLinks `concatMap` fmap (snd . fst) backlinks
       allUrls = Set.toList $ Set.fromList $ noteUrls <> backlinksUrls
-      linkCache = buildQueryUrlCache (G.getZettels g) allUrls
+      linkCache = buildLinkCache (G.getZettels g) allUrls
    in LinksData linkCache backlinks
 
-type QueryUrlCache = Map Text (Either MissingZettel (Connection, Zettel))
+-- FIXME: This link cache can't be used on backinks, the connection is assumed
+-- to be from current zettel, whereas in backlinks, they originate from the
+-- individual backlinks. See `renderPanel` which is passed elNeuronPandoc that
+-- is passed this (hardcoded) cache.
+type LinkCache = Map Text (Either MissingZettel (Connection, Zettel))
 
-buildQueryUrlCache :: [Zettel] -> [([(Text, Text)], Text)] -> QueryUrlCache
-buildQueryUrlCache zs urlsWithAttrs =
+buildLinkCache :: [Zettel] -> [([(Text, Text)], Text)] -> LinkCache
+buildLinkCache zs urlsWithAttrs =
   Map.fromList $
     catMaybes $
       urlsWithAttrs <&> \(attrs, url) -> do
@@ -106,9 +110,8 @@ parseLinks z =
 
 parseQueryLink :: [(Text, Text)] -> Text -> Maybe (ZettelID, Connection)
 parseQueryLink attrs url = do
-  let conn = case Map.lookup "title" (Map.fromList attrs) of
-        Just s -> if s == show Folgezettel then Folgezettel else def
-        _ -> def
+  let conn :: Connection =
+        fromMaybe def $ readMaybe . toString =<< Map.lookup "title" (Map.fromList attrs)
   path <- asMarkdownPath url
   zid <- getZettelID (toString path)
   pure (zid, conn)
@@ -169,6 +172,7 @@ renderPanel elNeuronPandoc LinksData {..} = do
     elClass "nav" "ui attached segment deemphasized backlinksPane" $ do
       renderBacklinks backlinks
   where
+    -- TODO: Group links accordingly. Esp. separating out FolgezettelInverse
     renderBacklinks ::
       (DomBuilder t m, PostBuild t m) =>
       NonEmpty (ContextualConnection, Zettel) ->
@@ -229,19 +233,23 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
         text " "
     elAttr "span" ("class" =: "zettel-link" <> maybe mempty ("title" =:) linkTooltip) $ do
       let linkInnerHtml = fromMaybe (text zettelTitle) mInner
-      neuronRouteLink (Some $ Route_Zettel zettelSlug) mempty linkInnerHtml
-      elConnSuffix conn
+      elConnFlag conn $ neuronRouteLink (Some $ Route_Zettel zettelSlug) mempty linkInnerHtml
   where
     -- If there is custom inner text, put zettel title in tooltip.
     linkTooltip
       | isJust mInner = Just $ "Zettel: " <> zettelTitle
       | otherwise = Nothing
-    elConnSuffix :: DomBuilder t m => Maybe Connection -> m ()
-    elConnSuffix mconn =
-      case mconn of
-        Just Folgezettel -> elNoSnippetSpan mempty $ do
-          elAttr "sup" ("title" =: "Branching link (folgezettel)") $ text "ᛦ"
-        _ -> pure mempty
+    elConnFlag :: DomBuilder t m => Maybe Connection -> m () -> m ()
+    elConnFlag mconn w =
+      let folgeFlag = elNoSnippetSpan mempty $ do
+            elAttr "sup" ("title" =: "Branching link (folgezettel)") $ text "ᛦ"
+       in case mconn of
+            Just Folgezettel -> do
+              w >> folgeFlag
+            Just FolgezettelInverse -> do
+              folgeFlag >> w
+            _ ->
+              w
 
 -- TODO: Eventually refactor this function to reuse what's in renderZettelLink
 renderMissingZettelLink :: DomBuilder t m => ZettelID -> m ()
@@ -288,8 +296,10 @@ wikiLinkSpec =
     pLink =
       P.try $
         P.choice
-          [ -- Folgezettel link: [[[...]]]
+          [ -- Folgezettel links
             cmAutoLink Folgezettel <$> P.try (wikiLinkP 3),
+            cmAutoLink FolgezettelInverse <$> P.try (symbol '#' *> wikiLinkP 2),
+            cmAutoLink Folgezettel <$> P.try (wikiLinkP 2 <* symbol '#'),
             -- Cf link: [[...]]
             cmAutoLink OrdinaryConnection <$> P.try (wikiLinkP 2)
           ]
