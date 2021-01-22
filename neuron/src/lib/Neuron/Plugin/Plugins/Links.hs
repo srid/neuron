@@ -51,6 +51,7 @@ import qualified Neuron.Zettelkasten.Zettel as Z
 import Reflex.Dom.Core hiding (count, mapMaybe, tag)
 import Reflex.Dom.Pandoc (PandocBuilder, elPandocInlines)
 import Relude hiding (trace, traceShow, traceShowId)
+import Relude.Extra (groupBy)
 import qualified Text.Megaparsec as M
 import Text.Pandoc.Builder (Pandoc (Pandoc))
 import Text.Pandoc.Definition (Block, Inline)
@@ -172,21 +173,30 @@ renderPanel elNeuronPandoc LinksData {..} = do
     elClass "nav" "ui attached segment deemphasized backlinksPane" $ do
       renderBacklinks backlinks
   where
-    -- TODO: Group links accordingly. Esp. separating out FolgezettelInverse
     renderBacklinks ::
       (DomBuilder t m, PostBuild t m) =>
       NonEmpty (ContextualConnection, Zettel) ->
       NeuronWebT t m ()
-    renderBacklinks links = do
-      elClass "h3" "ui header" $ text "Backlinks"
-      elClass "ul" "backlinks" $ do
-        forM_ links $ \((conn, ctxList), zl) ->
-          el "li" $ do
-            renderZettelLink Nothing (Just conn) def zl
-            elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
-              forM_ ctxList $ \ctx -> do
-                elClass "li" "item" $ do
-                  void $ elNeuronPandoc $ Pandoc mempty [ctx]
+    renderBacklinks ungroupedLinks = do
+      let grouped :: [(Connection, NonEmpty (ContextualConnection, Zettel))] =
+            Map.toList $ groupBy (fst . fst) ungroupedLinks
+      forM_ grouped $ \(grpConn, links) -> do
+        elClass "h3" "ui header" $ backlinkType grpConn
+        elClass "ul" "backlinks" $ do
+          forM_ links $ \((conn, ctxList), zl) ->
+            el "li" $ do
+              renderZettelLink Nothing (Just conn) def zl
+              elAttr "ul" ("class" =: "context-list" <> "style" =: "zoom: 85%;") $ do
+                forM_ ctxList $ \ctx -> do
+                  elClass "li" "item" $ do
+                    void $ elNeuronPandoc $ Pandoc mempty [ctx]
+    backlinkType = \case
+      OrdinaryConnection ->
+        text "Backlinks"
+      Folgezettel ->
+        elAttr "span" ("title" =: "Backlinks from folgezettel parents") $ text "Uplinks"
+      FolgezettelInverse ->
+        elAttr "span" ("title" =: "Backlinks from folgezettel children") $ text "Downlinks"
 
 renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => LinksData -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ())
 renderHandleLink LinksData {..} url mInline = do

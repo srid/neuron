@@ -13,10 +13,13 @@ import Text.Read
 import Text.Show (Show (show))
 
 -- | Represent the connection between zettels
+--
+-- The order of constructors will reflect the order in backlinks panel (see
+-- Links plugin)
 data Connection
-  = Folgezettel
-  | FolgezettelInverse
+  = FolgezettelInverse
   | OrdinaryConnection
+  | Folgezettel
   deriving (Eq, Ord, Enum, Bounded, Generic)
 
 instance FromJSON Connection where

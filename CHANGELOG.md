@@ -13,6 +13,7 @@
   - link queries & tags are now plugins
 - Plugin:links
   - Labelled directional links (#514): `[[foo]]#` and `#[[foo]]`
+  - Backlinks panel now groups entries by connection type
 - Change default slug to use all lower-case (#527)
 - Reduce error verbosity (CLI & web) in the scenario of there being innumerous broken wiki-links.
 - CLI
@@ -74,7 +75,7 @@
   - Backlinks improvements
     - Backlinks panel now displays all kinds of backlinks (includig uplinks) for sake of completion.
 - Zettel format
-  - Wiki-style links: instead of `<foo>` you can now use `[[[foo]]]`; and instead of `<foo?cf>`, you can use `[[foo]]`. (#351)
+  - Wiki-style links: instead of `<foo>` you can now use `[[foo]]#`; and instead of `<foo?cf>`, you can use `[[foo]]`. (#351)
   - Support regular markdown links (#366)
   - Allow title as Zettel IDs (#399)
   - Drop support for legacy links (#366)
