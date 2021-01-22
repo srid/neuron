@@ -8,12 +8,7 @@ While you may use any text editor with neuron, the following extensions enable c
 VSCode is recommended for new users of neuron.
 :::
 
-These two extensions are useful when editing your Neuron notes in [Visual Studio Code](https://code.visualstudio.com/).
-
-* [vscode-memo](https://github.com/svsool/vscode-memo#memo)
-* [markdown-links](https://github.com/tchayen/markdown-links)
-
-Note that advanced features of neuron like [[Tag Queries]] will not be supported by either of these extensions. [LSP support](https://github.com/srid/neuron/issues/213) is ideal, but it has not been implemented by anyone yet.
+Use the [vscode-memo](https://github.com/svsool/vscode-memo#memo) extension when editing your Neuron notes in [Visual Studio Code](https://code.visualstudio.com/). For other useful extensions, consult the template repo ([`.vscode/extensions.json`](https://github.com/srid/neuron-template/blob/master/.vscode/extensions.json)) in [[Automatic Publishing]].
 
 ![demo](./static/vscode-title-id.gif){.ui .centered .large .image}
 
