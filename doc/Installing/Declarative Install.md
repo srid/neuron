@@ -28,4 +28,4 @@ In the future if you decide to upgrade neuron, simply change the revision hash t
 ## Systemd service
 
 If you use [home-manager](https://github.com/rycee/home-manager), you can also
-run neuron as a systemd service; see [[[home-manager systemd service]]].
+run neuron as a systemd service; see [[home-manager systemd service]]#.

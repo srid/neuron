@@ -21,4 +21,4 @@ If a [web app manifest](https://web.dev/add-manifest/) file named `static/manife
 
 ## Custom JavaScript / CSS
 
-[[[Custom JavaScript and CSS]]]
+[[Custom JavaScript and CSS]]#

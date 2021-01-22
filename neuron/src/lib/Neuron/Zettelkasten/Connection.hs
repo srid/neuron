@@ -13,12 +13,13 @@ import Text.Read
 import Text.Show (Show (show))
 
 -- | Represent the connection between zettels
+--
+-- The order of constructors will reflect the order in backlinks panel (see
+-- Links plugin)
 data Connection
-  = -- | A folgezettel points to a zettel that is conceptually a *part* of the
-    -- parent zettel.
-    Folgezettel
-  | -- | Any other ordinary connection (eg: "See also")
-    OrdinaryConnection
+  = FolgezettelInverse
+  | OrdinaryConnection
+  | Folgezettel
   deriving (Eq, Ord, Enum, Bounded, Generic)
 
 instance FromJSON Connection where
@@ -32,6 +33,8 @@ instance Default Connection where
 
 instance Semigroup Connection where
   -- A folgezettel link trumps all other kinds in that zettel.
+  FolgezettelInverse <> _ = FolgezettelInverse
+  _ <> FolgezettelInverse = FolgezettelInverse
   Folgezettel <> _ = Folgezettel
   _ <> Folgezettel = Folgezettel
   OrdinaryConnection <> OrdinaryConnection = OrdinaryConnection
@@ -39,11 +42,13 @@ instance Semigroup Connection where
 instance Show Connection where
   show = \case
     Folgezettel -> "folge"
+    FolgezettelInverse -> "folgeinv"
     OrdinaryConnection -> "cf"
 
 instance Read Connection where
   readsPrec _ s
     | s == show Folgezettel = [(Folgezettel, "")]
+    | s == show FolgezettelInverse = [(FolgezettelInverse, "")]
     | s == show OrdinaryConnection = [(OrdinaryConnection, "")]
     | otherwise = []
 
