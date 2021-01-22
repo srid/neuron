@@ -1,37 +1,24 @@
 # Linking
 
-To link to another zettel, you can use regular Markdown links, or use the
-special Wiki-link syntax by putting the [[id]] inside `[[..]]`:
+Although you may use regular Markdown links, neuron supports **wiki-links** that are often more convenient to use to link zettels. To link to a zettel using wiki-links, place that zettel's [[id]] inside `[[..]]`. For example,
 
 ```
-This is a zettel file, which links to another zettel:
+List of resources debunking Critical Race Theory (CRT):
 
 * [[New Discourses]]
 
-You can also use regular Markdown links:
+Note: You can also use regular Markdown links:
 
-* [new discourse](New Discourses.md)
+* [Lindsay's site](New Discourses.md)
 ```
 
 In [[Web interface]], neuron will automatically display the title of the
-linked zettel when using the wiki-link syntax.
+linked zettel.
 
-## Branching links
+## Folgezettel links
 
-Neuron supports branching links, which can be created using `[[[..]]]`:
-
-```
-This is a zettel file, which links (branches of) to another zettel:
-
-* [[[New Discourses]]]
-```
-
-These links are called a folgezettel link. They are like regular wiki-links discussed previously, except for the "folgezettel" label enabled by the 3-bracket syntax. When a zettel has a folgezettel relationship to another zettel, it is said to "branch of" (categorically) to the other zettel. Folgezetel relationships define the [[folgezettel-heterarchy]] of your zettel graph. 
-
-Branching links affect the linked zettel's [[Uplink Tree]] where the linking zettel is displayed.
-
-In short, use folgezettel links to curate the "structure" of your zettelkasten. When in doubt, use regular wiki-links, and then upgrade them to be folgezettel if necessary.
+Wiki-links may be labelled as "folgezettel" if you are writing a "structure note" (or hub note, or index note). See [[Folgezettel Links]].
 
 ## Advanced linking
 
-If you use the [[Tags]] plugin, you can link automatically based on the tag (see [[[Tag Queries]]]).
+If you are using the [[Tags]] plugin, you can link to multiple zettels matching a tag (see [[[Tag Queries]]]).

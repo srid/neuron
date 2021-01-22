@@ -2,8 +2,7 @@
 
 Neuron allows you to organically build a [[Heterarchy]] out of your Zettelkasten
 over time. When a zettel links (see [[Linking]]) to another, it "branches
-off"[^1] to that zettel ... using `[[[...]]]` (i.e, three brackets, instead
-of two).
+off"[^1] to that zettel ... using [[Folgezettel Links]]#.
 
 A folgezettel heterarchy differs from a traditional "category tree" in two key
 ways:

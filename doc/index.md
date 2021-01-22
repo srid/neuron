@@ -18,9 +18,10 @@ dirtree:
 ## External links
 
 * [Source code](https://github.com/srid/neuron)
-* [Announcements](https://www.srid.ca/neuron.html)
+* News
+    * [Release announcements](https://www.srid.ca/neuron.html)
+    * [Dev announcements](https://gab.com/groups/19445)
 * Community:
-    * [Microblog](https://gab.com/groups/19445)
     * [Forum](https://github.com/srid/neuron/discussions)
     * [Matrix Chat](https://app.element.io/#/room/#neuron:matrix.org)
-* [Sponsor the project](https://github.com/sponsors/srid)
+* [Sponsor Neuron](https://github.com/sponsors/srid)
