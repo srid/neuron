@@ -18,7 +18,7 @@ Here is a list of zettels tagged "walkthrough" on this very Zettelkasten:
 
 [[z:zettels?tag=walkthrough]]
 
-The above list was produced by the link query `[[z:zettels?tag=walkthrough]]`.[^folge]
+The above list was produced by the link query `[[z:zettels?tag=walkthrough]]`.
 
 ## Hierarchical tags
 
@@ -49,5 +49,3 @@ You can limit the amount of zettels to be shown in a query. This can be useful f
 ```
 
 [URI]: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
-
-[^folge]: Note that here we use `[[..]]` to not affect the [[folgezettel-heterarchy]] of the graph; whereas if we had used `[[[...]]]`, it would have formed the appropriate folgezettel connections to the listed notes (which is not what we want on *this* note).

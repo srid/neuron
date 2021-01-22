@@ -32,8 +32,8 @@ See [[searching]].
 
 ## Using a text editor
 
-See [[[editor]]]
+See [[editor]]#
 
 ## Web Interface
 
-[[[cerveau]]] provides a web interface to browse and edit your Neuron v1 notes.
+[[cerveau]]# provides a web interface to browse and edit your Neuron v1 notes.

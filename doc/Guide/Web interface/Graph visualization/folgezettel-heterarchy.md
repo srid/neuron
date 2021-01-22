@@ -14,7 +14,7 @@ ways:
 The heterarchy is displayed in the following places
 
 * [[impulse-feature]]: Full folgezettel heterarchy of the zettelkasten.
-* [[[Uplink Tree]]]: Subset of the above, branching off to the zettel.
+* [[Uplink Tree]]#: Subset of the above, branching off to the zettel.
 
 ## See also
 

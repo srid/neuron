@@ -11,7 +11,6 @@
 module Neuron.Zettelkasten.Zettel.Parser where
 
 import Data.Dependent.Map (DMap)
-import Data.TagTree (unTag)
 import qualified Data.Text as T
 import qualified Data.YAML as Y
 import Neuron.Markdown
@@ -46,8 +45,6 @@ parseZettel parser fn zid s pluginData =
     unparseableZettel err =
       let slug = mkDefaultSlug $ unZettelID zid
        in (Nothing,) $ Left $ Zettel zid slug fn "Unknown" False Nothing False (s, err) pluginData
-    _dirFolgezettelMarkdown (unTag -> tag) =
-      "\n\n" <> "[[[z:zettels?tag=" <> tag <> "/*]]]"
     mkDefaultSlug :: Text -> Slug
     mkDefaultSlug ss =
       foldl' (\s' x -> T.replace x "-" s') (T.toLower ss) (charsDisallowedInURL <> [" "])

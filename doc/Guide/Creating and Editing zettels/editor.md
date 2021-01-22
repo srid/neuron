@@ -10,8 +10,8 @@ VSCode is recommended for new users of neuron.
 
 These two extensions are useful when editing your Neuron notes in [Visual Studio Code](https://code.visualstudio.com/).
 
-* [vscode-memo](https://github.com/svsool/vscode-memo#memo) - supports both kinds of wikilinks
-* [markdown-links](https://github.com/tchayen/markdown-links) - supports only `[[..]]` style links, [but not folgezettel](https://github.com/tchayen/markdown-links/issues/59) (`[[[...]]]`).
+* [vscode-memo](https://github.com/svsool/vscode-memo#memo)
+* [markdown-links](https://github.com/tchayen/markdown-links)
 
 Note that advanced features of neuron like [[Tag Queries]] will not be supported by either of these extensions. [LSP support](https://github.com/srid/neuron/issues/213) is ideal, but it has not been implemented by anyone yet.
 

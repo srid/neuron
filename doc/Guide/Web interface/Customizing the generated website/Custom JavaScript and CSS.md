@@ -6,4 +6,4 @@ You can add custom JavaSript or CSS code to the `<head>` element of the generate
 
 Here are some of the interesting things you can do with this:
 
-[[[z:zettels?tag=custom-head-recipe]]]
+[[z:zettels?tag=custom-head-recipe]]#

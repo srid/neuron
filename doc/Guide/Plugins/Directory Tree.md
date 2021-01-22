@@ -76,7 +76,7 @@ date: 2020-12-31
 
 # Home
 
-I'm working on some [[[HomeProjects]]] right now.
+I'm working on some [[HomeProjects]]# right now.
 ```
 
 ```
@@ -123,9 +123,9 @@ tags:
 
 # All Projects
 
-Right now, my [[[WorkProjects]]] are taking most of
+Right now, my [[WorkProjects]]# are taking most of
 my focus and energy, and not leaving much time to focus
-on my [[[HomeProjects]]].
+on my [[HomeProjects]]#.
 ```
 
 ## Disabling directory listing

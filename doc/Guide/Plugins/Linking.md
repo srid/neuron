@@ -21,4 +21,4 @@ Wiki-links may be labelled as "folgezettel" if you are writing a "structure note
 
 ## Advanced linking
 
-If you are using the [[Tags]] plugin, you can link to multiple zettels matching a tag (see [[[Tag Queries]]]).
+If you are using the [[Tags]] plugin, you can link to multiple zettels matching a tag (see [[Tag Queries]]#).

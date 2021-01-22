@@ -32,18 +32,14 @@ neuron gen -w
 
 Leave this command running in one terminal, and then use `neuron open` to directly open the locally generated HTML site.
 
-:::{.ui .warning .message}
-When using `neuron open` to access the generated site *locally*, do note that [[impulse-feature]] will not function, due to web browser security restrictions. The static version of Impulse will however work. The dynamic version of Impulse will work when your static site is served by a HTTP server, such as `neuron gen -s`.
-:::
-
 ## Publishing to the web
 
-See [[[Automatic Publishing]]]
+See [[Automatic Publishing]]#
 
 ## Features 
 
-* [[[configuration]]]
-* [[[2014601]]]
-* [[[Customizing the generated website]]]
-* [[[Graph visualization]]]
+* [[configuration]]#
+* [[2014601]]#
+* [[Customizing the generated website]]#
+* [[Graph visualization]]#
 

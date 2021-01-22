@@ -26,7 +26,7 @@ slug: foo-bar
 
 ## Pinning
 
-Zettels can be pinned in [[impulse-feature]] so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[[Tags]]]) to it.
+Zettels can be pinned in [[impulse-feature]] so that they appear at the top. To pin a zettel, add the "pinned" tag (see [[Tags]]#) to it.
 
 ```markdown
 ---
@@ -49,5 +49,5 @@ unlisted: true
 
 You can explicitly specify a title using the `title` metadata; otherwise, Neuron will infer it from the Markdown heading or [[id]].
 
-The metadata key `tags` or `keywords` can be used to specify tags, although neuron supports inline tags as well (see [[[Tags]]]).
+The metadata key `tags` or `keywords` can be used to specify tags, although neuron supports inline tags as well (see [[Tags]]#).
 
