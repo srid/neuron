@@ -6,11 +6,11 @@ special Wiki-link syntax by putting the [[id]] inside `[[..]]`:
 ```
 This is a zettel file, which links to another zettel:
 
-* [[ef3dke98]]
+* [[New Discourses]]
 
 You can also use regular Markdown links:
 
-* [My zettel](ef3dke98.md)
+* [new discourse](New Discourses.md)
 ```
 
 In [[Web interface]], neuron will automatically display the title of the
@@ -23,16 +23,14 @@ Neuron supports branching links, which can be created using `[[[..]]]`:
 ```
 This is a zettel file, which links (branches of) to another zettel:
 
-* [[[ef3dke98]]]
+* [[[New Discourses]]]
 ```
 
-The 3-bracket syntax creates a special link (called a folgezettel) to the
-specified zettel. When a zettel has a folgezettel relationship to another
-zettel, it is said to "branch of" to the other zettel. Folgezetel relationships
-define the [[folgezettel-heterarchy]] of your zettel graph. 
+These links are called a folgezettel link. They are like regular wiki-links discussed previously, except for the "folgezettel" label enabled by the 3-bracket syntax. When a zettel has a folgezettel relationship to another zettel, it is said to "branch of" (categorically) to the other zettel. Folgezetel relationships define the [[folgezettel-heterarchy]] of your zettel graph. 
 
-Branching links affect the linked zettel's [[Uplink Tree]] where the linking
-zettel is displayed.
+Branching links affect the linked zettel's [[Uplink Tree]] where the linking zettel is displayed.
+
+In short, use folgezettel links to curate the "structure" of your zettelkasten. When in doubt, use regular wiki-links, and then upgrade them to be folgezettel if necessary.
 
 ## Advanced linking
 
