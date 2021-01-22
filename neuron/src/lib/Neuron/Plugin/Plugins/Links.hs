@@ -241,8 +241,8 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
       | otherwise = Nothing
     elConnFlag :: DomBuilder t m => Maybe Connection -> m () -> m ()
     elConnFlag mconn w =
-      let folgeFlag = elNoSnippetSpan mempty $ do
-            elAttr "sup" ("title" =: "Branching link (folgezettel)") $ text "ᛦ"
+      let folgeFlag =
+            elNoSnippetSpan ("title" =: "Folgezettel" <> "style" =: "user-select: none; color: gray") $ text "#"
        in case mconn of
             Just Folgezettel -> do
               w >> folgeFlag
