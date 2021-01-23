@@ -35,6 +35,7 @@ import qualified Data.Set as Set
 import Data.Some
 import Data.Tagged (Tagged (Tagged), untag)
 import qualified Data.Text as T
+import qualified Data.Time.DateMayTime as DMT
 import Neuron.Frontend.Route (NeuronWebT, Route (Route_Zettel), neuronRouteLink)
 import Neuron.Frontend.Route.Data.Types (LinksData (..))
 import Neuron.Frontend.Widget (elNoSnippetSpan, elTime)
@@ -78,7 +79,8 @@ routePluginData g z _qs =
       backlinksUrls = P.getLinks `concatMap` fmap (snd . fst) backlinks
       allUrls = Set.toList $ Set.fromList $ noteUrls <> backlinksUrls
       linkCache = buildLinkCache (G.getZettels g) allUrls
-   in LinksData linkCache backlinks
+      backlinksSorted = sortOn snd backlinks
+   in LinksData linkCache backlinksSorted
 
 -- FIXME: This link cache can't be used on backinks, the connection is assumed
 -- to be from current zettel, whereas in backlinks, they originate from the
@@ -245,10 +247,13 @@ renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
       let linkInnerHtml = fromMaybe (text zettelTitle) mInner
       elConnFlag conn $ neuronRouteLink (Some $ Route_Zettel zettelSlug) mempty linkInnerHtml
   where
-    -- If there is custom inner text, put zettel title in tooltip.
-    linkTooltip
-      | isJust mInner = Just $ "Zettel: " <> zettelTitle
-      | otherwise = Nothing
+    linkTooltip = do
+      case (mInner, zettelDate) of
+        -- If using custom link text, put zettel title in tooltip
+        (Just _inner, _) -> Just $ "Zettel: " <> zettelTitle
+        -- Otherwise use date if any.
+        (_, Just dt) -> Just $ DMT.formatDateMayTime dt
+        _ -> Nothing
     elConnFlag :: DomBuilder t m => Maybe Connection -> m () -> m ()
     elConnFlag mconn w =
       let folgeFlag =
