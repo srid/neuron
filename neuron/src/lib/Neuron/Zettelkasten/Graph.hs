@@ -38,16 +38,21 @@ uplinkForest :: Zettel -> ZettelGraph -> Forest Zettel
 uplinkForest z =
   G.obviateRootUnlessForest z
     . G.bfsForestBackwards z
-    . G.induceOnEdgeReplacing selectEdge
-  where
-    selectEdge (mconn, z1, z2) =
-      case mconn of
-        Just (Folgezettel, _) ->
-          Just (mconn, z1, z2)
-        Just (FolgezettelInverse, _) ->
-          let ctx = mempty -- one $ B.Plain $ one $ B.Str "Folge Tag"
-           in Just (Just (Folgezettel, ctx), z2, z1)
-        _ -> Nothing
+    . folgezettelSubGraph
+
+folgezettelSubGraph :: ZettelGraph -> ZettelGraph
+folgezettelSubGraph =
+  G.induceOnEdgeReplacing selectFolgezettelEdge
+
+selectFolgezettelEdge :: (Maybe ContextualConnection, c, c) -> Maybe (Maybe ContextualConnection, c, c)
+selectFolgezettelEdge (mconn, z1, z2) =
+  case mconn of
+    Just (Folgezettel, _) ->
+      Just (mconn, z1, z2)
+    Just (FolgezettelInverse, _) ->
+      let ctx = mempty -- one $ B.Plain $ one $ B.Str "Folge Tag"
+       in Just (Just (Folgezettel, ctx), z2, z1)
+    _ -> Nothing
 
 backlinks ::
   (Maybe Connection -> Bool) ->
@@ -73,9 +78,10 @@ backlinksMulti conn zs g =
           (y, f y)
 
 categoryClusters :: ZettelGraph -> [Forest Zettel]
-categoryClusters (G.induceOnEdge ((== Just Folgezettel) . fmap fst) -> g) =
-  let cs :: [[Zettel]] = sortMothers $ G.clusters g
-      cleanClusters = flip G.bfsForestFrom g <$> cs
+categoryClusters g =
+  let folgeGraph = folgezettelSubGraph g
+      cs :: [[Zettel]] = sortMothers $ G.clusters folgeGraph
+      cleanClusters = flip G.bfsForestFrom folgeGraph <$> cs
       clusteredZettels :: [Zettel] =
         (flatten `concatMap`) `concatMap` cleanClusters
       unclustered =
