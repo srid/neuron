@@ -101,7 +101,7 @@ getZettelDirTags Zettel {..} =
 renderPanel :: (DomBuilder t m, PostBuild t m) => DirZettelVal -> NeuronWebT t m ()
 renderPanel DirZettelVal {..} = do
   when (dirtreemetaDisplay dirZettelValMeta) $ do
-    when (isJust dirZettelValParent || not (null dirZettelValChildren)) $ do
+    unless (null dirZettelValChildren) $ do
       elClass "nav" "ui attached segment dirfolge" $ do
         divClass "ui list" $ do
           whenJust dirZettelValParent $ \parZ ->
