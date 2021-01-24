@@ -21,7 +21,7 @@ neuronSearchScript = $(staticWhich "neuron-search")
 
 searchScriptArgs :: SearchCommand -> [String]
 searchScriptArgs SearchCommand {..} =
-  let extensionPattern = "/*{.md}"
+  let extensionPattern = "**/*{.md}"
       searchByArgs =
         case searchBy of
           SearchByTitle -> ["(^# )|(^title: )", "2", extensionPattern]
