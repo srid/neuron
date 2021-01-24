@@ -66,8 +66,11 @@ commandParser defaultNotesDir now = do
       hsubparser $
         mconcat
           [ command "rib" (info genCommand $ progDesc "Alias to gen"),
+            command "lsp" $ info lspCommand $ progDesc "Run LSP server (WIP)", -- LSP is WIP
             internal
           ]
+    lspCommand =
+      pure LSP
     newCommand = do
       idScheme <-
         fmap (maybe (Some IDSchemeHash) (Some . IDSchemeCustom)) $

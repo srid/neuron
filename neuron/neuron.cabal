@@ -1,7 +1,7 @@
 cabal-version: 2.4
 name: neuron
 -- This version must be in sync with what's in Default.dhall
-version: 1.9.6.4
+version: 1.9.6.5
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -165,7 +165,8 @@ common app-common
     warp,
     async,
     co-log,
-    ansi-terminal
+    ansi-terminal,
+    lsp
 
 -- Everything below will have to be stripped away, if whoever uses this repo
 -- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
@@ -183,6 +184,7 @@ library neuron-app-lib
     System.Directory.Contents.Extra
     Options.Applicative.Extra
     Neuron.Backend
+    Neuron.LSP
     Neuron.Reactor
     Neuron.Reactor.Build
     Neuron.CLI.App
