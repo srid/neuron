@@ -29,6 +29,7 @@ import Neuron.CLI.Search (interactiveSearch)
 import Neuron.CLI.Types
 import qualified Neuron.Cache as Cache
 import qualified Neuron.Cache.Type as Cache
+import qualified Neuron.LSP as LSP
 import qualified Neuron.Reactor as Reactor
 import qualified Neuron.Version as Version
 import qualified Neuron.Zettelkasten.Graph as G
@@ -60,6 +61,8 @@ run act = do
 runAppCommand :: (Bool -> App ()) -> App ()
 runAppCommand genAct = do
   getCommand >>= \case
+    LSP -> do
+      LSP.lspServer
     Gen GenCommand {..} -> do
       case serve of
         Just (host, port) -> do
