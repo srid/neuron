@@ -46,6 +46,28 @@ jobs:
       - name: Get current date and time
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
+      # advance the nightly tag to point to the current master commit
+      - name: Advance nightly tag
+        uses: actions/github-script@v3
+        if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+                await github.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: "tags/nightly"
+                })
+            } catch (e) {
+              console.log("The nightly tag doesn't exist yet: " + e)
+            }
+            await github.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "refs/tags/nightly",
+              sha: context.sha
+            })
       - name: Upload bundle to nightly release
         uses: meeDamian/github-release@v2.0.3
         if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
