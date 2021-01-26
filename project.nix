@@ -39,9 +39,6 @@ let
     pandoc-link-context = thunkSource ./dep/pandoc-link-context;
     directory-contents = thunkSource ./dep/directory-contents;
     reflex-fsnotify = thunkSource ./dep/reflex-fsnotify;
-    co-log = thunkSource ./dep/co-log;
-    chronos = thunkSource ./dep/chronos;
-    cm = thunkSource ./dep/commonmark;
   };
 
   searchBuilder = ''
@@ -66,22 +63,6 @@ let
     reflex-fsnotify = 
       # Jailbreak to allow newer base
       doJailbreak (self.callCabal2nix "reflex-fsnotify" sources.reflex-fsnotify {});
-    
-
-    commonmark = self.callCabal2nix "commonmark" (sources.cm + "/commonmark") {};
-    commonmark-pandoc = self.callCabal2nix "commonmark-pandoc" (sources.cm + "/commonmark-pandoc") {};
-    commonmark-extensions = self.callCabal2nix "commonmark-extensions" (sources.cm + "/commonmark-extensions") {};
-    # Because co-log (and chronos) is broken on nixpkgs
-    co-log-core =
-      fuckSymlinkAbuse (self.callCabal2nix "co-log-core" (sources.co-log + "/co-log-core") {});
-    co-log =
-      unfuckCoLog (fuckSymlinkAbuse 
-        (self.callCabal2nix "co-log" (sources.co-log + "/co-log") {})
-      );
-    chronos =
-      # Jailbreak to work with whatever aeson
-      # Chronos' tests are fucked
-      dontCheck (doJailbreak (self.callCabal2nix "chronos" sources.chronos {}));
 
     # Test fails on pkgsMusl
     # https://github.com/hslua/hslua/issues/67
