@@ -6,10 +6,6 @@ Although you may use regular Markdown links, neuron supports **wiki-links** that
 List of resources debunking Critical Race Theory (CRT):
 
 * [[New Discourses]]
-
-Note: You can also use regular Markdown links:
-
-* [Lindsay's site](New Discourses.md)
 ```
 
 In [[Web interface]], neuron will automatically display the title of the
