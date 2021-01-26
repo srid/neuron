@@ -153,6 +153,6 @@ data Command
     Query QueryCommand
   | -- | Run site generation
     Gen GenCommand
-  | -- | LSP server 
+  | -- | LSP server
     LSP
   deriving (Eq, Show)
