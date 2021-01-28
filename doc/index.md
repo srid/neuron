@@ -20,8 +20,8 @@ dirtree:
 * [Source code](https://github.com/srid/neuron)
 * News
     * [Release announcements](https://www.srid.ca/neuron.html)
-    * [Dev announcements](https://gab.com/groups/19445)
+    * [Dev announcements](https://gab.com/groups/19445) (*requires sign-in*)
 * Community:
     * [Forum](https://github.com/srid/neuron/discussions)
-    * [Matrix Chat](https://app.element.io/#/room/#neuron:matrix.org)
+    * [Matrix Chat](https://app.element.io/#/room/#neuron:matrix.org) (*more active*)
 * [Sponsor Neuron](https://github.com/sponsors/srid)
