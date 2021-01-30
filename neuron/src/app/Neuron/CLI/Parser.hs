@@ -96,11 +96,9 @@ commandParser defaultNotesDir now = do
     queryCommand = do
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
       query <-
-        fmap
-          CliQuery_ById
-          ( option zettelIDReader (long "id")
-          )
+        fmap CliQuery_ById (option zettelIDReader (long "id"))
           <|> fmap (const CliQuery_Zettels) (switch $ long "zettels" <> help "Get all zettels")
+          <|> fmap (const CliQuery_Tags) (switch $ long "tags" <> help "Get all tags (fails if tags plugin is not enabled)")
           <|> fmap
             CliQuery_Graph
             ( fmap
