@@ -13,6 +13,7 @@ module Neuron.CLI.Parser
 where
 
 import Data.Some (Some (..))
+import qualified Data.TagTree as TagTree
 import Data.Time (LocalTime)
 import Data.Time.DateMayTime
   ( DateMayTime,
@@ -96,9 +97,10 @@ commandParser defaultNotesDir now = do
     queryCommand = do
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
       query <-
-        fmap CliQuery_ById (option zettelIDReader (long "id"))
+        fmap CliQuery_ById (option zettelIDReader (long "id" <> metavar "ID" <> help "Get a zettel by its ID"))
           <|> fmap (const CliQuery_Zettels) (switch $ long "zettels" <> help "Get all zettels")
           <|> fmap (const CliQuery_Tags) (switch $ long "tags" <> help "Get all tags (fails if tags plugin is not enabled)")
+          <|> fmap (CliQuery_ByTag . TagTree.Tag) (strOption $ long "tag" <> metavar "TAG" <> help "Get zettels by tag (fails if tags plugin is not enabled)")
           <|> fmap
             CliQuery_Graph
             ( fmap

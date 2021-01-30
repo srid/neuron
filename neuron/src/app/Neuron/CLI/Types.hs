@@ -40,6 +40,7 @@ import Colog
     log,
   )
 import Data.Some (Some (..))
+import Data.TagTree (Tag)
 import Data.Time.DateMayTime
   ( DateMayTime,
   )
@@ -133,8 +134,9 @@ data CliQuery
   = CliQuery_Graph (Some Q.GraphQuery)
   | CliQuery_ById ZettelID
   | CliQuery_Zettels
-  | -- HACK: This should ideally be decoupled into the Tags plugin.
+  | -- HACK: These should ideally be decoupled into the Tags plugin.
     CliQuery_Tags
+  | CliQuery_ByTag Tag
   deriving (Eq, Show)
 
 data QueryCommand = QueryCommand

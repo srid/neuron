@@ -17,6 +17,7 @@ import qualified Data.Aeson.Text as Aeson
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Some (Some (Some), withSome)
+import qualified Data.TagTree as TagTree
 import Neuron.CLI.Logging (Message)
 import Neuron.CLI.Types
 import qualified Neuron.Cache as Cache
@@ -51,6 +52,15 @@ runQuery QueryCommand {..} = do
       if Some Tags `Map.member` plugins
         then do
           let result = Set.unions $ Tags.getZettelTags <$> G.getZettels _neuronCache_graph
+          putLTextLn $ Aeson.encodeToLazyText result
+        else fail "tags plugin is not enabled in neuron.dhall"
+    CliQuery_ByTag tag -> do
+      let plugins = Config.getPlugins _neuronCache_config
+      if Some Tags `Map.member` plugins
+        then do
+          let q = TagTree.mkDefaultTagQuery $ one $ TagTree.mkTagPatternFromTag tag
+              zs = G.getZettels _neuronCache_graph
+              result = Tags.zettelsByTag Tags.getZettelTags zs q
           putLTextLn $ Aeson.encodeToLazyText result
         else fail "tags plugin is not enabled in neuron.dhall"
     CliQuery_Graph someQ ->
