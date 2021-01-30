@@ -55,5 +55,5 @@ runQuery QueryCommand {..} = do
         else fail "tags plugin is not enabled in neuron.dhall"
     CliQuery_Graph someQ ->
       withSome someQ $ \q -> do
-        let result = Q.runGraphQuery _neuronCache_graph q
+        result <- either (fail . show) pure $ Q.runGraphQuery _neuronCache_graph q
         putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result _neuronCache_errors
