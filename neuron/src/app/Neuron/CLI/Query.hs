@@ -38,6 +38,9 @@ runQuery QueryCommand {..} = do
     CliQuery_ById zid -> do
       let result = G.getZettel zid _neuronCache_graph
       putLTextLn $ Aeson.encodeToLazyText result
+    CliQuery_Zettels -> do
+      let result = G.getZettels _neuronCache_graph
+      putLTextLn $ Aeson.encodeToLazyText result
     CliQuery_Graph someQ ->
       withSome someQ $ \q -> do
         let result = Q.runGraphQuery _neuronCache_graph q

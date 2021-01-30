@@ -100,6 +100,7 @@ commandParser defaultNotesDir now = do
           CliQuery_ById
           ( option zettelIDReader (long "id")
           )
+          <|> fmap (const CliQuery_Zettels) (switch $ long "zettels" <> help "Get all zettels")
           <|> fmap
             CliQuery_Graph
             ( fmap

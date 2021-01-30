@@ -132,6 +132,7 @@ newtype OpenCommand = OpenCommand
 data CliQuery
   = CliQuery_Graph (Some Q.GraphQuery)
   | CliQuery_ById ZettelID
+  | CliQuery_Zettels
   deriving (Eq, Show)
 
 data QueryCommand = QueryCommand
