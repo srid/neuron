@@ -97,11 +97,11 @@ commandParser defaultNotesDir now = do
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
       query <-
         fmap
-          Left
+          CliQuery_ById
           ( option zettelIDReader (long "id")
           )
           <|> fmap
-            Right
+            CliQuery_Graph
             ( fmap
                 (const $ Some Q.GraphQuery_Id)
                 ( switch $

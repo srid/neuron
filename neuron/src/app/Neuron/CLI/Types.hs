@@ -28,6 +28,7 @@ module Neuron.CLI.Types
     SearchBy (..),
     SearchCommand (..),
     OpenCommand (..),
+    CliQuery (..),
     QueryCommand (..),
     GenCommand (..),
   )
@@ -128,10 +129,15 @@ newtype OpenCommand = OpenCommand
   }
   deriving (Eq, Show)
 
+data CliQuery
+  = CliQuery_Graph (Some Q.GraphQuery)
+  | CliQuery_ById ZettelID
+  deriving (Eq, Show)
+
 data QueryCommand = QueryCommand
   { -- Use cache instead of building the zettelkasten from scratch
     cached :: Bool,
-    query :: Either ZettelID (Some Q.GraphQuery)
+    query :: CliQuery
   }
   deriving (Eq, Show)
 
