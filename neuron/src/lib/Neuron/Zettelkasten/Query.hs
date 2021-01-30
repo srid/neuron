@@ -35,24 +35,20 @@ graphQueryResultJson ::
   forall r.
   (ToJSON (GraphQuery r)) =>
   GraphQuery r ->
-  Either MissingZettel r ->
-  -- Zettels that cannot be parsed by neuron (and as such are excluded from the graph)
+  r ->
   Map ZettelID ZettelIssue ->
   Value
-graphQueryResultJson q er skippedZettels =
+graphQueryResultJson q r errors =
   toJSON $
     object
       [ "query" .= toJSON q,
-        either
-          (\e -> "error" .= toJSON e)
-          (\r -> "result" .= resultJson r)
-          er,
-        "skipped" .= skippedZettels
+        "result" .= resultJson r,
+        "errors" .= errors
       ]
   where
     resultJson :: r -> Value
-    resultJson r = case q of
+    resultJson r' = case q of
       GraphQuery_Id ->
-        toJSON r
+        toJSON r'
       GraphQuery_BacklinksOf _ _ ->
-        toJSON r
+        toJSON r'

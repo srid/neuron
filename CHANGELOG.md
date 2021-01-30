@@ -19,6 +19,7 @@
 - CLI
   - `neuron rib` is renamed to `neuron gen` (neuron has migrated from rib/shake to reflex)
   - `neuron search`: full-text search uses exact matching (#526)
+  - `neuron query`: query CLI interface has been changed (see docs)
 - Performance improvements:
   - Improve incremental generation performance (`-w) (#522)
 

@@ -2,18 +2,42 @@
 
 Use the `query` command to query your Zettelkasten and return the matches in JSON format. 
 
-```bash
-# Returns all zettels
-neuron query
-```
+## Querying all zettels
 
-Use `jq` to extract needed information from the JSON output. For example, to
-extract only the IDs:
+To retrieve the metadata (sans content) of all zettels in your Zettelkasten:
 
 ```bash
-$ neuron query | jq -r '.result | .vertices | .[] | .ID'
-index
-Tag Queries
-extras
-$
+neuron query --zettels
 ```
+
+You can use [`jq`][jq] to further process the JSON result. For eg., to print a list of zettel titles:
+
+```bash
+ neuron query --zettels | jq ".[].Title"
+ ```
+
+## Querying a single zettel
+
+To retrieve the metadata for a zettel by its [[id]]:
+
+```bash
+neuron query --id=index
+```
+
+## Querying entire Zettelkasten graph
+
+```bash
+neuron query --graph
+```
+
+## Other queries
+
+- `neuron query --backlinks-of ID`
+- `neuron query --uplinks-of ID`
+- `neuron query --tags` ([[Tags]] must be enabled)
+
+## Fast querying
+
+Pass the `--cached` argument if you want the query to run instantly, by reading from the local cache. To make sure that the cache remains up-to-date, you must be running `neuron gen` as a daemon.
+
+[jq]: https://stedolan.github.io/jq/

@@ -12,8 +12,6 @@ module Neuron.CLI.App
 where
 
 import Control.Concurrent.Async (race_)
-import qualified Data.Aeson.Text as Aeson
-import Data.Some (withSome)
 import Data.Tagged
 import Data.Time
   ( getCurrentTime,
@@ -25,15 +23,11 @@ import qualified Neuron.CLI.Logging as Logging
 import Neuron.CLI.New (newZettelFile)
 import Neuron.CLI.Open (openLocallyGeneratedFile)
 import Neuron.CLI.Parser (commandParser)
+import Neuron.CLI.Query (runQuery)
 import Neuron.CLI.Search (interactiveSearch)
 import Neuron.CLI.Types
-import qualified Neuron.Cache as Cache
-import qualified Neuron.Cache.Type as Cache
 import qualified Neuron.LSP as LSP
-import qualified Neuron.Reactor as Reactor
 import qualified Neuron.Version as Version
-import qualified Neuron.Zettelkasten.Graph as G
-import qualified Neuron.Zettelkasten.Query as Q
 import Options.Applicative
 import Relude
 import System.Directory (getCurrentDirectory)
@@ -77,22 +71,7 @@ runAppCommand genAct = do
       newZettelFile newCommand
     Open openCommand ->
       openLocallyGeneratedFile openCommand
-    Query QueryCommand {..} -> do
-      Cache.NeuronCache {..} <-
-        fmap Cache.stripCache $
-          if cached
-            then Cache.getCache
-            else do
-              Reactor.loadZettelkasten >>= \case
-                Left e -> fail $ toString e
-                Right (ch, _, _) -> pure ch
-      case query of
-        Left zid -> do
-          let result = G.getZettel zid _neuronCache_graph
-          putLTextLn $ Aeson.encodeToLazyText result
-        Right someQ ->
-          withSome someQ $ \q -> do
-            let result = Q.runGraphQuery _neuronCache_graph q
-            putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result _neuronCache_errors
+    Query queryCommand -> do
+      runQuery queryCommand
     Search searchCmd -> do
       interactiveSearch searchCmd
