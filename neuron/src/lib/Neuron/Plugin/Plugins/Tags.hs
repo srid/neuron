@@ -59,7 +59,7 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (count, mapMaybe, tag)
 import Reflex.Dom.Pandoc (PandocBuilder)
-import Relude hiding (trace, traceShow, traceShowId)
+import Relude
 import Text.Pandoc.Definition (Inline, Pandoc)
 import qualified Text.Pandoc.Util as Pandoc
 import qualified Text.Parsec as P
@@ -239,8 +239,9 @@ renderQueryResult = \case
       renderTagTree $ TagTree.foldTagTree $ TagTree.tagTree res
   TagQuery_TagZettel tag :=> Identity () ->
     renderInlineTag tag mempty $ do
-      text "#"
-      text $ unTag tag
+      elClass "code" "inline-tag" $ do
+        text "#"
+        text $ unTag tag
   where
     -- TODO: Instead of doing this here, group the results in runQuery itself.
     groupZettelsByTagsMatching pats matches =
@@ -320,10 +321,14 @@ parseTagQuerys myaml z =
         catMaybes $
           allUrls <&> \(attrs, url) -> do
             parseQueryLink attrs url
-      tags = fromRight Set.empty $ case myaml of
+      tagsFromYaml = fromRight Set.empty $ case myaml of
         Nothing -> pure Set.empty
         Just yaml -> Set.fromList <$> M.runYamlParser (tagsParser yaml)
-      tagsData = ZettelTags tags tagLinks
+      inlineTags = Set.fromList $
+        flip fmapMaybe tagLinks $ \case
+          Some (TagQuery_TagZettel t) -> Just t
+          _ -> Nothing
+      tagsData = ZettelTags (tagsFromYaml <> inlineTags) tagLinks
    in z {zettelPluginData = DMap.insert Tags (Identity tagsData) (zettelPluginData z)}
 
 tagsParser :: Y.Node Y.Pos -> Y.Parser [Tag]
