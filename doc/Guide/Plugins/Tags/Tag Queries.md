@@ -48,4 +48,8 @@ You can limit the amount of zettels to be shown in a query. This can be useful f
 [[z:zettels?tag=**&limit=2&timeline]]
 ```
 
+## Limitations of tag queries
+
+Non-ascii tags must be URI encoded when using in tag queries. See [this comment](https://github.com/srid/neuron/issues/446#issuecomment-720001775). Alternatively, if tagging in your case is semantically equivalent to linking, you may use [[Folgezettel Links]].
+
 [URI]: https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
