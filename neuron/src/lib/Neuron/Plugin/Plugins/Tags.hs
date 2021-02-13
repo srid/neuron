@@ -221,16 +221,16 @@ renderQueryResult = \case
               forM_ zettelGrp $ \z ->
                 el "li" $
                   Links.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z
-        else el "ul" $ do
+        else divClass "ui list" $ do
           let resToDisplay =
                 case zettelsviewLimit view of
                   Nothing -> res
                   Just (naturalToInt -> limit) -> take limit res
           forM_ resToDisplay $ \z -> do
-            el "li" $
+            divClass "item" $
               Links.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z
           when (length resToDisplay /= length res) $ do
-            el "li" $
+            divClass "item" $
               elClass "span" "ui grey text" $ do
                 text $ "(displaying only " <> show (length resToDisplay) <> " out of " <> show (length res) <> " zettels)"
   q@(TagQuery_Tags _) :=> Identity res -> do
