@@ -22,6 +22,8 @@
   - `neuron query`: query CLI interface has been changed (see docs)
 - Performance improvements:
   - Improve incremental generation performance (`-w) (#522)
+- Bug fixes
+  - Fix a bug where folgezettel relationship is not established if a note also has non-folgezettel links to the same target
 
 ## Unreleased (v1 + v2)
 

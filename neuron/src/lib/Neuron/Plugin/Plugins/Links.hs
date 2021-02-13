@@ -105,11 +105,13 @@ parseLinks z =
    in z {zettelPluginData = DMap.insert Links (Identity xs) (zettelPluginData z)}
   where
     extractLinkswithContext doc =
-      mapMaybe (uncurry parseQueryLinkWithContext) $
-        Map.toList $ LC.queryLinksWithContext doc
+      concat $
+        fmap (uncurry parseQueryLinkWithContext) $
+          Map.toList $ LC.queryLinksWithContext doc
       where
-        parseQueryLinkWithContext url (attrs, ctx) = do
-          (,ctx) <$> parseQueryLink attrs url
+        parseQueryLinkWithContext url occurs = do
+          flip mapMaybe (toList occurs) $ \(attrs, ctx) ->
+            (,ctx) <$> parseQueryLink attrs url
 
 parseQueryLink :: [(Text, Text)] -> Text -> Maybe (ZettelID, Connection)
 parseQueryLink attrs url = do
