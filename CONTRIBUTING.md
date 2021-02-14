@@ -6,8 +6,6 @@ This document describes how to develop neuron, as well as some guidelines when i
 
 We recommend [VSCode] for developing Neuron, but any text editor supporting [haskell-language-server] will do. When opening the project in VSCode, install the two extensions ([Haskell](https://marketplace.visualstudio.com/items?itemName=haskell.haskell) and [Nix Environment Selector](https://marketplace.visualstudio.com/items?itemName=arrterian.nix-env-selector)) it recommends.
 
-Note that if you are developing on project *impulse*, you must open the `./impulse` subfolder in VSCode.
-
 [VSCode]: https://code.visualstudio.com/
 [haskell-language-server]: https://github.com/haskell/haskell-language-server#editor-integration
 
