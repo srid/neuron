@@ -9,7 +9,7 @@ EXTENSIONS=${4}
 OPENCMD=$(envsubst -no-unset -no-empty <<<${5})
 EXACT=""
 
-: ${NEURON_SEARCH_CONTEXT_ABOVE:=5}
+: ${NEURON_SEARCH_CONTEXT_ABOVE:=10}
 
 # Use --exact for full text search
 if [ -z "${FILTERBY}" ]; then
