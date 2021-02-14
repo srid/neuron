@@ -19,9 +19,10 @@
 - CLI
   - `neuron rib` is renamed to `neuron gen` (neuron has migrated from rib/shake to reflex)
   - `neuron search`: full-text search uses exact matching (#526)
+  - `neuron search`: highlight and focus matching line in `bat` preview (#556)
   - `neuron query`: query CLI interface has been changed (see docs)
 - Performance improvements:
-  - Improve incremental generation performance (`-w) (#522)
+  - Improve incremental generation performance (`-w`) (#522)
 - Bug fixes
   - Fix a bug where folgezettel relationship is not established if a note also has non-folgezettel links to the same target
 
