@@ -9,6 +9,8 @@ EXTENSIONS=${4}
 OPENCMD=$(envsubst -no-unset -no-empty <<<${5})
 EXACT=""
 
+: ${NEURON_SEARCH_CONTEXT_ABOVE:=5}
+
 # Use --exact for full text search
 if [ -z "${FILTERBY}" ]; then
   EXACT="--exact"
@@ -25,5 +27,6 @@ cd ${NOTESDIR}
   | ( [ ${FILTERBY} ] && LC_ALL=C sort -t: -k1,1 -u || cat )\
   | fzf ${EXACT} --tac --no-sort -d ':' -n ${SEARCHFROMFIELD}.. \
     --preview 'bat --style=plain --color=always --highlight-line={2} {1}' \
+    --preview-window ':+{2}-'"$NEURON_SEARCH_CONTEXT_ABOVE" \
   | awk -F: "{printf \"${NOTESDIR}/%s\", \$1}" \
   | xargs -I % ${OPENCMD} %
