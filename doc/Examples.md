@@ -5,10 +5,10 @@ slug: examples
 Here are some public Zettelkastens managed by neuron:
 
 - [neuron.zettel.page](https://neuron.zettel.page/) ([source](https://github.com/srid/neuron/tree/master/doc)): This very site you are viewing.
-- [www.srid.ca](https://www.srid.ca/) ([source](https://github.com/srid/srid.ca)): Author's homepage
 - [lost-frequencies.eu](https://lost-frequencies.eu/) (very large Zettelkasten)
 - [Alien Psychology](https://alien-psychology.zettel.page/) ([source](https://github.com/srid/alien-psychology)) (TV series cataloging)
 - [zk.zettel.page](https://zk.zettel.page/) ([source](https://github.com/Kuratoro/zk.zettel.page)): Public Zettelkasten for the r/Zettelkasten subreddit
+- [Wiki of Kalle](https://wiki.jillejr.tech/) ([source](https://github.com/jilleJr/wiki))
 - [Le note di azazel](http://azazel.it/): Personal Zettelkasten in Italian.
 - [politicalnotes.org](https://politicalnotes.org/) - demonstrates use of title IDs
 - [brain.jaredweakly.com](https://brain.jaredweakly.com/)
