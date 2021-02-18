@@ -12,6 +12,12 @@ Use the [vscode-memo](https://github.com/svsool/vscode-memo#memo) extension when
 
 ![demo](./static/vscode-title-id.gif){.ui .centered .large .image}
 
+## Vim 8/Neovim
+
+Forked version of the vim plugin below that has been updated to support Neuron v2:
+
+[neuron-v2.vim](https://github.com/chiefnoah/neuron-v2.vim)
+
 ## Editors known to work with v1
 
 These editors are known to work with version 1 of neuron. Your mileage may vary with the latest development version (version 2) of neuron.
