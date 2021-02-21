@@ -7,3 +7,5 @@ Current development version (v2) of neuron breaks compatibility in many cases (s
 ```
 nix-env -if https://github.com/srid/neuron/archive/v1.tar.gz
 ```
+
+If you would like to contribute org support to v2, see [this issue](https://github.com/srid/neuron/issues/557).
