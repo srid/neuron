@@ -37,6 +37,7 @@ import qualified Neuron.Plugin.Plugins.Links as Links
 import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel, OrdinaryConnection), ContextualConnection)
+import Neuron.Zettelkasten.Format
 import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID, unZettelID), indexZid)
@@ -165,7 +166,7 @@ injectDirectoryZettels = \case
           DMap.singleton DirTree $
             Identity $ DirZettel tags mparent (Just $ tagFromPath absPath) meta
     gets (Map.lookup dirZettelId) >>= \case
-      Just (ZIDRef_Available p s pluginDataPrev) -> do
+      Just (ZIDRef_Available p fmt s pluginDataPrev) -> do
         -- A zettel with this directory name was already registered. Deal with it.
         case runIdentity <$> DMap.lookup DirTree pluginDataPrev of
           Just _ -> do
@@ -182,7 +183,7 @@ injectDirectoryZettels = \case
                         [ guard (dirZettelId /= indexZid) >> parentDirTag absPath,
                           parentDirTag p
                         ]
-                newRef = ZIDRef_Available p s (DMap.union pluginData pluginDataPrev)
+                newRef = ZIDRef_Available p fmt s (DMap.union pluginData pluginDataPrev)
             modify $ Map.update (const $ Just newRef) dirZettelId
       Just ZIDRef_Ambiguous {} ->
         -- TODO: What to do here?
@@ -190,7 +191,7 @@ injectDirectoryZettels = \case
       Nothing -> do
         -- Inject a new zettel corresponding to this directory, that is uniquely named.
         let pluginData = mkPluginData $ maybe Set.empty Set.singleton $ parentDirTag absPath
-        R.addZettel absPath dirZettelId pluginData $ do
+        R.addZettel absPath ZettelFormat_Markdown dirZettelId pluginData $ do
           -- Set an appropriate title (same as directory name)
           let heading = toText (takeFileName absPath) <> "/"
           pure $ "# " <> heading

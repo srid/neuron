@@ -39,6 +39,7 @@ import Data.YAML (FromYAML (parseYAML), (.:))
 import qualified Data.YAML as Y
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
+import Neuron.Zettelkasten.Format
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Relude hiding (show)
 import Text.Pandoc.Builder (Block)
@@ -141,6 +142,7 @@ data ZettelT c = Zettel
     zettelSlug :: Slug,
     -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
+    zettelFormat :: ZettelFormat,
     zettelTitle :: Text,
     -- | Whether the title was infered from the body. Used when conditionally
     -- rendering the title in HTML.

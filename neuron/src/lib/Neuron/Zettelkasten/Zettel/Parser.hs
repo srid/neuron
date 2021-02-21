@@ -14,6 +14,7 @@ import Data.Dependent.Map (DMap)
 import qualified Data.Text as T
 import qualified Data.YAML as Y
 import Neuron.Markdown
+import Neuron.Zettelkasten.Format
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel.Meta as Meta
@@ -21,15 +22,16 @@ import Relude
 import qualified Text.Pandoc.Util as P
 
 parseZettel ::
-  ZettelParser ->
+  (ZettelFormat -> ZettelParser) ->
   FilePath ->
+  ZettelFormat ->
   ZettelID ->
   Text ->
   DMap PluginZettelData Identity ->
   (Maybe (Y.Node Y.Pos), ZettelC)
-parseZettel parser fn zid s pluginData =
+parseZettel getParser fn fmt zid s pluginData =
   either unparseableZettel id $ do
-    (yamlNode, doc) <- parser fn s
+    (yamlNode, doc) <- getParser fmt fn s
     meta :: Maybe Meta.Meta <- parseYamlNode @Meta.Meta `traverse` yamlNode
     let -- Determine zettel title
         (title, titleInBody) = case Meta.title =<< meta of
@@ -40,11 +42,11 @@ parseZettel parser fn zid s pluginData =
         date = Meta.date =<< meta
         slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
         unlisted = Just True == (Meta.unlisted =<< meta)
-    pure $ (yamlNode,) $ Right $ Zettel zid slug fn title titleInBody date unlisted doc pluginData
+    pure $ (yamlNode,) $ Right $ Zettel zid slug fn fmt title titleInBody date unlisted doc pluginData
   where
     unparseableZettel err =
       let slug = mkDefaultSlug $ unZettelID zid
-       in (Nothing,) $ Left $ Zettel zid slug fn "Unknown" False Nothing False (s, err) pluginData
+       in (Nothing,) $ Left $ Zettel zid slug fn fmt "Unknown" False Nothing False (s, err) pluginData
     mkDefaultSlug :: Text -> Slug
     mkDefaultSlug ss =
       foldl' (\s' x -> T.replace x "-" s') (T.toLower ss) (charsDisallowedInURL <> [" "])
@@ -54,9 +56,9 @@ parseZettel parser fn zid s pluginData =
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::
-  ZettelParser ->
-  [(ZettelID, (FilePath, (Text, DMap PluginZettelData Identity)))] ->
+  (ZettelFormat -> ZettelParser) ->
+  [(ZettelID, (FilePath, ZettelFormat, (Text, DMap PluginZettelData Identity)))] ->
   [(Maybe (Y.Node Y.Pos), ZettelC)]
-parseZettels p files =
-  flip fmap files $ \(zid, (path, (s, pluginData))) ->
-    parseZettel p path zid s pluginData
+parseZettels getParser files =
+  flip fmap files $ \(zid, (path, fmt, (s, pluginData))) ->
+    parseZettel getParser path fmt zid s pluginData

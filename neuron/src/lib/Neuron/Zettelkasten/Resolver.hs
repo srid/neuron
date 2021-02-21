@@ -12,6 +12,7 @@ module Neuron.Zettelkasten.Resolver where
 
 import Data.Dependent.Map (DMap)
 import qualified Data.Map.Strict as Map
+import Neuron.Zettelkasten.Format
 import Neuron.Zettelkasten.ID (ZettelID, getZettelID)
 import Neuron.Zettelkasten.Zettel (PluginZettelData)
 import Relude hiding (traceShowId)
@@ -20,7 +21,7 @@ import qualified System.Directory.Contents.Types as DC
 -- | What does a Zettel ID refer to?
 data ZIDRef
   = -- | The ZID maps to a file on disk with the given contents
-    ZIDRef_Available FilePath !Text (DMap PluginZettelData Identity)
+    ZIDRef_Available FilePath ZettelFormat !Text (DMap PluginZettelData Identity)
   | -- | The ZID maps to more than one file, hence ambiguous.
     ZIDRef_Ambiguous (NonEmpty FilePath)
   deriving (Eq, Show)
@@ -32,8 +33,8 @@ resolveZidRefsFromDirTree ::
   StateT (Map ZettelID ZIDRef) m ()
 resolveZidRefsFromDirTree readFileF = \case
   DC.DirTree_File relPath _ -> do
-    whenJust (getZettelID relPath) $ \zid -> do
-      addZettel relPath zid mempty $
+    whenJust (getZettelID relPath) $ \(fmt, zid) -> do
+      addZettel relPath fmt zid mempty $
         lift $ readFileF relPath
   DC.DirTree_Dir _absPath contents -> do
     forM_ (Map.toList contents) $ \(_, ct) ->
@@ -42,10 +43,10 @@ resolveZidRefsFromDirTree readFileF = \case
     -- We ignore symlinks, and paths configured to be excluded.
     pure ()
 
-addZettel :: MonadState (Map ZettelID ZIDRef) m => FilePath -> ZettelID -> DMap PluginZettelData Identity -> m Text -> m ()
-addZettel zpath zid pluginData ms = do
+addZettel :: MonadState (Map ZettelID ZIDRef) m => FilePath -> ZettelFormat -> ZettelID -> DMap PluginZettelData Identity -> m Text -> m ()
+addZettel zpath fmt zid pluginData ms = do
   gets (Map.lookup zid) >>= \case
-    Just (ZIDRef_Available oldPath _s _m) -> do
+    Just (ZIDRef_Available oldPath _fmt _s _m) -> do
       -- The zettel ID is already used by `oldPath`. Mark it as a dup.
       modify $ Map.insert zid (ZIDRef_Ambiguous $ zpath :| [oldPath])
     Just (ZIDRef_Ambiguous (toList -> ambiguities)) -> do
@@ -53,7 +54,7 @@ addZettel zpath zid pluginData ms = do
       markAmbiguous zid $ zpath :| ambiguities
     Nothing -> do
       s <- ms
-      modify $ Map.insert zid (ZIDRef_Available zpath s pluginData)
+      modify $ Map.insert zid (ZIDRef_Available zpath fmt s pluginData)
 
 markAmbiguous :: (MonadState (Map ZettelID ZIDRef) m) => ZettelID -> NonEmpty FilePath -> m ()
 markAmbiguous zid fs =

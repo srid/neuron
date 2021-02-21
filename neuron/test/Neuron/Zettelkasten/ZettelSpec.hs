@@ -15,6 +15,7 @@ import Data.Time.LocalTime
   ( LocalTime (LocalTime),
     TimeOfDay (TimeOfDay),
   )
+import Neuron.Zettelkasten.Format
 import Neuron.Zettelkasten.ID (ZettelID (ZettelID))
 import Neuron.Zettelkasten.Zettel
   ( MetadataOnly,
@@ -41,6 +42,7 @@ spec = do
             (ZettelID s)
             s
             "<spec>.md"
+            ZettelFormat_Markdown
             "Some title"
             False
             -- (Set.fromList [Tag "science", Tag "journal/class"])

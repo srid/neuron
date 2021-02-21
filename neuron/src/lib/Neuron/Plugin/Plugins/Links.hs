@@ -118,7 +118,7 @@ parseQueryLink attrs url = do
   let conn :: Connection =
         fromMaybe def $ readMaybe . toString =<< Map.lookup "title" (Map.fromList attrs)
   path <- asMarkdownPath url
-  zid <- getZettelID (toString path)
+  zid <- snd <$> getZettelID (toString path)
   pure (zid, conn)
   where
     -- Return .md file path, for the given link text.
