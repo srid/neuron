@@ -3,10 +3,7 @@
 Although you may use regular Markdown links, neuron supports **wiki-links** that are often more convenient to use to link zettels. To link to a zettel using wiki-links, place that zettel's [[id]] inside `[[..]]`. For example,
 
 ```
-[New Discourses][nd] is an excellent resource for 
-debunking [[Critical Race Theory]] (aka. CRT).
-
-[nd]: https://newdiscourses.com/translations-from-the-wokish/
+Place that zettel's [[id]] inside `[[..]]`. 
 ```
 
 In [[Web interface]], neuron will automatically display the title of the

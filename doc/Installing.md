@@ -40,7 +40,7 @@ If you skip this step, your machine may compile several software for hours.
 
 ## Install neuron
 
-To install the latest development version[^v1] of neuron, run:
+To install the latest development version (see [[Neuron v1]] if you are looking for an older version) of neuron, run:
 
 ```
 nix-env -if https://github.com/srid/neuron/archive/master.tar.gz
@@ -49,11 +49,6 @@ nix-env -if https://github.com/srid/neuron/archive/master.tar.gz
 Note that this command can also *upgrade* your existing install of neuron.
 
 For alternative mechanisms, see [[Declarative Install]]#.
-
-[^v1]: The development version will reflect ongoing work neuron v2. To install neuron v1, run instead:
-    ```
-    nix-env -if https://github.com/srid/neuron/archive/v1.tar.gz
-    ```
 
 ## Test your install
 
