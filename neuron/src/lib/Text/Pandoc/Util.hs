@@ -18,6 +18,7 @@ module Text.Pandoc.Util
   )
 where
 
+import Reflex.Dom.Pandoc.Util (plainify)
 import Relude
 import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
@@ -69,17 +70,3 @@ getH1 = listToMaybe . W.query go
         [(attr, inlines)]
       _ ->
         []
-
--- | Convert Pandoc AST inlines to raw text.
-plainify :: [B.Inline] -> Text
-plainify = W.query $ \case
-  B.Str x -> x
-  B.Code _attr x -> x
-  B.Space -> " "
-  B.SoftBreak -> " "
-  B.LineBreak -> " "
-  B.RawInline _fmt s -> s
-  B.Math _mathTyp s -> s
-  -- Ignore the rest of AST nodes, as they are recursively defined in terms of
-  -- `Inline` which `W.query` will traverse again.
-  _ -> ""

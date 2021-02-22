@@ -10,7 +10,7 @@ VSCode is recommended for new users of neuron.
 
 Use the [vscode-memo](https://github.com/svsool/vscode-memo#memo) extension when editing your Neuron notes in [Visual Studio Code](https://code.visualstudio.com/). For other useful extensions, consult the template repo ([`.vscode/extensions.json`](https://github.com/srid/neuron-template/blob/master/.vscode/extensions.json)) in [[Automatic Publishing]].
 
-![demo](./static/vscode-title-id.gif){.ui .centered .large .image}
+![VSCode Gif Demo](./static/vscode-title-id.gif "Demo of editing neuron notes in VSCode"){.ui .centered .large .image}
 
 ## Vim 8/Neovim
 
