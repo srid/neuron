@@ -58,7 +58,6 @@ import qualified Neuron.Zettelkasten.Graph as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (count, mapMaybe, tag)
-import Reflex.Dom.Pandoc (PandocBuilder)
 import Relude
 import Text.Pandoc.Definition (Inline, Pandoc)
 import qualified Text.Pandoc.Util as Pandoc
@@ -196,7 +195,7 @@ renderPanel _elNeuronPandoc z _routeData = do
             )
             $ text $ unTag t
 
-renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => TagQueryCache -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ())
+renderHandleLink :: forall t m. (DomBuilder t m, PostBuild t m) => TagQueryCache -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ())
 renderHandleLink cache url _mInline = do
   r <- Map.lookup url cache
   pure $ renderQueryResult r
@@ -206,7 +205,7 @@ renderInlineTag _tag attr w =
   lift $ elAttr "span" attr w
 
 renderQueryResult ::
-  (PandocBuilder t m, PostBuild t m) => DSum TagQuery Identity -> NeuronWebT t m ()
+  (DomBuilder t m, PostBuild t m) => DSum TagQuery Identity -> NeuronWebT t m ()
 renderQueryResult = \case
   q@(TagQuery_ZettelsByTag pats conn view) :=> Identity res -> do
     el "section" $ do

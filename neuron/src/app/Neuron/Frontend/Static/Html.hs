@@ -20,14 +20,15 @@ import Neuron.Frontend.Static.StructuredData (renderStructuredData)
 import qualified Neuron.Frontend.View as V
 import qualified Neuron.Frontend.Widget as W
 import Reflex.Dom.Core
-import Reflex.Dom.Pandoc (PandocBuilder)
+import Reflex.Dom.Pandoc.Raw (RawBuilder)
 import Relude
 import qualified Skylighting.Core as Skylighting
 
 -- | Render the given route
 renderRoutePage ::
   forall t m js a.
-  ( PandocBuilder t m,
+  ( DomBuilder t m,
+    RawBuilder m,
     MonadHold t m,
     PostBuild t m,
     MonadFix m,

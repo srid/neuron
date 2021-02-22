@@ -40,15 +40,22 @@ import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel as Z
 import Reflex.Dom.Core hiding ((&))
 import Reflex.Dom.Pandoc
-  ( Config (Config),
-    PandocBuilder,
+  ( Config (..),
     elPandoc,
   )
+import qualified Reflex.Dom.Pandoc as PR
+import Reflex.Dom.Pandoc.Raw (RawBuilder, elPandocRaw)
 import Relude hiding (traceShowId, (&))
 import Text.Pandoc.Definition (Pandoc)
 
 renderZettel ::
-  (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) =>
+  ( DomBuilder t m,
+    RawBuilder m,
+    PostBuild t m,
+    MonadHold t m,
+    MonadFix m,
+    Prerender js t m
+  ) =>
   SiteData ->
   ZettelData ->
   NeuronWebT t m ()
@@ -70,7 +77,7 @@ renderZettel siteData zData = do
         ((<> toText (zettelPath z)) <$> R.siteDataEditUrl siteData)
 
 renderZettelContentCard ::
-  (PandocBuilder t m, PostBuild t m) =>
+  (DomBuilder t m, PostBuild t m) =>
   (Pandoc -> NeuronWebT t m ()) ->
   ZettelC ->
   NeuronWebT t m ()
@@ -111,18 +118,23 @@ renderBottomMenu themeDyn mIndexZettel mEditUrl = do
       semanticIcon "wave square"
 
 mkReflexDomPandocConfig ::
-  forall t m.
-  (PandocBuilder t m, PostBuild t m) =>
+  forall js t m.
+  (DomBuilder t m, RawBuilder m, PostBuild t m, Prerender js t m) =>
   ZettelData ->
   Config t (NeuronWebT t m) ()
 mkReflexDomPandocConfig x =
-  Config $ \oldRender url minner -> do
-    fromMaybe oldRender $
-      Plugin.renderHandleLink (R.zettelDataPlugin x) url minner
+  PR.defaultConfig
+    { _config_renderLink = \oldRender url _attrs minner -> do
+        fromMaybe oldRender $
+          Plugin.renderHandleLink (R.zettelDataPlugin x) url minner,
+      -- _config_renderCode = \_ _attrs s -> do
+      --  el "code" $ text s
+      _config_renderRaw = elPandocRaw
+    }
 
 renderZettelContent ::
   forall t m.
-  (PandocBuilder t m) =>
+  (DomBuilder t m) =>
   (Pandoc -> NeuronWebT t m ()) ->
   ZettelT Pandoc ->
   NeuronWebT t m ()

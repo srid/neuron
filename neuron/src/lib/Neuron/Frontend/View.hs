@@ -34,7 +34,7 @@ import qualified Neuron.Frontend.Widget as W
 import qualified Neuron.Frontend.Zettel.CSS as ZettelCSS
 import qualified Neuron.Frontend.Zettel.View as ZettelView
 import Reflex.Dom.Core
-import Reflex.Dom.Pandoc (PandocBuilder)
+import Reflex.Dom.Pandoc.Raw (RawBuilder)
 import Relude
 
 headTemplate ::
@@ -95,7 +95,13 @@ renderRouteImpulse dataLDyn = do
 
 renderRouteZettel ::
   forall t m js.
-  (PandocBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
+  ( DomBuilder t m,
+    RawBuilder m,
+    PostBuild t m,
+    MonadHold t m,
+    MonadFix m,
+    Prerender js t m
+  ) =>
   Dynamic t (LoadableData (SiteData, ZettelData)) ->
   NeuronWebT t m ()
 renderRouteZettel dataLDyn = do

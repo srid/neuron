@@ -19,7 +19,6 @@ import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core (DomBuilder, PostBuild)
-import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Widget (blank)
 import Relude
 import qualified System.Directory.Contents.Types as DC
@@ -52,7 +51,7 @@ data Plugin routeData = Plugin
     -- | CSS to inject
     _plugin_css :: Css,
     -- | Hooks for rendering custom DOM elements; here, url links.
-    _plugin_renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => routeData -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ()),
+    _plugin_renderHandleLink :: forall t m. (DomBuilder t m, PostBuild t m) => routeData -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ()),
     -- | Strip data you don't want in JSON dumps
     _plugin_preJsonStrip :: Zettel -> Zettel
   }

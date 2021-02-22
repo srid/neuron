@@ -42,7 +42,6 @@ import Neuron.Zettelkasten.Zettel
   )
 import Neuron.Zettelkasten.Zettel.Parser (parseZettels)
 import Reflex.Dom.Core (DomBuilder, PostBuild)
-import Reflex.Dom.Pandoc (PandocBuilder)
 import Reflex.Dom.Widget (blank)
 import Relude
 import qualified System.Directory.Contents.Types as DC
@@ -159,7 +158,7 @@ renderPluginTop = \case
     blank
 
 renderHandleLink ::
-  (PandocBuilder t m, PostBuild t m) =>
+  (DomBuilder t m, PostBuild t m) =>
   DMap PluginZettelRouteData Identity ->
   Text ->
   Maybe [Inline] ->
@@ -168,7 +167,7 @@ renderHandleLink pluginData url mInline =
   asum $ DMap.toList pluginData <&> \x -> renderHandleLink' x url mInline
 
 renderHandleLink' ::
-  (PandocBuilder t m, PostBuild t m) =>
+  (DomBuilder t m, PostBuild t m) =>
   DSum PluginZettelRouteData Identity ->
   Text ->
   Maybe [Inline] ->

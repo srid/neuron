@@ -50,7 +50,7 @@ import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID), getZettelID)
 import Neuron.Zettelkasten.Zettel
 import qualified Neuron.Zettelkasten.Zettel as Z
 import Reflex.Dom.Core hiding (count, mapMaybe, tag)
-import Reflex.Dom.Pandoc (PandocBuilder, elPandocInlines)
+import Reflex.Dom.Pandoc (elPandocInlines)
 import Relude hiding (trace, traceShow, traceShowId)
 import Relude.Extra (groupBy)
 import qualified Text.Megaparsec as M
@@ -202,13 +202,13 @@ renderPanel elNeuronPandoc LinksData {..} = do
       FolgezettelInverse ->
         elAttr "span" ("title" =: "Backlinks from folgezettel children") $ text "Downlinks"
 
-renderHandleLink :: forall t m. (PandocBuilder t m, PostBuild t m) => LinksData -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ())
+renderHandleLink :: forall t m. (DomBuilder t m, PostBuild t m) => LinksData -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ())
 renderHandleLink LinksData {..} url mInline = do
   r <- Map.lookup url linksDataLinkCache
   pure $ renderZettelLinkMay mInline r
 
 renderZettelLinkMay ::
-  (PandocBuilder t m, PostBuild t m) => Maybe [Inline] -> Either MissingZettel (Connection, Zettel) -> NeuronWebT t m ()
+  (DomBuilder t m, PostBuild t m) => Maybe [Inline] -> Either MissingZettel (Connection, Zettel) -> NeuronWebT t m ()
 renderZettelLinkMay minner = \case
   Left (untag -> zid) ->
     renderMissingZettelLink zid

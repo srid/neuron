@@ -12,14 +12,12 @@ where
 
 import Neuron.CLI.Types (MonadApp (getNotesDir))
 import Neuron.Frontend.Route.Data.Types (HeadHtml (..))
-import Reflex.Dom.Core (blank, elAttr, (=:))
-import Reflex.Dom.Pandoc (PandocBuilder)
-import Reflex.Dom.Pandoc.PandocRaw (PandocRaw (..))
+import Reflex.Dom.Core
+import Reflex.Dom.Pandoc.Raw (RawBuilder, elRawHtml)
 import Relude
 import System.Directory (doesFileExist)
 import qualified System.Directory.Contents as DC
 import System.FilePath ((</>))
-import Text.Pandoc.Definition (Format (..))
 
 getHeadHtmlFromTree :: (MonadIO m, MonadApp m) => DC.DirTree FilePath -> m HeadHtml
 getHeadHtmlFromTree fileTree = do
@@ -39,10 +37,10 @@ getHeadHtml = do
     False ->
       pure $ HeadHtml Nothing
 
-renderHeadHtml :: PandocBuilder t m => HeadHtml -> m ()
+renderHeadHtml :: (DomBuilder t m, RawBuilder m) => HeadHtml -> m ()
 renderHeadHtml (HeadHtml headHtml) = case headHtml of
   Nothing ->
     -- Include the MathJax script if no custom head.html is provided.
     elAttr "script" ("id" =: "MathJax-script" <> "src" =: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" <> "async" =: "") blank
   Just html ->
-    elPandocRaw (Format "html") html
+    elRawHtml html
