@@ -39,8 +39,19 @@ getHeadHtml = do
 
 renderHeadHtml :: (DomBuilder t m, RawBuilder m) => HeadHtml -> m ()
 renderHeadHtml (HeadHtml headHtml) = case headHtml of
-  Nothing ->
-    -- Include the MathJax script if no custom head.html is provided.
-    elAttr "script" ("id" =: "MathJax-script" <> "src" =: "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" <> "async" =: "") blank
+  Nothing -> do
+    -- If the user doesn't specify a head.html, we provide sensible defaults.
+    -- For Math support:
+    js' 
+      ("id" =: "MathJax-script" <> "async" =: "")  
+      "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    -- For syntax highlighting:
+    css "https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism.min.css"
+    js "https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-core.min.js"
+    js "https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/plugins/autoloader/prism-autoloader.min.js"
   Just html ->
     elRawHtml html
+  where 
+    css x = elAttr "link" ("rel" =: "stylesheet" <> "href" =: x) blank
+    js = js' mempty
+    js' attrs x = elAttr "script" (attrs <> "src" =: x) blank
