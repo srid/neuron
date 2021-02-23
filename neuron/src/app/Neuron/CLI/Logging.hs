@@ -78,8 +78,8 @@ pattern E' le <- Error (Just le) where E' le = Error (Just le)
 
 type Message = Msg Severity
 
-mkLogAction :: (MonadIO m) => LogAction m Message
-mkLogAction =
+mkLogAction :: (MonadIO m) => Bool -> LogAction m Message
+mkLogAction useColors =
   cmap fmtNeuronMsg logTextStderr
   where
     fmtNeuronMsg :: Message -> Text
@@ -93,9 +93,12 @@ mkLogAction =
             Error mle -> f Red mle
     color :: Color -> Text -> Text
     color c txt =
-      T.pack (setSGRCode [SetColor Foreground Vivid c])
-        <> txt
-        <> T.pack (setSGRCode [Reset])
+      if useColors
+        then
+          T.pack (setSGRCode [SetColor Foreground Vivid c])
+            <> txt
+            <> T.pack (setSGRCode [Reset])
+        else txt
 
 indentAllButFirstLine :: Int -> Text -> Text
 indentAllButFirstLine n = T.strip . unlines . go . lines
