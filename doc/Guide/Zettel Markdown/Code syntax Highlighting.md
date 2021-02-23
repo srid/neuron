@@ -2,7 +2,9 @@
 slug: syntax-highlighting
 ---
 
-Syntax highlighting is builtin. To activate highlighting, your [fenced code blocks](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#fenced-code-blocks) must contain a language identifier (see [example](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#syntax-highlighting)).
+Neuron provides syntax highlighting through [Prism](https://prismjs.com/), a JavaScript library that highlights code blocks in the web browser. To customize Prism's theme, or to provide your own syntax highlighter, you can do so in `head.html` (see [[Custom JavaScript and CSS]]).
+
+To active syntax highlighting, you must specify the language in your [fenced code blocks](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#fenced-code-blocks) (see [example here](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#syntax-highlighting)) or view source of the below.
 
 ## Example
 
