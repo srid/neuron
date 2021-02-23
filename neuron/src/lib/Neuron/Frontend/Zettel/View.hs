@@ -65,9 +65,9 @@ renderZettel siteData zData = do
     Plugin.renderPluginTop pluginData
   -- Main content
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-    let elNeuronPandoc = 
-          divClass "pandoc" 
-            . elPandoc (mkReflexDomPandocConfig zData) 
+    let elNeuronPandoc =
+          divClass "pandoc"
+            . elPandoc (mkReflexDomPandocConfig zData)
             . addSemanticUIClasses
     divClass "zettel-view" $ do
       let zc = R.zettelDataZettel zData
@@ -132,21 +132,24 @@ mkReflexDomPandocConfig x =
         fromMaybe oldRender $
           Plugin.renderHandleLink (R.zettelDataPlugin x) url minner,
       _config_renderCode = \_ (_, langs, _) s -> do
-        -- Tag code block with "language-foo" class, if the user specified "foo"
-        -- as the language identifier. This enables external syntax highlighters
-        -- to detect the language.
-        --
-        -- If no language is specified, use "none" as the language (i.e.,
-        -- language-none). This works at least on prism.js,[1] in that - syntax
-        -- highlighting is turned off all the while background styling is
-        -- applied, to be consistent with code blocks with language set.
-        --
-        -- [1] https://github.com/PrismJS/prism/pull/2738
-        let langClass =
-              maybe "language-none" (("language-" <>) . head) $ nonEmpty langs
-        el "pre" $ elClass "code" langClass $ text s,
+        el "pre" $ elClass "code" (mkLangClass langs) $ text s,
       _config_renderRaw = elPandocRaw
     }
+  where
+    mkLangClass langs =
+      -- Tag code block with "foo language-foo" classes, if the user specified
+      -- "foo" as the language identifier. This enables external syntax
+      -- highlighters to detect the language.
+      --
+      -- If no language is specified, use "language-none" as the language This
+      -- works at least on prism.js,[1] in that - syntax highlighting is turned
+      -- off all the while background styling is applied, to be consistent with
+      -- code blocks with language set.
+      --
+      -- [1] https://github.com/PrismJS/prism/pull/2738
+      fromMaybe "language-none" $ do
+        lang <- head <$> nonEmpty langs
+        pure $ lang <> " language-" <> lang
 
 addSemanticUIClasses :: Pandoc -> Pandoc
 addSemanticUIClasses = W.walk $ \case
