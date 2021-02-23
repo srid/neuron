@@ -4,7 +4,6 @@ You may configure the parameters of your web interface by adding an optional con
 
 ## Supported fields
 
-{.ui .table}
 | Field name        | Description                                                                                                                                                                                |
 |-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **`siteTitle`**   | Your Neuron site's title                                                                                                                                                                   |

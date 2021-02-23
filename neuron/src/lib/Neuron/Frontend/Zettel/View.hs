@@ -46,7 +46,8 @@ import Reflex.Dom.Pandoc
 import qualified Reflex.Dom.Pandoc as PR
 import Reflex.Dom.Pandoc.Raw (RawBuilder, elPandocRaw)
 import Relude hiding ((&))
-import Text.Pandoc.Definition (Pandoc)
+import Text.Pandoc.Definition (Block (Table), Pandoc, nullAttr)
+import qualified Text.Pandoc.Walk as W
 
 renderZettel ::
   ( DomBuilder t m,
@@ -64,7 +65,7 @@ renderZettel siteData zData = do
     Plugin.renderPluginTop pluginData
   -- Main content
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-    let elNeuronPandoc = elPandoc $ mkReflexDomPandocConfig zData
+    let elNeuronPandoc = elPandoc (mkReflexDomPandocConfig zData) . addSemanticUIClasses
     divClass "zettel-view" $ do
       let zc = R.zettelDataZettel zData
           z = sansContent zc
@@ -131,18 +132,28 @@ mkReflexDomPandocConfig x =
         -- Tag code block with "language-foo" class, if the user specified "foo"
         -- as the language identifier. This enables external syntax highlighters
         -- to detect the language.
-        -- 
+        --
         -- If no language is specified, use "none" as the language (i.e.,
         -- language-none). This works at least on prism.js,[1] in that - syntax
         -- highlighting is turned off all the while background styling is
         -- applied, to be consistent with code blocks with language set.
-        -- 
+        --
         -- [1] https://github.com/PrismJS/prism/pull/2738
         let langClass =
               maybe "language-none" (("language-" <>) . head) $ nonEmpty langs
         el "pre" $ elClass "code" langClass $ text s,
       _config_renderRaw = elPandocRaw
     }
+
+addSemanticUIClasses :: Pandoc -> Pandoc
+addSemanticUIClasses = W.walk $ \case
+  Table attrs@(ident, classes, kv) a b c d e
+    | attrs == nullAttr ->
+      -- Enable semantic UI table styling
+      let classes' = classes <> ["ui", "table"]
+       in Table (ident, classes', kv) a b c d e
+  x ->
+    x
 
 renderZettelContent ::
   forall t m.
