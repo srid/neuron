@@ -133,7 +133,7 @@ mkReflexDomPandocConfig x =
         -- to detect the language.
         -- 
         -- If no language is specified, use "none" as the language (i.e.,
-        -- language-text). This works at least on prism.js,[1] in that - syntax
+        -- language-none). This works at least on prism.js,[1] in that - syntax
         -- highlighting is turned off all the while background styling is
         -- applied, to be consistent with code blocks with language set.
         -- 
