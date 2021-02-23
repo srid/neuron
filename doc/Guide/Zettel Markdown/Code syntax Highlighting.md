@@ -1,4 +1,6 @@
-# Code syntax highlighting
+---
+slug: syntax-highlighting
+---
 
 Syntax highlighting is builtin. To activate highlighting, your [fenced code blocks](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#fenced-code-blocks) must contain a language identifier (see [example](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#syntax-highlighting)).
 
