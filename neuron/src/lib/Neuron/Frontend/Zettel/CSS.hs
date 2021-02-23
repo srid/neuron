@@ -112,14 +112,7 @@ zettelContentCss = do
         C.backgroundColor "#f8f8f8"
       -- This selects block code elements
       pre ? do
-        sym C.padding $ em 0.5
         C.overflow auto
-        C.maxWidth $ pct 100
-      "div.pandoc-code" ? do
-        C.marginLeft auto
-        C.marginRight auto
-        pre ? do
-          C.backgroundColor "#f8f8f8"
     -- https://css-tricks.com/snippets/css/simple-and-nice-blockquote-styling/
     blockquoteStyle =
       C.blockquote ? do
