@@ -6,7 +6,7 @@ Wiki-links (see [[Linking]]) may be labelled as "folgezettel" if you are writing
 
 To mark a wiki-link as "folgezettel", put the `#` letter to either the end or the beginning of the link. The position of `#` indicates the *direction* of the folgezettel relationship.
 
-```
+```markdown
 # Programming paradigms
 
 There are different kinds of programming paradigms:
@@ -17,7 +17,7 @@ There are different kinds of programming paradigms:
 
 When `#` is placed at the end[^legacy], as illustrated above, the current zettel becomes the (structural) parent of the linked note. Let's look at the opposite example, 
 
-```
+```markdown
 # Haskell
 
 Haskell is an example of a language with #[[Functional Programming]] paradigm.

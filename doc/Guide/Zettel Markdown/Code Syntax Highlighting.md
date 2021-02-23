@@ -4,11 +4,9 @@ slug: syntax-highlighting
 
 Neuron provides syntax highlighting through [Prism](https://prismjs.com/), a JavaScript library that highlights code blocks in the web browser. To customize Prism's theme, or to provide your own syntax highlighter, you can do so in `head.html` (see [[Custom JavaScript and CSS]]).
 
-To active syntax highlighting, you must specify the language in your [fenced code blocks](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#fenced-code-blocks) (see [example here](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#syntax-highlighting)) or view source of the below.
+To activate syntax highlighting, you must specify the language in your [fenced code blocks](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#fenced-code-blocks) (see [example here](https://help.github.com/en/github/writing-on-github/creating-and-highlighting-code-blocks#syntax-highlighting)) or view source of the below.
 
-## Example
-
-Tip: you can click the edit icon in the footer to the view source of this zettel.
+## Demo
 
 Haskell:
 
@@ -70,7 +68,3 @@ Just plain text.
 
 No particular syntax.
 ```
-
-## Languages supported
-
-See [here](https://github.com/jgm/skylighting/tree/master/skylighting-core/xml) for a full list of languages supported.

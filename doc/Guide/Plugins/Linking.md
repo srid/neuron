@@ -2,7 +2,7 @@
 
 Although you may use regular Markdown links, neuron supports **wiki-links** that are often more convenient to use to link zettels. To link to a zettel using wiki-links, place that zettel's [[id]] inside `[[..]]`. For example,
 
-```
+```markdown
 Place that zettel's [[id]] inside `[[..]]`. 
 ```
 

@@ -12,14 +12,14 @@ The [neuron git repo](https://github.com/srid/neuron) comes with a Zettelkasten 
 
 You will need to clone the git repository:
 
-```bash
+```shell
 git clone https://github.com/srid/neuron.git
 cd neuron
 ```
 
 Now run the neuron [[Web interface]] on the `./doc` Zettelkasten:
 
-```bash
+```shell
 cd ./doc
 neuron gen -wS
 ```
@@ -38,7 +38,7 @@ For this tutorial, we choose the last option.
 
 Neuron expects the Zettelkasten directory to contain a `neuron.dhall`, as well as a list of [[Zettel Markdown]] notes. By default, the current working directory will be used as your Zettelkasten directory (which you can override using the `-d` option). Create this directory first, and add a basic `neuron.dhall` (see [[configuration]]):
 
-```bash
+```shell
 mkdir ~/zettelkasten
 cd ~/zettelkasten
 touch neuron.dhall  # Empty file is accepted
@@ -46,7 +46,7 @@ touch neuron.dhall  # Empty file is accepted
 
 Now create (see [[Creating and Editing zettels]]) your first zettel file:
 
-```bash
+```shell
 neuron new -e
 ```
 
@@ -56,7 +56,7 @@ This will open your text editor[^editor] with the newly created file (neuron use
 
 Next, create an "overview" zettel called `index.md` --- it would be the welcoming page of our Zettelkasten web interface. This time we explicitly tell neuron the ID to use, instead of having it generate a random one:
 
-```bash
+```shell
 neuron new -e index
 # Note that you can also create this file manually, i.e.: 
 #   echo "Hello" > index.md
@@ -64,7 +64,7 @@ neuron new -e index
 
 In the text editor, link it (see [[Linking]]) to your first zettel. It should look like this:
 
-```
+```markdown
 # My Zettelkasten
 
 From here, you can visit: [[6479cd5e]]
@@ -72,7 +72,7 @@ From here, you can visit: [[6479cd5e]]
 
 Your Zettelkasten directory should now contain two zettels--named `6479cd5e.md` and `index.md`.  Now it is time to run the neuron [[Web interface]]:
 
-```bash
+```shell
 neuron gen -wS
 ```
 

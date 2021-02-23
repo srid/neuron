@@ -1,7 +1,6 @@
 cabal-version: 2.4
 name: neuron
--- This version must be in sync with what's in Default.dhall
-version: 1.9.13.2
+version: 1.9.13.3
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -137,8 +136,6 @@ common app-common
     file-embed,
     optparse-applicative,
     pandoc-types,
-    -- Use skylighting >= 0.9 as they are written in pure Haskell
-    skylighting-core >= 0.9,
     relude,
     iso8601-time,
     time,

@@ -10,7 +10,7 @@ Neuron can be installed on Windows, Linux or macOS.
 
 Neuron can be installed via the Nix[^nix] package manager. Install [Nix](https://nixos.org/) as follows:
 
-``` 
+```shell
 curl -L https://nixos.org/nix/install | sh
 ```
 
@@ -31,7 +31,7 @@ As an alternative to Nix, you may try the [[Docker workflow]]#.
 
 Enable the [Nix cache](https://srid.cachix.org/) for neuron.
 
-```
+```shell
 nix-env -iA cachix -f https://cachix.org/api/v1/install
 cachix use srid
 ```
@@ -42,7 +42,7 @@ If you skip this step, your machine may compile several software for hours.
 
 To install the latest development version (see [[Neuron v1]] if you are looking for an older version) of neuron, run:
 
-```
+```shell
 nix-env -if https://github.com/srid/neuron/archive/master.tar.gz
 ```
 

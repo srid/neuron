@@ -14,7 +14,7 @@ You may configure the parameters of your web interface by adding an optional con
 | **`plugins`**     | See [[Plugins]]                                                                                                                                                                            |
 ## Example 
 
-```json
+```dhall
 { siteTitle =
     "My Zettelkasten for college"
 , siteBaseUrl =

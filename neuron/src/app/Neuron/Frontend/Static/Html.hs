@@ -22,7 +22,6 @@ import qualified Neuron.Frontend.Widget as W
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc.Raw (RawBuilder)
 import Relude
-import qualified Skylighting.Core as Skylighting
 
 -- | Render the given route
 renderRoutePage ::
@@ -51,12 +50,6 @@ renderRoutePage r val = do
             renderStructuredData r v
             elAttr "style" ("type" =: "text/css") $ do
               text $ R.siteDataBodyCss (R.routeSiteData v r)
-      () <- case r of
-        Route_Impulse ->
-          blank
-        Route_Zettel {} -> do
-          elAttr "style" ("type" =: "text/css") $ do
-            text $ toText $ Skylighting.styleToCss Skylighting.tango
       pure ()
     el "body" $ do
       () <- case r of
