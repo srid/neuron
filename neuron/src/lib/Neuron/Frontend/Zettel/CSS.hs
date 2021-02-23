@@ -108,8 +108,9 @@ zettelContentCss = do
         C.fontSize $ pct 100
       -- This pretty much selects inline code elements
       "p code, li code, ol code" ? do
+        let prismJsDefaultThemeBackground = "#f5f2f0"
         sym C.padding $ em 0.2
-        C.backgroundColor "#f8f8f8"
+        C.backgroundColor prismJsDefaultThemeBackground
       -- This selects block code elements
       pre ? do
         C.overflow auto

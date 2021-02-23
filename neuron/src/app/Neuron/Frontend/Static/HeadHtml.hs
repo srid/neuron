@@ -46,7 +46,7 @@ renderHeadHtml (HeadHtml headHtml) = case headHtml of
       ("id" =: "MathJax-script" <> "async" =: "")
       "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
     -- For syntax highlighting:
-    css "https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism-okaidia.min.css"
+    css "https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/themes/prism.min.css"
     js "https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/components/prism-core.min.js"
     js "https://cdnjs.cloudflare.com/ajax/libs/prism/1.23.0/plugins/autoloader/prism-autoloader.min.js"
   Just html ->
