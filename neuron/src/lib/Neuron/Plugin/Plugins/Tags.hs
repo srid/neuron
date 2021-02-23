@@ -142,8 +142,13 @@ runSomeTagQuery someQ =
   where
     runTagQuery :: [Zettel] -> TagQuery r -> r
     runTagQuery zs = \case
-      TagQuery_ZettelsByTag pats _mconn _mview ->
-        zettelsByTag getZettelTags zs pats
+      TagQuery_ZettelsByTag pats _mconn (ZettelsView linkView _ _) ->
+        let res = zettelsByTag getZettelTags zs pats
+        in if linkView == LinkView_ShowDate 
+          then -- Filter out zettels without a date.
+            fforMaybe res $ \z@Zettel {..} -> guard (isJust zettelDate) >> pure z
+          else 
+            res
       TagQuery_Tags pats ->
         Map.filterWithKey (const . flip TagTree.matchTagQuery pats) allTags
       TagQuery_TagZettel _tag ->
@@ -208,7 +213,7 @@ renderQueryResult ::
   (DomBuilder t m, PostBuild t m) => DSum TagQuery Identity -> NeuronWebT t m ()
 renderQueryResult = \case
   q@(TagQuery_ZettelsByTag pats conn view) :=> Identity res -> do
-    el "section" $ do
+    elClass "section" "tag-query-results" $ do
       renderQuery $ Some q
       if zettelsviewGroupByTag view
         then forM_ (Map.toList $ groupZettelsByTagsMatching pats res) $ \(tag, zettelGrp) -> do
@@ -233,7 +238,7 @@ renderQueryResult = \case
               elClass "span" "ui grey text" $ do
                 text $ "(displaying only " <> show (length resToDisplay) <> " out of " <> show (length res) <> " zettels)"
   q@(TagQuery_Tags _) :=> Identity res -> do
-    el "section" $ do
+    elClass "section" "tag-query-results" $ do
       renderQuery $ Some q
       renderTagTree $ TagTree.foldTagTree $ TagTree.tagTree res
   TagQuery_TagZettel tag :=> Identity () ->

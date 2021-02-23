@@ -41,7 +41,10 @@ For a real-world example of link queries and hierarchical tags, see [Alien Psych
 Link queries support a few query flags to control the link listing UI:
 
 * `?grouped`: Group the results by matching tag (use with hierarchical tags)
-* `?timeline`: Sort the results by `date` from [[Zettel metadata]], and also display the date.
+* `?timeline`: Query and display the results as if they form a timeline. This flag,
+  * selects only zettels with a `date` set (see [[Zettel metadata]]).
+  * sorts the results by date.
+  * display the date besides the link.
 * `?showid`: Display the zettel ID alongside the zettel title (link).
 
 ## Limit the amount of zettels
