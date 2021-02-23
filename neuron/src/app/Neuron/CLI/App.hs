@@ -32,7 +32,7 @@ import Options.Applicative
 import Relude
 import System.Directory (getCurrentDirectory)
 
-run :: (Bool -> App ()) -> IO ()
+run :: (GenCommand -> App ()) -> IO ()
 run act = do
   defaultNotesDir <- getCurrentDirectory
   cliParser <- commandParser defaultNotesDir <$> now
@@ -52,21 +52,21 @@ run act = do
       tz <- getCurrentTimeZone
       utcToLocalTime tz <$> liftIO getCurrentTime
 
-runAppCommand :: (Bool -> App ()) -> App ()
+runAppCommand :: (GenCommand -> App ()) -> App ()
 runAppCommand genAct = do
   getCommand >>= \case
     LSP -> do
       LSP.lspServer
-    Gen GenCommand {..} -> do
-      case serve of
-        Just (host, port) -> do
+    Gen (mserve, gen) -> do
+      case mserve of
+        Just (ServeCommand host port) -> do
           outDir <- getOutputDir
           appEnv <- getAppEnv
           liftIO $
-            race_ (runApp appEnv $ genAct watch) $ do
+            race_ (runApp appEnv $ genAct gen) $ do
               runApp appEnv $ Backend.serve host port outDir
         Nothing ->
-          genAct watch
+          genAct gen
     New newCommand ->
       newZettelFile newCommand
     Open openCommand ->

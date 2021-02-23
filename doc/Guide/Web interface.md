@@ -18,6 +18,8 @@ The `gen` command takes a few options, notably:
     neuron gen -ws 127.0.0.1:8081
     ```
 
+* You can choose pretty URLs (i.e., `/foo` instead of `/foo.html`) using `--pretty-urls`.
+
 Additional CLI details are available via `--help`.
 
 ## Local site without server
