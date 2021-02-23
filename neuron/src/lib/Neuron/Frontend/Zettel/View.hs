@@ -45,7 +45,7 @@ import Reflex.Dom.Pandoc
   )
 import qualified Reflex.Dom.Pandoc as PR
 import Reflex.Dom.Pandoc.Raw (RawBuilder, elPandocRaw)
-import Relude hiding (traceShowId, (&))
+import Relude hiding ((&))
 import Text.Pandoc.Definition (Pandoc)
 
 renderZettel ::
@@ -123,12 +123,24 @@ mkReflexDomPandocConfig ::
   ZettelData ->
   Config t (NeuronWebT t m) ()
 mkReflexDomPandocConfig x =
-  PR.defaultConfig
+  (PR.defaultConfig @t @m)
     { _config_renderLink = \oldRender url _attrs minner -> do
         fromMaybe oldRender $
           Plugin.renderHandleLink (R.zettelDataPlugin x) url minner,
-      -- _config_renderCode = \_ _attrs s -> do
-      --  el "code" $ text s
+      _config_renderCode = \_ (_, langs, _) s -> do
+        -- Tag code block with "language-foo" class, if the user specified "foo"
+        -- as the language identifier. This enables external syntax highlighters
+        -- to detect the language.
+        -- 
+        -- If no language is specified, use "none" as the language (i.e.,
+        -- language-none). This works at least on prism.js,[1] in that - syntax
+        -- highlighting is turned off all the while background styling is
+        -- applied, to be consistent with code blocks with language set.
+        -- 
+        -- [1] https://github.com/PrismJS/prism/pull/2738
+        let langClass =
+              maybe "language-none" (("language-" <>) . head) $ nonEmpty langs
+        el "pre" $ elClass "code" langClass $ text s,
       _config_renderRaw = elPandocRaw
     }
 
