@@ -35,10 +35,11 @@ renderRoutePage ::
     PerformEvent t m,
     TriggerEvent t m
   ) =>
+  R.RouteConfig t m ->
   Route a ->
   Dynamic t (W.LoadableData a) ->
   m ()
-renderRoutePage r val = do
+renderRoutePage routeCfg r val = do
   el "html" $ do
     el "head" $ do
       V.headTemplate r val
@@ -54,9 +55,9 @@ renderRoutePage r val = do
     el "body" $ do
       () <- case r of
         Route_Impulse {} -> do
-          R.runNeuronWeb R.routeConfig $
+          R.runNeuronWeb routeCfg $
             V.renderRouteImpulse val
         Route_Zettel {} -> do
-          R.runNeuronWeb R.routeConfig $
+          R.runNeuronWeb routeCfg $
             V.renderRouteZettel val
       pure ()

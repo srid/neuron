@@ -7,6 +7,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Neuron's route and its config
@@ -18,7 +19,8 @@ import Data.GADT.Compare.TH
     DeriveGEQ (deriveGEq),
   )
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
-import Data.Some (Some, withSome)
+import Data.Some (Some, foldSome)
+import qualified Data.Text as T
 import Neuron.Frontend.Route.Data.Types
   ( ImpulseData,
     SiteData,
@@ -54,18 +56,30 @@ data RouteConfig t m = RouteConfig
     routeConfigRouteURL :: Some Route -> Text
   }
 
-routeConfig :: RouteConfig t m
-routeConfig =
+mkRouteUrl :: Route a -> Text
+mkRouteUrl =
+  toText . obviateIndexHtml . routeHtmlPath
+  where
+    obviateIndexHtml = \case
+      "index.html" -> "."
+      x -> x
+
+-- | Like `mkRouteUrl` but drops the .html at the end
+mkPrettyRouteUrl :: Route a -> Text
+mkPrettyRouteUrl =
+  dropHtmlExt . mkRouteUrl
+  where
+    dropHtmlExt (T.stripSuffix ".html" -> Just url) = url
+    dropHtmlExt url = url
+
+mkRouteConfig :: (forall a. Route a -> Text) -> RouteConfig t m
+mkRouteConfig mkUrl =
   RouteConfig renderRouteLink someRouteUrl
   where
     renderRouteLink dynR attrs =
       elDynAttr "a" $ ffor dynR $ \someR -> attrs <> "href" =: someRouteUrl someR
     someRouteUrl :: Some Route -> Text
-    someRouteUrl sr =
-      toText $ withSome sr $ obviateIndexHtml . routeHtmlPath
-    obviateIndexHtml = \case
-      "index.html" -> "."
-      x -> x
+    someRouteUrl = foldSome mkUrl
 
 type NeuronWebT t m = ReaderT (RouteConfig t m) m
 

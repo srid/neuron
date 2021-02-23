@@ -109,6 +109,7 @@ data BaseUrlError
 instance Exception BaseUrlError
 
 -- | Make an absolute URI for a route, given a base URL.
+-- TODO: use mkPrettyRouteUrl
 routeUri :: HasCallStack => URI -> Route a -> URI
 routeUri baseUrl r = either (error . toText . displayException) id $
   runExcept $ do

@@ -23,6 +23,7 @@
   - `neuron search`: full-text search uses exact matching (#526)
   - `neuron search`: highlight and focus matching line in `bat` preview (#556)
   - `neuron query`: query CLI interface has been changed (see docs)
+  - `neuron gen`: Add `--pretty-urls` to remove `.html` suffix in generated URLs (#562)
 - Performance improvements:
   - Improve incremental generation performance (`-w`) (#522)
 - Bug fixes

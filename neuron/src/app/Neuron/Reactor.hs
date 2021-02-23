@@ -29,7 +29,9 @@ import Neuron.CLI.Types
 import Neuron.Cache.Type (NeuronCache)
 import qualified Neuron.Cache.Type as Cache
 import Neuron.Config.Type (Config)
-import Neuron.Frontend.Route (Route (..))
+import Neuron.Frontend.Route
+  ( Route (..),
+  )
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import qualified Neuron.Reactor.Build as RB
 import Neuron.Zettelkasten.Zettel (ZettelC)
@@ -42,20 +44,21 @@ import qualified System.Directory.Contents as DC
 import qualified System.FSNotify as FSN
 import System.FilePath (isRelative, makeRelative)
 
-generateSite :: Bool -> App ()
-generateSite continueWatching = do
+generateSite :: GenCommand -> App ()
+generateSite genCmd = do
   appEnv <- getAppEnv
   liftIO $
     runHeadlessApp $ do
-      generated <- reflexApp appEnv
-      pure $ bool generated never continueWatching
+      generated <- reflexApp appEnv genCmd
+      pure $ bool generated never (watch genCmd)
 
 reflexApp ::
   forall m t.
   (MonadIO m, PerformEvent t m, MonadFix m, MonadHold t m, MonadIO (Performable m), TriggerEvent t m, PostBuild t m, Adjustable t m, NotReady t m) =>
   Env App ->
+  GenCommand ->
   m (Event t ())
-reflexApp appEnv = do
+reflexApp appEnv genCmd = do
   let run :: forall m1 a. MonadIO m1 => App a -> m1 a
       run a = liftIO $ runApp appEnv a
   -- Build a dynamic of directory tree
@@ -85,7 +88,7 @@ reflexApp appEnv = do
             nStatic <- run $ RB.copyStaticFiles filesTree
             -- Write modified routes
             nRoutes <- case modifiedRoutesOnly oldRoutes newRoutes of
-              Just rs -> run $ RB.writeRoutes rs
+              Just rs -> run $ RB.writeRoutes genCmd rs
               Nothing -> pure 0
             -- Report errors
             run $ RB.reportAllErrors newErrors

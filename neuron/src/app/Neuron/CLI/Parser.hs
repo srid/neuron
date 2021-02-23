@@ -134,16 +134,18 @@ commandParser defaultNotesDir now = do
           <$> switch (long "full-text" <> short 'a' <> help "Full-text search")
       edit <- switch (long "edit" <> short 'e' <> help "Open the matching zettel in $EDITOR")
       pure $ Search $ SearchCommand searchBy edit
+    genCommand :: Parser Command
     genCommand = do
-      serve <- hostPortOption
+      serveCmd <- fmap (uncurry ServeCommand) <$> hostPortOption
       watch <-
         switch
           ( long "watch"
               <> short 'w'
               <> help "Watch for changes and regenerate"
           )
-      pure $ Gen $ GenCommand {..}
-
+      usePrettyUrls <-
+        switch (long "pretty-urls" <> help "Drop the .html at the end of Zettel URLs")
+      pure $ Gen (serveCmd, GenCommand {..})
     zettelIDReader :: ReadM ZettelID
     zettelIDReader =
       eitherReader $ first show . parseZettelID . toText
