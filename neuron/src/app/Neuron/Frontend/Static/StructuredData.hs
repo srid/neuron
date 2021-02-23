@@ -14,6 +14,7 @@ where
 
 import Control.Monad.Except (liftEither, runExcept)
 import qualified Data.Dependent.Map as DMap
+import Data.Some (Some (..))
 import Data.Structured.Breadcrumb (Breadcrumb)
 import qualified Data.Structured.Breadcrumb as Breadcrumb
 import Data.Structured.OpenGraph
@@ -39,20 +40,21 @@ import qualified Text.Pandoc.Walk as W
 import Text.URI (URI, mkURI)
 import qualified Text.URI as URI
 
-renderStructuredData :: DomBuilder t m => Route a -> a -> m ()
-renderStructuredData route val = do
-  renderOpenGraph $ routeOpenGraph val route
-  Breadcrumb.renderBreadcrumbs $ routeStructuredData val route
+renderStructuredData :: DomBuilder t m => R.RouteConfig t m -> Route a -> a -> m ()
+renderStructuredData routeCfg route val = do
+  renderOpenGraph $ routeOpenGraph routeCfg val route
+  Breadcrumb.renderBreadcrumbs $ routeStructuredData routeCfg val route
 
-routeStructuredData :: a -> Route a -> [Breadcrumb]
-routeStructuredData v = \case
+routeStructuredData :: R.RouteConfig t m -> a -> Route a -> [Breadcrumb]
+routeStructuredData routeCfg v = \case
   R.Route_Zettel _ ->
     case R.siteDataSiteBaseUrl (fst v) of
       Nothing -> []
       Just baseUrl ->
         let mkCrumb :: Zettel -> Breadcrumb.Item
             mkCrumb Zettel {..} =
-              Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl $ Route_Zettel zettelSlug)
+              let zettelRelUrl = R.routeConfigRouteURL routeCfg (Some $ R.Route_Zettel zettelSlug)
+               in Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl zettelRelUrl)
          in Breadcrumb.fromForest $
               fmap mkCrumb <$> getUpTree (R.zettelDataPlugin (snd v))
   _ ->
@@ -63,8 +65,8 @@ routeStructuredData v = \case
       Identity upTree <- DMap.lookup R.PluginZettelRouteData_UpTree m
       pure upTree
 
-routeOpenGraph :: a -> Route a -> OpenGraph
-routeOpenGraph v r =
+routeOpenGraph :: R.RouteConfig t m -> a -> Route a -> OpenGraph
+routeOpenGraph routeCfg v r =
   OpenGraph
     { _openGraph_title = R.routeTitle' v r,
       _openGraph_siteName = R.siteDataSiteTitle (R.routeSiteData v r),
@@ -89,7 +91,8 @@ routeOpenGraph v r =
         _ -> Nothing,
       _openGraph_url = do
         baseUrl <- R.siteDataSiteBaseUrl (R.routeSiteData v r)
-        pure $ routeUri baseUrl r
+        let relUrl = R.routeConfigRouteURL routeCfg (Some r)
+        pure $ routeUri baseUrl relUrl
     }
   where
     getPandocDoc = either (const Nothing) (Just . zettelContent)
@@ -108,15 +111,14 @@ data BaseUrlError
 
 instance Exception BaseUrlError
 
--- | Make an absolute URI for a route, given a base URL.
--- TODO: use mkPrettyRouteUrl
-routeUri :: HasCallStack => URI -> Route a -> URI
-routeUri baseUrl r = either (error . toText . displayException) id $
+-- | Make an absolute URI for the given relative URL, given a base URL.
+routeUri :: HasCallStack => URI -> Text -> URI
+routeUri baseUrl relUrl = either (error . toText . displayException) id $
   runExcept $ do
     let -- Use `E.encode` to deal with unicode code points, as mkURI will fail on them.
         -- This is necessary to support non-ascii characters in filenames
-        relUrl = toText . E.encode . toString $ R.routeHtmlPath r
-    uri <- liftEither $ mkURI relUrl
+        relUrlEncoded = toText . E.encode . toString $ relUrl
+    uri <- liftEither $ mkURI relUrlEncoded
     case URI.relativeTo uri baseUrl of
       Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
       Just x -> pure x

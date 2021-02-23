@@ -48,7 +48,7 @@ renderRoutePage routeCfg r val = do
           ffor valDyn $ \v -> do
             renderHeadHtml $ R.siteDataHeadHtml (R.routeSiteData v r)
             renderManifest $ R.siteDataManifest (R.routeSiteData v r)
-            renderStructuredData r v
+            renderStructuredData routeCfg r v
             elAttr "style" ("type" =: "text/css") $ do
               text $ R.siteDataBodyCss (R.routeSiteData v r)
       pure ()
