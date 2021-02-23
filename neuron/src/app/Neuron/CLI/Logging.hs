@@ -85,20 +85,17 @@ mkLogAction useColors =
     fmtNeuronMsg :: Message -> Text
     fmtNeuronMsg Msg {..} =
       let emptyEmoji = Custom ' ' ' '
-          f c (fromMaybe emptyEmoji -> le) = color c $ show le <> " " <> msgText
+          f c (fromMaybe emptyEmoji -> le) = bool id (colorize c) useColors $ show le <> " " <> msgText
        in case msgSeverity of
             Debug mle -> f Black mle
             Info mle -> f Blue mle
             Warning mle -> f Yellow mle
             Error mle -> f Red mle
-    color :: Color -> Text -> Text
-    color c txt =
-      if useColors
-        then
-          T.pack (setSGRCode [SetColor Foreground Vivid c])
-            <> txt
-            <> T.pack (setSGRCode [Reset])
-        else txt
+    colorize :: Color -> Text -> Text
+    colorize c txt =
+      T.pack (setSGRCode [SetColor Foreground Vivid c])
+        <> txt
+        <> T.pack (setSGRCode [Reset])
 
 indentAllButFirstLine :: Int -> Text -> Text
 indentAllButFirstLine n = T.strip . unlines . go . lines
