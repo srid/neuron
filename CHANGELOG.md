@@ -7,6 +7,7 @@
   - Remove autoscroll behaviour (which had questionable value to begin with)
   - Support alt text in images (#434)
 - Remove (experimental) support for org-mode in v2 (use `v1` branch if you need org-mode)
+- Use Prism.js for syntax highlighting, and allow users to use their own syntax highlighter (#560)
 - Plugin support
   - dirtree: Treat directories as zettels, forming automatic folgezettel connections to their children. (#497)
   - neuronignore: Exclude directories and markdown files via `.neuronignore`. (#499)
