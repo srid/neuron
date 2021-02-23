@@ -4,7 +4,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.ID
@@ -29,6 +31,7 @@ import Data.Aeson
     ToJSONKey (toJSONKey),
   )
 import Data.Aeson.Types (toJSONKeyText)
+import Neuron.Zettelkasten.Format
 import Relude hiding (traceShowId)
 import System.FilePath (splitExtension, takeFileName)
 import qualified Text.Megaparsec as M
@@ -107,8 +110,11 @@ idParser' cs = do
   pure $ ZettelID $ toText s
 
 -- | Parse the ZettelID if the given filepath is a Markdown zettel.
-getZettelID :: FilePath -> Maybe ZettelID
+getZettelID :: FilePath -> Maybe (ZettelFormat, ZettelID)
 getZettelID fp = do
-  let (fileName, ext) = splitExtension $ takeFileName fp
-  guard $ ".md" == toText ext
-  rightToMaybe $ parseZettelID (toText fileName)
+  let (fileName, toText -> ext) = splitExtension $ takeFileName fp
+  fmt <- case ext of
+    ".md" -> pure ZettelFormat_Markdown
+    ".org" -> pure ZettelFormat_Org
+    _ -> Nothing
+  fmap (fmt,) $ rightToMaybe $ parseZettelID (toText fileName)

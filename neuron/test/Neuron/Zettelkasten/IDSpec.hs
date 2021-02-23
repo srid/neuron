@@ -7,6 +7,7 @@ module Neuron.Zettelkasten.IDSpec
 where
 
 import qualified Data.Aeson as Aeson
+import Neuron.Zettelkasten.Format (ZettelFormat (ZettelFormat_Markdown))
 import qualified Neuron.Zettelkasten.ID as Z
 import Relude
 import Test.Hspec
@@ -19,7 +20,7 @@ spec = do
       it "parses a custom zettel ID" $ do
         Z.parseZettelID "20abcde" `shouldBe` Right zid
       it "parses a custom zettel ID from zettel filename" $ do
-        Z.getZettelID "20abcde.md" `shouldBe` Just zid
+        Z.getZettelID "20abcde.md" `shouldBe` Just (ZettelFormat_Markdown, zid)
         Z.zettelIDSourceFileName zid `shouldBe` "20abcde.md"
       let deceptiveZid = Z.ZettelID "2136537e"
       it "parses a custom zettel ID that looks like date ID" $ do

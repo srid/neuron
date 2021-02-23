@@ -32,6 +32,7 @@ import qualified Commonmark.Pandoc as CP
 import Control.Monad.Combinators (manyTill)
 import Data.Tagged (Tagged (..))
 import qualified Data.YAML as Y
+import Neuron.Zettelkasten.Format.Reader.Type
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
@@ -40,10 +41,6 @@ import qualified Text.Pandoc.Builder as B
 import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
 import Text.Show (Show (show))
-
-type ZettelParser = FilePath -> Text -> Either ZettelParseError (Maybe (Y.Node Y.Pos), Pandoc)
-
-type ZettelParseError = Tagged "ZettelParserError" Text
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --

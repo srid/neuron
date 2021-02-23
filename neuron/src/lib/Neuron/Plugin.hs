@@ -22,7 +22,7 @@ import Data.Some
 import qualified Data.Text as T
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types
-import Neuron.Markdown (NeuronSyntaxSpec, parseMarkdown)
+import Neuron.Markdown (NeuronSyntaxSpec)
 import qualified Neuron.Plugin.Plugins.DirTree as DirTree
 import qualified Neuron.Plugin.Plugins.Links as Links
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
@@ -30,6 +30,8 @@ import qualified Neuron.Plugin.Plugins.Tags as Tags
 import qualified Neuron.Plugin.Plugins.UpTree as UpTree
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (ContextualConnection)
+import Neuron.Zettelkasten.Format
+import Neuron.Zettelkasten.Format.Reader.Type
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
@@ -82,12 +84,12 @@ filterSources plugins t = do
       combiner = \ima f -> (fmap join . traverse f) =<< ima
   foldl' combiner (pure $ Just t) applyF
 
-afterZettelParse :: PluginRegistry -> [(ZettelID, (FilePath, (Text, DMap PluginZettelData Identity)))] -> [ZettelC]
-afterZettelParse plugins fs = do
+afterZettelParse :: PluginRegistry -> (ZettelFormat -> ZettelParser) -> [(ZettelID, (FilePath, ZettelFormat, (Text, DMap PluginZettelData Identity)))] -> [ZettelC]
+afterZettelParse plugins getParser fs = do
   let h =
         Map.elems plugins <&> \sp ->
           withSome sp $ \p (m, x) -> (m,) $ _plugin_afterZettelParse p m x
-  parseZettels (parseMarkdown $ markdownSpec plugins) fs <&> \x ->
+  parseZettels getParser fs <&> \x ->
     snd $ foldl' (\x1 f -> f x1) x h
 
 afterZettelRead :: MonadState (Map ZettelID ZIDRef) m => PluginRegistry -> DC.DirTree FilePath -> m ()

@@ -38,9 +38,12 @@ import qualified Neuron.Frontend.Route.Data as RD
 import qualified Neuron.Frontend.Static.HeadHtml as HeadHtml
 import qualified Neuron.Frontend.Static.Html as Html
 import qualified Neuron.Frontend.Widget as W
+import Neuron.Markdown (parseMarkdown)
 import Neuron.Plugin (PluginRegistry)
 import qualified Neuron.Plugin as Plugin
 import Neuron.Version (neuronVersion)
+import Neuron.Zettelkasten.Format
+import qualified Neuron.Zettelkasten.Format.Reader.Org as Org
 import qualified Neuron.Zettelkasten.Graph.Build as G
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID (..))
@@ -120,7 +123,7 @@ reportAllErrors issues = do
     reportError :: ZettelID -> ZettelError -> m ()
     reportError zid (zettelErrorText -> err) = do
       -- We don't know the full path to this zettel; so just print the ID.
-      log EE $ "Cannot accept Zettel ID: " <> unZettelID zid
+      log EE $ "Cannot accept Zettel with ID \"" <> unZettelID zid <> "\""
       log E $ indentAllButFirstLine 4 err
 
 genRouteHtml ::
@@ -216,8 +219,9 @@ loadZettelkastenFromFilesWithPlugins ::
       Map ZettelID ZettelIssue
     )
 loadZettelkastenFromFilesWithPlugins plugins fileTree = do
+  let markdownParser = parseMarkdown (Plugin.markdownSpec plugins)
   !zidRefs <-
-    case DC.pruneDirTree =<< DC.filterDirTree ((== ".md") . takeExtension) fileTree of
+    case DC.pruneDirTree =<< DC.filterDirTree ((`elem` [".org", ".md"]) . takeExtension) fileTree of
       Nothing ->
         pure mempty
       Just mdFileTree -> do
@@ -232,6 +236,9 @@ loadZettelkastenFromFilesWithPlugins plugins fileTree = do
               decodeUtf8With lenientDecode <$> readFileBS absPath
             Plugin.afterZettelRead plugins mdFileTree
   log D $ "Building graph (" <> show (length zidRefs) <> " notes) ..."
+  let getParser = \case
+        ZettelFormat_Markdown -> markdownParser
+        ZettelFormat_Org -> Org.parseOrg
   pure $
     runWriter $ do
       filesWithContent <-
@@ -239,8 +246,8 @@ loadZettelkastenFromFilesWithPlugins plugins fileTree = do
           R.ZIDRef_Ambiguous fps -> do
             tell $ one (zid, ZettelIssue_Error $ ZettelError_AmbiguousID fps)
             pure Nothing
-          R.ZIDRef_Available fp s pluginData ->
-            pure $ Just (fp, (s, pluginData))
-      let !zs = Plugin.afterZettelParse plugins (Map.toList filesWithContent)
+          R.ZIDRef_Available fp fmt s pluginData ->
+            pure $ Just (fp, fmt, (s, pluginData))
+      let !zs = Plugin.afterZettelParse plugins getParser (Map.toList filesWithContent)
       !g <- G.buildZettelkasten plugins zs
       pure (g, zs)
