@@ -16,7 +16,6 @@
 - Plugin:links
   - Labelled directional links (#514): `[[foo]]#` and `#[[foo]]`
   - Backlinks panel now groups entries by connection type
-- Change default slug to use all lower-case (#527)
 - Reduce error verbosity (CLI & web) in the scenario of there being innumerous broken wiki-links.
 - CLI
   - `neuron rib` is renamed to `neuron gen` (neuron has migrated from rib/shake to reflex)

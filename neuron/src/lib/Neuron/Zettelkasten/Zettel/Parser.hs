@@ -45,9 +45,11 @@ parseZettel parser fn zid s pluginData =
     unparseableZettel err =
       let slug = mkDefaultSlug $ unZettelID zid
        in (Nothing,) $ Left $ Zettel zid slug fn "Unknown" False Nothing False (s, err) pluginData
+    -- We keep the default slug as close to zettel ID is possible. Spaces (and
+    -- colons) are replaced with underscore for legibility.
     mkDefaultSlug :: Text -> Slug
     mkDefaultSlug ss =
-      foldl' (\s' x -> T.replace x "-" s') (T.toLower ss) (charsDisallowedInURL <> [" "])
+      foldl' (\s' x -> T.replace x "_" s') ss (charsDisallowedInURL <> [" "])
     charsDisallowedInURL :: [Text]
     charsDisallowedInURL =
       [":"]
