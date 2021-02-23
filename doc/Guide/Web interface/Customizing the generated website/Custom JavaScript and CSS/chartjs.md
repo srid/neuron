@@ -6,7 +6,7 @@ tags: [custom-head-recipe]
 
 [Chart.js](https://www.chartjs.org/) is an easy way to include animated, interactive graphs on your website for free.
 
-Render mermaid content in neuron by including the following HTML snippet in your `head.html` file ([[Custom JavaScript and CSS]]) or the zettel file ([[raw-html]]):
+Render mermaid content in neuron by including the following HTML snippet in your `head.html` file ([[Custom JavaScript and CSS]]) or the zettel file ([[Using raw HTML in Markdown]]):
 
 ```html
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.bundle.min.js" integrity="sha512-SuxO9djzjML6b9w9/I07IWnLnQhgyYVSpHZx0JV97kGBfTIsUYlWflyuW4ypnvhBrslz1yJ3R+S14fdCWmSmSA==" crossorigin="anonymous"></script>

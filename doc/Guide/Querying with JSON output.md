@@ -1,4 +1,6 @@
-# Querying with JSON output
+---
+slug: query
+---
 
 Use the `query` command to query your Zettelkasten and return the matches in JSON format. 
 
@@ -18,7 +20,7 @@ You can use [`jq`][jq] to further process the JSON result. For eg., to print a l
 
 ## Querying a single zettel
 
-To retrieve the metadata for a zettel by its [[id]]:
+To retrieve the metadata for a zettel by its [[Zettel ID]]:
 
 ```bash
 neuron query --id=index

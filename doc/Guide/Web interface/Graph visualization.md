@@ -2,7 +2,7 @@
 slug: graph-visualize
 ---
 
-A zettelkasten is a [directed graph](https://en.wikipedia.org/wiki/Directed_graph). Neuron also has an unique notion of [[folgezettel-heterarchy]]#, which is a *subset* of this graph established by having zettels "branch off" to other zettels.
+A zettelkasten is a [directed graph](https://en.wikipedia.org/wiki/Directed_graph). Neuron also has an unique notion of [[Folgezettel Heterarchy]]#, which is a *subset* of this graph established by having zettels "branch off" to other zettels.
 
 There are two modes of visualization these graph connections:
 

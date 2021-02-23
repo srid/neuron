@@ -1,4 +1,5 @@
 ---
+slug: searching
 tags:
   - walkthrough
 ---

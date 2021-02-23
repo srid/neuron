@@ -1,4 +1,6 @@
-# Tags
+---
+slug: tags
+---
 
 Neuron supports Twitter like tags. Tags are added by prefixing them with `#`, and they can appear anywhere in the note text. For example:
 
@@ -9,7 +11,7 @@ victimizer is rendered powerless to influence their victim.
 
 In the above example, the note is tagged with `#cognitive-distortion` which also links to the tag page.
 
-Tags can also be specified in the [[metadata]] block. The above tag can be specified alternatively as follows:
+Tags can also be specified in the [[Zettel metadata]] block. The above tag can be specified alternatively as follows:
 
 ```markdown
 ---

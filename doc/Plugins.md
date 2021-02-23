@@ -4,7 +4,7 @@ slug: plugins
 
 Neuron includes several plugins, some of them are enabled by default.
 
-You can turn on or turn off these plugins in [[configuration]]. For example, the following setting in your `neuron.dhall` will enable the three specified plugins, while leaving everything else disabled:
+You can turn on or turn off these plugins in [[Configuration file]]. For example, the following setting in your `neuron.dhall` will enable the three specified plugins, while leaving everything else disabled:
 
 ```dhall
 { plugins = [ "neuronignore", "links", "uptree" ]

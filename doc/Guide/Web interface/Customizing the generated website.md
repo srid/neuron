@@ -6,7 +6,7 @@ Although neuron uses fixed HTML & CSS structure, you can customize the final sit
 
 ## Favicon
 
-A custom [favicon](https://en.wikipedia.org/wiki/Favicon) for your site can be specified by copying it to the `static` directory (see [[2016401]]). Neuron recognizes the following file names:
+A custom [favicon](https://en.wikipedia.org/wiki/Favicon) for your site can be specified by copying it to the `static` directory (see [[Adding images and other files]]). Neuron recognizes the following file names:
 
 * `static/favicon.svg`
 * `static/favicon.png`

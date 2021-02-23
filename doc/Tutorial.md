@@ -36,7 +36,7 @@ There a few ways to do this.
 
 For this tutorial, we choose the last option.
 
-Neuron expects the Zettelkasten directory to contain a `neuron.dhall`, as well as a list of [[Zettel Markdown]] notes. By default, the current working directory will be used as your Zettelkasten directory (which you can override using the `-d` option). Create this directory first, and add a basic `neuron.dhall` (see [[configuration]]):
+Neuron expects the Zettelkasten directory to contain a `neuron.dhall`, as well as a list of [[Zettel Markdown]] notes. By default, the current working directory will be used as your Zettelkasten directory (which you can override using the `-d` option). Create this directory first, and add a basic `neuron.dhall` (see [[Configuration file]]):
 
 ```shell
 mkdir ~/zettelkasten
@@ -84,7 +84,7 @@ Access it at [localhost:8080](http://localhost:8080) (or use `neuron open`). You
 
 ## Growing your Zettelkasten
 
-Congratulations, you have created your first Zettelkasten using neuron! From this moment onwards, simply use the `new` command to create new zettels, `search` command to open existing zettels (or see [[editor]] for editor support). As your Zettelkasten grows over time, more value will be derived from it.
+Congratulations, you have created your first Zettelkasten using neuron! From this moment onwards, simply use the `new` command to create new zettels, `search` command to open existing zettels (or see [[Editor integration]] for editor support). As your Zettelkasten grows over time, more value will be derived from it.
 
 ## What's next?
 

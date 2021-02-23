@@ -1,4 +1,6 @@
-# Configuration
+---
+slug: configuration
+---
 
 You may configure the parameters of your web interface by adding an optional configuration file named `neuron.dhall` under the notes directory. It should contain:
 

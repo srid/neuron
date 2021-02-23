@@ -6,7 +6,7 @@ tags:
 
 # Creating and Editing zettels
 
-You may use any text editor with Markdown support to edit your zettel files. Neuron provides a command to create new zettel files with the suitable [[id]]:
+You may use any text editor with Markdown support to edit your zettel files. Neuron provides a command to create new zettel files with the suitable [[Zettel ID]]:
 
 ```bash
 neuron new
@@ -28,12 +28,12 @@ Do not forget to link your new zettel to the rest of your Zettelkasten. See [[Li
 
 ## Opening a Zettel by title
 
-See [[searching]].
+See [[Searching your Zettelkasten]].
 
 ## Using a text editor
 
-See [[editor]]#
+See [[Editor integration]]#
 
 ## Web Interface
 
-[[cerveau]]# provides a web interface to browse and edit your Neuron v1 notes.
+[[Cerveau]]# provides a web interface to browse and edit your Neuron v1 notes.

@@ -1,4 +1,6 @@
-# Folgezettel Heterarchy
+---
+slug: folgezettel-heterarchy
+---
 
 Neuron allows you to organically build a [[Heterarchy]] out of your Zettelkasten
 over time. When a zettel links (see [[Linking]]) to another, it "branches

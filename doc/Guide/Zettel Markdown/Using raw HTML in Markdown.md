@@ -1,4 +1,6 @@
-# Using raw HTML in Markdown
+---
+slug: raw-html
+---
 
 You can write raw HTML inline in your Markdown notes. You can also used fenced code blocks to specify them explicitly.
 

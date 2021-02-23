@@ -1,4 +1,6 @@
-# Cerveau
+---
+slug: cerveau
+---
 
 :::{.ui .warning .message}
 Cerveau supports only neuron v1, not v2.

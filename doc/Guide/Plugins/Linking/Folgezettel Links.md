@@ -2,7 +2,7 @@
 slug: folgezettel
 ---
 
-Wiki-links (see [[Linking]]) may be labelled as "folgezettel" if you are writing a "structure note" (or hub note, or index note). Folgezettel links are used to curate a tree-like structure (termed [[folgezettel-heterarchy]]) for your zettelkasten, which structure is used in both [[Uplink Tree]] and [[impulse-feature]].
+Wiki-links (see [[Linking]]) may be labelled as "folgezettel" if you are writing a "structure note" (or hub note, or index note). Folgezettel links are used to curate a tree-like structure (termed [[Folgezettel Heterarchy]]) for your zettelkasten, which structure is used in both [[Uplink Tree]] and [[impulse-feature]].
 
 To mark a wiki-link as "folgezettel", put the `#` letter to either the end or the beginning of the link. The position of `#` indicates the *direction* of the folgezettel relationship.
 

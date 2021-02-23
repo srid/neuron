@@ -1,4 +1,6 @@
-# Math support
+---
+slug: math
+---
 
 Neuron's Markdown syntax supports [MathJax](https://www.mathjax.org/).
 

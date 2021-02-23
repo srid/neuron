@@ -1,4 +1,6 @@
-# Editor integration
+---
+slug: editor
+---
 
 While you may use any text editor with neuron, the following extensions enable certain neuron-specific features on top of basic text editing.
 
@@ -36,6 +38,6 @@ See [this fork of neuron.vim](https://github.com/fiatjaf/neuron.vim).
 
 ### Online
 
-[[cerveau]] can be used to edit your neuron v1 notes online using a web browser. Here's a small demo of the Cerveau editor in action, demonstrating the link autocomplete feature.
+[[Cerveau]] can be used to edit your neuron v1 notes online using a web browser. Here's a small demo of the Cerveau editor in action, demonstrating the link autocomplete feature.
 
 ![demo](./static/cerveau-autocompl.gif)

@@ -1,4 +1,6 @@
-# Zettel metadata
+---
+slug: metadata
+---
 
 Zettels may contain optional metadata in the YAML frontmatter.
 
@@ -16,7 +18,7 @@ This date can be made to display in a query result by using the `timeline` flag 
 
 ## Slug
 
-The "slug" of a zettel is used in its URL, which in turn is determined by the filename of the generated HTML file. By default neuron will use the lowercase version of [[id]], with whitespace replaced with hyphen as the slug, which may be overriden here.
+The "slug" of a zettel is used in its URL, which in turn is determined by the filename of the generated HTML file. By default neuron will use the lowercase version of [[Zettel ID]], with whitespace replaced with hyphen as the slug, which may be overriden here.
 
 ```markdown
 ---
@@ -47,7 +49,7 @@ unlisted: true
 
 ## Other metadata 
 
-You can explicitly specify a title using the `title` metadata; otherwise, Neuron will infer it from the Markdown heading or [[id]].
+You can explicitly specify a title using the `title` metadata; otherwise, Neuron will infer it from the Markdown heading or [[Zettel ID]].
 
 The metadata key `tags` or `keywords` can be used to specify tags, although neuron supports inline tags as well (see [[Tags]]#).
 

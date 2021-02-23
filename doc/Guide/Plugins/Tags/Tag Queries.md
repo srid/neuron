@@ -1,6 +1,10 @@
+---
+slug: tag-queries
+---
+
 Neuron supports *tag link queries* that can be used to *dynamically* create links based on a tag (see [[Tags]]).
 
-For example, to link to all zettels with the "science" tag (from the example at [[metadata]]), you would add the following to your note:
+For example, to link to all zettels with the "science" tag (from the example at [[Zettel metadata]]), you would add the following to your note:
 
 ```
 [[z:zettels?tag=science&timeline]]
@@ -9,7 +13,7 @@ For example, to link to all zettels with the "science" tag (from the example at 
 When neuron encounters an [URI] with the `z:` protocol such as the above, it treats it as a link query. The `z:zettels` query in particular will link to all zettels tagged with the tag specified in the `tag` query parameter.
 
 :::{.ui .message}
-**Tip**: You can use the CLI to see which zettels will be included in a given query; see [[query]].
+**Tip**: You can use the CLI to see which zettels will be included in a given query; see [[Querying with JSON output]].
 :::
 
 ## Demo
@@ -37,7 +41,7 @@ For a real-world example of link queries and hierarchical tags, see [Alien Psych
 Link queries support a few query flags to control the link listing UI:
 
 * `?grouped`: Group the results by matching tag (use with hierarchical tags)
-* `?timeline`: Sort the results by `date` from [[metadata]], and also display the date.
+* `?timeline`: Sort the results by `date` from [[Zettel metadata]], and also display the date.
 * `?showid`: Display the zettel ID alongside the zettel title (link).
 
 ## Limit the amount of zettels

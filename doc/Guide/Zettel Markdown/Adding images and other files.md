@@ -1,4 +1,6 @@
-# Adding images and other files
+---
+slug: static-files
+---
 
 Create a folder named "static" in your Zettelkasten directory, and add your
 images and files to it. Neuron will automatically copy them as is to the output
