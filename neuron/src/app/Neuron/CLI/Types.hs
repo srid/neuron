@@ -30,6 +30,7 @@ module Neuron.CLI.Types
     OpenCommand (..),
     CliQuery (..),
     QueryCommand (..),
+    ServeCommand (..),
     GenCommand (..),
   )
 where
@@ -146,10 +147,17 @@ data QueryCommand = QueryCommand
   }
   deriving (Eq, Show)
 
+data ServeCommand = ServeCommand
+  { host :: Text,
+    port :: Int
+  }
+  deriving (Eq, Show)
+
 data GenCommand = GenCommand
-  { -- | Whether to run a HTTP server on `outputDir`
-    serve :: Maybe (Text, Int),
-    watch :: Bool
+  { -- | Continue regenerating if files change.
+    watch :: Bool,
+    -- | Use URLs without ".html" at the end
+    usePrettyUrls :: Bool
   }
   deriving (Eq, Show)
 
@@ -163,7 +171,7 @@ data Command
   | -- | Run a query against the Zettelkasten
     Query QueryCommand
   | -- | Run site generation
-    Gen GenCommand
+    Gen (Maybe ServeCommand, GenCommand)
   | -- | LSP server
     LSP
   deriving (Eq, Show)

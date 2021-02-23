@@ -23,10 +23,13 @@
   - `neuron search`: full-text search uses exact matching (#526)
   - `neuron search`: highlight and focus matching line in `bat` preview (#556)
   - `neuron query`: query CLI interface has been changed (see docs)
+  - `neuron gen`: Add `--pretty-urls` to remove `.html` suffix in generated URLs (#562)
+  - Supress colors if output is not a terminal with color support (#561)
 - Performance improvements:
   - Improve incremental generation performance (`-w`) (#522)
 - Bug fixes
   - Fix a bug where folgezettel relationship is not established if a note also has non-folgezettel links to the same target
+- Clean HTML output when zettels are deleted (#141)
 
 ## Unreleased (v1 + v2)
 

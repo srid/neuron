@@ -23,6 +23,7 @@ import Data.Some (Some (Some), foldSome)
 import Neuron.CLI.Logging
 import Neuron.CLI.Types
   ( App,
+    GenCommand (..),
     MonadApp (getNotesDir, getOutputDir),
   )
 import qualified Neuron.Cache as Cache
@@ -55,24 +56,33 @@ import Neuron.Zettelkasten.Zettel.Error
   )
 import Reflex.Dom.Core (constDyn, renderStatic)
 import Relude
-import System.Directory (doesFileExist, withCurrentDirectory)
+import System.Directory (doesFileExist, removeFile, withCurrentDirectory)
 import qualified System.Directory.Contents as DC
 import qualified System.Directory.Contents.Extra as DC
 import System.FilePath (takeExtension, (</>))
 
-writeRoutes :: NonEmpty (DSum Route Identity) -> App Int
-writeRoutes new = do
+writeRoutes :: GenCommand -> NonEmpty (DSum Route Identity) -> App Int
+writeRoutes genCmd new = do
   log D $ "Rendering routes (" <> show (length new) <> " slugs) ..."
   -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
   -- Second bottleneck is graph building.
   !routeHtml <- forM new $ \case
     r@(Z.Route_Zettel _) :=> Identity val -> do
-      (Some r,) <$> genRouteHtml r val
+      (Some r,) <$> genRouteHtml genCmd r val
     r@Z.Route_Impulse :=> Identity val ->
-      (Some r,) <$> genRouteHtml r val
+      (Some r,) <$> genRouteHtml genCmd r val
   fmap sum $
     forM routeHtml $ \(someR, html) -> do
       fmap (bool 0 1) $ flip writeRouteHtml html `foldSome` someR
+
+deleteRoutes :: NonEmpty (DSum Route Identity) -> App ()
+deleteRoutes del = do
+  log I $ "Cleaning up after removed zettels (" <> show (length del) <> " slugs) ..."
+  _ :: [()] <- forM (toList del) $ \case
+    r@(Z.Route_Zettel _) :=> _ -> do
+      deleteRoute r
+    _ -> pure ()
+  pure ()
 
 copyStaticFiles :: (MonadApp m, MonadIO m, WithLog env Message m) => DC.DirTree FilePath -> m Int
 copyStaticFiles fileTree = do
@@ -126,18 +136,20 @@ reportAllErrors issues = do
 genRouteHtml ::
   forall m a.
   MonadIO m =>
+  GenCommand ->
   Route a ->
   a ->
   m ByteString
-genRouteHtml r val = do
+genRouteHtml GenCommand {..} r val = do
   -- Note: When using hydration, use `renderStatic . runHydrationT` and also
   -- avoid any closure areguments (val, etc.) in the Dynamics. For now, neuron
   -- doesn't do any GHCJS much less hydration. But this is something to keep in
   -- mind for future.
   liftIO $
     fmap snd . renderStatic $ do
-      let valDyn = constDyn $ W.availableData val
-      Html.renderRoutePage r valDyn
+      let routeCfg = Z.mkRouteConfig $ bool Z.mkRouteUrl Z.mkPrettyRouteUrl usePrettyUrls
+          valDyn = constDyn $ W.availableData val
+      Html.renderRoutePage routeCfg r valDyn
 
 writeRouteHtml :: (MonadApp m, MonadIO m, WithLog env Message m) => Route a -> ByteString -> m Bool
 writeRouteHtml r content = do
@@ -155,6 +167,13 @@ writeRouteHtml r content = do
       writeFileText htmlFile s
       pure True
     else pure False
+
+deleteRoute :: (MonadApp m, MonadIO m, WithLog env Message m) => Route a -> m ()
+deleteRoute r = do
+  outputDir <- getOutputDir
+  let htmlFile = outputDir </> routeHtmlPath r
+  log (I' Trashed) $ toText $ DC.mkRelative outputDir htmlFile
+  liftIO $ removeFile htmlFile
 
 -- Functions from old Generate.hs
 
