@@ -32,6 +32,7 @@ import Options.Applicative
 import Relude
 import System.Console.ANSI (hSupportsANSI)
 import System.Directory (getCurrentDirectory)
+import System.IO (hIsTerminalDevice)
 
 run :: (GenCommand -> App ()) -> IO ()
 run act = do
@@ -42,7 +43,7 @@ run act = do
       info
         (versionOption <*> cliParser <**> helper)
         (fullDesc <> progDesc "Neuron, future-proof Zettelkasten app <https://neuron.zettel.page/>")
-  useColors <- hSupportsANSI stdout
+  useColors <- liftA2 (&&) (hIsTerminalDevice stderr) (hSupportsANSI stderr)
   let logAction = Logging.mkLogAction useColors
   runApp (Env app logAction) $ runAppCommand act
   where
