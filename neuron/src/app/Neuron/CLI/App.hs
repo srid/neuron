@@ -30,6 +30,7 @@ import qualified Neuron.LSP as LSP
 import qualified Neuron.Version as Version
 import Options.Applicative
 import Relude
+import System.Console.ANSI (hSupportsANSI)
 import System.Directory (getCurrentDirectory)
 
 run :: (GenCommand -> App ()) -> IO ()
@@ -41,7 +42,8 @@ run act = do
       info
         (versionOption <*> cliParser <**> helper)
         (fullDesc <> progDesc "Neuron, future-proof Zettelkasten app <https://neuron.zettel.page/>")
-  let logAction = Logging.mkLogAction
+  useColors <- hSupportsANSI stdout
+  let logAction = Logging.mkLogAction useColors
   runApp (Env app logAction) $ runAppCommand act
   where
     versionOption =

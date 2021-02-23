@@ -78,21 +78,21 @@ pattern E' le <- Error (Just le) where E' le = Error (Just le)
 
 type Message = Msg Severity
 
-mkLogAction :: (MonadIO m) => LogAction m Message
-mkLogAction =
+mkLogAction :: (MonadIO m) => Bool -> LogAction m Message
+mkLogAction useColors =
   cmap fmtNeuronMsg logTextStderr
   where
     fmtNeuronMsg :: Message -> Text
     fmtNeuronMsg Msg {..} =
       let emptyEmoji = Custom ' ' ' '
-          f c (fromMaybe emptyEmoji -> le) = color c $ show le <> " " <> msgText
+          f c (fromMaybe emptyEmoji -> le) = bool id (colorize c) useColors $ show le <> " " <> msgText
        in case msgSeverity of
             Debug mle -> f Black mle
             Info mle -> f Blue mle
             Warning mle -> f Yellow mle
             Error mle -> f Red mle
-    color :: Color -> Text -> Text
-    color c txt =
+    colorize :: Color -> Text -> Text
+    colorize c txt =
       T.pack (setSGRCode [SetColor Foreground Vivid c])
         <> txt
         <> T.pack (setSGRCode [Reset])
