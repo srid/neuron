@@ -65,7 +65,10 @@ renderZettel siteData zData = do
     Plugin.renderPluginTop pluginData
   -- Main content
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-    let elNeuronPandoc = elPandoc (mkReflexDomPandocConfig zData) . addSemanticUIClasses
+    let elNeuronPandoc = 
+          divClass "pandoc" 
+            . elPandoc (mkReflexDomPandocConfig zData) 
+            . addSemanticUIClasses
     divClass "zettel-view" $ do
       let zc = R.zettelDataZettel zData
           z = sansContent zc
