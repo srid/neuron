@@ -56,7 +56,7 @@ import Neuron.Zettelkasten.Zettel.Error
   )
 import Reflex.Dom.Core (constDyn, renderStatic)
 import Relude
-import System.Directory (doesFileExist, withCurrentDirectory)
+import System.Directory (doesFileExist, removeFile, withCurrentDirectory)
 import qualified System.Directory.Contents as DC
 import qualified System.Directory.Contents.Extra as DC
 import System.FilePath (takeExtension, (</>))
@@ -74,6 +74,15 @@ writeRoutes genCmd new = do
   fmap sum $
     forM routeHtml $ \(someR, html) -> do
       fmap (bool 0 1) $ flip writeRouteHtml html `foldSome` someR
+
+deleteRoutes :: NonEmpty (DSum Route Identity) -> App ()
+deleteRoutes del = do
+  log I $ "Cleaning up after removed zettels (" <> show (length del) <> " slugs) ..."
+  _ :: [()] <- forM (toList del) $ \case
+    r@(Z.Route_Zettel _) :=> _ -> do
+      deleteRoute r
+    _ -> pure ()
+  pure ()
 
 copyStaticFiles :: (MonadApp m, MonadIO m, WithLog env Message m) => DC.DirTree FilePath -> m Int
 copyStaticFiles fileTree = do
@@ -158,6 +167,13 @@ writeRouteHtml r content = do
       writeFileText htmlFile s
       pure True
     else pure False
+
+deleteRoute :: (MonadApp m, MonadIO m, WithLog env Message m) => Route a -> m ()
+deleteRoute r = do
+  outputDir <- getOutputDir
+  let htmlFile = outputDir </> routeHtmlPath r
+  log (I' Trashed) $ toText $ DC.mkRelative outputDir htmlFile
+  liftIO $ removeFile htmlFile
 
 -- Functions from old Generate.hs
 

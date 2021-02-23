@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -20,6 +21,7 @@ where
 
 import Colog (WithLog, log)
 import Control.Monad.Fix (MonadFix)
+import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum ((:=>)))
 import Data.List (nubBy)
@@ -86,8 +88,14 @@ reflexApp appEnv genCmd = do
           ffor (attach (current $ snd <$> treeDyn) routeDataWithErrorsE') $ \(filesTree, ((oldRoutes, _oldErrs), (newRoutes, newErrors))) -> do
             -- Copy static files
             nStatic <- run $ RB.copyStaticFiles filesTree
+            let routeChanges = whatChanged oldRoutes newRoutes
+            -- Deleted removed routes if any
+            unless (null oldRoutes) $ do
+              case nonEmpty (deletions routeChanges) of
+                Just rs -> run $ RB.deleteRoutes rs
+                Nothing -> pure ()
             -- Write modified routes
-            nRoutes <- case modifiedRoutesOnly oldRoutes newRoutes of
+            nRoutes <- case nonEmpty (modifications routeChanges) of
               Just rs -> run $ RB.writeRoutes genCmd rs
               Nothing -> pure 0
             -- Report errors
@@ -107,21 +115,42 @@ reflexApp appEnv genCmd = do
     rememberLastEvent x evt = do
       xDyn <- holdDyn x evt
       pure $ attach (current xDyn) evt
-    modifiedRoutesOnly :: [DSum Route Identity] -> [DSum Route Identity] -> Maybe (NonEmpty (DSum Route Identity))
-    modifiedRoutesOnly (DMap.fromList -> oldMap) new =
-      let needsRebuild :: forall a. Eq a => Route a -> Identity a -> Maybe ()
-          needsRebuild r newVal =
-            case DMap.lookup r oldMap of
-              Just oldVal -> guard (oldVal /= newVal)
-              Nothing -> Just ()
-       in nonEmpty $
-            fforMaybe new $ \case
-              rd@(r@(Route_Zettel _) :=> newVal) -> do
-                needsRebuild r newVal
-                pure rd
-              rd@(r@Route_Impulse :=> newVal) -> do
-                needsRebuild r newVal
-                pure rd
+
+data Change a
+  = Modified a
+  | Deleted a
+  | NoChange
+  deriving (Eq, Show, Functor)
+
+modifications :: [Change a] -> [a]
+modifications = fmapMaybe $ \case
+  Modified x -> Just x
+  _ -> Nothing
+
+deletions :: [Change a] -> [a]
+deletions = fmapMaybe $ \case
+  Deleted x -> Just x
+  _ -> Nothing
+
+whatChanged :: [DSum Route Identity] -> [DSum Route Identity] -> [Change (DSum Route Identity)]
+whatChanged old@(DMap.fromList -> oldMap) new@(DMap.fromList -> newMap) =
+  let needsRebuild :: forall a. Eq a => DMap Route Identity -> Route a -> Identity a -> Bool
+      needsRebuild otherMap r val =
+        case DMap.lookup r otherMap of
+          Just otherVal
+            | otherVal == val ->
+              False
+          _ -> True
+      ms = fforMaybe new $ \case
+        rd@(r@(Route_Zettel _) :=> newVal) -> do
+          pure $ bool NoChange (Modified rd) $ needsRebuild oldMap r newVal
+        rd@(r@Route_Impulse :=> newVal) -> do
+          pure $ bool NoChange (Modified rd) $ needsRebuild oldMap r newVal
+      ds = fforMaybe old $ \case
+        rd@(r@(Route_Zettel _) :=> _) -> do
+          pure $ bool NoChange (Deleted rd) $ isNothing $ DMap.lookup r newMap
+        _ -> Nothing
+   in ms <> ds
 
 buildDirTreeDyn :: (MonadIO (Performable m), MonadIO m, PerformEvent t m, TriggerEvent t m, PostBuild t m, MonadHold t m, MonadFix m) => Env App -> m (Dynamic t (Either Text (Config, DC.DirTree FilePath)))
 buildDirTreeDyn appEnv = do
@@ -131,10 +160,14 @@ buildDirTreeDyn appEnv = do
     run $ (,) <$> getNotesDir <*> RB.locateZettelFiles
   fsEventsE <- watchDirWithDebounce 0.1 notesDir
   treeE <- performEvent $
-    ffor fsEventsE $ \(fmap FSN.eventPath -> paths) ->
+    ffor fsEventsE $ \fsEvents ->
       run $ do
-        forM_ paths $ \path ->
-          log (I' Received) $ toText path
+        forM_ fsEvents $ \event ->
+          case event of
+            FSN.Removed {} ->
+              log (I' Trashed) $ toText (FSN.eventPath event)
+            _ ->
+              log (I' Received) $ toText (FSN.eventPath event)
         -- TODO(perf): Instead of rebuilding the tree, patch the existing tree
         -- with changed paths.
         RB.locateZettelFiles

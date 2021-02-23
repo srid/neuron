@@ -34,6 +34,7 @@ data LogMoji
   | Wait
   | WWW
   | Sent
+  | Trashed
   | Received
   | -- | Custom string can be used to substitute for an emoji.
     -- It must be of length two, inasmuch as many emojis take two-letter space.
@@ -50,6 +51,8 @@ instance Text.Show LogMoji where
       "🌐"
     Sent ->
       "💾"
+    Trashed ->
+      "🗑️ "
     Received ->
       "️📝"
     Custom a b ->
