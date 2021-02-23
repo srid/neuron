@@ -13,7 +13,7 @@ Zettel files are written in Markdown, per [CommonMark](https://commonmark.org/) 
 Enriching Markdown:
 
 * [[raw-html]]#
-* [[Code syntax Highlighting]]#
+* [[Code Syntax Highlighting]]#
 * [[math]]#
 * [Footnotes](https://github.com/jgm/commonmark-hs/blob/master/commonmark-extensions/test/footnotes.md) and [many other extensions](https://github.com/jgm/commonmark-hs/tree/master/commonmark-extensions) are enabled.
 * **Highlighting**: Surround text with `== ... ==` to highlighting them (eg: This ==word== is highlighted).

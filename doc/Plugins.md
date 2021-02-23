@@ -13,6 +13,7 @@ You can turn on or turn off these plugins in [[configuration]]. For example, the
 
 List of available plugins is displayed below:
 
+{.ui .table}
 | Plugin Name    | Documentation      | Enabled by default? |
 |----------------|--------------------|---------------------|
 | `neuronignore` | [[Ignoring files]] | Yes                 |

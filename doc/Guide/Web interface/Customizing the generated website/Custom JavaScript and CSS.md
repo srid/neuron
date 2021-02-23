@@ -7,7 +7,7 @@ You can add custom JavaScript or CSS code to the `<head>` element of the generat
 If this file does not exist, neuron will use its builtin one that provides
 
 - MathJax JavaScript (see [[math]])
-- Prism JavaScript (see [[Code syntax Highlighting]])
+- Prism JavaScript (see [[Code Syntax Highlighting]])
 
 :::{.ui .message}
 Note that if you are going to specify a custom `head.html`, you must include the above manually.
