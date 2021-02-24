@@ -26,6 +26,12 @@ jobs:
       # This builds neuron, as well as run tests
       - name: Build neuron 🔧
         run: nix-build -j4 ci.nix
+      - name: Publish Docker image to Docker Hub
+        if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
+        run: |
+          docker load -i $(nix-build docker.nix --argstr tag latest)
+          docker login -u sridca -p ${{ secrets.DOCKER_PASS }}
+          docker push sridca/neuron:latest
       # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
       - name: Bundle up
         if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
@@ -46,9 +52,3 @@ jobs:
       - name: Get current date and time
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
-      - name: Publish Docker image to Docker Hub
-        if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
-        run: |
-          docker load -i $(nix-build docker.nix --argstr tag latest)
-          docker login -u sridca -p ${{ secrets.DOCKER_PASS }}
-          docker push sridca/neuron:latest

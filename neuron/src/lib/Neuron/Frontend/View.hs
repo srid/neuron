@@ -26,7 +26,6 @@ import Neuron.Frontend.Route
     routeTitle',
   )
 import Neuron.Frontend.Route.Data.Types
-import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (LoadableData, elLinkGoogleFonts)
 import qualified Neuron.Frontend.Widget as W
 import qualified Neuron.Frontend.Zettel.View as ZettelView
@@ -62,12 +61,10 @@ routeTitle r v =
 
 bodyTemplate ::
   (DomBuilder t m, PostBuild t m) =>
-  Dynamic t (Maybe SiteData) ->
+  Dynamic t (Maybe NeuronVersion) ->
   m () ->
   m ()
-bodyTemplate siteDataM w = do
-  let neuronThemeM = fmap siteDataTheme <$> siteDataM
-      neuronVersionM = fmap siteDataNeuronVersion <$> siteDataM
+bodyTemplate neuronVersionM w = do
   divClass "ui fluid container universe" $ do
     w
     renderBrandFooter neuronVersionM
@@ -81,9 +78,8 @@ renderRouteImpulse dataLDyn = do
   let siteData = fmap fst . W.getData <$> dataLDyn
   -- HTML for this route is all handled in JavaScript (compiled from
   -- impulse's sources).
-  bodyTemplate siteData $ do
+  bodyTemplate (fmap siteDataNeuronVersion <$> siteData) $ do
     elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
-      --  divClass "ui text container" $ do
       Impulse.renderImpulse dataLDyn
 
 renderRouteZettel ::
@@ -98,8 +94,8 @@ renderRouteZettel ::
   Dynamic t (LoadableData (SiteData, ZettelData)) ->
   NeuronWebT t m ()
 renderRouteZettel dataLDyn = do
-  let siteDataDyn = fmap fst . W.getData <$> dataLDyn
-  bodyTemplate siteDataDyn $ do
+  let siteData = fmap fst . W.getData <$> dataLDyn
+  bodyTemplate (fmap siteDataNeuronVersion <$> siteData) $ do
     W.loadingWidget dataLDyn $ \dataDyn -> do
       dyn_ $
         uncurry ZettelView.renderZettel <$> dataDyn
