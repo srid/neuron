@@ -38,6 +38,8 @@ import qualified Data.Text as T
 import qualified Data.Time.DateMayTime as DMT
 import Neuron.Frontend.Route (NeuronWebT, Route (Route_Zettel), neuronRouteLink)
 import Neuron.Frontend.Route.Data.Types (LinksData (..))
+import Neuron.Frontend.Theme (Theme)
+import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (elNoSnippetSpan, elTime)
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
@@ -284,15 +286,21 @@ renderZettelLinkIDOnly zid slug =
     elClass "span" "zettel-link" $ do
       neuronRouteLink (Some $ Route_Zettel slug) mempty $ text $ unZettelID zid
 
-zettelLinkCss :: Css
-zettelLinkCss = do
+zettelLinkCss :: Theme -> Css
+zettelLinkCss theme = do
   "span.zettel-link-container span.zettel-link a" ? do
+    C.color (Theme.textColor theme)
     C.fontWeight C.bold
     C.textDecoration C.none
+  "span.zettel-link-container span.zettel-link a:hover" ? do
+    C.backgroundColor (Theme.textBackgroundColor theme)
   "span.zettel-link-container span.extra" ? do
     C.color C.auto
   "span.zettel-link-container.errors" ? do
     C.border C.solid (C.px 1) C.red
+  "span.zettel-link-container.errors span.zettel-link a:hover" ? do
+    C.important $ C.textDecoration C.none
+    C.cursor C.notAllowed
   "[data-tooltip]:after" ? do
     C.fontSize $ em 0.7
 

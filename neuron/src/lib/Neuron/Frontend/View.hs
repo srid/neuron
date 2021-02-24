@@ -15,11 +15,9 @@
 -- | HTML & CSS
 module Neuron.Frontend.View where
 
-import Clay (Css, em, gray, important, pct, (?))
-import qualified Clay as C
 import Control.Monad.Fix (MonadFix)
 import Data.Tagged (untag)
-import Neuron.Frontend.Common (neuronCommonStyle, neuronFonts)
+import Neuron.Frontend.Common (neuronFonts)
 import qualified Neuron.Frontend.Impulse as Impulse
 import Neuron.Frontend.Route
   ( NeuronWebT,
@@ -31,7 +29,6 @@ import Neuron.Frontend.Route.Data.Types
 import qualified Neuron.Frontend.Theme as Theme
 import Neuron.Frontend.Widget (LoadableData, elLinkGoogleFonts)
 import qualified Neuron.Frontend.Widget as W
-import qualified Neuron.Frontend.Zettel.CSS as ZettelCSS
 import qualified Neuron.Frontend.Zettel.View as ZettelView
 import Reflex.Dom.Core
 import Reflex.Dom.Pandoc.Raw (RawBuilder)
@@ -50,7 +47,6 @@ headTemplate r vLDyn = do
       ffor vDyn $ \v ->
         el "title" $ text $ routeTitle r v
   elAttr "link" ("rel" =: "stylesheet" <> "href" =: "https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.css") blank
-  elAttr "style" ("type" =: "text/css") $ text $ toText $ C.renderWith C.compact [] style
   elLinkGoogleFonts neuronFonts
 
 -- The `a` is used to find zettel title, and `Config` for site title.
@@ -72,10 +68,7 @@ bodyTemplate ::
 bodyTemplate siteDataM w = do
   let neuronThemeM = fmap siteDataTheme <$> siteDataM
       neuronVersionM = fmap siteDataNeuronVersion <$> siteDataM
-      attrs = ffor neuronThemeM $ \(fmap (toText . Theme.themeIdentifier) -> mId) ->
-        "class" =: "ui fluid container universe"
-          <> maybe mempty ("id" =:) mId
-  elDynAttr "div" attrs $ do
+  divClass "ui fluid container universe" $ do
     w
     renderBrandFooter neuronVersionM
 
@@ -121,24 +114,3 @@ renderBrandFooter ver =
                 <> "src" =: "https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg"
                 <> "alt" =: "logo"
         elDynAttr "img" attr blank
-
-style :: Css
-style = do
-  "body" ? do
-    neuronCommonStyle
-    Impulse.style
-    ZettelCSS.zettelCss
-    footerStyle
-  where
-    footerStyle = do
-      ".footer-version img" ? do
-        C.filter $ C.grayscale $ pct 100
-      ".footer-version img:hover" ? do
-        C.filter $ C.grayscale $ pct 0
-      ".footer-version, .footer-version a, .footer-version a:visited" ? do
-        C.color gray
-      ".footer-version a" ? do
-        C.fontWeight C.bold
-      ".footer-version" ? do
-        important $ C.marginTop $ em 1
-        C.fontSize $ em 0.7

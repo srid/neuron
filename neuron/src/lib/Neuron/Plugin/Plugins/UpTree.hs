@@ -28,7 +28,7 @@ plugin =
     { _plugin_afterZettelParse = const $ bimap enable enable,
       _plugin_routeData = routePluginData,
       _plugin_renderPanel = const render,
-      _plugin_css = IT.style
+      _plugin_css = const IT.style
     }
 
 enable :: ZettelT c -> ZettelT c

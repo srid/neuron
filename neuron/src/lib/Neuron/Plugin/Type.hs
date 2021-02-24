@@ -12,6 +12,7 @@ import Control.Monad.Writer
 import Data.Default (Default (..))
 import qualified Data.YAML as Y
 import Neuron.Frontend.Route (NeuronWebT)
+import Neuron.Frontend.Theme (Theme)
 import Neuron.Markdown
 import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
@@ -49,7 +50,7 @@ data Plugin routeData = Plugin
     -- | Plugin-specific HTML rendering to do on the zettel pages.
     _plugin_renderPanel :: forall t m. (DomBuilder t m, PostBuild t m) => (Pandoc -> NeuronWebT t m ()) -> routeData -> NeuronWebT t m (),
     -- | CSS to inject
-    _plugin_css :: Css,
+    _plugin_css :: Theme -> Css,
     -- | Hooks for rendering custom DOM elements; here, url links.
     _plugin_renderHandleLink :: forall t m. (DomBuilder t m, PostBuild t m) => routeData -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ()),
     -- | Strip data you don't want in JSON dumps

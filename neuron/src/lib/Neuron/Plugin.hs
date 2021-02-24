@@ -22,6 +22,7 @@ import Data.Some
 import qualified Data.Text as T
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types
+import Neuron.Frontend.Theme (Theme)
 import Neuron.Markdown (NeuronSyntaxSpec, parseMarkdown)
 import qualified Neuron.Plugin.Plugins.DirTree as DirTree
 import qualified Neuron.Plugin.Plugins.Links as Links
@@ -109,10 +110,11 @@ graphConnections plugins z = do
 
 pluginStyles ::
   PluginRegistry ->
+  Theme ->
   Css
-pluginStyles plugins =
+pluginStyles plugins theme =
   C.body ? do
-    mconcat $ Map.elems plugins <&> \sp -> withSome sp _plugin_css
+    mconcat $ Map.elems plugins <&> \sp -> withSome sp $ \p -> _plugin_css p theme
 
 -- TODO: Use _plugin_* functions directly!
 routePluginData :: ZettelGraph -> ZettelC -> DSum PluginZettelData Identity -> DSum PluginZettelRouteData Identity

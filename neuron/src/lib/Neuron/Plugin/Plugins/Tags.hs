@@ -76,7 +76,7 @@ plugin =
       _plugin_afterZettelParse = second . parseTagQuerys,
       _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink,
-      _plugin_css = style
+      _plugin_css = const style
     }
 
 routePluginData :: ZettelGraph -> ZettelC -> ZettelTags -> TagQueryCache
@@ -144,11 +144,10 @@ runSomeTagQuery someQ =
     runTagQuery zs = \case
       TagQuery_ZettelsByTag pats _mconn (ZettelsView linkView _ _) ->
         let res = zettelsByTag getZettelTags zs pats
-        in if linkView == LinkView_ShowDate 
-          then -- Filter out zettels without a date.
-            fforMaybe res $ \z@Zettel {..} -> guard (isJust zettelDate) >> pure z
-          else 
-            res
+         in if linkView == LinkView_ShowDate
+              then -- Filter out zettels without a date.
+              fforMaybe res $ \z@Zettel {..} -> guard (isJust zettelDate) >> pure z
+              else res
       TagQuery_Tags pats ->
         Map.filterWithKey (const . flip TagTree.matchTagQuery pats) allTags
       TagQuery_TagZettel _tag ->

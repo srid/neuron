@@ -9,7 +9,8 @@ module Neuron.Frontend.Theme
     mkTheme,
     themeCss,
     semanticColor,
-    themeIdentifier,
+    textBackgroundColor,
+    textColor,
   )
 where
 
@@ -54,35 +55,26 @@ mkTheme s =
 semanticColor :: Theme -> Text
 semanticColor = toLower . show @Text
 
-themeIdentifier :: Theme -> String
-themeIdentifier theme =
-  "neuron-theme-default-" <> toString (semanticColor theme)
+-- | Theme-specific color for notable text
+textColor :: Theme -> C.Color
+textColor theme = withRgb theme rgb
 
-themeCss :: Css
-themeCss = do
-  forM_ [minBound .. maxBound] $ \(theme :: Theme) -> do
-    let selector = fromString $ "div#" <> themeIdentifier theme
-        textColor = withRgb theme rgb
-        backgroundColor = withRgb theme rgba 0.1
-        backgroundColorLighter = withRgb theme rgba 0.02
-    selector ? do
-      -- Zettel heading's background color
-      ".zettel-content h1" ? do
-        C.backgroundColor backgroundColor
-      -- Zettel links
-      "span.zettel-link-container span.zettel-link a" ? do
-        C.color textColor
-      "span.zettel-link-container span.zettel-link a:hover" ? do
-        C.backgroundColor backgroundColor
-      "span.zettel-link-container.errors span.zettel-link a:hover" ? do
-        C.important $ C.textDecoration C.none
-        C.cursor C.notAllowed
-      -- Bottom stuff
-      "nav.bottomPane" ? do
-        C.backgroundColor backgroundColorLighter
-      -- Zettel footnote's top marging line
-      "div#footnotes" ? do
-        C.borderTopColor textColor
+-- | Theme-specific background color to use on some text
+textBackgroundColor :: Theme -> C.Color
+textBackgroundColor theme = withRgb theme rgba 0.1
+
+themeCss :: Theme -> Css
+themeCss theme = do
+  let backgroundColorLighter = withRgb theme rgba 0.02
+  -- Zettel heading's background color
+  ".zettel-content h1" ? do
+    C.backgroundColor (textBackgroundColor theme)
+  -- Bottom stuff
+  "nav.bottomPane" ? do
+    C.backgroundColor backgroundColorLighter
+  -- Zettel footnote's top marging line
+  "div#footnotes" ? do
+    C.borderTopColor (textColor theme)
 
 withRgb :: Theme -> (Integer -> Integer -> Integer -> a) -> a
 withRgb theme f =

@@ -282,10 +282,10 @@ style = do
       C.paddingLeft $ em 1.5
     ".uplinks" ? do
       C.marginLeft $ em 0.3
-  ".errors" ? do
-    blank
-  -- Display non-matching parents of matching nodes deemphasized
-  ".q.under > li > span.zettel-link-container span.zettel-link a" ? do
-    C.important $ C.color C.gray
-  ".q.unmatched" ? do
-    C.display C.none
+
+-- Display non-matching parents of matching nodes deemphasized
+
+-- ".q.under > li > span.zettel-link-container span.zettel-link a" ? do
+--  C.important $ C.color C.gray
+-- ".q.unmatched" ? do
+--  C.display C.none

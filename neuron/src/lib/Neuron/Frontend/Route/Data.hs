@@ -16,6 +16,7 @@ import Data.TagTree (mkDefaultTagQuery, mkTagPattern)
 import Data.Tree (Forest, Tree (..))
 import Neuron.Cache.Type (NeuronCache (..))
 import qualified Neuron.Config.Type as Config
+import Neuron.Frontend.CSS (neuronStyleForTheme)
 import Neuron.Frontend.Manifest (Manifest)
 import Neuron.Frontend.Route.Data.Types
 import qualified Neuron.Frontend.Theme as Theme
@@ -67,5 +68,18 @@ mkSiteData NeuronCache {..} headHtml manifest =
       baseUrl = join $ Config.getSiteBaseUrl _neuronCache_config
       indexZettel = G.getZettel indexZid _neuronCache_graph
       editUrl = Config.editUrl _neuronCache_config
-      bodyCss = toText $ C.renderWith C.compact [] $ Plugin.pluginStyles (Config.getPlugins _neuronCache_config)
-   in SiteData theme siteTitle siteAuthor baseUrl editUrl bodyCss headHtml manifest _neuronCache_neuronVersion indexZettel
+      style = do
+        neuronStyleForTheme theme
+        Plugin.pluginStyles (Config.getPlugins _neuronCache_config) theme
+      bodyCss = toText $ C.renderWith C.compact [] style
+   in SiteData
+        theme
+        siteTitle
+        siteAuthor
+        baseUrl
+        editUrl
+        bodyCss
+        headHtml
+        manifest
+        _neuronCache_neuronVersion
+        indexZettel

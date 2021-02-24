@@ -9,13 +9,14 @@ where
 import Clay hiding (id, ms, not, object, reverse, s, style, type_)
 import qualified Clay as C
 import qualified Clay.Media as CM
+import Neuron.Frontend.Theme (Theme)
 import qualified Neuron.Frontend.Theme as Theme
 import qualified Neuron.Markdown as Markdown
 import Relude hiding ((&))
 
-zettelCss :: Css
-zettelCss = do
-  Theme.themeCss
+zettelCss :: Theme -> Css
+zettelCss theme = do
+  Theme.themeCss theme
   zettelCommonCss
   C.queryOnly CM.screen [CM.maxWidth $ px 768] $ do
     "div#zettel-container" ? do

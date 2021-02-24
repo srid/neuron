@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: neuron
-version: 1.9.16.0
+version: 1.9.17.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -106,6 +106,7 @@ library
     Neuron.Frontend.Impulse
     Neuron.Frontend.Theme
     Neuron.Frontend.View
+    Neuron.Frontend.CSS
     Text.Megaparsec.Simple
     Text.Pandoc.Util
     Text.URI.Util
