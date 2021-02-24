@@ -10,6 +10,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     env:
       MAINLINE: refs/heads/master
+      DOCKERTAG: latest
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v12
@@ -20,18 +21,23 @@ jobs:
           signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
           # Only needed for private caches
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-      # This gets everything from cache, but doesn't build neuron (yet).
-      - name: Pull from Nix cache
-        run: nix-build -j4 shell.nix
-      # This builds neuron, as well as run tests
-      - name: Build neuron 🔧
-        run: nix-build -j4 ci.nix
+      # This downloads deps from Nix cache, builds neuron, as well as run tests
+      - name: Build 🔧
+        run: |
+          nix-build -j4 --no-out-link ci.nix
+          nix-build -j4
+      - name: Retrieve neuron version
+        run: |
+          echo "NEURONVER=$(./result/bin/neuron --version)" >> $GITHUB_ENV
       - name: Publish Docker image to Docker Hub
         if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
         run: |
-          docker load -i $(nix-build docker.nix --argstr tag latest)
-          docker login -u sridca -p ${{ secrets.DOCKER_PASS }}
-          docker push sridca/neuron:latest
+          docker load -i $(nix-build docker.nix --argstr tag "${{ env.DOCKERTAG }}")
+          docker tag "sridca/neuron:${{ env.DOCKERTAG }}" "sridca/neuron:${{env.NEURONVER}}"
+          echo ${{ secrets.DOCKER_PASS }} | docker login -u sridca --password-stdin
+          set -x
+          docker push "sridca/neuron:${{ env.DOCKERTAG }}"
+          docker push "sridca/neuron:${{ env.NEURONVER }}"
       # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
       - name: Bundle up
         if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
@@ -49,6 +55,3 @@ jobs:
         with:
           name: neuron-bundle-linux
           path: ~/bundle/neuron
-      - name: Get current date and time
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S')"
