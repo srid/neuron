@@ -112,7 +112,7 @@ renderPanel DirZettelVal {..} = do
               Links.renderZettelLink Nothing (Just conn) Nothing cz
         elAttr "a" ("href" =: pluginDoc <> "title" =: "What is this section about?") $ elClass "i" "question circle outline icon" blank
   where
-    pluginDoc = "https://neuron.zettel.page/dirtree.html"
+    pluginDoc = "https://neuron.zettel.page/dirtree"
 
 afterZettelParse :: forall c. Maybe (Y.Node Y.Pos) -> ZettelT c -> ZettelT c
 afterZettelParse myaml z =

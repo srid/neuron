@@ -103,7 +103,7 @@ renderImpulse dataLDyn = do
       divClassVisible (not . null <$> orphans) "ui segment" $ do
         elClass "p" "info" $ do
           text "Notes not belonging to any "
-          elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "heterarchy"
+          elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy") $ text "heterarchy"
           text ":"
         el "ul" $
           void $
@@ -130,7 +130,7 @@ renderImpulse dataLDyn = do
           dynText $ countNounBe "cluster" "clusters" . length . impulseDataClusters <$> impulseDyn
           text " in its folgezettel graph. "
           text "Each cluster's "
-          elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy.html") $ text "folgezettel heterarchy"
+          elAttr "a" ("href" =: "https://neuron.zettel.page/folgezettel-heterarchy") $ text "folgezettel heterarchy"
           text " is rendered as a forest."
       -- TODO: Use dynamic throughout instead of defaulting the theme
       ZettelView.renderBottomMenu themeDyn indexZettel Nothing

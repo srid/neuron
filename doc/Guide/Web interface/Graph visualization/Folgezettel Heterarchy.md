@@ -20,7 +20,7 @@ The heterarchy is displayed in the following places
 
 ## See also
 
-* The [impulse](./impulse.html) of this site displays its folgezettel heterarchy.
+* The [impulse](./impulse) of this site displays its folgezettel heterarchy.
 
 [^1]: Hence the German compound word "[folge]-[zettel]". Read <https://zettelkasten.de/posts/kinds-of-ties/>
 
