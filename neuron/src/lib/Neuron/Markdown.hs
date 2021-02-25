@@ -30,8 +30,11 @@ import qualified Commonmark.Extensions as CE
 import qualified Commonmark.Inlines as CM
 import qualified Commonmark.Pandoc as CP
 import Control.Monad.Combinators (manyTill)
+import Data.Aeson (ToJSON (toJSON))
+import Data.Aeson.Types (Value (Null))
 import Data.Tagged (Tagged (..))
 import qualified Data.YAML as Y
+import Data.YAML.ToJSON ()
 import Relude hiding (show, traceShowId)
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
@@ -41,7 +44,7 @@ import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
 import Text.Show (Show (show))
 
-type ZettelParser = FilePath -> Text -> Either ZettelParseError (Maybe (Y.Node Y.Pos), Pandoc)
+type ZettelParser = FilePath -> Text -> Either ZettelParseError (Value, Pandoc)
 
 type ZettelParseError = Tagged "ZettelParserError" Text
 
@@ -61,8 +64,9 @@ parseMarkdown extraSpec fn s = do
   v <-
     first (Tagged . toText . show) $
       commonmarkPandocWith (extraSpec <> neuronSpec) fn markdown
-  meta <- traverse (parseYaml fn) metaVal
-  pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
+  meta <- traverse (parseYaml @(Y.Node Y.Pos) fn) metaVal
+  -- TODO: Merge "keywords" with "tags" (some Zettelkasten apps like zettlr supports keywords)
+  pure (maybe Null toJSON meta, Pandoc mempty $ B.toList (CP.unCm v))
 
 -- NOTE: HsYAML parsing is rather slow due to its use of DList.
 -- See https://github.com/haskell-hvr/HsYAML/issues/40

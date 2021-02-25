@@ -18,21 +18,19 @@ module Neuron.Plugin.Plugins.DirTree
   )
 where
 
+import qualified Data.Aeson as Aeson
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.TagTree (Tag, TagNode (..), mkDefaultTagQuery)
 import qualified Data.TagTree as Tag
 import qualified Data.Text as T
-import Data.YAML ((.:?))
-import qualified Data.YAML as Y
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types (DirZettelVal (..))
 import Neuron.Frontend.Widget
   ( ListItem (ListItem_File, ListItem_Folder),
     listItem,
   )
-import qualified Neuron.Markdown as M
 import qualified Neuron.Plugin.Plugins.Links as Links
 import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Plugin.Type (Plugin (..))
@@ -55,7 +53,7 @@ plugin :: Plugin DirZettelVal
 plugin =
   def
     { _plugin_afterZettelRead = injectDirectoryZettels,
-      _plugin_afterZettelParse = \myaml -> bimap (afterZettelParse myaml) (afterZettelParse myaml),
+      _plugin_afterZettelParse = bimap afterZettelParse afterZettelParse,
       _plugin_graphConnections = queryConnections,
       _plugin_renderPanel = const renderPanel
     }
@@ -71,11 +69,6 @@ queryConnections Zettel {..} = do
     Just (Identity (DirZettel _ _ (Just childTag) _)) -> do
       pure $ getChildZettels zs childTag
     _ -> pure mempty
-
-metaParser :: Y.Node Y.Pos -> Y.Parser (Maybe DirTreeMeta)
-metaParser yaml = do
-  flip (Y.withMap @(Maybe DirTreeMeta) "DirTree") yaml $ \m -> do
-    m .:? "dirtree"
 
 routePluginData :: ZettelGraph -> DirZettel -> DirZettelVal
 routePluginData g (DirZettel _ parent mChildTag mMeta) =
@@ -114,14 +107,14 @@ renderPanel DirZettelVal {..} = do
   where
     pluginDoc = "https://neuron.zettel.page/dirtree"
 
-afterZettelParse :: forall c. Maybe (Y.Node Y.Pos) -> ZettelT c -> ZettelT c
-afterZettelParse myaml z =
+afterZettelParse :: forall c. ZettelT c -> ZettelT c
+afterZettelParse z =
   case runIdentity <$> DMap.lookup DirTree (zettelPluginData z) of
     Just (DirZettel tags mparent (Just childTag) Nothing) ->
       -- Parse YAML
-      let meta = fromRight Nothing $ case myaml of
-            Nothing -> pure Nothing
-            Just yaml -> M.runYamlParser (metaParser yaml)
+      let meta = case Aeson.fromJSON $ zettelMetadata z of
+            Aeson.Error _ -> Nothing
+            Aeson.Success v -> pure v
           pluginData = DirZettel tags mparent (Just childTag) meta
        in z {zettelPluginData = DMap.insert DirTree (Identity pluginData) (zettelPluginData z)}
     Just (DirZettel _ _ (Just _) _) ->
@@ -136,9 +129,9 @@ afterZettelParse myaml z =
           mparent = do
             guard $ zettelID z /= indexZid
             pure $ parentZettelIDFromPath (zettelPath z)
-          meta = fromRight Nothing $ case myaml of
-            Nothing -> pure Nothing
-            Just yaml -> M.runYamlParser (metaParser yaml)
+          meta = case Aeson.fromJSON $ zettelMetadata z of
+            Aeson.Error _ -> Nothing
+            Aeson.Success v -> pure v
        in z
             { zettelPluginData =
                 DMap.insert
