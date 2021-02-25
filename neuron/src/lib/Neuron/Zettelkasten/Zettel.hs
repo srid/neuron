@@ -138,16 +138,20 @@ type MissingZettel = Tagged "MissingZettel" ZettelID
 -- The metadata could have been inferred from the content.
 data ZettelT c = Zettel
   { zettelID :: ZettelID,
-    zettelSlug :: Slug,
+    zettelMetadata :: Value,
+    zettelSlug :: Slug, -- in meta
+
     -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
     zettelTitle :: Text,
     -- | Whether the title was infered from the body. Used when conditionally
     -- rendering the title in HTML.
+    -- TODO: Get rid of this, and inject H1 into Pandoc AST conditionally.
+    -- Or, pull first node (H1) out of AST if present.
     zettelTitleInBody :: Bool,
     -- | Date associated with the zettel if any
-    zettelDate :: Maybe DateMayTime,
-    zettelUnlisted :: Bool,
+    zettelDate :: Maybe DateMayTime, -- in meta
+    zettelUnlisted :: Bool, -- in meta
     zettelContent :: c,
     zettelPluginData :: DMap PluginZettelData Identity
   }

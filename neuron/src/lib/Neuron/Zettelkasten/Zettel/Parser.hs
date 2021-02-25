@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,9 +11,11 @@
 
 module Neuron.Zettelkasten.Zettel.Parser where
 
+import qualified Data.Aeson as Aeson
 import Data.Dependent.Map (DMap)
 import qualified Data.Text as T
 import qualified Data.YAML as Y
+import Data.YAML.ToJSON ()
 import Neuron.Markdown
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Zettel
@@ -30,6 +33,7 @@ parseZettel ::
 parseZettel parser fn zid s pluginData =
   either unparseableZettel id $ do
     (yamlNode, doc) <- parser fn s
+    let yamlJson = Aeson.toJSON yamlNode
     meta :: Maybe Meta.Meta <- parseYamlNode @Meta.Meta `traverse` yamlNode
     let -- Determine zettel title
         (title, titleInBody) = case Meta.title =<< meta of
@@ -40,11 +44,11 @@ parseZettel parser fn zid s pluginData =
         date = Meta.date =<< meta
         slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
         unlisted = Just True == (Meta.unlisted =<< meta)
-    pure $ (yamlNode,) $ Right $ Zettel zid slug fn title titleInBody date unlisted doc pluginData
+    pure $ (yamlNode,) $ Right $ Zettel zid yamlJson slug fn title titleInBody date unlisted doc pluginData
   where
     unparseableZettel err =
       let slug = mkDefaultSlug $ unZettelID zid
-       in (Nothing,) $ Left $ Zettel zid slug fn "Unknown" False Nothing False (s, err) pluginData
+       in (Nothing,) $ Left $ Zettel zid Aeson.Null slug fn "Unknown" False Nothing False (s, err) pluginData
     -- We keep the default slug as close to zettel ID is possible. Spaces (and
     -- colons) are replaced with underscore for legibility.
     mkDefaultSlug :: Text -> Slug
