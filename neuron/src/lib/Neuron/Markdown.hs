@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
@@ -13,9 +14,6 @@
 
 module Neuron.Markdown
   ( parseMarkdown,
-    parseYaml,
-    parseYamlNode,
-    runYamlParser,
     highlightStyle,
     NeuronSyntaxSpec,
     ZettelParser,
@@ -31,11 +29,12 @@ import qualified Commonmark.Inlines as CM
 import qualified Commonmark.Pandoc as CP
 import Control.Monad.Combinators (manyTill)
 import Data.Aeson (ToJSON (toJSON))
-import Data.Aeson.Types (Value (Null))
+import qualified Data.Aeson as Aeson
 import Data.Tagged (Tagged (..))
 import qualified Data.YAML as Y
 import Data.YAML.ToJSON ()
 import Relude hiding (show, traceShowId)
+import qualified Relude.Extra.Map as M
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple (Parser, parse)
@@ -44,7 +43,9 @@ import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
 import Text.Show (Show (show))
 
-type ZettelParser = FilePath -> Text -> Either ZettelParseError (Value, Pandoc)
+-- | A zettel parser is a function that parses the given body of text, and
+-- returns both the Pandoc AST and the associated metadata (as Aeson Value)
+type ZettelParser = FilePath -> Text -> Either ZettelParseError (Aeson.Value, Pandoc)
 
 type ZettelParseError = Tagged "ZettelParserError" Text
 
@@ -64,9 +65,20 @@ parseMarkdown extraSpec fn s = do
   v <-
     first (Tagged . toText . show) $
       commonmarkPandocWith (extraSpec <> neuronSpec) fn markdown
-  meta <- traverse (parseYaml @(Y.Node Y.Pos) fn) metaVal
-  -- TODO: Merge "keywords" with "tags" (some Zettelkasten apps like zettlr supports keywords)
-  pure (maybe Null toJSON meta, Pandoc mempty $ B.toList (CP.unCm v))
+  metaYaml <- traverse (parseYaml @(Y.Node Y.Pos) fn) metaVal
+  -- Some zettelkasten apps like Zettlr use "keywords" for tags
+  let metaJson = withJsonAlias ("keywords", "tags") $ maybe Aeson.Null toJSON metaYaml
+      doc = Pandoc mempty $ B.toList (CP.unCm v)
+  pure (metaJson, doc)
+
+-- | Treat `alias` as an alias to `target`, but only if `target` doesn't already exist
+withJsonAlias :: (Text, Text) -> Aeson.Value -> Aeson.Value
+withJsonAlias (alias, target) = \case
+  x@(Aeson.Object m) -> fromMaybe x $ do
+    guard $ not $ M.member target m
+    kw <- M.lookup alias m
+    pure $ Aeson.Object (M.insert target kw m)
+  x -> x
 
 -- NOTE: HsYAML parsing is rather slow due to its use of DList.
 -- See https://github.com/haskell-hvr/HsYAML/issues/40
@@ -75,14 +87,6 @@ parseYaml n (encodeUtf8 -> v) = do
   let mkError (loc, emsg) =
         Tagged $ toText $ n <> ":" <> Y.prettyPosWithSource loc v " error" <> emsg
   first mkError $ Y.decode1 v
-
-parseYamlNode :: Y.FromYAML a => Y.Node Y.Pos -> Either ZettelParseError a
-parseYamlNode =
-  runYamlParser . Y.parseYAML
-
-runYamlParser :: Y.FromYAML a => Y.Parser a -> Either ZettelParseError a
-runYamlParser p =
-  first (Tagged . toText . show) $ Y.parseEither p
 
 -- Like commonmarkWith, but parses directly into the Pandoc AST.
 commonmarkPandocWith ::
