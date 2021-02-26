@@ -16,6 +16,7 @@ import Neuron.Frontend.Route.Data.Types (NeuronVersion)
 import Neuron.Frontend.Widget (LoadableData (..))
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.Zettel (shortRecordFields)
 import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Reflex.Dom.Core
 import Relude
@@ -27,12 +28,18 @@ data ReadMode
   deriving (Eq, Show)
 
 data NeuronCache = NeuronCache
-  { _neuronCache_graph :: ZettelGraph,
-    _neuronCache_errors :: Map ZettelID ZettelIssue,
-    _neuronCache_config :: Config,
-    _neuronCache_neuronVersion :: NeuronVersion
+  { neuroncacheGraph :: ZettelGraph,
+    neuroncacheErrors :: Map ZettelID ZettelIssue,
+    neuroncacheConfig :: Config,
+    neuroncacheNeuronVersion :: NeuronVersion
   }
-  deriving (Eq, Show, Generic, ToJSON, FromJSON)
+  deriving (Eq, Show, Generic)
+
+instance ToJSON NeuronCache where
+  toJSON = Aeson.genericToJSON shortRecordFields
+
+instance FromJSON NeuronCache where
+  parseJSON = Aeson.genericParseJSON shortRecordFields
 
 reflexDomGetCache ::
   ( DomBuilder t m,

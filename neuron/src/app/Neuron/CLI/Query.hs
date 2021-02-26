@@ -42,28 +42,28 @@ runQuery QueryCommand {..} = do
             Right (ch, _, _) -> pure ch
   case query of
     CliQuery_ById zid -> do
-      let result = G.getZettel zid _neuronCache_graph
+      let result = G.getZettel zid neuroncacheGraph
       putLTextLn $ Aeson.encodeToLazyText result
     CliQuery_Zettels -> do
-      let result = G.getZettels _neuronCache_graph
+      let result = G.getZettels neuroncacheGraph
       putLTextLn $ Aeson.encodeToLazyText result
     CliQuery_Tags -> do
-      let plugins = Config.getPlugins _neuronCache_config
+      let plugins = Config.getPlugins neuroncacheConfig
       if Some Tags `Map.member` plugins
         then do
-          let result = Set.unions $ Tags.getZettelTags <$> G.getZettels _neuronCache_graph
+          let result = Set.unions $ Tags.getZettelTags <$> G.getZettels neuroncacheGraph
           putLTextLn $ Aeson.encodeToLazyText result
         else fail "tags plugin is not enabled in neuron.dhall"
     CliQuery_ByTag tag -> do
-      let plugins = Config.getPlugins _neuronCache_config
+      let plugins = Config.getPlugins neuroncacheConfig
       if Some Tags `Map.member` plugins
         then do
           let q = TagTree.mkDefaultTagQuery $ one $ TagTree.mkTagPatternFromTag tag
-              zs = G.getZettels _neuronCache_graph
+              zs = G.getZettels neuroncacheGraph
               result = Tags.zettelsByTag Tags.getZettelTags zs q
           putLTextLn $ Aeson.encodeToLazyText result
         else fail "tags plugin is not enabled in neuron.dhall"
     CliQuery_Graph someQ ->
       withSome someQ $ \q -> do
-        result <- either (fail . show) pure $ Q.runGraphQuery _neuronCache_graph q
-        putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result _neuronCache_errors
+        result <- either (fail . show) pure $ Q.runGraphQuery neuroncacheGraph q
+        putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result neuroncacheErrors
