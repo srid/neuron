@@ -19,6 +19,7 @@ module Neuron.Plugin.Plugins.Tags
     renderPanel,
     getZettelTags,
     zettelsByTag,
+    appendTags,
   )
 where
 
@@ -312,6 +313,11 @@ style = do
 -- Parser
 -- ------
 
+appendTags :: Set Tag -> ZettelT c -> ZettelT c
+appendTags tags z =
+  let currentTags = maybe Set.empty Set.fromList $ lookupZettelMeta "tags" (zettelMeta z)
+   in z {zettelMeta = insertZettelMeta "tags" (toList $ currentTags <> tags) (zettelMeta z)}
+
 parseTagQuerys :: ZettelT Pandoc -> ZettelT Pandoc
 parseTagQuerys z =
   let allUrls =
@@ -321,16 +327,15 @@ parseTagQuerys z =
         catMaybes $
           allUrls <&> \(attrs, url) -> do
             parseQueryLink attrs url
-      tagsFromMeta = maybe Set.empty Set.fromList $ lookupZettelMeta "tags" (zettelMeta z)
       inlineTags :: Set Tag = Set.fromList $
         flip fmapMaybe tagLinks $ \case
           Some (TagQuery_TagZettel t) -> Just t
           _ -> Nothing
-      tags = tagsFromMeta <> inlineTags
-   in z
-        { zettelMeta = insertZettelMeta "tags" (toList tags) (zettelMeta z),
-          zettelPluginData = DMap.insert Tags (Identity tagLinks) (zettelPluginData z)
-        }
+   in appendTags
+        inlineTags
+        z
+          { zettelPluginData = DMap.insert Tags (Identity tagLinks) (zettelPluginData z)
+          }
 
 -- | Parse a query if any from a Markdown link
 parseQueryLink :: [(Text, Text)] -> Text -> Maybe (Some TagQuery)

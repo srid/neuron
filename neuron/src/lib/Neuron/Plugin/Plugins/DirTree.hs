@@ -32,6 +32,7 @@ import Neuron.Frontend.Widget
   )
 import Neuron.Markdown (lookupZettelMeta)
 import qualified Neuron.Plugin.Plugins.Links as Links
+import Neuron.Plugin.Plugins.Tags (appendTags)
 import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (Connection (Folgezettel, OrdinaryConnection), ContextualConnection)
@@ -111,9 +112,8 @@ afterZettelParse :: forall c. ZettelT c -> ZettelT c
 afterZettelParse z =
   case runIdentity <$> DMap.lookup DirTree (zettelPluginData z) of
     Just (DirZettel tags mparent (Just childTag) Nothing) ->
-      -- Parse YAML
       let pluginData = DirZettel tags mparent (Just childTag) getMeta
-       in z {zettelPluginData = DMap.insert DirTree (Identity pluginData) (zettelPluginData z)}
+       in setPluginData pluginData
     Just (DirZettel _ _ (Just _) _) ->
       -- This is a directory zettel; nothing to modify.
       z
@@ -126,14 +126,16 @@ afterZettelParse z =
           mparent = do
             guard $ zettelID z /= indexZid
             pure $ parentZettelIDFromPath (zettelPath z)
-       in z
-            { zettelPluginData =
-                DMap.insert
-                  DirTree
-                  (Identity $ DirZettel tags mparent Nothing getMeta)
-                  (zettelPluginData z)
-            }
+          pluginData = DirZettel tags mparent Nothing getMeta
+       in setPluginData pluginData
   where
+    setPluginData pluginData =
+      -- Add plugin-specific tags to metadata, so the user may query based on them.
+      appendTags
+        (_dirZettel_tags pluginData)
+        z
+          { zettelPluginData = DMap.insert DirTree (Identity pluginData) (zettelPluginData z)
+          }
     getMeta =
       lookupZettelMeta @DirTreeMeta "dirtree" (zettelMeta z)
 
