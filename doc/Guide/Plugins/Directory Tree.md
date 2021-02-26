@@ -9,8 +9,9 @@ This plugin must be manually enabled in [[Configuration file]]
 The *Directory Tree* plugin automatically creates a [[Folgezettel Heterarchy]] reflecting the dirtectory tree of your notes. In effect, it does the following:
 
 1. Create a "directory zettel" *on the fly* for each sub-directory containing zettels
-2. Create *folgezettel* links (see [[Linking]]) automatically reflecting the directory tree
-3. Display the directory contents below the zettel note.
+1. Tag every zettel with hierarchical [[Tags]] (`root/**`) corresponding to its path
+1. Create *folgezettel* links (see [[Linking]]) automatically reflecting the directory tree
+1. Display the directory contents below the zettel note.
 
 The intention is to allow the user to define the bulk of their [[Folgezettel Heterarchy]] using filesystem layout.
 
@@ -33,7 +34,7 @@ The zettel content for directory zettels are by default empty, only showing a li
   └── HomeProjects.md      # Note whose content will be merged into the HomeProjects **directory** zettel
 ```
 
-```
+```markdown
 # Generated HTML notes
 
 - Home.html
@@ -68,8 +69,8 @@ This structure
 
 creates a relationship equivalent to that created by these two notes, side by side, with a folgezettel link from the `Home.md` note to the `HomeProjects.md` note:
 
-```
-# ./Home.md
+```markdown
+<!-- ./Home.md -->
 ---
 date: 2020-12-31
 ---
@@ -79,8 +80,8 @@ date: 2020-12-31
 I'm working on some [[HomeProjects]]# right now.
 ```
 
-```
-# ./HomeProjects.md
+```markdown
+<!-- ./HomeProjects.md -->
 ---
 date: 2020-12-31
 ---
@@ -112,8 +113,8 @@ Directory Zettles just being normal zettels also means that you can link and cre
    └── HomeProjects.md
 ```
 
-```
-# ./Projects.md
+```markdown
+<!-- ./Projects.md -->
 ---
 date: 2020-12-31
 tags:
@@ -127,6 +128,34 @@ Right now, my [[WorkProjects]]# are taking most of
 my focus and energy, and not leaving much time to focus
 on my [[HomeProjects]]#.
 ```
+
+### Automatically created tags
+
+In addition to creating automatic a [[Folgezettel Heterarchy]] for each directory, the plugin also [[Tags]] the notes with their on-disk path, up to, but **not including** their own ID. So the note at `./Home/HomeProjects/HouseWarming.md` would get the **hierarchical** tag `#root/Home/HomeProjects`. These tags always start at the `#root` tag.
+
+Given our work-and-home project:
+
+```
+├── Work/
+│   └── WorkProjects/
+│      └── FireZeMissiles.md
+└─ Home/
+   ├── HomeProjects/
+   │   └── HouseWarming.md
+   └── HomeProjects.md
+```
+
+notes would be generated with these hierarchical tags that match their folder
+path:
+
+| Note                  | Tag                       |
+|-----------------------|---------------------------|
+| `Work.html`           | `#root`                   |
+| `WorkProjects.html`   | `#root/Work`              |
+| `FireZeMissiles.html` | `#root/Work/WorkProjects` |
+| `Home.html`           | `#root`                   |
+| `HomeProjects.html`   | `#root/Home`              |
+| `HouseWarming.html`   | `#root/Home/HomeProjects` |
 
 ## Disabling directory listing
 
