@@ -18,6 +18,7 @@ module Neuron.Markdown
   ( parseMarkdown,
     highlightStyle,
     lookupZettelMeta,
+    insertZettelMeta,
     NeuronSyntaxSpec,
     ZettelParser,
     ZettelParseError,
@@ -82,6 +83,23 @@ lookupZettelMeta k (ZettelMeta mobj) = do
   Aeson.Object m <- mobj
   Aeson.Success v <- Aeson.fromJSON @a <$> M.lookup k m
   pure v
+
+insertZettelMeta :: forall a. ToJSON a => Text -> a -> ZettelMeta -> ZettelMeta
+insertZettelMeta k v (ZettelMeta mobj) = ZettelMeta $
+  Just $
+    Aeson.Object $
+      case mobj of
+        Nothing ->
+          fromList [(k, Aeson.toJSON v)]
+        Just (Aeson.Object m) ->
+          M.insert k (Aeson.toJSON v) m
+        Just other ->
+          -- We don't expect top-level object to be anything but a map. But just
+          -- in case, let's retain the original value anyway.
+          fromList
+            [ ("other", other),
+              (k, Aeson.toJSON v)
+            ]
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --

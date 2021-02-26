@@ -45,7 +45,7 @@ import GHC.Natural (naturalToInt)
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types (TagQueryCache)
 import Neuron.Frontend.Widget (semanticIcon)
-import Neuron.Markdown (lookupZettelMeta)
+import Neuron.Markdown (insertZettelMeta, lookupZettelMeta)
 import qualified Neuron.Plugin.Plugins.Links as Links
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
@@ -77,7 +77,7 @@ plugin =
       _plugin_css = const style
     }
 
-routePluginData :: ZettelGraph -> ZettelC -> ZettelTags -> TagQueryCache
+routePluginData :: ZettelGraph -> ZettelC -> [Some TagQuery] -> TagQueryCache
 routePluginData g z _qs =
   let allUrls =
         Set.toList . Set.fromList $
@@ -111,9 +111,9 @@ queryConnections ::
 queryConnections Zettel {..} = do
   case DMap.lookup Tags zettelPluginData of
     Nothing -> pure mempty
-    Just (Identity ZettelTags {..}) -> do
+    Just (Identity qs) -> do
       fmap concat $
-        forM zetteltagsQueries $ \someQ -> do
+        forM qs $ \someQ -> do
           qRes <- runSomeTagQuery someQ
           links <- getConnections qRes
           pure $ first (,mempty) <$> links
@@ -164,9 +164,8 @@ zettelsByTag getTags zs q =
 
 getZettelTags :: ZettelT c -> Set Tag
 getZettelTags Zettel {..} =
-  fromMaybe Set.empty $ do
-    Identity ZettelTags {..} <- DMap.lookup Tags zettelPluginData
-    pure zetteltagsTagged
+  maybe Set.empty Set.fromList $ do
+    lookupZettelMeta "tags" zettelMeta
 
 -- UI
 -- --
@@ -323,12 +322,15 @@ parseTagQuerys z =
           allUrls <&> \(attrs, url) -> do
             parseQueryLink attrs url
       tagsFromMeta = maybe Set.empty Set.fromList $ lookupZettelMeta "tags" (zettelMeta z)
-      inlineTags = Set.fromList $
+      inlineTags :: Set Tag = Set.fromList $
         flip fmapMaybe tagLinks $ \case
           Some (TagQuery_TagZettel t) -> Just t
           _ -> Nothing
-      tagsData = ZettelTags (tagsFromMeta <> inlineTags) tagLinks
-   in z {zettelPluginData = DMap.insert Tags (Identity tagsData) (zettelPluginData z)}
+      tags = tagsFromMeta <> inlineTags
+   in z
+        { zettelMeta = insertZettelMeta "tags" (toList tags) (zettelMeta z),
+          zettelPluginData = DMap.insert Tags (Identity tagLinks) (zettelPluginData z)
+        }
 
 -- | Parse a query if any from a Markdown link
 parseQueryLink :: [(Text, Text)] -> Text -> Maybe (Some TagQuery)

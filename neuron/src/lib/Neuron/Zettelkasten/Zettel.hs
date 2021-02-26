@@ -99,12 +99,6 @@ data TagQuery r where
   TagQuery_Tags :: TagTree.Query -> TagQuery (Map Tag Natural)
   TagQuery_TagZettel :: Tag -> TagQuery ()
 
-data ZettelTags = ZettelTags
-  { zetteltagsTagged :: Set Tag,
-    zetteltagsQueries :: [Some TagQuery]
-  }
-  deriving (Generic)
-
 -- | Plugin-specific data stored in `ZettelT`
 --
 -- See also `PluginZettelRouteData` which corresponds to post-graph data (used
@@ -115,7 +109,7 @@ data ZettelTags = ZettelTags
 data PluginZettelData a where
   DirTree :: PluginZettelData DirZettel
   Links :: PluginZettelData [((ZettelID, Connection), [Block])]
-  Tags :: PluginZettelData ZettelTags
+  Tags :: PluginZettelData [Some TagQuery]
   NeuronIgnore :: PluginZettelData ()
   UpTree :: PluginZettelData ()
 
@@ -195,18 +189,6 @@ deriveJSONGADT ''PluginZettelData
 deriveGEq ''PluginZettelData
 deriveGShow ''PluginZettelData
 deriveGCompare ''PluginZettelData
-
-deriving instance Eq ZettelTags
-
-deriving instance Ord ZettelTags
-
-instance ToJSON ZettelTags where
-  toJSON = genericToJSON shortRecordFields
-
-instance FromJSON ZettelTags where
-  parseJSON = genericParseJSON shortRecordFields
-
-deriving instance Show ZettelTags
 
 deriving instance Eq (ZettelT Pandoc)
 
