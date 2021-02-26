@@ -28,7 +28,7 @@ It can be accessed at [localhost:8080](http://localhost:8080). It should match w
 
 ## Create your own Zettelkasten
 
-There a few ways to do this.
+There are a few ways to do this.
 
 1. Copy the `./doc` directory and work from there; or
 1. Use the template repository in [[Automatic Publishing]]; or

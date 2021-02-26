@@ -79,6 +79,11 @@ zettelContentCss = do
       C.borderTopStyle C.groove
       C.borderTopWidth $ px 2
       C.fontSize $ em 0.9
+      -- Single paragraph footnotes should have the arrow appear on the same
+      -- line as the paragraph.
+      "ol > li > p:only-of-type" ? do
+        C.display C.inline
+        C.marginRight $ em 0.5
     -- reflex-dom-pandoc footnote aside elements
     -- (only used for footnotes defined inside footnotes)
     "aside.footnote-inline" ? do
