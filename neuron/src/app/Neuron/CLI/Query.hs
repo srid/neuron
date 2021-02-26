@@ -15,20 +15,17 @@ where
 import Colog (WithLog)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson.Encode.Pretty as AesonPretty
-import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import Data.Some (Some (Some), withSome)
+import Data.Some (withSome)
 import qualified Data.TagTree as TagTree
 import Neuron.CLI.Logging (Message)
 import Neuron.CLI.Types
 import qualified Neuron.Cache as Cache
 import qualified Neuron.Cache.Type as Cache
-import qualified Neuron.Config.Type as Config
 import qualified Neuron.Plugin.Plugins.Tags as Tags
 import qualified Neuron.Reactor as Reactor
 import qualified Neuron.Zettelkasten.Graph as G
 import qualified Neuron.Zettelkasten.Query as Q
-import Neuron.Zettelkasten.Zettel (PluginZettelData (Tags))
 import Relude
 
 runQuery :: forall m env. (MonadApp m, MonadFail m, MonadApp m, MonadIO m, WithLog env Message m) => QueryCommand -> m ()
@@ -49,21 +46,13 @@ runQuery QueryCommand {..} = do
       let result = G.getZettels neuroncacheGraph
       printJson result
     CliQuery_Tags -> do
-      let plugins = Config.getPlugins neuroncacheConfig
-      if Some Tags `Map.member` plugins
-        then do
-          let result = Set.unions $ Tags.getZettelTags <$> G.getZettels neuroncacheGraph
-          printJson result
-        else fail "tags plugin is not enabled in neuron.dhall"
+      let result = Set.unions $ Tags.getZettelTags <$> G.getZettels neuroncacheGraph
+      printJson result
     CliQuery_ByTag tag -> do
-      let plugins = Config.getPlugins neuroncacheConfig
-      if Some Tags `Map.member` plugins
-        then do
-          let q = TagTree.mkDefaultTagQuery $ one $ TagTree.mkTagPatternFromTag tag
-              zs = G.getZettels neuroncacheGraph
-              result = Tags.zettelsByTag Tags.getZettelTags zs q
-          printJson result
-        else fail "tags plugin is not enabled in neuron.dhall"
+      let q = TagTree.mkDefaultTagQuery $ one $ TagTree.mkTagPatternFromTag tag
+          zs = G.getZettels neuroncacheGraph
+          result = Tags.zettelsByTag Tags.getZettelTags zs q
+      printJson result
     CliQuery_Graph someQ ->
       withSome someQ $ \q -> do
         result <- either (fail . show) pure $ Q.runGraphQuery neuroncacheGraph q
