@@ -211,7 +211,11 @@ instance FromJSON DirZettel where
   parseJSON = genericParseJSON shortRecordFields
 
 instance ToJSON Zettel where
-  toJSON = genericToJSON shortRecordFields
+  toJSON =
+    genericToJSON
+      shortRecordFields
+        { omitNothingFields = True
+        }
 
 instance FromJSON Zettel where
   parseJSON = genericParseJSON shortRecordFields
