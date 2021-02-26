@@ -13,7 +13,8 @@ module Neuron.CLI.Query
 where
 
 import Colog (WithLog)
-import qualified Data.Aeson.Text as Aeson
+import Data.Aeson (ToJSON)
+import qualified Data.Aeson.Encode.Pretty as AesonPretty
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Some (Some (Some), withSome)
@@ -30,7 +31,7 @@ import qualified Neuron.Zettelkasten.Query as Q
 import Neuron.Zettelkasten.Zettel (PluginZettelData (Tags))
 import Relude
 
-runQuery :: (MonadApp m, MonadFail m, MonadApp m, MonadIO m, WithLog env Message m) => QueryCommand -> m ()
+runQuery :: forall m env. (MonadApp m, MonadFail m, MonadApp m, MonadIO m, WithLog env Message m) => QueryCommand -> m ()
 runQuery QueryCommand {..} = do
   Cache.NeuronCache {..} <-
     fmap Cache.stripCache $
@@ -43,16 +44,16 @@ runQuery QueryCommand {..} = do
   case query of
     CliQuery_ById zid -> do
       let result = G.getZettel zid neuroncacheGraph
-      putLTextLn $ Aeson.encodeToLazyText result
+      printJson result
     CliQuery_Zettels -> do
       let result = G.getZettels neuroncacheGraph
-      putLTextLn $ Aeson.encodeToLazyText result
+      printJson result
     CliQuery_Tags -> do
       let plugins = Config.getPlugins neuroncacheConfig
       if Some Tags `Map.member` plugins
         then do
           let result = Set.unions $ Tags.getZettelTags <$> G.getZettels neuroncacheGraph
-          putLTextLn $ Aeson.encodeToLazyText result
+          printJson result
         else fail "tags plugin is not enabled in neuron.dhall"
     CliQuery_ByTag tag -> do
       let plugins = Config.getPlugins neuroncacheConfig
@@ -61,9 +62,13 @@ runQuery QueryCommand {..} = do
           let q = TagTree.mkDefaultTagQuery $ one $ TagTree.mkTagPatternFromTag tag
               zs = G.getZettels neuroncacheGraph
               result = Tags.zettelsByTag Tags.getZettelTags zs q
-          putLTextLn $ Aeson.encodeToLazyText result
+          printJson result
         else fail "tags plugin is not enabled in neuron.dhall"
     CliQuery_Graph someQ ->
       withSome someQ $ \q -> do
         result <- either (fail . show) pure $ Q.runGraphQuery neuroncacheGraph q
-        putLTextLn $ Aeson.encodeToLazyText $ Q.graphQueryResultJson q result neuroncacheErrors
+        printJson $ Q.graphQueryResultJson q result neuroncacheErrors
+  where
+    printJson :: ToJSON a => a -> m ()
+    printJson =
+      putTextLn . decodeUtf8 . AesonPretty.encodePretty

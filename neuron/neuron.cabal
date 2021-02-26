@@ -35,6 +35,7 @@ common library-common
   build-depends:
     base >=4.12 && < 4.15,
     aeson,
+    aeson-pretty,
     mtl,
     text,
     time,
