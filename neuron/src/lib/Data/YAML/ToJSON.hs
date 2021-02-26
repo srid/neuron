@@ -6,6 +6,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
+-- | Import this module if you want `toJSON` on YAML AST.
 module Data.YAML.ToJSON where
 
 import Data.Aeson
@@ -16,13 +17,13 @@ import Relude
 
 instance Aeson.ToJSONKey (Y.Node Y.Pos) where
   toJSONKey = ToJSONKeyText f (AesonEncoding.text . f)
-    where 
+    where
       f = \case
         Y.Scalar _ x -> scalarToText x
         Y.Mapping _ _ x -> show x
         Y.Sequence _ _ x -> show x
         Y.Anchor _ _ x -> f x
-      scalarToText = \case  
+      scalarToText = \case
         Y.SNull -> "null"
         Y.SBool x -> show x
         Y.SFloat x -> show x
@@ -35,6 +36,7 @@ instance Aeson.ToJSON (Y.Node Y.Pos) where
     Y.Scalar _ x -> toJSON x
     Y.Mapping _ _ x -> toJSON x
     Y.Sequence _ _ x -> toJSON x
+    -- Not sure what to do here, but we don't expect to get this in neuron.
     Y.Anchor _ _ _ -> toJSON ("unsupported" :: Text)
 
 instance ToJSON Y.Scalar where
@@ -45,4 +47,3 @@ instance ToJSON Y.Scalar where
     Y.SInt x -> toJSON x
     Y.SStr x -> toJSON x
     Y.SUnknown _tag x -> toJSON x
-

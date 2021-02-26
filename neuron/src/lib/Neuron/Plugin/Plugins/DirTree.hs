@@ -18,7 +18,6 @@ module Neuron.Plugin.Plugins.DirTree
   )
 where
 
-import qualified Data.Aeson as Aeson
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -31,6 +30,7 @@ import Neuron.Frontend.Widget
   ( ListItem (ListItem_File, ListItem_Folder),
     listItem,
   )
+import Neuron.Markdown (lookupZettelMeta)
 import qualified Neuron.Plugin.Plugins.Links as Links
 import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Plugin.Type (Plugin (..))
@@ -112,8 +112,7 @@ afterZettelParse z =
   case runIdentity <$> DMap.lookup DirTree (zettelPluginData z) of
     Just (DirZettel tags mparent (Just childTag) Nothing) ->
       -- Parse YAML
-      let meta = getMeta
-          pluginData = DirZettel tags mparent (Just childTag) meta
+      let pluginData = DirZettel tags mparent (Just childTag) getMeta
        in z {zettelPluginData = DMap.insert DirTree (Identity pluginData) (zettelPluginData z)}
     Just (DirZettel _ _ (Just _) _) ->
       -- This is a directory zettel; nothing to modify.
@@ -127,20 +126,16 @@ afterZettelParse z =
           mparent = do
             guard $ zettelID z /= indexZid
             pure $ parentZettelIDFromPath (zettelPath z)
-          meta = getMeta
        in z
             { zettelPluginData =
                 DMap.insert
                   DirTree
-                  (Identity $ DirZettel tags mparent Nothing meta)
+                  (Identity $ DirZettel tags mparent Nothing getMeta)
                   (zettelPluginData z)
             }
   where
-    getMeta = do
-      m <- lookupZettelMetadata @Aeson.Value "dirtree" z
-      case Aeson.fromJSON m of
-        Aeson.Error _ -> Nothing
-        Aeson.Success v -> pure v
+    getMeta =
+      lookupZettelMeta @DirTreeMeta "dirtree" (zettelMetadata z)
 
 parentZettelIDFromPath :: FilePath -> ZettelID
 parentZettelIDFromPath p =

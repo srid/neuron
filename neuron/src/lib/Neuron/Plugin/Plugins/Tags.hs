@@ -45,6 +45,7 @@ import GHC.Natural (naturalToInt)
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types (TagQueryCache)
 import Neuron.Frontend.Widget (semanticIcon)
+import Neuron.Markdown (lookupZettelMeta)
 import qualified Neuron.Plugin.Plugins.Links as Links
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
@@ -321,7 +322,7 @@ parseTagQuerys z =
         catMaybes $
           allUrls <&> \(attrs, url) -> do
             parseQueryLink attrs url
-      tagsFromMeta = maybe Set.empty Set.fromList $ lookupZettelMetadata "tags" z
+      tagsFromMeta = maybe Set.empty Set.fromList $ lookupZettelMeta "tags" (zettelMetadata z)
       inlineTags = Set.fromList $
         flip fmapMaybe tagLinks $ \case
           Some (TagQuery_TagZettel t) -> Just t

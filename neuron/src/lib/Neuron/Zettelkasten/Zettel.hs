@@ -22,7 +22,6 @@
 module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson hiding ((.:))
-import qualified Data.Aeson as Aeson
 import Data.Aeson.GADT.TH (deriveJSONGADT)
 import Data.Char (isLower, toLower)
 import Data.Constraint.Extras.TH (deriveArgDict)
@@ -37,11 +36,10 @@ import Data.TagTree (Tag)
 import qualified Data.TagTree as TagTree
 import Data.Tagged (Tagged (Tagged))
 import Data.Time.DateMayTime (DateMayTime)
-import Neuron.Markdown (ZettelParseError)
+import Neuron.Markdown (ZettelMeta, ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Relude hiding (show)
-import qualified Relude.Extra.Map as M
 import Text.Pandoc.Builder (Block)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
@@ -133,7 +131,7 @@ type MissingZettel = Tagged "MissingZettel" ZettelID
 -- The metadata could have been inferred from the content.
 data ZettelT c = Zettel
   { zettelID :: ZettelID,
-    zettelMetadata :: Value,
+    zettelMetadata :: ZettelMeta,
     zettelSlug :: Slug, -- in meta
 
     -- | Relative path to this zettel in the zettelkasten directory
@@ -151,14 +149,6 @@ data ZettelT c = Zettel
     zettelPluginData :: DMap PluginZettelData Identity
   }
   deriving (Generic)
-
-lookupZettelMetadata :: forall a c. FromJSON a => Text -> ZettelT c -> Maybe a
-lookupZettelMetadata k z =
-  case zettelMetadata z of
-    Aeson.Object m -> case Aeson.fromJSON @a <$> M.lookup k m of
-      Just (Aeson.Success v) -> Just v
-      _ -> Nothing
-    _ -> Nothing
 
 type MetadataOnly = Tagged "MetadataOnly" (Maybe ZettelParseError)
 

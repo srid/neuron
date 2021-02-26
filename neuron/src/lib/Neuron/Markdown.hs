@@ -1,7 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -15,9 +17,11 @@
 module Neuron.Markdown
   ( parseMarkdown,
     highlightStyle,
+    lookupZettelMeta,
     NeuronSyntaxSpec,
     ZettelParser,
     ZettelParseError,
+    ZettelMeta,
   )
 where
 
@@ -30,6 +34,8 @@ import qualified Commonmark.Pandoc as CP
 import Control.Monad.Combinators (manyTill)
 import Data.Aeson (ToJSON (toJSON))
 import qualified Data.Aeson as Aeson
+import Data.Aeson.Types (FromJSON)
+import Data.Default
 import Data.Tagged (Tagged (..))
 import qualified Data.YAML as Y
 import Data.YAML.ToJSON ()
@@ -45,9 +51,32 @@ import Text.Show (Show (show))
 
 -- | A zettel parser is a function that parses the given body of text, and
 -- returns both the Pandoc AST and the associated metadata (as Aeson Value)
-type ZettelParser = FilePath -> Text -> Either ZettelParseError (Aeson.Value, Pandoc)
+type ZettelParser = FilePath -> Text -> Either ZettelParseError (ZettelMeta, Pandoc)
 
 type ZettelParseError = Tagged "ZettelParserError" Text
+
+newtype ZettelMeta = ZettelMeta {unZettelMeta :: Maybe Aeson.Value}
+  deriving
+    ( Eq,
+      Ord,
+      Show
+    )
+  deriving newtype
+    ( ToJSON,
+      FromJSON
+    )
+
+instance Default ZettelMeta where
+  def = ZettelMeta Nothing
+
+lookupZettelMeta :: forall a. FromJSON a => Text -> ZettelMeta -> Maybe a
+lookupZettelMeta k (ZettelMeta mobj) = do
+  obj <- mobj
+  case obj of
+    Aeson.Object m -> case Aeson.fromJSON @a <$> M.lookup k m of
+      Just (Aeson.Success v) -> Just v
+      _ -> Nothing
+    _ -> Nothing
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --
@@ -67,9 +96,9 @@ parseMarkdown extraSpec fn s = do
       commonmarkPandocWith (extraSpec <> neuronSpec) fn markdown
   metaYaml <- traverse (parseYaml @(Y.Node Y.Pos) fn) metaVal
   -- Some zettelkasten apps like Zettlr use "keywords" for tags
-  let metaJson = withJsonAlias ("keywords", "tags") $ maybe Aeson.Null toJSON metaYaml
+  let metaJson = withJsonAlias ("keywords", "tags") . toJSON <$> metaYaml
       doc = Pandoc mempty $ B.toList (CP.unCm v)
-  pure (metaJson, doc)
+  pure (ZettelMeta metaJson, doc)
 
 -- | Treat `alias` as an alias to `target`, but only if `target` doesn't already exist
 withJsonAlias :: (Text, Text) -> Aeson.Value -> Aeson.Value
