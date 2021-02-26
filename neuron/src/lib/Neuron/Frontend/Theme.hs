@@ -11,6 +11,7 @@ module Neuron.Frontend.Theme
     semanticColor,
     textBackgroundColor,
     textColor,
+    titleH1Id,
   )
 where
 
@@ -63,11 +64,14 @@ textColor theme = withRgb theme rgb
 textBackgroundColor :: Theme -> C.Color
 textBackgroundColor theme = withRgb theme rgba 0.1
 
+titleH1Id :: Text
+titleH1Id = "title-h1"
+
 themeCss :: Theme -> Css
 themeCss theme = do
   let backgroundColorLighter = withRgb theme rgba 0.02
-  -- Zettel heading's background color
-  ".zettel-content h1" ? do
+  -- Zettel title's background color
+  (fromString . toString $ ".zettel-content h1#" <> titleH1Id) ? do
     C.backgroundColor (textBackgroundColor theme)
   -- Bottom stuff
   "nav.bottomPane" ? do

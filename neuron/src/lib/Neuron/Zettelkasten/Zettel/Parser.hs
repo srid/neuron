@@ -17,7 +17,8 @@ import Data.Default (Default (def))
 import Data.Dependent.Map (DMap)
 import qualified Data.Text as T
 import Data.YAML.ToJSON ()
-import Neuron.Markdown
+import Neuron.Frontend.Theme (titleH1Id)
+import Neuron.Markdown (ZettelParser, lookupZettelMeta)
 import Neuron.Zettelkasten.ID (Slug, ZettelID (unZettelID))
 import Neuron.Zettelkasten.Zettel
 import Relude
@@ -33,19 +34,15 @@ parseZettel ::
 parseZettel parser fn zid s pluginData =
   either unparseableZettel id $ do
     (metadata, doc) <- parser fn s
-    let -- Determine zettel title
-        (titleFinal, titleInBody) = case lookupZettelMeta "title" metadata of
-          Just tit -> (tit, False)
-          Nothing -> fromMaybe (unZettelID zid, False) $ do
-            (,True) . P.plainify . snd <$> P.getH1 doc
+    let (tit, doc') = consolidateTitle metadata doc
         -- Compute final values from user (and post-plugin) metadata
         slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ lookupZettelMeta "slug" metadata
         date = lookupZettelMeta "date" metadata
-    pure $ Right $ Zettel zid metadata slug date fn titleFinal titleInBody doc (Just pluginData)
+    pure $ Right $ Zettel zid metadata slug date fn tit doc' (Just pluginData)
   where
     unparseableZettel err =
       let slug = mkDefaultSlug $ unZettelID zid
-       in Left $ Zettel zid def slug Nothing fn "Unknown" False (s, err) (Just pluginData)
+       in Left $ Zettel zid def slug Nothing fn "Unknown" (s, err) (Just pluginData)
     -- We keep the default slug as close to zettel ID is possible. Spaces (and
     -- colons) are replaced with underscore for legibility.
     mkDefaultSlug :: Text -> Slug
@@ -54,6 +51,13 @@ parseZettel parser fn zid s pluginData =
     charsDisallowedInURL :: [Text]
     charsDisallowedInURL =
       [":"]
+    -- Determine the effective title of the zettel, ensuring that the same exists in the document.
+    consolidateTitle metadata doc =
+      case lookupZettelMeta "title" metadata of
+        Just tit ->
+          (tit, P.setTitleH1 titleH1Id tit doc)
+        Nothing ->
+          P.ensureTitleH1 titleH1Id (unZettelID zid) doc
 
 -- | Like `parseZettel` but operates on multiple files.
 parseZettels ::

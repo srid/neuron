@@ -43,7 +43,6 @@ spec = do
             datetime
             "<spec>.md"
             "Some title"
-            False
             -- (Set.fromList [Tag "science", Tag "journal/class"])
             noContent
             mempty

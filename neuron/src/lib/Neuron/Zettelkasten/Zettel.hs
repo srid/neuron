@@ -138,11 +138,6 @@ data ZettelT c = Zettel
     -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
     zettelTitle :: Text,
-    -- | Whether the title was infered from the body. Used when conditionally
-    -- rendering the title in HTML.
-    -- TODO: Get rid of this, and inject H1 into Pandoc AST conditionally.
-    -- Or, pull first node (H1) out of AST if present.
-    zettelTitleInBody :: Bool,
     zettelContent :: c,
     -- This type is a Maybe only so that we can use omitNothingFields to strip
     -- it off the output JSON.
