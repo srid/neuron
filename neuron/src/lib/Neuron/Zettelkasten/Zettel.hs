@@ -27,6 +27,7 @@ import Data.Char (isLower, toLower)
 import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Default
 import Data.Dependent.Map (DMap)
+import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
@@ -142,7 +143,9 @@ data ZettelT c = Zettel
     -- Or, pull first node (H1) out of AST if present.
     zettelTitleInBody :: Bool,
     zettelContent :: c,
-    zettelPluginData :: DMap PluginZettelData Identity
+    -- This type is a Maybe only so that we can use omitNothingFields to strip
+    -- it off the output JSON.
+    zettelPluginData :: Maybe (DMap PluginZettelData Identity)
   }
   deriving (Generic)
 
@@ -153,6 +156,22 @@ type Zettel = ZettelT MetadataOnly
 
 -- | Zettel that has either failed to parse, or has been parsed.
 type ZettelC = Either (ZettelT (Text, ZettelParseError)) (ZettelT Pandoc)
+
+setPluginData :: PluginZettelData v -> v -> ZettelT c -> ZettelT c
+setPluginData k v z =
+  z
+    { zettelPluginData =
+        maybe
+          (Just $ DMap.singleton k (Identity v))
+          (Just . DMap.insert k (Identity v))
+          (zettelPluginData z)
+    }
+
+lookupPluginData :: PluginZettelData a -> ZettelT c -> Maybe a
+lookupPluginData k z = do
+  pd <- zettelPluginData z
+  Identity v <- DMap.lookup k pd
+  pure v
 
 sansContent :: ZettelC -> Zettel
 sansContent = \case

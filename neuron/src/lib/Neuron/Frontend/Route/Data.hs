@@ -33,7 +33,7 @@ mkZettelData NeuronCache {..} zC = do
   let z = sansContent zC
       pluginData =
         DMap.fromList $
-          Plugin.routePluginData _neuronCache_graph zC <$> DMap.toList (zettelPluginData z)
+          Plugin.routePluginData _neuronCache_graph zC <$> maybe mempty DMap.toList (zettelPluginData z)
   ZettelData zC pluginData
 
 mkImpulseData :: NeuronCache -> ImpulseData

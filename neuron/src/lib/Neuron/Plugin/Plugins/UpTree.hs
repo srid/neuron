@@ -10,7 +10,6 @@
 
 module Neuron.Plugin.Plugins.UpTree (plugin, routePluginData, render) where
 
-import qualified Data.Dependent.Map as DMap
 import Data.Tree (Forest)
 import Neuron.Frontend.Route (NeuronWebT)
 import qualified Neuron.Frontend.Widget.InvertedTree as IT
@@ -32,8 +31,8 @@ plugin =
     }
 
 enable :: ZettelT c -> ZettelT c
-enable z =
-  z {zettelPluginData = DMap.insert UpTree (Identity ()) (zettelPluginData z)}
+enable =
+  setPluginData UpTree ()
 
 routePluginData :: ZettelGraph -> ZettelC -> Forest Zettel
 routePluginData g (sansContent -> z) =

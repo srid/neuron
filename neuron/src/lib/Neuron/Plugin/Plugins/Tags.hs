@@ -32,7 +32,6 @@ import Commonmark.Tokens
   ( TokType (LineEnd, Spaces, Symbol, UnicodeSpace),
   )
 import Control.Monad.Writer (MonadWriter)
-import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -109,10 +108,10 @@ queryConnections ::
   ) =>
   Zettel ->
   m [(ContextualConnection, Zettel)]
-queryConnections Zettel {..} = do
-  case DMap.lookup Tags zettelPluginData of
+queryConnections z = do
+  case lookupPluginData Tags z of
     Nothing -> pure mempty
-    Just (Identity qs) -> do
+    Just qs -> do
       fmap concat $
         forM qs $ \someQ -> do
           qRes <- runSomeTagQuery someQ
@@ -331,11 +330,7 @@ parseTagQuerys z =
         flip fmapMaybe tagLinks $ \case
           Some (TagQuery_TagZettel t) -> Just t
           _ -> Nothing
-   in appendTags
-        inlineTags
-        z
-          { zettelPluginData = DMap.insert Tags (Identity tagLinks) (zettelPluginData z)
-          }
+   in setPluginData Tags tagLinks $ appendTags inlineTags z
 
 -- | Parse a query if any from a Markdown link
 parseQueryLink :: [(Text, Text)] -> Text -> Maybe (Some TagQuery)

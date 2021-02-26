@@ -64,10 +64,10 @@ queryConnections ::
   MonadReader [Zettel] m =>
   Zettel ->
   m [(ContextualConnection, Zettel)]
-queryConnections Zettel {..} = do
+queryConnections z = do
   zs <- ask
-  case DMap.lookup DirTree zettelPluginData of
-    Just (Identity (DirZettel _ _ (Just childTag) _)) -> do
+  case lookupPluginData DirTree z of
+    Just (DirZettel _ _ (Just childTag) _) -> do
       pure $ getChildZettels zs childTag
     _ -> pure mempty
 
@@ -88,9 +88,9 @@ getChildZettels zs t =
    in ((conn, ctx),) <$> Tags.zettelsByTag getZettelDirTags zs childrenQuery
 
 getZettelDirTags :: ZettelT c -> Set Tag
-getZettelDirTags Zettel {..} =
+getZettelDirTags z =
   fromMaybe Set.empty $ do
-    _dirZettel_tags . runIdentity <$> DMap.lookup DirTree zettelPluginData
+    _dirZettel_tags <$> lookupPluginData DirTree z
 
 renderPanel :: (DomBuilder t m, PostBuild t m) => DirZettelVal -> NeuronWebT t m ()
 renderPanel DirZettelVal {..} = do
@@ -110,10 +110,10 @@ renderPanel DirZettelVal {..} = do
 
 afterZettelParse :: forall c. ZettelT c -> ZettelT c
 afterZettelParse z =
-  case runIdentity <$> DMap.lookup DirTree (zettelPluginData z) of
+  case lookupPluginData DirTree z of
     Just (DirZettel tags mparent (Just childTag) Nothing) ->
       let pluginData = DirZettel tags mparent (Just childTag) getMeta
-       in setPluginData pluginData
+       in setDirTreePluginData pluginData
     Just (DirZettel _ _ (Just _) _) ->
       -- This is a directory zettel; nothing to modify.
       z
@@ -127,15 +127,11 @@ afterZettelParse z =
             guard $ zettelID z /= indexZid
             pure $ parentZettelIDFromPath (zettelPath z)
           pluginData = DirZettel tags mparent Nothing getMeta
-       in setPluginData pluginData
+       in setDirTreePluginData pluginData
   where
-    setPluginData pluginData =
+    setDirTreePluginData pluginData =
       -- Add plugin-specific tags to metadata, so the user may query based on them.
-      appendTags
-        (_dirZettel_tags pluginData)
-        z
-          { zettelPluginData = DMap.insert DirTree (Identity pluginData) (zettelPluginData z)
-          }
+      setPluginData DirTree pluginData $ appendTags (_dirZettel_tags pluginData) z
     getMeta =
       lookupZettelMeta @DirTreeMeta "dirtree" (zettelMeta z)
 
@@ -215,9 +211,9 @@ rootTag :: TagNode
 rootTag = TagNode "root"
 
 isDirectoryZettel :: ZettelT c -> Bool
-isDirectoryZettel (zettelPluginData -> pluginData) =
-  case DMap.lookup DirTree pluginData of
-    Just (Identity (DirZettel _ _ (Just _childTag) _)) ->
+isDirectoryZettel z =
+  case lookupPluginData DirTree z of
+    Just (DirZettel _ _ (Just _childTag) _) ->
       True
     _ ->
       False

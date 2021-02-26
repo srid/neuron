@@ -184,18 +184,8 @@ renderHandleLink' = \case
 
 preJsonStrip :: Zettel -> Zettel
 preJsonStrip z =
-  let pluginData' = flip fmap (DMap.toList $ zettelPluginData z) $ \case
-        x@(NeuronIgnore :=> Identity ()) ->
-          x
-        x@(DirTree :=> Identity _) ->
-          x
-        x@(Tags :=> Identity _) ->
-          x
-        x@(UpTree :=> Identity _) ->
-          x
-        Links :=> Identity x ->
-          Links :=> Identity (Links.preJsonStrip x)
-   in z {zettelPluginData = DMap.fromList pluginData'}
+  -- We don't care to send internal data outside of neuron.
+  z {zettelPluginData = Nothing}
 
 -- | Compress the graph to save space, by eliminating the unnecessary
 -- surrounding context Pandoc blocks.
