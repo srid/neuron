@@ -8,7 +8,6 @@ module Neuron.Zettelkasten.ZettelSpec
 where
 
 import Data.Default
-import Data.Tagged (Tagged (Tagged))
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.DateMayTime (DateMayTime, mkDateMayTime)
 import Data.Time.LocalTime
@@ -27,7 +26,7 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  let noContent :: MetadataOnly = Tagged Nothing
+  let noContent :: MetadataOnly = Nothing
   describe "sortZettelsReverseChronological" $ do
     let mkDay = fromGregorian 2020 3
         mkZettelDay n =
