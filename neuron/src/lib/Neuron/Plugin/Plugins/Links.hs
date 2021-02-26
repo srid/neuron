@@ -68,7 +68,7 @@ plugin :: Plugin LinksData
 plugin =
   def
     { _plugin_markdownSpec = wikiLinkSpec,
-      _plugin_afterZettelParse = second . const parseLinks,
+      _plugin_afterZettelParse = second parseLinks,
       _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink,
       _plugin_css = zettelLinkCss

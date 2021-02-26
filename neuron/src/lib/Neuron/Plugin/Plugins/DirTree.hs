@@ -24,15 +24,13 @@ import qualified Data.Set as Set
 import Data.TagTree (Tag, TagNode (..), mkDefaultTagQuery)
 import qualified Data.TagTree as Tag
 import qualified Data.Text as T
-import Data.YAML ((.:?))
-import qualified Data.YAML as Y
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types (DirZettelVal (..))
 import Neuron.Frontend.Widget
   ( ListItem (ListItem_File, ListItem_Folder),
     listItem,
   )
-import qualified Neuron.Markdown as M
+import Neuron.Markdown (lookupZettelMeta)
 import qualified Neuron.Plugin.Plugins.Links as Links
 import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Plugin.Type (Plugin (..))
@@ -44,7 +42,7 @@ import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core
-import Relude hiding (trace, traceShow, traceShowId)
+import Relude
 import qualified System.Directory.Contents as DC
 import System.FilePath (takeDirectory, takeFileName)
 import qualified Text.Pandoc.Definition as P
@@ -55,7 +53,7 @@ plugin :: Plugin DirZettelVal
 plugin =
   def
     { _plugin_afterZettelRead = injectDirectoryZettels,
-      _plugin_afterZettelParse = \myaml -> bimap (afterZettelParse myaml) (afterZettelParse myaml),
+      _plugin_afterZettelParse = bimap afterZettelParse afterZettelParse,
       _plugin_graphConnections = queryConnections,
       _plugin_renderPanel = const renderPanel
     }
@@ -71,11 +69,6 @@ queryConnections Zettel {..} = do
     Just (Identity (DirZettel _ _ (Just childTag) _)) -> do
       pure $ getChildZettels zs childTag
     _ -> pure mempty
-
-metaParser :: Y.Node Y.Pos -> Y.Parser (Maybe DirTreeMeta)
-metaParser yaml = do
-  flip (Y.withMap @(Maybe DirTreeMeta) "DirTree") yaml $ \m -> do
-    m .:? "dirtree"
 
 routePluginData :: ZettelGraph -> DirZettel -> DirZettelVal
 routePluginData g (DirZettel _ parent mChildTag mMeta) =
@@ -114,15 +107,12 @@ renderPanel DirZettelVal {..} = do
   where
     pluginDoc = "https://neuron.zettel.page/dirtree"
 
-afterZettelParse :: forall c. Maybe (Y.Node Y.Pos) -> ZettelT c -> ZettelT c
-afterZettelParse myaml z =
+afterZettelParse :: forall c. ZettelT c -> ZettelT c
+afterZettelParse z =
   case runIdentity <$> DMap.lookup DirTree (zettelPluginData z) of
     Just (DirZettel tags mparent (Just childTag) Nothing) ->
       -- Parse YAML
-      let meta = fromRight Nothing $ case myaml of
-            Nothing -> pure Nothing
-            Just yaml -> M.runYamlParser (metaParser yaml)
-          pluginData = DirZettel tags mparent (Just childTag) meta
+      let pluginData = DirZettel tags mparent (Just childTag) getMeta
        in z {zettelPluginData = DMap.insert DirTree (Identity pluginData) (zettelPluginData z)}
     Just (DirZettel _ _ (Just _) _) ->
       -- This is a directory zettel; nothing to modify.
@@ -136,16 +126,16 @@ afterZettelParse myaml z =
           mparent = do
             guard $ zettelID z /= indexZid
             pure $ parentZettelIDFromPath (zettelPath z)
-          meta = fromRight Nothing $ case myaml of
-            Nothing -> pure Nothing
-            Just yaml -> M.runYamlParser (metaParser yaml)
        in z
             { zettelPluginData =
                 DMap.insert
                   DirTree
-                  (Identity $ DirZettel tags mparent Nothing meta)
+                  (Identity $ DirZettel tags mparent Nothing getMeta)
                   (zettelPluginData z)
             }
+  where
+    getMeta =
+      lookupZettelMeta @DirTreeMeta "dirtree" (zettelMeta z)
 
 parentZettelIDFromPath :: FilePath -> ZettelID
 parentZettelIDFromPath p =

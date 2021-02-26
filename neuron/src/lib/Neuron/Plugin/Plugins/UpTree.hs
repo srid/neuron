@@ -25,7 +25,7 @@ import Relude hiding (trace, traceShow, traceShowId)
 plugin :: Plugin (Forest Zettel)
 plugin =
   def
-    { _plugin_afterZettelParse = const $ bimap enable enable,
+    { _plugin_afterZettelParse = bimap enable enable,
       _plugin_routeData = routePluginData,
       _plugin_renderPanel = const render,
       _plugin_css = const IT.style

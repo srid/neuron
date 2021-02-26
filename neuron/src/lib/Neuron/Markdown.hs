@@ -1,7 +1,10 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
@@ -13,13 +16,12 @@
 
 module Neuron.Markdown
   ( parseMarkdown,
-    parseYaml,
-    parseYamlNode,
-    runYamlParser,
     highlightStyle,
+    lookupZettelMeta,
     NeuronSyntaxSpec,
     ZettelParser,
     ZettelParseError,
+    ZettelMeta,
   )
 where
 
@@ -30,9 +32,15 @@ import qualified Commonmark.Extensions as CE
 import qualified Commonmark.Inlines as CM
 import qualified Commonmark.Pandoc as CP
 import Control.Monad.Combinators (manyTill)
+import Data.Aeson (ToJSON (toJSON))
+import qualified Data.Aeson as Aeson
+import Data.Aeson.Types (FromJSON)
+import Data.Default
 import Data.Tagged (Tagged (..))
 import qualified Data.YAML as Y
+import Data.YAML.ToJSON ()
 import Relude hiding (show, traceShowId)
+import qualified Relude.Extra.Map as M
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import Text.Megaparsec.Simple (Parser, parse)
@@ -41,9 +49,39 @@ import Text.Pandoc.Definition (Pandoc (..))
 import qualified Text.Parsec as P
 import Text.Show (Show (show))
 
-type ZettelParser = FilePath -> Text -> Either ZettelParseError (Maybe (Y.Node Y.Pos), Pandoc)
+-- | A zettel parser is a function that parses the given body of text, and
+-- returns both the Pandoc AST and the associated metadata (as Aeson Value)
+type ZettelParser = FilePath -> Text -> Either ZettelParseError (ZettelMeta, Pandoc)
 
 type ZettelParseError = Tagged "ZettelParserError" Text
+
+newtype ZettelMeta = ZettelMeta {unZettelMeta :: Maybe Aeson.Value}
+  deriving
+    ( Eq,
+      Ord,
+      Show
+    )
+  deriving newtype
+    ( ToJSON,
+      FromJSON
+    )
+
+instance Default ZettelMeta where
+  def = ZettelMeta Nothing
+
+zettelMetaFromYamlFrontmatter :: Maybe (Y.Node Y.Pos) -> ZettelMeta
+zettelMetaFromYamlFrontmatter myaml =
+  ZettelMeta $ patchMdYaml . toJSON <$> myaml
+  where
+    patchMdYaml =
+      -- Some zettelkasten apps like Zettlr use "keywords" for tags
+      withJsonAlias ("keywords", "tags")
+
+lookupZettelMeta :: forall a. FromJSON a => Text -> ZettelMeta -> Maybe a
+lookupZettelMeta k (ZettelMeta mobj) = do
+  Aeson.Object m <- mobj
+  Aeson.Success v <- Aeson.fromJSON @a <$> M.lookup k m
+  pure v
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --
@@ -61,8 +99,18 @@ parseMarkdown extraSpec fn s = do
   v <-
     first (Tagged . toText . show) $
       commonmarkPandocWith (extraSpec <> neuronSpec) fn markdown
-  meta <- traverse (parseYaml fn) metaVal
-  pure (meta, Pandoc mempty $ B.toList (CP.unCm v))
+  meta <- zettelMetaFromYamlFrontmatter <$> traverse (parseYaml @(Y.Node Y.Pos) fn) metaVal
+  let doc = Pandoc mempty $ B.toList (CP.unCm v)
+  pure (meta, doc)
+
+-- | Treat `alias` as an alias to `target`, but only if `target` doesn't already exist
+withJsonAlias :: (Text, Text) -> Aeson.Value -> Aeson.Value
+withJsonAlias (alias, target) = \case
+  x@(Aeson.Object m) -> fromMaybe x $ do
+    guard $ not $ M.member target m
+    kw <- M.lookup alias m
+    pure $ Aeson.Object (M.insert target kw m)
+  x -> x
 
 -- NOTE: HsYAML parsing is rather slow due to its use of DList.
 -- See https://github.com/haskell-hvr/HsYAML/issues/40
@@ -71,14 +119,6 @@ parseYaml n (encodeUtf8 -> v) = do
   let mkError (loc, emsg) =
         Tagged $ toText $ n <> ":" <> Y.prettyPosWithSource loc v " error" <> emsg
   first mkError $ Y.decode1 v
-
-parseYamlNode :: Y.FromYAML a => Y.Node Y.Pos -> Either ZettelParseError a
-parseYamlNode =
-  runYamlParser . Y.parseYAML
-
-runYamlParser :: Y.FromYAML a => Y.Parser a -> Either ZettelParseError a
-runYamlParser p =
-  first (Tagged . toText . show) $ Y.parseEither p
 
 -- Like commonmarkWith, but parses directly into the Pandoc AST.
 commonmarkPandocWith ::

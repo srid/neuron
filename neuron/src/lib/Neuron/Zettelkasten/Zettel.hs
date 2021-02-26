@@ -14,6 +14,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -22,7 +23,7 @@ module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson hiding ((.:))
 import Data.Aeson.GADT.TH (deriveJSONGADT)
-import Data.Char (isLower)
+import Data.Char (isLower, toLower)
 import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Default
 import Data.Dependent.Map (DMap)
@@ -35,9 +36,7 @@ import Data.TagTree (Tag)
 import qualified Data.TagTree as TagTree
 import Data.Tagged (Tagged (Tagged))
 import Data.Time.DateMayTime (DateMayTime)
-import Data.YAML (FromYAML (parseYAML), (.:))
-import qualified Data.YAML as Y
-import Neuron.Markdown (ZettelParseError)
+import Neuron.Markdown (ZettelMeta, ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Relude hiding (show)
@@ -56,12 +55,6 @@ data DirTreeMeta = DirTreeMeta
   { dirtreemetaDisplay :: Bool
   }
   deriving (Eq, Ord, Show, Generic)
-
-instance Y.FromYAML DirTreeMeta where
-  parseYAML =
-    Y.withMap "Meta" $ \m ->
-      DirTreeMeta
-        <$> m .: "display"
 
 instance Default DirTreeMeta where
   def = DirTreeMeta True
@@ -138,16 +131,20 @@ type MissingZettel = Tagged "MissingZettel" ZettelID
 -- The metadata could have been inferred from the content.
 data ZettelT c = Zettel
   { zettelID :: ZettelID,
-    zettelSlug :: Slug,
+    zettelMeta :: ZettelMeta,
+    zettelSlug :: Slug, -- in meta
+
     -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
     zettelTitle :: Text,
     -- | Whether the title was infered from the body. Used when conditionally
     -- rendering the title in HTML.
+    -- TODO: Get rid of this, and inject H1 into Pandoc AST conditionally.
+    -- Or, pull first node (H1) out of AST if present.
     zettelTitleInBody :: Bool,
     -- | Date associated with the zettel if any
-    zettelDate :: Maybe DateMayTime,
-    zettelUnlisted :: Bool,
+    zettelDate :: Maybe DateMayTime, -- in meta
+    zettelUnlisted :: Bool, -- in meta
     zettelContent :: c,
     zettelPluginData :: DMap PluginZettelData Identity
   }
@@ -218,10 +215,10 @@ deriving instance Eq (ZettelT MetadataOnly)
 deriving instance Eq (ZettelT (Text, ZettelParseError))
 
 instance ToJSON DirTreeMeta where
-  toJSON = genericToJSON shortRecordFields
+  toJSON = genericToJSON shortRecordFieldsLowerCase
 
 instance FromJSON DirTreeMeta where
-  parseJSON = genericParseJSON shortRecordFields
+  parseJSON = genericParseJSON shortRecordFieldsLowerCase
 
 instance ToJSON DirZettel where
   toJSON = genericToJSON shortRecordFields
@@ -236,12 +233,18 @@ instance FromJSON Zettel where
   parseJSON = genericParseJSON shortRecordFields
 
 shortRecordFields :: Options
-shortRecordFields =
+shortRecordFields = shortRecordFields' False
+
+shortRecordFieldsLowerCase :: Options
+shortRecordFieldsLowerCase = shortRecordFields' True
+
+shortRecordFields' :: Bool -> Options
+shortRecordFields' lowerCase =
   defaultOptions
     { fieldLabelModifier =
         \case
           -- Drop the "_foo_" prefix
           '_' : rest -> drop 1 $ dropWhile (/= '_') rest
           -- Drop "zettel" prefix
-          s -> dropWhile isLower s
+          s -> bool id (fmap toLower) lowerCase $ dropWhile isLower s
     }

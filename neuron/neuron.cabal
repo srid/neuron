@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: neuron
-version: 1.9.17.0
+version: 1.9.18.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -84,7 +84,6 @@ library
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Error
-    Neuron.Zettelkasten.Zettel.Meta
     Neuron.Zettelkasten.Zettel.Parser
     Neuron.Zettelkasten.Connection
     Neuron.Zettelkasten.Query
@@ -117,6 +116,7 @@ library
     Data.Graph.Labelled.Algorithm
     Data.Graph.Labelled.Build
     Data.Time.DateMayTime
+    Data.YAML.ToJSON
 
 -- Everything below this marker should be deleted when using neuron.cabal in
 -- GHCJS as a library.

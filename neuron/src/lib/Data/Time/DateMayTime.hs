@@ -25,7 +25,7 @@ module Data.Time.DateMayTime
   )
 where
 
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson
 import Data.Time
   ( Day,
     FormatTime,
@@ -35,20 +35,17 @@ import Data.Time
     formatTime,
     parseTimeM,
   )
-import Data.YAML (FromYAML (..), ToYAML (..))
 import Relude
 
 -- | Like `Day` but with optional time.
 newtype DateMayTime = DateMayTime {unDateMayTime :: (Day, Maybe TimeOfDay)}
-  deriving (Eq, Show, Generic, Ord, ToJSON, FromJSON)
+  deriving (Eq, Show, Generic, Ord)
 
-instance FromYAML DateMayTime where
-  parseYAML =
-    parseDateMayTime <=< parseYAML @Text
+instance ToJSON DateMayTime where
+  toJSON = toJSON . formatDateMayTime
 
-instance ToYAML DateMayTime where
-  toYAML =
-    toYAML . formatDateMayTime
+instance FromJSON DateMayTime where
+  parseJSON = parseDateMayTime <=< parseJSON
 
 mkDateMayTime :: Either Day LocalTime -> DateMayTime
 mkDateMayTime =

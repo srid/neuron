@@ -41,13 +41,11 @@ import qualified Data.TagTree as Tag
 import qualified Data.TagTree as TagTree
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
-import Data.YAML ((.:?))
-import qualified Data.YAML as Y
 import GHC.Natural (naturalToInt)
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types (TagQueryCache)
 import Neuron.Frontend.Widget (semanticIcon)
-import qualified Neuron.Markdown as M
+import Neuron.Markdown (lookupZettelMeta)
 import qualified Neuron.Plugin.Plugins.Links as Links
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
@@ -73,7 +71,7 @@ plugin :: Plugin TagQueryCache
 plugin =
   def
     { _plugin_markdownSpec = inlineTagSpec,
-      _plugin_afterZettelParse = second . parseTagQuerys,
+      _plugin_afterZettelParse = second parseTagQuerys,
       _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink,
       _plugin_css = const style
@@ -315,8 +313,8 @@ style = do
 -- Parser
 -- ------
 
-parseTagQuerys :: Maybe (Y.Node Y.Pos) -> ZettelT Pandoc -> ZettelT Pandoc
-parseTagQuerys myaml z =
+parseTagQuerys :: ZettelT Pandoc -> ZettelT Pandoc
+parseTagQuerys z =
   let allUrls =
         Set.toList . Set.fromList $
           Pandoc.getLinks $ zettelContent z
@@ -324,20 +322,13 @@ parseTagQuerys myaml z =
         catMaybes $
           allUrls <&> \(attrs, url) -> do
             parseQueryLink attrs url
-      tagsFromYaml = fromRight Set.empty $ case myaml of
-        Nothing -> pure Set.empty
-        Just yaml -> Set.fromList <$> M.runYamlParser (tagsParser yaml)
+      tagsFromMeta = maybe Set.empty Set.fromList $ lookupZettelMeta "tags" (zettelMeta z)
       inlineTags = Set.fromList $
         flip fmapMaybe tagLinks $ \case
           Some (TagQuery_TagZettel t) -> Just t
           _ -> Nothing
-      tagsData = ZettelTags (tagsFromYaml <> inlineTags) tagLinks
+      tagsData = ZettelTags (tagsFromMeta <> inlineTags) tagLinks
    in z {zettelPluginData = DMap.insert Tags (Identity tagsData) (zettelPluginData z)}
-
-tagsParser :: Y.Node Y.Pos -> Y.Parser [Tag]
-tagsParser yaml = do
-  flip (Y.withMap @[Tag] "tags") yaml $ \m -> do
-    fromMaybe mempty <$> liftA2 (<|>) (m .:? "tags") (m .:? "keywords")
 
 -- | Parse a query if any from a Markdown link
 parseQueryLink :: [(Text, Text)] -> Text -> Maybe (Some TagQuery)
