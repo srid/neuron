@@ -33,20 +33,24 @@ parseZettel ::
 parseZettel parser fn zid s pluginData =
   either unparseableZettel id $ do
     (metadata, doc) <- parser fn s
-    meta :: Meta.Meta <- case Aeson.fromJSON @Meta.Meta metadata of
-      Aeson.Error e -> Left $ Tagged $ "Bad metadata: " <> toText e
-      Aeson.Success v -> pure v
+    meta :: Maybe Meta.Meta <- case parseMeta metadata of
+      Just (Aeson.Error e) -> Left $ Tagged $ "Bad metadata: " <> toText e
+      Just (Aeson.Success v) -> pure (Just v)
+      Nothing -> pure Nothing
     let -- Determine zettel title
-        (title, titleInBody) = case Meta.title meta of
+        (title, titleInBody) = case Meta.title =<< meta of
           Just tit -> (tit, False)
           Nothing -> fromMaybe (unZettelID zid, False) $ do
             (,True) . P.plainify . snd <$> P.getH1 doc
         -- Determine other metadata
-        date = Meta.date meta
-        slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug meta
-        unlisted = Just True == Meta.unlisted meta
+        date = Meta.date =<< meta
+        slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ Meta.slug =<< meta
+        unlisted = Just True == (Meta.unlisted =<< meta)
     pure $ Right $ Zettel zid metadata slug fn title titleInBody date unlisted doc pluginData
   where
+    parseMeta m = do
+      guard $ m /= Aeson.Null
+      pure $ Aeson.fromJSON @Meta.Meta m
     unparseableZettel err =
       let slug = mkDefaultSlug $ unZettelID zid
        in Left $ Zettel zid Aeson.Null slug fn "Unknown" False Nothing False (s, err) pluginData

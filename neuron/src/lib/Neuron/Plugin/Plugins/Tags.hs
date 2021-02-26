@@ -31,7 +31,6 @@ import Commonmark.Tokens
   ( TokType (LineEnd, Spaces, Symbol, UnicodeSpace),
   )
 import Control.Monad.Writer (MonadWriter)
-import qualified Data.Aeson as Aeson
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
@@ -57,7 +56,6 @@ import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core hiding (count, mapMaybe, tag)
 import Relude
-import Relude.Extra.Map
 import Text.Pandoc.Definition (Inline, Pandoc)
 import qualified Text.Pandoc.Util as Pandoc
 import qualified Text.Parsec as P
@@ -323,11 +321,7 @@ parseTagQuerys z =
         catMaybes $
           allUrls <&> \(attrs, url) -> do
             parseQueryLink attrs url
-      tagsFromMeta = maybe Set.empty Set.fromList $ case zettelMetadata z of
-        Aeson.Object m -> case Aeson.fromJSON @[Tag] <$> lookup "tags" m of
-          Just (Aeson.Success v) -> Just v
-          _ -> Nothing
-        _ -> Nothing
+      tagsFromMeta = maybe Set.empty Set.fromList $ lookupZettelMetadata "tags" z
       inlineTags = Set.fromList $
         flip fmapMaybe tagLinks $ \case
           Some (TagQuery_TagZettel t) -> Just t

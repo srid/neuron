@@ -42,7 +42,7 @@ import Neuron.Zettelkasten.Resolver (ZIDRef (..))
 import qualified Neuron.Zettelkasten.Resolver as R
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core
-import Relude hiding (trace, traceShow, traceShowId)
+import Relude
 import qualified System.Directory.Contents as DC
 import System.FilePath (takeDirectory, takeFileName)
 import qualified Text.Pandoc.Definition as P
@@ -112,9 +112,7 @@ afterZettelParse z =
   case runIdentity <$> DMap.lookup DirTree (zettelPluginData z) of
     Just (DirZettel tags mparent (Just childTag) Nothing) ->
       -- Parse YAML
-      let meta = case Aeson.fromJSON $ zettelMetadata z of
-            Aeson.Error _ -> Nothing
-            Aeson.Success v -> pure v
+      let meta = getMeta
           pluginData = DirZettel tags mparent (Just childTag) meta
        in z {zettelPluginData = DMap.insert DirTree (Identity pluginData) (zettelPluginData z)}
     Just (DirZettel _ _ (Just _) _) ->
@@ -129,9 +127,7 @@ afterZettelParse z =
           mparent = do
             guard $ zettelID z /= indexZid
             pure $ parentZettelIDFromPath (zettelPath z)
-          meta = case Aeson.fromJSON $ zettelMetadata z of
-            Aeson.Error _ -> Nothing
-            Aeson.Success v -> pure v
+          meta = getMeta
        in z
             { zettelPluginData =
                 DMap.insert
@@ -139,6 +135,12 @@ afterZettelParse z =
                   (Identity $ DirZettel tags mparent Nothing meta)
                   (zettelPluginData z)
             }
+  where
+    getMeta = do
+      m <- lookupZettelMetadata @Aeson.Value "dirtree" z
+      case Aeson.fromJSON m of
+        Aeson.Error _ -> Nothing
+        Aeson.Success v -> pure v
 
 parentZettelIDFromPath :: FilePath -> ZettelID
 parentZettelIDFromPath p =

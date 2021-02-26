@@ -32,7 +32,6 @@ import qualified Data.Map.Strict as Map
 import Data.PathTree (annotatePathsWith, foldSingleParentsWith, mkTreeFromPaths)
 import qualified Data.Text as T
 import Data.Tree (Forest)
-import Data.YAML (FromYAML, ToYAML)
 import Relude
 import System.FilePattern (FilePattern, (?==))
 import qualified Text.Megaparsec as M
@@ -48,10 +47,6 @@ newtype Tag = Tag {unTag :: Text}
   deriving newtype
     ( ToJSON,
       FromJSON
-    )
-  deriving newtype
-    ( ToYAML,
-      FromYAML
     )
 
 --------------

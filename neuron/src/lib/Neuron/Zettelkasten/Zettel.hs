@@ -14,6 +14,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -21,8 +22,9 @@
 module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson hiding ((.:))
+import qualified Data.Aeson as Aeson
 import Data.Aeson.GADT.TH (deriveJSONGADT)
-import Data.Char (isLower)
+import Data.Char (isLower, toLower)
 import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Default
 import Data.Dependent.Map (DMap)
@@ -35,12 +37,11 @@ import Data.TagTree (Tag)
 import qualified Data.TagTree as TagTree
 import Data.Tagged (Tagged (Tagged))
 import Data.Time.DateMayTime (DateMayTime)
-import Data.YAML (FromYAML (parseYAML), (.:))
-import qualified Data.YAML as Y
 import Neuron.Markdown (ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Relude hiding (show)
+import qualified Relude.Extra.Map as M
 import Text.Pandoc.Builder (Block)
 import Text.Pandoc.Definition (Pandoc (..))
 import Text.Show (Show (show))
@@ -56,12 +57,6 @@ data DirTreeMeta = DirTreeMeta
   { dirtreemetaDisplay :: Bool
   }
   deriving (Eq, Ord, Show, Generic)
-
-instance Y.FromYAML DirTreeMeta where
-  parseYAML =
-    Y.withMap "Meta" $ \m ->
-      DirTreeMeta
-        <$> m .: "display"
 
 instance Default DirTreeMeta where
   def = DirTreeMeta True
@@ -157,6 +152,14 @@ data ZettelT c = Zettel
   }
   deriving (Generic)
 
+lookupZettelMetadata :: forall a c. FromJSON a => Text -> ZettelT c -> Maybe a
+lookupZettelMetadata k z =
+  case zettelMetadata z of
+    Aeson.Object m -> case Aeson.fromJSON @a <$> M.lookup k m of
+      Just (Aeson.Success v) -> Just v
+      _ -> Nothing
+    _ -> Nothing
+
 type MetadataOnly = Tagged "MetadataOnly" (Maybe ZettelParseError)
 
 -- | Zettel without its content
@@ -222,10 +225,10 @@ deriving instance Eq (ZettelT MetadataOnly)
 deriving instance Eq (ZettelT (Text, ZettelParseError))
 
 instance ToJSON DirTreeMeta where
-  toJSON = genericToJSON shortRecordFields
+  toJSON = genericToJSON shortRecordFieldsLowerCase
 
 instance FromJSON DirTreeMeta where
-  parseJSON = genericParseJSON shortRecordFields
+  parseJSON = genericParseJSON shortRecordFieldsLowerCase
 
 instance ToJSON DirZettel where
   toJSON = genericToJSON shortRecordFields
@@ -240,12 +243,18 @@ instance FromJSON Zettel where
   parseJSON = genericParseJSON shortRecordFields
 
 shortRecordFields :: Options
-shortRecordFields =
+shortRecordFields = shortRecordFields' False
+
+shortRecordFieldsLowerCase :: Options
+shortRecordFieldsLowerCase = shortRecordFields' True
+
+shortRecordFields' :: Bool -> Options
+shortRecordFields' lowerCase =
   defaultOptions
     { fieldLabelModifier =
         \case
           -- Drop the "_foo_" prefix
           '_' : rest -> drop 1 $ dropWhile (/= '_') rest
           -- Drop "zettel" prefix
-          s -> dropWhile isLower s
+          s -> bool id (fmap toLower) lowerCase $ dropWhile isLower s
     }
