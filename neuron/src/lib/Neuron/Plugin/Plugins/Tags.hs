@@ -193,7 +193,7 @@ renderPanel _elNeuronPandoc z _routeData = do
           elAttr
             "span"
             ( "class" =: "ui basic label zettel-tag"
-                <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
+                <> "title" =: "Tag"
             )
             $ text $ unTag t
 

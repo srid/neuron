@@ -41,12 +41,11 @@ spec = do
             (ZettelID s)
             def
             s
+            datetime
             "<spec>.md"
             "Some title"
             False
             -- (Set.fromList [Tag "science", Tag "journal/class"])
-            datetime
-            False
             noContent
             mempty
 

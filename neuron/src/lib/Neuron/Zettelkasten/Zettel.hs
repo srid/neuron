@@ -126,7 +126,12 @@ type MissingZettel = Tagged "MissingZettel" ZettelID
 data ZettelT c = Zettel
   { zettelID :: ZettelID,
     zettelMeta :: ZettelMeta,
-    zettelSlug :: Slug, -- in meta
+    -- Slug is non-changing - so, although inferred from zettelMeta, we must
+    -- put it here as a data type field.
+    zettelSlug :: Slug, -- inferred from zettelMeta
+    -- Since date is used as a sort key, we parse it once from zettelMeta for
+    -- performance reasons.
+    zettelDate :: Maybe DateMayTime, -- inferred from zettelMeta
 
     -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
@@ -136,9 +141,6 @@ data ZettelT c = Zettel
     -- TODO: Get rid of this, and inject H1 into Pandoc AST conditionally.
     -- Or, pull first node (H1) out of AST if present.
     zettelTitleInBody :: Bool,
-    -- | Date associated with the zettel if any
-    zettelDate :: Maybe DateMayTime, -- in meta
-    zettelUnlisted :: Bool, -- in meta
     zettelContent :: c,
     zettelPluginData :: DMap PluginZettelData Identity
   }

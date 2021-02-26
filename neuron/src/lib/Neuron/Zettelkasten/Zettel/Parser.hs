@@ -38,14 +38,14 @@ parseZettel parser fn zid s pluginData =
           Just tit -> (tit, False)
           Nothing -> fromMaybe (unZettelID zid, False) $ do
             (,True) . P.plainify . snd <$> P.getH1 doc
-        -- Determine other metadata
-        slugFinal = fromMaybe (mkDefaultSlug $ unZettelID zid) $ lookupZettelMeta "slug" metadata
-        unlistedFinal = Just True == lookupZettelMeta "unlisted" metadata
-    pure $ Right $ Zettel zid metadata slugFinal fn titleFinal titleInBody (lookupZettelMeta "date" metadata) unlistedFinal doc pluginData
+        -- Compute final values from user (and post-plugin) metadata
+        slug = fromMaybe (mkDefaultSlug $ unZettelID zid) $ lookupZettelMeta "slug" metadata
+        date = lookupZettelMeta "date" metadata
+    pure $ Right $ Zettel zid metadata slug date fn titleFinal titleInBody doc pluginData
   where
     unparseableZettel err =
-      let slugFinal = mkDefaultSlug $ unZettelID zid
-       in Left $ Zettel zid def slugFinal fn "Unknown" False Nothing False (s, err) pluginData
+      let slug = mkDefaultSlug $ unZettelID zid
+       in Left $ Zettel zid def slug Nothing fn "Unknown" False (s, err) pluginData
     -- We keep the default slug as close to zettel ID is possible. Spaces (and
     -- colons) are replaced with underscore for legibility.
     mkDefaultSlug :: Text -> Slug
