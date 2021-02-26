@@ -87,9 +87,9 @@ afterZettelParse :: PluginRegistry -> [(ZettelID, (FilePath, (Text, DMap PluginZ
 afterZettelParse plugins fs = do
   let h =
         Map.elems plugins <&> \sp ->
-          withSome sp $ \p (m, x) -> (m,) $ _plugin_afterZettelParse p m x
+          withSome sp $ \p x -> _plugin_afterZettelParse p x
   parseZettels (parseMarkdown $ markdownSpec plugins) fs <&> \x ->
-    snd $ foldl' (\x1 f -> f x1) x h
+    foldl' (\x1 f -> f x1) x h
 
 afterZettelRead :: MonadState (Map ZettelID ZIDRef) m => PluginRegistry -> DC.DirTree FilePath -> m ()
 afterZettelRead plugins fileTree = do
@@ -184,18 +184,8 @@ renderHandleLink' = \case
 
 preJsonStrip :: Zettel -> Zettel
 preJsonStrip z =
-  let pluginData' = flip fmap (DMap.toList $ zettelPluginData z) $ \case
-        x@(NeuronIgnore :=> Identity ()) ->
-          x
-        x@(DirTree :=> Identity _) ->
-          x
-        x@(Tags :=> Identity _) ->
-          x
-        x@(UpTree :=> Identity _) ->
-          x
-        Links :=> Identity x ->
-          Links :=> Identity (Links.preJsonStrip x)
-   in z {zettelPluginData = DMap.fromList pluginData'}
+  -- We don't care to send internal data outside of neuron.
+  z {zettelPluginData = Nothing}
 
 -- | Compress the graph to save space, by eliminating the unnecessary
 -- surrounding context Pandoc blocks.

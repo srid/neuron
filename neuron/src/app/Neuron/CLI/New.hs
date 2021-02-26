@@ -44,7 +44,7 @@ newZettelFile NewCommand {..} = do
         val <- liftIO $ IDScheme.genVal scheme
         pure $
           IDScheme.nextAvailableZettelID
-            (Set.fromList $ fmap zettelID $ G.getZettels $ Cache._neuronCache_graph g)
+            (Set.fromList $ fmap zettelID $ G.getZettels $ Cache.neuroncacheGraph g)
             val
             scheme
       case mzid of

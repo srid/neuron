@@ -19,6 +19,7 @@ module Neuron.Plugin.Plugins.Tags
     renderPanel,
     getZettelTags,
     zettelsByTag,
+    appendTags,
   )
 where
 
@@ -31,7 +32,6 @@ import Commonmark.Tokens
   ( TokType (LineEnd, Spaces, Symbol, UnicodeSpace),
   )
 import Control.Monad.Writer (MonadWriter)
-import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -41,13 +41,11 @@ import qualified Data.TagTree as Tag
 import qualified Data.TagTree as TagTree
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
-import Data.YAML ((.:?))
-import qualified Data.YAML as Y
 import GHC.Natural (naturalToInt)
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types (TagQueryCache)
 import Neuron.Frontend.Widget (semanticIcon)
-import qualified Neuron.Markdown as M
+import Neuron.Markdown (insertZettelMeta, lookupZettelMeta)
 import qualified Neuron.Plugin.Plugins.Links as Links
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection
@@ -73,13 +71,13 @@ plugin :: Plugin TagQueryCache
 plugin =
   def
     { _plugin_markdownSpec = inlineTagSpec,
-      _plugin_afterZettelParse = second . parseTagQuerys,
+      _plugin_afterZettelParse = second parseTagQuerys,
       _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink,
       _plugin_css = const style
     }
 
-routePluginData :: ZettelGraph -> ZettelC -> ZettelTags -> TagQueryCache
+routePluginData :: ZettelGraph -> ZettelC -> [Some TagQuery] -> TagQueryCache
 routePluginData g z _qs =
   let allUrls =
         Set.toList . Set.fromList $
@@ -110,12 +108,12 @@ queryConnections ::
   ) =>
   Zettel ->
   m [(ContextualConnection, Zettel)]
-queryConnections Zettel {..} = do
-  case DMap.lookup Tags zettelPluginData of
+queryConnections z = do
+  case lookupPluginData Tags z of
     Nothing -> pure mempty
-    Just (Identity ZettelTags {..}) -> do
+    Just qs -> do
       fmap concat $
-        forM zetteltagsQueries $ \someQ -> do
+        forM qs $ \someQ -> do
           qRes <- runSomeTagQuery someQ
           links <- getConnections qRes
           pure $ first (,mempty) <$> links
@@ -166,9 +164,8 @@ zettelsByTag getTags zs q =
 
 getZettelTags :: ZettelT c -> Set Tag
 getZettelTags Zettel {..} =
-  fromMaybe Set.empty $ do
-    Identity ZettelTags {..} <- DMap.lookup Tags zettelPluginData
-    pure zetteltagsTagged
+  maybe Set.empty Set.fromList $ do
+    lookupZettelMeta "tags" zettelMeta
 
 -- UI
 -- --
@@ -195,7 +192,7 @@ renderPanel _elNeuronPandoc z _routeData = do
           elAttr
             "span"
             ( "class" =: "ui basic label zettel-tag"
-                <> "title" =: ("See all zettels tagged '" <> unTag t <> "'")
+                <> "title" =: "Tag"
             )
             $ text $ unTag t
 
@@ -315,8 +312,13 @@ style = do
 -- Parser
 -- ------
 
-parseTagQuerys :: Maybe (Y.Node Y.Pos) -> ZettelT Pandoc -> ZettelT Pandoc
-parseTagQuerys myaml z =
+appendTags :: Set Tag -> ZettelT c -> ZettelT c
+appendTags tags z =
+  let currentTags = maybe Set.empty Set.fromList $ lookupZettelMeta "tags" (zettelMeta z)
+   in z {zettelMeta = insertZettelMeta "tags" (toList $ currentTags <> tags) (zettelMeta z)}
+
+parseTagQuerys :: ZettelT Pandoc -> ZettelT Pandoc
+parseTagQuerys z =
   let allUrls =
         Set.toList . Set.fromList $
           Pandoc.getLinks $ zettelContent z
@@ -324,20 +326,11 @@ parseTagQuerys myaml z =
         catMaybes $
           allUrls <&> \(attrs, url) -> do
             parseQueryLink attrs url
-      tagsFromYaml = fromRight Set.empty $ case myaml of
-        Nothing -> pure Set.empty
-        Just yaml -> Set.fromList <$> M.runYamlParser (tagsParser yaml)
-      inlineTags = Set.fromList $
+      inlineTags :: Set Tag = Set.fromList $
         flip fmapMaybe tagLinks $ \case
           Some (TagQuery_TagZettel t) -> Just t
           _ -> Nothing
-      tagsData = ZettelTags (tagsFromYaml <> inlineTags) tagLinks
-   in z {zettelPluginData = DMap.insert Tags (Identity tagsData) (zettelPluginData z)}
-
-tagsParser :: Y.Node Y.Pos -> Y.Parser [Tag]
-tagsParser yaml = do
-  flip (Y.withMap @[Tag] "tags") yaml $ \m -> do
-    fromMaybe mempty <$> liftA2 (<|>) (m .:? "tags") (m .:? "keywords")
+   in setPluginData Tags tagLinks $ appendTags inlineTags z
 
 -- | Parse a query if any from a Markdown link
 parseQueryLink :: [(Text, Text)] -> Text -> Maybe (Some TagQuery)

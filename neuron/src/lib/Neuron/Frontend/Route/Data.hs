@@ -33,12 +33,12 @@ mkZettelData NeuronCache {..} zC = do
   let z = sansContent zC
       pluginData =
         DMap.fromList $
-          Plugin.routePluginData _neuronCache_graph zC <$> DMap.toList (zettelPluginData z)
+          Plugin.routePluginData neuroncacheGraph zC <$> maybe mempty DMap.toList (zettelPluginData z)
   ZettelData zC pluginData
 
 mkImpulseData :: NeuronCache -> ImpulseData
 mkImpulseData NeuronCache {..} =
-  buildImpulse _neuronCache_graph _neuronCache_errors
+  buildImpulse neuroncacheGraph neuroncacheErrors
   where
     buildImpulse graph errors =
       let (orphans, clusters) = partitionEithers $
@@ -62,15 +62,15 @@ mkImpulseData NeuronCache {..} =
 
 mkSiteData :: NeuronCache -> HeadHtml -> Manifest -> SiteData
 mkSiteData NeuronCache {..} headHtml manifest =
-  let theme = Theme.mkTheme $ Config.theme _neuronCache_config
-      siteTitle = Config.siteTitle _neuronCache_config
-      siteAuthor = Config.author _neuronCache_config
-      baseUrl = join $ Config.getSiteBaseUrl _neuronCache_config
-      indexZettel = G.getZettel indexZid _neuronCache_graph
-      editUrl = Config.editUrl _neuronCache_config
+  let theme = Theme.mkTheme $ Config.theme neuroncacheConfig
+      siteTitle = Config.siteTitle neuroncacheConfig
+      siteAuthor = Config.author neuroncacheConfig
+      baseUrl = join $ Config.getSiteBaseUrl neuroncacheConfig
+      indexZettel = G.getZettel indexZid neuroncacheGraph
+      editUrl = Config.editUrl neuroncacheConfig
       style = do
         neuronStyleForTheme theme
-        Plugin.pluginStyles (Config.getPlugins _neuronCache_config) theme
+        Plugin.pluginStyles (Config.getPlugins neuroncacheConfig) theme
       bodyCss = toText $ C.renderWith C.compact [] style
    in SiteData
         theme
@@ -81,5 +81,5 @@ mkSiteData NeuronCache {..} headHtml manifest =
         bodyCss
         headHtml
         manifest
-        _neuronCache_neuronVersion
+        neuroncacheNeuronVersion
         indexZettel

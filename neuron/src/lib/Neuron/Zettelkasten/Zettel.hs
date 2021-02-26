@@ -14,6 +14,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -22,10 +23,11 @@ module Neuron.Zettelkasten.Zettel where
 
 import Data.Aeson hiding ((.:))
 import Data.Aeson.GADT.TH (deriveJSONGADT)
-import Data.Char (isLower)
+import Data.Char (isLower, toLower)
 import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.Default
 import Data.Dependent.Map (DMap)
+import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
@@ -33,11 +35,9 @@ import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
 import Data.TagTree (Tag)
 import qualified Data.TagTree as TagTree
-import Data.Tagged (Tagged (Tagged))
+import Data.Tagged (Tagged)
 import Data.Time.DateMayTime (DateMayTime)
-import Data.YAML (FromYAML (parseYAML), (.:))
-import qualified Data.YAML as Y
-import Neuron.Markdown (ZettelParseError)
+import Neuron.Markdown (ZettelMeta, ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Relude hiding (show)
@@ -52,16 +52,11 @@ import Text.Show (Show (show))
 -- NOTE: Ideally we want to put this in Plugin modules, but there is a mutual
 -- dependency with the Zettel type. :/
 
+-- | Metadata part for dirtree plugin
 data DirTreeMeta = DirTreeMeta
   { dirtreemetaDisplay :: Bool
   }
   deriving (Eq, Ord, Show, Generic)
-
-instance Y.FromYAML DirTreeMeta where
-  parseYAML =
-    Y.withMap "Meta" $ \m ->
-      DirTreeMeta
-        <$> m .: "display"
 
 instance Default DirTreeMeta where
   def = DirTreeMeta True
@@ -106,12 +101,6 @@ data TagQuery r where
   TagQuery_Tags :: TagTree.Query -> TagQuery (Map Tag Natural)
   TagQuery_TagZettel :: Tag -> TagQuery ()
 
-data ZettelTags = ZettelTags
-  { zetteltagsTagged :: Set Tag,
-    zetteltagsQueries :: [Some TagQuery]
-  }
-  deriving (Generic)
-
 -- | Plugin-specific data stored in `ZettelT`
 --
 -- See also `PluginZettelRouteData` which corresponds to post-graph data (used
@@ -122,7 +111,7 @@ data ZettelTags = ZettelTags
 data PluginZettelData a where
   DirTree :: PluginZettelData DirZettel
   Links :: PluginZettelData [((ZettelID, Connection), [Block])]
-  Tags :: PluginZettelData ZettelTags
+  Tags :: PluginZettelData [Some TagQuery]
   NeuronIgnore :: PluginZettelData ()
   UpTree :: PluginZettelData ()
 
@@ -138,22 +127,25 @@ type MissingZettel = Tagged "MissingZettel" ZettelID
 -- The metadata could have been inferred from the content.
 data ZettelT c = Zettel
   { zettelID :: ZettelID,
-    zettelSlug :: Slug,
+    zettelMeta :: ZettelMeta,
+    -- Slug is non-changing - so, although inferred from zettelMeta, we must
+    -- put it here as a data type field.
+    zettelSlug :: Slug, -- inferred from zettelMeta
+    -- Since date is used as a sort key, we parse it once from zettelMeta for
+    -- performance reasons.
+    zettelDate :: Maybe DateMayTime, -- inferred from zettelMeta
+
     -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
     zettelTitle :: Text,
-    -- | Whether the title was infered from the body. Used when conditionally
-    -- rendering the title in HTML.
-    zettelTitleInBody :: Bool,
-    -- | Date associated with the zettel if any
-    zettelDate :: Maybe DateMayTime,
-    zettelUnlisted :: Bool,
     zettelContent :: c,
-    zettelPluginData :: DMap PluginZettelData Identity
+    -- This type is a Maybe only so that we can use omitNothingFields to strip
+    -- it off the output JSON.
+    zettelPluginData :: Maybe (DMap PluginZettelData Identity)
   }
   deriving (Generic)
 
-type MetadataOnly = Tagged "MetadataOnly" (Maybe ZettelParseError)
+type MetadataOnly = (Maybe ZettelParseError)
 
 -- | Zettel without its content
 type Zettel = ZettelT MetadataOnly
@@ -161,15 +153,31 @@ type Zettel = ZettelT MetadataOnly
 -- | Zettel that has either failed to parse, or has been parsed.
 type ZettelC = Either (ZettelT (Text, ZettelParseError)) (ZettelT Pandoc)
 
+setPluginData :: PluginZettelData v -> v -> ZettelT c -> ZettelT c
+setPluginData k v z =
+  z
+    { zettelPluginData =
+        maybe
+          (Just $ DMap.singleton k (Identity v))
+          (Just . DMap.insert k (Identity v))
+          (zettelPluginData z)
+    }
+
+lookupPluginData :: PluginZettelData a -> ZettelT c -> Maybe a
+lookupPluginData k z = do
+  pd <- zettelPluginData z
+  Identity v <- DMap.lookup k pd
+  pure v
+
 sansContent :: ZettelC -> Zettel
 sansContent = \case
   Left z ->
     z
-      { zettelContent = Tagged (Just $ snd $ zettelContent z)
+      { zettelContent = Just $ snd $ zettelContent z
       }
   Right z ->
     z
-      { zettelContent = Tagged Nothing
+      { zettelContent = Nothing
       }
 
 instance Show (ZettelT c) where
@@ -199,18 +207,6 @@ deriveGEq ''PluginZettelData
 deriveGShow ''PluginZettelData
 deriveGCompare ''PluginZettelData
 
-deriving instance Eq ZettelTags
-
-deriving instance Ord ZettelTags
-
-instance ToJSON ZettelTags where
-  toJSON = genericToJSON shortRecordFields
-
-instance FromJSON ZettelTags where
-  parseJSON = genericParseJSON shortRecordFields
-
-deriving instance Show ZettelTags
-
 deriving instance Eq (ZettelT Pandoc)
 
 deriving instance Eq (ZettelT MetadataOnly)
@@ -218,10 +214,10 @@ deriving instance Eq (ZettelT MetadataOnly)
 deriving instance Eq (ZettelT (Text, ZettelParseError))
 
 instance ToJSON DirTreeMeta where
-  toJSON = genericToJSON shortRecordFields
+  toJSON = genericToJSON shortRecordFieldsLowerCase
 
 instance FromJSON DirTreeMeta where
-  parseJSON = genericParseJSON shortRecordFields
+  parseJSON = genericParseJSON shortRecordFieldsLowerCase
 
 instance ToJSON DirZettel where
   toJSON = genericToJSON shortRecordFields
@@ -230,18 +226,28 @@ instance FromJSON DirZettel where
   parseJSON = genericParseJSON shortRecordFields
 
 instance ToJSON Zettel where
-  toJSON = genericToJSON shortRecordFields
+  toJSON =
+    genericToJSON
+      shortRecordFields
+        { omitNothingFields = True
+        }
 
 instance FromJSON Zettel where
   parseJSON = genericParseJSON shortRecordFields
 
 shortRecordFields :: Options
-shortRecordFields =
+shortRecordFields = shortRecordFields' False
+
+shortRecordFieldsLowerCase :: Options
+shortRecordFieldsLowerCase = shortRecordFields' True
+
+shortRecordFields' :: Bool -> Options
+shortRecordFields' lowerCase =
   defaultOptions
     { fieldLabelModifier =
         \case
           -- Drop the "_foo_" prefix
           '_' : rest -> drop 1 $ dropWhile (/= '_') rest
           -- Drop "zettel" prefix
-          s -> dropWhile isLower s
+          s -> bool id (fmap toLower) lowerCase $ dropWhile isLower s
     }

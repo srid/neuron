@@ -169,8 +169,6 @@ renderZettelContent ::
   NeuronWebT t m ()
 renderZettelContent elNeuronPandoc Zettel {..} = do
   elClass "article" "ui raised attached segment zettel-content" $ do
-    unless zettelTitleInBody $ do
-      el "h1" $ text zettelTitle
     void $ elNeuronPandoc zettelContent
     whenJust zettelDate $ \date ->
       divClass "metadata" $ do

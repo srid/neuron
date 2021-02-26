@@ -7,6 +7,7 @@
   - Remove autoscroll behaviour (which had questionable value to begin with)
   - Support alt text in images (#434)
   - Use Prism.js for syntax highlighting, and allow users to use their own syntax highlighter (#560)
+  - Allow level-1 headers as non-title heading (#412)
 - Remove (experimental) support for org-mode in v2 (use `v1` branch if you need org-mode)
 - Timeline queries (`z:zettels?...&timeline`) now automatically exclude zettels without a date set. 
 - Plugin support
@@ -22,7 +23,9 @@
   - `neuron rib` is renamed to `neuron gen` (neuron has migrated from rib/shake to reflex)
   - `neuron search`: full-text search uses exact matching (#526)
   - `neuron search`: highlight and focus matching line in `bat` preview (#556)
-  - `neuron query`: query CLI interface has been changed (see docs)
+  - `neuron query`: 
+    - query CLI interface has been changed (see docs)
+    - JSON output is now pretty printed (using `aeson-pretty`)
   - `neuron gen`: Add `--pretty-urls` to remove `.html` suffix in generated URLs (#562)
   - Supress colors if output is not a terminal with color support (#561)
 - Performance improvements:

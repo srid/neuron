@@ -10,7 +10,7 @@ module Neuron.Cache where
 
 import Data.Aeson (eitherDecodeFileStrict, encodeFile)
 import Neuron.CLI.Types (MonadApp, getOutputDir)
-import Neuron.Cache.Type (NeuronCache (_neuronCache_graph), ReadMode (..))
+import Neuron.Cache.Type (NeuronCache (neuroncacheGraph), ReadMode (..))
 import Neuron.Config.Type (Config)
 import qualified Neuron.Plugin as Plugin
 import Relude
@@ -36,7 +36,7 @@ getCache = do
 
 stripCache :: NeuronCache -> NeuronCache
 stripCache cache =
-  cache {_neuronCache_graph = Plugin.stripSurroundingContext $ _neuronCache_graph cache}
+  cache {neuroncacheGraph = Plugin.stripSurroundingContext $ neuroncacheGraph cache}
 
 evalUnlessCacheRequested ::
   (MonadIO m, MonadFail m, MonadApp m) => ReadMode -> (Config -> m NeuronCache) -> m NeuronCache

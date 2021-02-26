@@ -28,11 +28,10 @@ import qualified Clay as C
 import qualified Commonmark as CM
 import qualified Commonmark.Inlines as CM
 import Commonmark.TokParsers (noneOfToks, symbol)
-import Control.Monad.Writer
-import qualified Data.Dependent.Map as DMap
+import Control.Monad.Writer (MonadWriter, tell)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
-import Data.Some
+import Data.Some (Some (Some))
 import Data.Tagged (Tagged (Tagged), untag)
 import qualified Data.Text as T
 import qualified Data.Time.DateMayTime as DMT
@@ -68,7 +67,7 @@ plugin :: Plugin LinksData
 plugin =
   def
     { _plugin_markdownSpec = wikiLinkSpec,
-      _plugin_afterZettelParse = second . const parseLinks,
+      _plugin_afterZettelParse = second parseLinks,
       _plugin_graphConnections = queryConnections,
       _plugin_renderHandleLink = renderHandleLink,
       _plugin_css = zettelLinkCss
@@ -104,12 +103,11 @@ buildLinkCache zs urlsWithAttrs =
 parseLinks :: ZettelT Pandoc -> ZettelT Pandoc
 parseLinks z =
   let xs = extractLinkswithContext (zettelContent z)
-   in z {zettelPluginData = DMap.insert Links (Identity xs) (zettelPluginData z)}
+   in setPluginData Links xs z
   where
     extractLinkswithContext doc =
-      concat $
-        fmap (uncurry parseQueryLinkWithContext) $
-          Map.toList $ LC.queryLinksWithContext doc
+      concatMap (uncurry parseQueryLinkWithContext) $
+        Map.toList $ LC.queryLinksWithContext doc
       where
         parseQueryLinkWithContext url occurs = do
           flip mapMaybe (toList occurs) $ \(attrs, ctx) ->
@@ -151,10 +149,10 @@ queryConnections ::
   ) =>
   Zettel ->
   m [(ContextualConnection, Zettel)]
-queryConnections Zettel {..} = do
-  case DMap.lookup Links zettelPluginData of
+queryConnections z = do
+  case lookupPluginData Links z of
     Nothing -> pure mempty
-    Just (Identity xs) -> do
+    Just xs -> do
       zs <- ask
       fmap concat $
         forM xs $ \((zid, conn), ctx) -> do
@@ -230,7 +228,7 @@ renderZettelLink ::
   NeuronWebT t m ()
 renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
   let connClass = show <$> conn
-      rawClass = const (Just "errors") =<< untag zettelContent
+      rawClass = const (Just "errors") =<< zettelContent
       mextra =
         case linkView of
           LinkView_Default ->

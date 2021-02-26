@@ -80,7 +80,7 @@ reflexApp appEnv genCmd = do
           ffor treeDyn $ \(cfg, tree') -> do
             (cache, zs, fileTree) <- run $ RB.loadZettelkastenFromFiles cfg tree'
             routeData <- run $ RB.buildRouteData fileTree zs cache
-            pure (routeData, Cache._neuronCache_errors cache)
+            pure (routeData, Cache.neuroncacheErrors cache)
         -- Remember last route data, so we know what to render to save time.
         routeDataWithErrorsE' <- rememberLastEvent (mempty, mempty) routeDataWithErrorsE
         -- Do everything now.

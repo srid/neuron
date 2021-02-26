@@ -1,6 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,6 +14,7 @@ where
 import Control.Monad.Writer.Strict
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
+import Neuron.Markdown (lookupZettelMeta)
 import Neuron.Plugin (PluginRegistry)
 import qualified Neuron.Plugin as Plugin
 import Neuron.Zettelkasten.Connection (ContextualConnection)
@@ -63,7 +66,10 @@ buildZettelkasten plugins parsedZettels = do
         pure []
   -- Build a graph from the final zettels list
   mapWriter (second $ fmap ZettelIssue_MissingLinks) $
-    mkZettelGraph plugins $ filter (not . zettelUnlisted) zs
+    mkZettelGraph plugins $ filter (not . unlisted) zs
+  where
+    unlisted =
+      fromMaybe False . lookupZettelMeta @Bool "unlisted" . zettelMeta
 
 -- | Build the Zettelkasten graph from a list of zettels
 --

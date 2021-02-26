@@ -36,9 +36,8 @@ neuron query --graph
 
 - `neuron query --backlinks-of ID`
 - `neuron query --uplinks-of ID`
-- If [[Tags]] plugin is enabled:
-  - `neuron query --tags`
-  - `neuron query --tag=mytag`
+- `neuron query --tags`
+- `neuron query --tag=mytag`
 
 ## Fast querying
 
