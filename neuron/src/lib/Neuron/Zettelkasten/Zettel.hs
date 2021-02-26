@@ -35,7 +35,7 @@ import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
 import Data.TagTree (Tag)
 import qualified Data.TagTree as TagTree
-import Data.Tagged (Tagged (Tagged))
+import Data.Tagged (Tagged)
 import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Markdown (ZettelMeta, ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
@@ -52,6 +52,7 @@ import Text.Show (Show (show))
 -- NOTE: Ideally we want to put this in Plugin modules, but there is a mutual
 -- dependency with the Zettel type. :/
 
+-- | Metadata part for dirtree plugin
 data DirTreeMeta = DirTreeMeta
   { dirtreemetaDisplay :: Bool
   }
@@ -149,7 +150,7 @@ data ZettelT c = Zettel
   }
   deriving (Generic)
 
-type MetadataOnly = Tagged "MetadataOnly" (Maybe ZettelParseError)
+type MetadataOnly = (Maybe ZettelParseError)
 
 -- | Zettel without its content
 type Zettel = ZettelT MetadataOnly
@@ -177,11 +178,11 @@ sansContent :: ZettelC -> Zettel
 sansContent = \case
   Left z ->
     z
-      { zettelContent = Tagged (Just $ snd $ zettelContent z)
+      { zettelContent = Just $ snd $ zettelContent z
       }
   Right z ->
     z
-      { zettelContent = Tagged Nothing
+      { zettelContent = Nothing
       }
 
 instance Show (ZettelT c) where

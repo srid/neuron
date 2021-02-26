@@ -228,7 +228,7 @@ renderZettelLink ::
   NeuronWebT t m ()
 renderZettelLink mInner conn (fromMaybe def -> linkView) Zettel {..} = do
   let connClass = show <$> conn
-      rawClass = const (Just "errors") =<< untag zettelContent
+      rawClass = const (Just "errors") =<< zettelContent
       mextra =
         case linkView of
           LinkView_Default ->
