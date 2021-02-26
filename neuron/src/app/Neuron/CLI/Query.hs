@@ -60,4 +60,9 @@ runQuery QueryCommand {..} = do
   where
     printJson :: ToJSON a => a -> m ()
     printJson =
-      putTextLn . decodeUtf8 . AesonPretty.encodePretty
+      putTextLn . decodeUtf8
+        . AesonPretty.encodePretty'
+          AesonPretty.defConfig
+            { -- Sort hash map by keys for consistency
+              AesonPretty.confCompare = compare
+            }
