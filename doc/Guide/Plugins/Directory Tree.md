@@ -167,3 +167,7 @@ dirtree:
   display: False
 ---
 ```
+
+## Examples
+
+- [Alien Psychology](https://alien-psychology.zettel.page/) uses this plugin to organize episodes under seasons. [View the commit](https://github.com/srid/alien-psychology/commit/932edd3dedd04474979d9824682080dcc13acefa) that switched it from a tag-based organization to one using dirtree.
