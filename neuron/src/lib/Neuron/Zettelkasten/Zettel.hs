@@ -131,7 +131,7 @@ type MissingZettel = Tagged "MissingZettel" ZettelID
 -- The metadata could have been inferred from the content.
 data ZettelT c = Zettel
   { zettelID :: ZettelID,
-    zettelMetadata :: ZettelMeta,
+    zettelMeta :: ZettelMeta,
     zettelSlug :: Slug, -- in meta
 
     -- | Relative path to this zettel in the zettelkasten directory

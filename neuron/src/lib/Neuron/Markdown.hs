@@ -69,14 +69,19 @@ newtype ZettelMeta = ZettelMeta {unZettelMeta :: Maybe Aeson.Value}
 instance Default ZettelMeta where
   def = ZettelMeta Nothing
 
+zettelMetaFromYamlFrontmatter :: Maybe (Y.Node Y.Pos) -> ZettelMeta
+zettelMetaFromYamlFrontmatter myaml =
+  ZettelMeta $ patchMdYaml . toJSON <$> myaml
+  where
+    patchMdYaml =
+      -- Some zettelkasten apps like Zettlr use "keywords" for tags
+      withJsonAlias ("keywords", "tags")
+
 lookupZettelMeta :: forall a. FromJSON a => Text -> ZettelMeta -> Maybe a
 lookupZettelMeta k (ZettelMeta mobj) = do
-  obj <- mobj
-  case obj of
-    Aeson.Object m -> case Aeson.fromJSON @a <$> M.lookup k m of
-      Just (Aeson.Success v) -> Just v
-      _ -> Nothing
-    _ -> Nothing
+  Aeson.Object m <- mobj
+  Aeson.Success v <- Aeson.fromJSON @a <$> M.lookup k m
+  pure v
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --
@@ -94,11 +99,9 @@ parseMarkdown extraSpec fn s = do
   v <-
     first (Tagged . toText . show) $
       commonmarkPandocWith (extraSpec <> neuronSpec) fn markdown
-  metaYaml <- traverse (parseYaml @(Y.Node Y.Pos) fn) metaVal
-  -- Some zettelkasten apps like Zettlr use "keywords" for tags
-  let metaJson = withJsonAlias ("keywords", "tags") . toJSON <$> metaYaml
-      doc = Pandoc mempty $ B.toList (CP.unCm v)
-  pure (ZettelMeta metaJson, doc)
+  meta <- zettelMetaFromYamlFrontmatter <$> traverse (parseYaml @(Y.Node Y.Pos) fn) metaVal
+  let doc = Pandoc mempty $ B.toList (CP.unCm v)
+  pure (meta, doc)
 
 -- | Treat `alias` as an alias to `target`, but only if `target` doesn't already exist
 withJsonAlias :: (Text, Text) -> Aeson.Value -> Aeson.Value

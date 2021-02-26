@@ -322,7 +322,7 @@ parseTagQuerys z =
         catMaybes $
           allUrls <&> \(attrs, url) -> do
             parseQueryLink attrs url
-      tagsFromMeta = maybe Set.empty Set.fromList $ lookupZettelMeta "tags" (zettelMetadata z)
+      tagsFromMeta = maybe Set.empty Set.fromList $ lookupZettelMeta "tags" (zettelMeta z)
       inlineTags = Set.fromList $
         flip fmapMaybe tagLinks $ \case
           Some (TagQuery_TagZettel t) -> Just t

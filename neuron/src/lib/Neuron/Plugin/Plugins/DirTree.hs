@@ -135,7 +135,7 @@ afterZettelParse z =
             }
   where
     getMeta =
-      lookupZettelMeta @DirTreeMeta "dirtree" (zettelMetadata z)
+      lookupZettelMeta @DirTreeMeta "dirtree" (zettelMeta z)
 
 parentZettelIDFromPath :: FilePath -> ZettelID
 parentZettelIDFromPath p =

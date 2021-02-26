@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -8,7 +7,7 @@ module Neuron.Zettelkasten.ZettelSpec
   )
 where
 
-import Data.Aeson (Value(Null))
+import Data.Default
 import Data.Tagged (Tagged (Tagged))
 import Data.Time.Calendar (fromGregorian)
 import Data.Time.DateMayTime (DateMayTime, mkDateMayTime)
@@ -40,7 +39,7 @@ spec = do
         mkZettel s datetime =
           Zettel
             (ZettelID s)
-            Null
+            def
             s
             "<spec>.md"
             "Some title"
