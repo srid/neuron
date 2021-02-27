@@ -6,7 +6,7 @@
 [![built with nix](https://img.shields.io/badge/Built_With-Nix-5277C3.svg?logo=nixos&labelColor=73C3D5)](https://builtwithnix.org)
 [![Matrix](https://img.shields.io/matrix/neuron:matrix.org)](https://app.element.io/#/room/#neuron:matrix.org)
 
-neuron is a **future-proof** command-line app for managing your plain-text [Zettelkasten](https://neuron.zettel.page/zettelkasten.html) notes.
+neuron is a **future-proof** app for managing your plain-text [Zettelkasten](https://neuron.zettel.page/zettelkasten) notes, as well as for **publishing** them on the web. Read its [philosophy](https://neuron.zettel.page/philosophy).
 
 **Highlights**
 
@@ -17,7 +17,7 @@ neuron is a **future-proof** command-line app for managing your plain-text [Zett
 
 ## Getting started
 
-See [neuron.zettel.page](https://neuron.zettel.page/) for the full guide to installing and using neuron, as well as for other resources.
+See [neuron.zettel.page](https://neuron.zettel.page/) for installing and using neuron locally. Or start from [neuron-template](https://github.com/srid/neuron-template) if you just want to publish a neuron site using GitHub Pages.
 
 ## Developing
 
