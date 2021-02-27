@@ -12,9 +12,11 @@ import Colog (WithLog, log)
 import qualified Data.Text as T
 import Network.Wai.Application.Static (defaultFileServerSettings, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
-import Network.Wai.Middleware.Rewrite (rewritePureWithQueries)
+import Network.Wai.Middleware.Rewrite (rewriteWithQueries)
 import Neuron.CLI.Logging
 import Relude
+import System.Directory (doesPathExist)
+import System.FilePath ((</>))
 
 -- | Run a HTTP server to serve a directory of static files
 --
@@ -42,9 +44,14 @@ serve host port path = do
           port
           Warp.defaultSettings
     allowPrettyUrls =
-      rewritePureWithQueries $
-        flip $
-          const $ \case
-            ([zettelSlug@(T.stripSuffix ".html" -> Nothing)], []) ->
-              ([zettelSlug <> ".html"], [])
-            x -> x
+      rewriteWithQueries $ \pq _reqH -> do
+        -- Serve /foo.html when asked for /foo, but only if foo.html exists on
+        -- disk.
+        case pq of
+          ([oldPath@(T.stripSuffix ".html" -> Nothing)], []) -> do
+            let newPath = toString $ oldPath <> ".html"
+            doesPathExist (path </> newPath) >>= \case
+              True -> pure ([toText newPath], [])
+              False -> pure pq
+          _ ->
+            pure pq
