@@ -39,12 +39,7 @@ import Neuron.Zettelkasten.Zettel
   )
 import qualified Neuron.Zettelkasten.Zettel as Z
 import Reflex.Dom.Core hiding ((&))
-import Reflex.Dom.Pandoc
-  ( Config (..),
-    elPandoc,
-  )
-import qualified Reflex.Dom.Pandoc as PR
-import Reflex.Dom.Pandoc.Raw (RawBuilder, elPandocRaw)
+import Reflex.Dom.Pandoc.Raw (RawBuilder)
 import Relude hiding ((&))
 import Text.Pandoc.Definition (Block (Table), Pandoc, nullAttr)
 import qualified Text.Pandoc.Walk as W
@@ -67,7 +62,7 @@ renderZettel siteData zData = do
   elAttr "div" ("class" =: "ui text container" <> "id" =: "zettel-container" <> "style" =: "position: relative") $ do
     let elNeuronPandoc =
           divClass "pandoc"
-            . elPandoc (mkReflexDomPandocConfig zData)
+            . Plugin.elZettel zData
             . addSemanticUIClasses
     divClass "zettel-view" $ do
       let zc = R.zettelDataZettel zData
@@ -120,36 +115,6 @@ renderBottomMenu themeDyn mIndexZettel mEditUrl = do
     -- Impulse
     R.neuronRouteLink (Some Route_Impulse) ("class" =: "right item" <> "title" =: "Open Impulse") $ do
       semanticIcon "wave square"
-
-mkReflexDomPandocConfig ::
-  forall js t m.
-  (DomBuilder t m, RawBuilder m, PostBuild t m, Prerender js t m) =>
-  ZettelData ->
-  Config t (NeuronWebT t m) ()
-mkReflexDomPandocConfig x =
-  (PR.defaultConfig @t @m)
-    { _config_renderLink = \oldRender url _attrs minner -> do
-        fromMaybe oldRender $
-          Plugin.renderHandleLink (R.zettelDataPlugin x) url minner,
-      _config_renderCode = \_ (_, langs, _) s -> do
-        el "pre" $ elClass "code" (mkLangClass langs) $ text s,
-      _config_renderRaw = elPandocRaw
-    }
-  where
-    mkLangClass langs =
-      -- Tag code block with "foo language-foo" classes, if the user specified
-      -- "foo" as the language identifier. This enables external syntax
-      -- highlighters to detect the language.
-      --
-      -- If no language is specified, use "language-none" as the language This
-      -- works at least on prism.js,[1] in that - syntax highlighting is turned
-      -- off all the while background styling is applied, to be consistent with
-      -- code blocks with language set.
-      --
-      -- [1] https://github.com/PrismJS/prism/pull/2738
-      fromMaybe "language-none" $ do
-        lang <- head <$> nonEmpty langs
-        pure $ lang <> " language-" <> lang
 
 addSemanticUIClasses :: Pandoc -> Pandoc
 addSemanticUIClasses = W.walk $ \case

@@ -24,14 +24,16 @@ import Data.GADT.Compare.TH
   )
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Tagged (Tagged)
+import Data.Time.DateMayTime (DateMayTime)
 import Data.Tree (Forest)
 import Neuron.Frontend.Manifest (Manifest)
 import Neuron.Frontend.Theme (Theme)
 import Neuron.Zettelkasten.Connection (Connection, ContextualConnection)
-import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Zettel
 import Neuron.Zettelkasten.Zettel.Error (ZettelIssue)
 import Relude
+import Text.Pandoc.Definition (Pandoc)
 import Text.URI (URI)
 
 type NeuronVersion = Tagged "NeuronVersion" Text
@@ -114,12 +116,32 @@ instance Default LinksData where
 
 type TagQueryCache = Map Text (DSum TagQuery Identity)
 
+data FeedData = FeedData
+  { feedDataTitle :: Text,
+    feedDataSlug :: Slug,
+    feedDataBaseUri :: URI,
+    feedDataUrl :: URI,
+    feedDataEntries :: [FeedItem]
+  }
+  deriving (Eq, Show)
+
+data FeedItem = FeedItem
+  { feedItemSlug :: Slug,
+    feedItemTitle :: Text,
+    feedItemAuthor :: Maybe Text,
+    feedItemDate :: DateMayTime,
+    feedItemZettelID :: ZettelID,
+    feedItemZettelContent :: Pandoc
+  }
+  deriving (Eq, Show)
+
 data PluginZettelRouteData routeData where
   PluginZettelRouteData_DirTree :: PluginZettelRouteData DirZettelVal
   PluginZettelRouteData_Links :: PluginZettelRouteData LinksData
   PluginZettelRouteData_Tags :: PluginZettelRouteData TagQueryCache
   PluginZettelRouteData_NeuronIgnore :: PluginZettelRouteData ()
   PluginZettelRouteData_UpTree :: PluginZettelRouteData (Forest Zettel)
+  PluginZettelRouteData_Feed :: PluginZettelRouteData FeedData
 
 deriveArgDict ''PluginZettelRouteData
 deriveJSONGADT ''PluginZettelRouteData

@@ -17,9 +17,10 @@ module Neuron.Reactor.Build where
 
 import Colog (WithLog, log)
 import Control.Monad.Writer.Strict (runWriter, tell)
+import Data.Dependent.Map (DMap)
+import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum (DSum ((:=>)))
 import qualified Data.Map.Strict as Map
-import Data.Some (Some (Some), foldSome)
 import Neuron.CLI.Logging
 import Neuron.CLI.Types
   ( App,
@@ -36,6 +37,7 @@ import qualified Neuron.Frontend.Manifest as Manifest
 import Neuron.Frontend.Route (Route, routeHtmlPath)
 import qualified Neuron.Frontend.Route as Z
 import qualified Neuron.Frontend.Route.Data as RD
+import Neuron.Frontend.Route.Data.Types (ZettelData (zettelDataPlugin))
 import qualified Neuron.Frontend.Static.HeadHtml as HeadHtml
 import qualified Neuron.Frontend.Static.Html as Html
 import qualified Neuron.Frontend.Widget as W
@@ -61,19 +63,38 @@ import qualified System.Directory.Contents as DC
 import qualified System.Directory.Contents.Extra as DC
 import System.FilePath (takeExtension, (</>))
 
-writeRoutes :: GenCommand -> NonEmpty (DSum Route Identity) -> App Int
-writeRoutes genCmd new = do
+writeRoutes :: GenCommand -> DMap Route Identity -> NonEmpty (DSum Route Identity) -> App Int
+writeRoutes genCmd allRoutes new = do
   log D $ "Rendering routes (" <> show (length new) <> " slugs) ..."
   -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
   -- Second bottleneck is graph building.
-  !routeHtml <- forM new $ \case
-    r@(Z.Route_Zettel _) :=> Identity val -> do
-      (Some r,) <$> genRouteHtml genCmd r val
-    r@Z.Route_Impulse :=> Identity val ->
-      (Some r,) <$> genRouteHtml genCmd r val
   fmap sum $
-    forM routeHtml $ \(someR, html) -> do
-      fmap (bool 0 1) $ flip writeRouteHtml html `foldSome` someR
+    forM new $ \case
+      r@(Z.Route_Zettel slug) :=> Identity val -> do
+        let routePluginData = zettelDataPlugin $ snd val
+            renderZettel zData = fmap snd . renderStatic . Z.runNeuronWeb (neuronRouteConfig genCmd) . Plugin.elZettel zData
+        -- Write plugin specific content associated with a zettel
+        cnt <- fmap sum $
+          forM (DMap.toList routePluginData) $ \rpd -> do
+            Plugin.afterRouteWrite renderZettel allRoutes slug rpd >>= \case
+              Left e -> do
+                log EE e
+                pure 0
+              Right extraFiles ->
+                fmap sum $
+                  forM extraFiles $ \(("plugin:" <>) -> what, fn, s) -> do
+                    bool 0 1 <$> writeFileWithLoggingIfUpdated (Just what) fn (toStrict s)
+        -- Write the zettel HTML
+        html <- genRouteHtml genCmd r val
+        bool cnt (cnt + 1) <$> writeRouteHtml r html
+      r@Z.Route_Impulse :=> Identity val -> do
+        html <- genRouteHtml genCmd r val
+        bool 0 1 <$> writeRouteHtml r html
+  where
+    writeRouteHtml r content = do
+      -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
+      let s = decodeUtf8 @Text $ "<!DOCTYPE html>" <> content
+      writeFileWithLoggingIfUpdated Nothing (routeHtmlPath r) s
 
 deleteRoutes :: NonEmpty (DSum Route Identity) -> App ()
 deleteRoutes del = do
@@ -104,7 +125,7 @@ buildRouteData fileTree zs cache = do
       impulseRouteData = (siteData, impulseData)
       mkZettelRoute zC =
         let z = Z.sansContent zC
-            zettelData = RD.mkZettelData cache zC
+            zettelData = RD.mkZettelData zs cache siteData zC
          in Z.Route_Zettel (Z.zettelSlug z) :=> Identity (siteData, zettelData)
       !routes =
         (Z.Route_Impulse :=> Identity impulseRouteData) :
@@ -140,31 +161,32 @@ genRouteHtml ::
   Route a ->
   a ->
   m ByteString
-genRouteHtml GenCommand {..} r val = do
+genRouteHtml (neuronRouteConfig -> routeCfg) r val = do
   -- Note: When using hydration, use `renderStatic . runHydrationT` and also
   -- avoid any closure areguments (val, etc.) in the Dynamics. For now, neuron
   -- doesn't do any GHCJS much less hydration. But this is something to keep in
   -- mind for future.
   liftIO $
     fmap snd . renderStatic $ do
-      let routeCfg = Z.mkRouteConfig $ bool Z.mkRouteUrl Z.mkPrettyRouteUrl usePrettyUrls
-          valDyn = constDyn $ W.availableData val
+      let valDyn = constDyn $ W.availableData val
       Html.renderRoutePage routeCfg r valDyn
 
-writeRouteHtml :: (MonadApp m, MonadIO m, WithLog env Message m) => Route a -> ByteString -> m Bool
-writeRouteHtml r content = do
+neuronRouteConfig :: GenCommand -> Z.RouteConfig t m
+neuronRouteConfig GenCommand {..} =
+  Z.mkRouteConfig $ bool Z.mkRouteUrl Z.mkPrettyRouteUrl usePrettyUrls
+
+writeFileWithLoggingIfUpdated :: (MonadApp m, MonadIO m, WithLog env Message m) => Maybe Text -> FilePath -> Text -> m Bool
+writeFileWithLoggingIfUpdated mWriter relPath s = do
   outputDir <- getOutputDir
-  let htmlFile = outputDir </> routeHtmlPath r
-  -- DOCTYPE declaration is helpful for code that might appear in the user's `head.html` file (e.g. KaTeX).
-  let s = decodeUtf8 @Text $ "<!DOCTYPE html>" <> content
+  let p = outputDir </> relPath
   s0 <- liftIO $ do
-    doesFileExist htmlFile >>= \case
-      True -> Just <$> readFileText htmlFile
+    doesFileExist p >>= \case
+      True -> Just <$> readFileText p
       False -> pure Nothing
   if Just s /= s0
     then do
-      log (I' Sent) $ toText $ DC.mkRelative outputDir htmlFile
-      writeFileText htmlFile s
+      log (I' Sent) $ toText (DC.mkRelative outputDir p) <> maybe "" (\w -> " [" <> w <> "]") mWriter
+      writeFileText p s
       pure True
     else pure False
 

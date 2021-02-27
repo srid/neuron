@@ -12,7 +12,6 @@ module Neuron.Frontend.Static.StructuredData
   )
 where
 
-import Control.Monad.Except (liftEither, runExcept)
 import qualified Data.Dependent.Map as DMap
 import Data.Some (Some (..))
 import Data.Structured.Breadcrumb (Breadcrumb)
@@ -24,7 +23,6 @@ import Data.Structured.OpenGraph
   )
 import Data.Structured.OpenGraph.Render (renderOpenGraph)
 import qualified Data.Text as T
-import qualified Network.URI.Encode as E
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
 import qualified Neuron.Frontend.Route.Data.Types as R
@@ -37,7 +35,6 @@ import Relude
 import Text.Pandoc.Definition (Inline (Image), Pandoc (..))
 import Text.Pandoc.Util (getFirstParagraphText, plainify)
 import qualified Text.Pandoc.Walk as W
-import Text.URI (URI, mkURI)
 import qualified Text.URI as URI
 
 renderStructuredData :: DomBuilder t m => R.RouteConfig t m -> Route a -> a -> m ()
@@ -54,7 +51,7 @@ routeStructuredData routeCfg v = \case
         let mkCrumb :: Zettel -> Breadcrumb.Item
             mkCrumb Zettel {..} =
               let zettelRelUrl = R.routeConfigRouteURL routeCfg (Some $ R.Route_Zettel zettelSlug)
-               in Breadcrumb.Item zettelTitle (Just $ routeUri baseUrl zettelRelUrl)
+               in Breadcrumb.Item zettelTitle (Just $ R.routeUri baseUrl zettelRelUrl)
          in Breadcrumb.fromForest $
               fmap mkCrumb <$> getUpTree (R.zettelDataPlugin (snd v))
   _ ->
@@ -92,7 +89,7 @@ routeOpenGraph routeCfg v r =
       _openGraph_url = do
         baseUrl <- R.siteDataSiteBaseUrl (R.routeSiteData v r)
         let relUrl = R.routeConfigRouteURL routeCfg (Some r)
-        pure $ routeUri baseUrl relUrl
+        pure $ R.routeUri baseUrl relUrl
     }
   where
     getPandocDoc = either (const Nothing) (Just . zettelContent)
@@ -104,21 +101,3 @@ routeOpenGraph routeCfg v r =
       flip W.query bs $ \case
         Image _ _ (url, _) -> [toText url]
         _ -> []
-
-data BaseUrlError
-  = BaseUrlNotAbsolute
-  deriving (Eq, Show)
-
-instance Exception BaseUrlError
-
--- | Make an absolute URI for the given relative URL, given a base URL.
-routeUri :: HasCallStack => URI -> Text -> URI
-routeUri baseUrl relUrl = either (error . toText . displayException) id $
-  runExcept $ do
-    let -- Use `E.encode` to deal with unicode code points, as mkURI will fail on them.
-        -- This is necessary to support non-ascii characters in filenames
-        relUrlEncoded = toText . E.encode . toString $ relUrl
-    uri <- liftEither $ mkURI relUrlEncoded
-    case URI.relativeTo uri baseUrl of
-      Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
-      Just x -> pure x

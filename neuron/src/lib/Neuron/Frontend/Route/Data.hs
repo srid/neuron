@@ -28,12 +28,12 @@ import Neuron.Zettelkasten.ID (indexZid)
 import Neuron.Zettelkasten.Zettel
 import Relude hiding (traceShowId)
 
-mkZettelData :: NeuronCache -> ZettelC -> ZettelData
-mkZettelData NeuronCache {..} zC = do
+mkZettelData :: [ZettelC] -> NeuronCache -> SiteData -> ZettelC -> ZettelData
+mkZettelData zs NeuronCache {..} siteData zC = do
   let z = sansContent zC
       pluginData =
         DMap.fromList $
-          Plugin.routePluginData neuroncacheGraph zC <$> maybe mempty DMap.toList (zettelPluginData z)
+          Plugin.routePluginData siteData zs neuroncacheGraph zC <$> maybe mempty DMap.toList (zettelPluginData z)
   ZettelData zC pluginData
 
 mkImpulseData :: NeuronCache -> ImpulseData

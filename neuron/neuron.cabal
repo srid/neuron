@@ -43,6 +43,7 @@ common library-common
     filepath,
     algebraic-graphs >= 0.5,
     parser-combinators,
+    feed,
     containers,
     filepattern,
     megaparsec,
@@ -67,6 +68,7 @@ common library-common
     clay,
     tagged,
     shower,
+    uri-encode,
     directory-contents
 
 library
@@ -82,6 +84,7 @@ library
     Neuron.Plugin.Plugins.Tags
     Neuron.Plugin.Plugins.Links
     Neuron.Plugin.Plugins.UpTree
+    Neuron.Plugin.Plugins.Feed
     Neuron.Zettelkasten.ID
     Neuron.Zettelkasten.Zettel
     Neuron.Zettelkasten.Zettel.Error
@@ -155,7 +158,6 @@ common app-common
     uuid,
     with-utf8,
     either,
-    uri-encode,
     timeit,
     reflex,
     reflex-fsnotify,

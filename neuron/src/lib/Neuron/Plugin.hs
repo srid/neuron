@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -20,11 +21,13 @@ import qualified Data.Graph.Labelled as Algo
 import qualified Data.Map.Strict as Map
 import Data.Some
 import qualified Data.Text as T
-import Neuron.Frontend.Route (NeuronWebT)
+import Neuron.Frontend.Route (NeuronWebT, Route)
 import Neuron.Frontend.Route.Data.Types
+import qualified Neuron.Frontend.Route.Data.Types as R
 import Neuron.Frontend.Theme (Theme)
 import Neuron.Markdown (NeuronSyntaxSpec, parseMarkdown)
 import qualified Neuron.Plugin.Plugins.DirTree as DirTree
+import qualified Neuron.Plugin.Plugins.Feed as Feed
 import qualified Neuron.Plugin.Plugins.Links as Links
 import qualified Neuron.Plugin.Plugins.NeuronIgnore as NeuronIgnore
 import qualified Neuron.Plugin.Plugins.Tags as Tags
@@ -32,7 +35,7 @@ import qualified Neuron.Plugin.Plugins.UpTree as UpTree
 import Neuron.Plugin.Type (Plugin (..))
 import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
-import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
 import Neuron.Zettelkasten.Zettel
   ( MissingZettel,
@@ -42,8 +45,10 @@ import Neuron.Zettelkasten.Zettel
     ZettelT (zettelPluginData),
   )
 import Neuron.Zettelkasten.Zettel.Parser (parseZettels)
-import Reflex.Dom.Core (DomBuilder, PostBuild)
-import Reflex.Dom.Widget (blank)
+import Reflex.Dom.Core hiding (mapMaybe)
+import Reflex.Dom.Pandoc
+import qualified Reflex.Dom.Pandoc.Document as PR
+import Reflex.Dom.Pandoc.Raw (RawBuilder, elPandocRaw)
 import Relude
 import qualified System.Directory.Contents.Types as DC
 import Text.Pandoc.Definition (Inline, Pandoc)
@@ -59,6 +64,7 @@ pluginRegistryShow r =
       Some Tags -> "tags"
       Some NeuronIgnore -> "neuronignore"
       Some UpTree -> "uptree"
+      Some Feed -> "feed"
 
 lookupPlugins :: [Text] -> PluginRegistry
 lookupPlugins = Map.fromList . mapMaybe lookupPlugin
@@ -70,6 +76,7 @@ lookupPlugins = Map.fromList . mapMaybe lookupPlugin
       "tags" -> Just (Some Tags, Some Tags.plugin)
       "neuronignore" -> Just (Some NeuronIgnore, Some NeuronIgnore.plugin)
       "uptree" -> Just (Some UpTree, Some UpTree.plugin)
+      "feed" -> Just (Some Feed, Some Feed.plugin)
       _ -> Nothing
 
 markdownSpec :: NeuronSyntaxSpec m il bl => PluginRegistry -> CM.SyntaxSpec m il bl
@@ -117,8 +124,8 @@ pluginStyles plugins theme =
     mconcat $ Map.elems plugins <&> \sp -> withSome sp $ \p -> _plugin_css p theme
 
 -- TODO: Use _plugin_* functions directly!
-routePluginData :: ZettelGraph -> ZettelC -> DSum PluginZettelData Identity -> DSum PluginZettelRouteData Identity
-routePluginData g z = \case
+routePluginData :: SiteData -> [ZettelC] -> ZettelGraph -> ZettelC -> DSum PluginZettelData Identity -> DSum PluginZettelRouteData Identity
+routePluginData siteData zs g z = \case
   DirTree :=> Identity dirTree ->
     PluginZettelRouteData_DirTree :=> Identity (DirTree.routePluginData g dirTree)
   Links :=> Identity x ->
@@ -129,6 +136,8 @@ routePluginData g z = \case
     PluginZettelRouteData_NeuronIgnore :=> Identity ()
   UpTree :=> Identity () ->
     PluginZettelRouteData_UpTree :=> Identity (UpTree.routePluginData g z)
+  Feed :=> Identity x ->
+    PluginZettelRouteData_Feed :=> Identity (Feed.routePluginData siteData zs g z x)
 
 renderPluginPanel ::
   (DomBuilder t m, PostBuild t m) =>
@@ -182,6 +191,19 @@ renderHandleLink' = \case
   _ ->
     const $ const Nothing
 
+afterRouteWrite ::
+  MonadIO m =>
+  (ZettelData -> Pandoc -> IO ByteString) ->
+  DMap Route Identity ->
+  Slug ->
+  DSum PluginZettelRouteData Identity ->
+  m (Either Text [(Text, FilePath, LText)])
+afterRouteWrite renderZettel allRoutes slug = \case
+  PluginZettelRouteData_Feed :=> Identity routeData -> do
+    Feed.writeFeed renderZettel allRoutes slug routeData
+  _ ->
+    pure $ Right mempty
+
 preJsonStrip :: Zettel -> Zettel
 preJsonStrip z =
   -- We don't care to send internal data outside of neuron.
@@ -192,3 +214,42 @@ preJsonStrip z =
 stripSurroundingContext :: ZettelGraph -> ZettelGraph
 stripSurroundingContext =
   Algo.emap (fmap (second $ const mempty)) . Algo.vmap preJsonStrip
+
+-- | Render a zettel Pandoc content given its zettel data.
+elZettel ::
+  (DomBuilder t m, RawBuilder m, PostBuild t m, Prerender js t m) =>
+  ZettelData ->
+  Pandoc ->
+  NeuronWebT t m ()
+elZettel zData =
+  elPandoc (mkReflexDomPandocConfig zData)
+
+mkReflexDomPandocConfig ::
+  forall js t m.
+  (DomBuilder t m, RawBuilder m, PostBuild t m, Prerender js t m) =>
+  ZettelData ->
+  Config t (NeuronWebT t m) ()
+mkReflexDomPandocConfig x =
+  (PR.defaultConfig @t @m)
+    { _config_renderLink = \oldRender url _attrs minner -> do
+        fromMaybe oldRender $
+          renderHandleLink (R.zettelDataPlugin x) url minner,
+      _config_renderCode = \_ (_, langs, _) s -> do
+        el "pre" $ elClass "code" (mkLangClass langs) $ text s,
+      _config_renderRaw = elPandocRaw
+    }
+  where
+    mkLangClass langs =
+      -- Tag code block with "foo language-foo" classes, if the user specified
+      -- "foo" as the language identifier. This enables external syntax
+      -- highlighters to detect the language.
+      --
+      -- If no language is specified, use "language-none" as the language This
+      -- works at least on prism.js,[1] in that - syntax highlighting is turned
+      -- off all the while background styling is applied, to be consistent with
+      -- code blocks with language set.
+      --
+      -- [1] https://github.com/PrismJS/prism/pull/2738
+      fromMaybe "language-none" $ do
+        lang <- head <$> nonEmpty langs
+        pure $ lang <> " language-" <> lang

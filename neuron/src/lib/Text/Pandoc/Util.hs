@@ -65,7 +65,7 @@ getFirstParagraphText = listToMaybe . W.query go
 -- | Ensure that a title H1 is present in the Pandoc doc.
 --
 -- A "title H1" is a H1 that appears as the very first block element of the AST.
--- If this element is absence, then create it using the given text inline.
+-- If this element is absent, then create it using the given text inline.
 --
 -- Either way, apply the given `id` attribute to the title H1 (so as to
 -- distinguish it from other headings). And return the title plainify'ied.

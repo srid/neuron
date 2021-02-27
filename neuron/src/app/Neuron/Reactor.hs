@@ -96,7 +96,7 @@ reflexApp appEnv genCmd = do
                 Nothing -> pure ()
             -- Write modified routes
             nRoutes <- case nonEmpty (modifications routeChanges) of
-              Just rs -> run $ RB.writeRoutes genCmd rs
+              Just rs -> run $ RB.writeRoutes genCmd (DMap.fromList newRoutes) rs
               Nothing -> pure 0
             -- Report errors
             run $ RB.reportAllErrors newErrors

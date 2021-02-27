@@ -51,6 +51,10 @@ preSet :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
 preSet (vertexID -> zid) g =
   fmap (getVertex g) $ toList . LAM.preSet zid $ graph g
 
+postSet :: (Vertex v, Ord (VertexID v)) => v -> LabelledGraph v e -> [v]
+postSet (vertexID -> zid) g =
+  fmap (getVertex g) $ toList . LAM.postSet zid $ graph g
+
 -- | Return the preset of a vertex, considering only edges with the given label
 --
 -- WARNING: Dont' call this in a loop. For that, use preSetWithEdgeLabelMany

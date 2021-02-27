@@ -39,7 +39,7 @@ import Data.Tagged (Tagged)
 import Data.Time.DateMayTime (DateMayTime)
 import Neuron.Markdown (ZettelMeta, ZettelParseError)
 import Neuron.Zettelkasten.Connection (Connection)
-import Neuron.Zettelkasten.ID (Slug, ZettelID)
+import Neuron.Zettelkasten.ID (Slug, ZettelID, unZettelID)
 import Relude hiding (show)
 import Text.Pandoc.Builder (Block)
 import Text.Pandoc.Definition (Pandoc (..))
@@ -101,6 +101,10 @@ data TagQuery r where
   TagQuery_Tags :: TagTree.Query -> TagQuery (Map Tag Natural)
   TagQuery_TagZettel :: Tag -> TagQuery ()
 
+data FeedMeta = FeedMeta
+  {feedmetaCount :: Natural}
+  deriving (Eq, Ord, Show, Generic)
+
 -- | Plugin-specific data stored in `ZettelT`
 --
 -- See also `PluginZettelRouteData` which corresponds to post-graph data (used
@@ -114,6 +118,7 @@ data PluginZettelData a where
   Tags :: PluginZettelData [Some TagQuery]
   NeuronIgnore :: PluginZettelData ()
   UpTree :: PluginZettelData ()
+  Feed :: PluginZettelData FeedMeta
 
 -- ------------
 -- Zettel types
@@ -181,7 +186,7 @@ sansContent = \case
       }
 
 instance Show (ZettelT c) where
-  show Zettel {..} = "Zettel:" <> show zettelID
+  show Zettel {..} = toString $ "Zettel:" <> unZettelID zettelID
 
 instance Eq (ZettelT c) => Ord (ZettelT c) where
   z1 <= z2 =
@@ -217,6 +222,12 @@ instance ToJSON DirTreeMeta where
   toJSON = genericToJSON shortRecordFieldsLowerCase
 
 instance FromJSON DirTreeMeta where
+  parseJSON = genericParseJSON shortRecordFieldsLowerCase
+
+instance ToJSON FeedMeta where
+  toJSON = genericToJSON shortRecordFieldsLowerCase
+
+instance FromJSON FeedMeta where
   parseJSON = genericParseJSON shortRecordFieldsLowerCase
 
 instance ToJSON DirZettel where
