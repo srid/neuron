@@ -31,6 +31,7 @@ import Relude
 import qualified Text.Atom.Feed as Atom
 import qualified Text.Atom.Feed.Export as Export (textFeed)
 import Text.Pandoc.Definition (Pandoc)
+import qualified Text.Pandoc.Util as Pandoc
 import qualified Text.URI as URI
 
 plugin :: Plugin FeedData
@@ -136,7 +137,7 @@ mkFeedEntry elZettel allRoutes FeedItem {..} = do
       -- This won't be reached.
       pure Nothing
     Just (Identity (_siteData, zData)) -> do
-      html <- liftIO $ elZettel zData feedItemZettelContent
+      html <- liftIO $ elZettel zData $ Pandoc.deleteTitleH1 feedItemZettelContent
       pure $
         Just $
           ( Atom.nullEntry

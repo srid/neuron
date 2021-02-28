@@ -11,6 +11,7 @@ module Text.Pandoc.Util
   ( getFirstParagraphText,
     setTitleH1,
     ensureTitleH1,
+    deleteTitleH1,
     plainify,
     PandocLink (..),
     mkPandocAutoLink,
@@ -83,3 +84,9 @@ setTitleH1 :: Text -> Text -> Pandoc -> Pandoc
 setTitleH1 idAttr s (Pandoc meta rest) =
   let h1 = B.Header 1 (idAttr, mempty, mempty) [B.Str s]
    in Pandoc meta (h1 : rest)
+
+deleteTitleH1 :: Pandoc -> Pandoc
+deleteTitleH1 (Pandoc meta (B.Header 1 _ _ : rest)) =
+  Pandoc meta rest
+deleteTitleH1 doc =
+  doc

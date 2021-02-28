@@ -13,12 +13,12 @@
 -- | Neuron's route and its config
 module Neuron.Frontend.Route where
 
+import Control.Monad.Except (liftEither, runExcept)
 import Data.Constraint.Extras.TH (deriveArgDict)
 import Data.GADT.Compare.TH
   ( DeriveGCompare (deriveGCompare),
     DeriveGEQ (deriveGEq),
   )
-import Control.Monad.Except (liftEither, runExcept)
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some, foldSome)
 import qualified Data.Text as T

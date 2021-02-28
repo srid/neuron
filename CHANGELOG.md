@@ -18,6 +18,7 @@
 - Plugin:links
   - Labelled directional links (#514): `[[foo]]#` and `#[[foo]]`
   - Backlinks panel now groups entries by connection type
+- Atom feed support (#73)
 - Reduce error verbosity (CLI & web) in the scenario of there being innumerous broken wiki-links.
 - CLI
   - `neuron rib` is renamed to `neuron gen` (neuron has migrated from rib/shake to reflex)
