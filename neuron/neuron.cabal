@@ -121,6 +121,7 @@ library
     Data.Graph.Labelled.Build
     Data.Time.DateMayTime
     Data.YAML.ToJSON
+    Data.Structured.Breadcrumb
 
 -- Everything below this marker should be deleted when using neuron.cabal in
 -- GHCJS as a library.
@@ -180,7 +181,6 @@ library neuron-app-lib
   import: app-common
   hs-source-dirs: src/app
   exposed-modules:
-    Data.Structured.Breadcrumb
     Data.Structured.OpenGraph
     Data.Structured.OpenGraph.Render
     System.Directory.Contents.Extra
