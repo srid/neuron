@@ -65,7 +65,7 @@ routePluginData routeCfg siteData zs g (sansContent -> z) FeedMeta {..} =
             fmapMaybe (mkFeedItem baseUrl) $
               -- Get all downlinks of this zettel
               downlinksWithContent zettels z g
-      title = zettelTitle z
+      title = zettelTitle z <> " - " <> siteDataSiteTitle siteData
    in FeedData title (zettelSlug z) baseUrl permaLink entries
   where
     downlinksWithContent zettels zettel graph =
