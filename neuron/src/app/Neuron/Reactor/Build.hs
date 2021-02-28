@@ -65,7 +65,6 @@ import System.FilePath (takeExtension, (</>))
 
 writeRoutes :: GenCommand -> DMap Route Identity -> NonEmpty (DSum Route Identity) -> App Int
 writeRoutes genCmd allRoutes new = do
-  let routeCfg = neuronRouteConfig genCmd
   log D $ "Rendering routes (" <> show (length new) <> " slugs) ..."
   -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
   -- Second bottleneck is graph building.
@@ -77,7 +76,7 @@ writeRoutes genCmd allRoutes new = do
         -- Write plugin specific content associated with a zettel
         cnt <- fmap sum $
           forM (DMap.toList routePluginData) $ \rpd -> do
-            Plugin.afterRouteWrite routeCfg renderZettel allRoutes slug rpd >>= \case
+            Plugin.afterRouteWrite renderZettel allRoutes slug rpd >>= \case
               Left e -> do
                 log EE e
                 pure 0

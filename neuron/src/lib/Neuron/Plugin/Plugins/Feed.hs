@@ -61,7 +61,7 @@ routePluginData routeCfg siteData zs g (sansContent -> z) FeedMeta {..} =
           -- In reverse chronologial order
           sortOn (Down . feedItemDate) $
             -- Only those with date assigned
-            fmapMaybe mkFeedItem $
+            fmapMaybe (mkFeedItem baseUrl) $
               -- Get all downlinks of this zettel
               downlinksWithContent zettels z g
       title = zettelTitle z
@@ -70,13 +70,14 @@ routePluginData routeCfg siteData zs g (sansContent -> z) FeedMeta {..} =
     downlinksWithContent zettels zettel graph =
       fforMaybe (G.downlinks zettel graph) $ \dz ->
         Map.lookup (zettelID dz) zettels
-    mkFeedItem Zettel {..} = do
+    mkFeedItem baseUrl Zettel {..} = do
       feedItemDate <- zettelDate
       let feedItemSlug = zettelSlug
           feedItemZettelContent = zettelContent
           feedItemTitle = zettelTitle
           feedItemAuthor = siteDataSiteAuthor siteData
           feedItemZettelID = zettelID
+          feedItemUrl = R.routeUri baseUrl $ R.routeConfigRouteURL routeCfg (Some $ R.Route_Zettel zettelSlug)
       pure FeedItem {..}
 
 renderZettelHead :: DomBuilder t m => (SiteData, ZettelData) -> FeedData -> m ()
@@ -93,20 +94,19 @@ renderZettelHead v FeedData {..} = do
 
 writeFeed ::
   MonadIO m =>
-  R.RouteConfig t m1 ->
   (ZettelData -> Pandoc -> IO ByteString) ->
   DMap Route Identity ->
   Slug ->
   FeedData ->
   m (Either Text [(Text, FilePath, LText)])
-writeFeed routeCfg elZettel allRoutes slug FeedData {..} = do
+writeFeed elZettel allRoutes slug FeedData {..} = do
   case nonEmpty feedDataEntries of
     Nothing -> do
       pure $ Left $ toText $ "No entries available to generate " <> feedPath feedDataSlug
     Just items -> do
       entries <-
         catMaybes . toList
-          <$> traverse (mkFeedEntry routeCfg elZettel allRoutes feedDataBaseUri) items
+          <$> traverse (mkFeedEntry elZettel allRoutes) items
       -- Last updated is automatically determined from the recent zettel's date
       let lastUpdated = feedItemDate $ head items
           feed =
@@ -126,27 +126,24 @@ feedPath slug =
 
 mkFeedEntry ::
   MonadIO m1 =>
-  R.RouteConfig t m ->
   (ZettelData -> Pandoc -> IO ByteString) ->
   DMap Route Identity ->
-  URI.URI ->
   FeedItem ->
   m1 (Maybe Atom.Entry)
-mkFeedEntry routeCfg elZettel allRoutes baseUrl FeedItem {..} = do
+mkFeedEntry elZettel allRoutes FeedItem {..} = do
   case DMap.lookup (R.Route_Zettel feedItemSlug) allRoutes of
     Nothing ->
       -- This won't be reached.
       pure Nothing
     Just (Identity (_siteData, zData)) -> do
-      let url = URI.render $ R.routeUri baseUrl $ R.routeConfigRouteURL routeCfg (Some $ R.Route_Zettel $ either zettelSlug zettelSlug $ zettelDataZettel zData)
       html <- liftIO $ elZettel zData feedItemZettelContent
       pure $
         Just $
           ( Atom.nullEntry
-              url
+              (URI.render feedItemUrl)
               (Atom.TextString feedItemTitle)
               (DMT.formatDateMayTime feedItemDate)
           )
             { Atom.entryContent = Just (Atom.HTMLContent $ decodeUtf8 html),
-              Atom.entryLinks = one $ Atom.nullLink feedItemSlug
+              Atom.entryLinks = one $ Atom.nullLink (URI.render feedItemUrl)
             }

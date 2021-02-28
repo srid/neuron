@@ -130,6 +130,7 @@ data FeedItem = FeedItem
     feedItemTitle :: Text,
     feedItemAuthor :: Maybe Text,
     feedItemDate :: DateMayTime,
+    feedItemUrl :: URI,
     feedItemZettelID :: ZettelID,
     feedItemZettelContent :: Pandoc
   }

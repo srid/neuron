@@ -11,7 +11,7 @@ import qualified Commonmark as CM
 import Control.Monad.Writer
 import Data.Default (Default (..))
 import Data.Dependent.Map (DMap)
-import Neuron.Frontend.Route (NeuronWebT, Route, RouteConfig)
+import Neuron.Frontend.Route (NeuronWebT, Route)
 import Neuron.Frontend.Route.Data.Types
 import Neuron.Frontend.Theme (Theme)
 import Neuron.Markdown
@@ -56,9 +56,8 @@ data Plugin routeData = Plugin
     -- | Custom action during route write. Return True if a file was written.
     -- TODO: This is not used!
     _plugin_afterRouteWrite ::
-      forall m t m1.
+      forall m.
       MonadIO m =>
-      RouteConfig t m1 ->
       (ZettelData -> Pandoc -> IO ByteString) ->
       DMap Route Identity ->
       Slug ->
@@ -80,6 +79,6 @@ instance Default (Plugin a) where
         _plugin_renderPanel = \_ _ -> blank,
         _plugin_css = mempty,
         _plugin_renderHandleLink = \_ _ _ -> Nothing,
-        _plugin_afterRouteWrite = \_ _ _ _ _ -> pure (Right mempty),
+        _plugin_afterRouteWrite = \_ _ _ _ -> pure (Right mempty),
         _plugin_preJsonStrip = id
       }

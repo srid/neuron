@@ -203,15 +203,14 @@ renderZettelHead routeCfg val = \case
 
 afterRouteWrite ::
   MonadIO m =>
-  RouteConfig t m1 ->
   (ZettelData -> Pandoc -> IO ByteString) ->
   DMap Route Identity ->
   Slug ->
   DSum PluginZettelRouteData Identity ->
   m (Either Text [(Text, FilePath, LText)])
-afterRouteWrite routeCfg renderZettel allRoutes slug = \case
+afterRouteWrite renderZettel allRoutes slug = \case
   PluginZettelRouteData_Feed :=> Identity routeData -> do
-    Feed.writeFeed routeCfg renderZettel allRoutes slug routeData
+    Feed.writeFeed renderZettel allRoutes slug routeData
   _ ->
     pure $ Right mempty
 
