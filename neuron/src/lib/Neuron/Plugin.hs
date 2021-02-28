@@ -196,6 +196,8 @@ renderZettelHead :: DomBuilder t m => RouteConfig t m -> (SiteData, ZettelData) 
 renderZettelHead routeCfg val = \case
   PluginZettelRouteData_UpTree :=> Identity x ->
     UpTree.renderZettelHead routeCfg val x
+  PluginZettelRouteData_Feed :=> Identity x ->
+    Feed.renderZettelHead val x
   _ ->
     blank
 

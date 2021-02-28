@@ -9,12 +9,12 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Neuron.Plugin.Plugins.Feed (plugin, routePluginData, writeFeed) where
+module Neuron.Plugin.Plugins.Feed (plugin, routePluginData, renderZettelHead, writeFeed) where
 
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
-import Data.Some
+import Data.Some (Some (Some))
 import qualified Data.Time.DateMayTime as DMT
 import GHC.Natural (naturalToInt)
 import Neuron.Frontend.Route (Route)
@@ -78,6 +78,18 @@ routePluginData routeCfg siteData zs g (sansContent -> z) FeedMeta {..} =
           feedItemAuthor = siteDataSiteAuthor siteData
           feedItemZettelID = zettelID
       pure FeedItem {..}
+
+renderZettelHead :: DomBuilder t m => (SiteData, ZettelData) -> FeedData -> m ()
+renderZettelHead v FeedData {..} = do
+  let feedUrl = URI.render $ R.routeUri feedDataBaseUri $ toText $ feedPath (either zettelSlug zettelSlug $ zettelDataZettel $ snd v)
+  elAttr
+    "link"
+    ( "rel" =: "alternate"
+        <> "type" =: "application/atom+xml"
+        <> "title" =: ("Atom feed for " <> feedDataTitle)
+        <> "href" =: feedUrl
+    )
+    blank
 
 writeFeed ::
   MonadIO m =>
