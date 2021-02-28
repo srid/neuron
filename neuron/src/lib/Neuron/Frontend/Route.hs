@@ -18,9 +18,11 @@ import Data.GADT.Compare.TH
   ( DeriveGCompare (deriveGCompare),
     DeriveGEQ (deriveGEq),
   )
+import Control.Monad.Except (liftEither, runExcept)
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Some (Some, foldSome)
 import qualified Data.Text as T
+import qualified Network.URI.Encode as E
 import Neuron.Frontend.Route.Data.Types
   ( ImpulseData,
     SiteData,
@@ -32,6 +34,8 @@ import Neuron.Zettelkasten.Zettel
   )
 import Reflex.Dom.Core
 import Relude
+import Text.URI (URI)
+import qualified Text.URI as URI
 
 data Route routeData where
   Route_Zettel :: Slug -> Route (SiteData, ZettelData)
@@ -106,6 +110,24 @@ routeTitle' v = \case
   Route_Impulse -> "Impulse"
   Route_Zettel _ ->
     either zettelTitle zettelTitle $ zettelDataZettel . snd $ v
+
+data BaseUrlError
+  = BaseUrlNotAbsolute
+  deriving (Eq, Show)
+
+instance Exception BaseUrlError
+
+-- | Make an absolute URI for the given relative URL, given a base URL.
+routeUri :: HasCallStack => URI -> Text -> URI
+routeUri baseUrl relUrl = either (error . toText . displayException) id $
+  runExcept $ do
+    let -- Use `E.encode` to deal with unicode code points, as mkURI will fail on them.
+        -- This is necessary to support non-ascii characters in filenames
+        relUrlEncoded = toText . E.encode . toString $ relUrl
+    uri <- liftEither $ URI.mkURI relUrlEncoded
+    case URI.relativeTo uri baseUrl of
+      Nothing -> liftEither $ Left $ toException BaseUrlNotAbsolute
+      Just x -> pure x
 
 deriveGEq ''Route
 deriveGShow ''Route

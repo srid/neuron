@@ -16,6 +16,7 @@ module Neuron.Zettelkasten.Graph
     getConnection,
     uplinkForest,
     backlinks,
+    downlinks,
     backlinksMulti,
     categoryClusters,
     connectionCount,
@@ -39,6 +40,10 @@ uplinkForest z =
   G.obviateRootUnlessForest z
     . G.bfsForestBackwards z
     . folgezettelSubGraph
+
+downlinks :: Zettel -> ZettelGraph -> [Zettel]
+downlinks z =
+  G.postSet z . folgezettelSubGraph
 
 folgezettelSubGraph :: ZettelGraph -> ZettelGraph
 folgezettelSubGraph =

@@ -16,6 +16,7 @@ module Data.Graph.Labelled
     edgeLabel,
 
     -- * Algorithms
+    postSet,
     preSet,
     preSetWithEdgeLabel,
     preSetWithEdgeLabelMany,

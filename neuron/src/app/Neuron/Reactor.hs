@@ -79,7 +79,7 @@ reflexApp appEnv genCmd = do
         routeDataWithErrorsE <- dyn $
           ffor treeDyn $ \(cfg, tree') -> do
             (cache, zs, fileTree) <- run $ RB.loadZettelkastenFromFiles cfg tree'
-            routeData <- run $ RB.buildRouteData fileTree zs cache
+            routeData <- run $ RB.buildRouteData (RB.neuronRouteConfig genCmd) fileTree zs cache
             pure (routeData, Cache.neuroncacheErrors cache)
         -- Remember last route data, so we know what to render to save time.
         routeDataWithErrorsE' <- rememberLastEvent (mempty, mempty) routeDataWithErrorsE
@@ -96,7 +96,7 @@ reflexApp appEnv genCmd = do
                 Nothing -> pure ()
             -- Write modified routes
             nRoutes <- case nonEmpty (modifications routeChanges) of
-              Just rs -> run $ RB.writeRoutes genCmd rs
+              Just rs -> run $ RB.writeRoutes genCmd (DMap.fromList newRoutes) rs
               Nothing -> pure 0
             -- Report errors
             run $ RB.reportAllErrors newErrors
