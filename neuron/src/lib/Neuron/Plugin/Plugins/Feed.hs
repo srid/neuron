@@ -14,6 +14,7 @@ module Neuron.Plugin.Plugins.Feed (plugin, routePluginData, writeFeed) where
 import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
+import Data.Some
 import qualified Data.Time.DateMayTime as DMT
 import GHC.Natural (naturalToInt)
 import Neuron.Frontend.Route (Route)
@@ -35,8 +36,8 @@ import qualified Text.URI as URI
 plugin :: Plugin FeedData
 plugin =
   def
-    { _plugin_afterZettelParse = bimap enable enable
-    -- _plugin_routeData = routePluginData
+    { _plugin_afterZettelParse = bimap enable enable,
+      _plugin_afterRouteWrite = writeFeed
     }
 
 enable :: ZettelT c -> ZettelT c
@@ -46,15 +47,14 @@ enable z =
     Just meta ->
       setPluginData Feed meta z
 
-routePluginData :: SiteData -> [ZettelC] -> ZettelGraph -> ZettelC -> FeedMeta -> FeedData
-routePluginData siteData zs g (sansContent -> z) FeedMeta {..} =
+routePluginData :: R.RouteConfig t m -> SiteData -> [ZettelC] -> ZettelGraph -> ZettelC -> FeedMeta -> FeedData
+routePluginData routeCfg siteData zs g (sansContent -> z) FeedMeta {..} =
   let zettels =
         Map.fromList $
           rights zs <&> \z'@Zettel {..} ->
             (zettelID, z')
       baseUrl = fromMaybe (error "You must specify a base url in neuron.dhall to use feed plugin") $ siteDataSiteBaseUrl siteData
-      -- TODO: This is wrong; should generate Url using Route.
-      permaLink = R.routeUri baseUrl (zettelSlug z)
+      permaLink = R.routeUri baseUrl $ R.routeConfigRouteURL routeCfg (Some $ R.Route_Zettel $ zettelSlug z)
       entries =
         -- Limit to user-chosen count
         take (naturalToInt feedmetaCount) $
@@ -81,19 +81,20 @@ routePluginData siteData zs g (sansContent -> z) FeedMeta {..} =
 
 writeFeed ::
   MonadIO m =>
+  R.RouteConfig t m1 ->
   (ZettelData -> Pandoc -> IO ByteString) ->
   DMap Route Identity ->
   Slug ->
   FeedData ->
   m (Either Text [(Text, FilePath, LText)])
-writeFeed elZettel allRoutes slug FeedData {..} = do
+writeFeed routeCfg elZettel allRoutes slug FeedData {..} = do
   case nonEmpty feedDataEntries of
     Nothing -> do
       pure $ Left $ toText $ "No entries available to generate " <> feedPath feedDataSlug
     Just items -> do
       entries <-
         catMaybes . toList
-          <$> traverse (mkFeedEntry elZettel allRoutes feedDataBaseUri) items
+          <$> traverse (mkFeedEntry routeCfg elZettel allRoutes feedDataBaseUri) items
       -- Last updated is automatically determined from the recent zettel's date
       let lastUpdated = feedItemDate $ head items
           feed =
@@ -113,16 +114,19 @@ feedPath slug =
 
 mkFeedEntry ::
   MonadIO m1 =>
+  R.RouteConfig t m ->
   (ZettelData -> Pandoc -> IO ByteString) ->
   DMap Route Identity ->
   URI.URI ->
   FeedItem ->
   m1 (Maybe Atom.Entry)
-mkFeedEntry elZettel allRoutes baseUrl FeedItem {..} = do
+mkFeedEntry routeCfg elZettel allRoutes baseUrl FeedItem {..} = do
   case DMap.lookup (R.Route_Zettel feedItemSlug) allRoutes of
-    Nothing -> pure Nothing
+    Nothing ->
+      -- This won't be reached.
+      pure Nothing
     Just (Identity (_siteData, zData)) -> do
-      let url = URI.render $ R.routeUri baseUrl feedItemSlug
+      let url = URI.render $ R.routeUri baseUrl $ R.routeConfigRouteURL routeCfg (Some $ R.Route_Zettel $ either zettelSlug zettelSlug $ zettelDataZettel zData)
       html <- liftIO $ elZettel zData feedItemZettelContent
       pure $
         Just $

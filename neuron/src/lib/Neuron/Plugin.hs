@@ -21,7 +21,7 @@ import qualified Data.Graph.Labelled as Algo
 import qualified Data.Map.Strict as Map
 import Data.Some
 import qualified Data.Text as T
-import Neuron.Frontend.Route (NeuronWebT, Route)
+import Neuron.Frontend.Route (NeuronWebT, Route, RouteConfig)
 import Neuron.Frontend.Route.Data.Types
 import qualified Neuron.Frontend.Route.Data.Types as R
 import Neuron.Frontend.Theme (Theme)
@@ -123,9 +123,10 @@ pluginStyles plugins theme =
   C.body ? do
     mconcat $ Map.elems plugins <&> \sp -> withSome sp $ \p -> _plugin_css p theme
 
--- TODO: Use _plugin_* functions directly!
-routePluginData :: SiteData -> [ZettelC] -> ZettelGraph -> ZettelC -> DSum PluginZettelData Identity -> DSum PluginZettelRouteData Identity
-routePluginData siteData zs g z = \case
+-- TODO: Use _plugin_* functions directly for the many functions below.
+
+routePluginData :: RouteConfig t m -> SiteData -> [ZettelC] -> ZettelGraph -> ZettelC -> DSum PluginZettelData Identity -> DSum PluginZettelRouteData Identity
+routePluginData routeCfg siteData zs g z = \case
   DirTree :=> Identity dirTree ->
     PluginZettelRouteData_DirTree :=> Identity (DirTree.routePluginData g dirTree)
   Links :=> Identity x ->
@@ -137,7 +138,7 @@ routePluginData siteData zs g z = \case
   UpTree :=> Identity () ->
     PluginZettelRouteData_UpTree :=> Identity (UpTree.routePluginData g z)
   Feed :=> Identity x ->
-    PluginZettelRouteData_Feed :=> Identity (Feed.routePluginData siteData zs g z x)
+    PluginZettelRouteData_Feed :=> Identity (Feed.routePluginData routeCfg siteData zs g z x)
 
 renderPluginPanel ::
   (DomBuilder t m, PostBuild t m) =>
@@ -193,14 +194,15 @@ renderHandleLink' = \case
 
 afterRouteWrite ::
   MonadIO m =>
+  RouteConfig t m1 ->
   (ZettelData -> Pandoc -> IO ByteString) ->
   DMap Route Identity ->
   Slug ->
   DSum PluginZettelRouteData Identity ->
   m (Either Text [(Text, FilePath, LText)])
-afterRouteWrite renderZettel allRoutes slug = \case
+afterRouteWrite routeCfg renderZettel allRoutes slug = \case
   PluginZettelRouteData_Feed :=> Identity routeData -> do
-    Feed.writeFeed renderZettel allRoutes slug routeData
+    Feed.writeFeed routeCfg renderZettel allRoutes slug routeData
   _ ->
     pure $ Right mempty
 
@@ -214,6 +216,9 @@ preJsonStrip z =
 stripSurroundingContext :: ZettelGraph -> ZettelGraph
 stripSurroundingContext =
   Algo.emap (fmap (second $ const mempty)) . Algo.vmap preJsonStrip
+
+-- NOTE: The rendering functions below exist in this module, only to avoid
+-- cyclic dependency when using `renderHandleLink`
 
 -- | Render a zettel Pandoc content given its zettel data.
 elZettel ::

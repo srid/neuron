@@ -10,11 +10,13 @@ import Clay (Css)
 import qualified Commonmark as CM
 import Control.Monad.Writer
 import Data.Default (Default (..))
-import Neuron.Frontend.Route (NeuronWebT)
+import Data.Dependent.Map (DMap)
+import Neuron.Frontend.Route (NeuronWebT, Route, RouteConfig)
+import Neuron.Frontend.Route.Data.Types
 import Neuron.Frontend.Theme (Theme)
 import Neuron.Markdown
 import Neuron.Zettelkasten.Connection (ContextualConnection)
-import Neuron.Zettelkasten.ID (ZettelID)
+import Neuron.Zettelkasten.ID (Slug, ZettelID)
 import Neuron.Zettelkasten.Resolver (ZIDRef)
 import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core (DomBuilder, PostBuild)
@@ -53,7 +55,15 @@ data Plugin routeData = Plugin
     _plugin_renderHandleLink :: forall t m. (DomBuilder t m, PostBuild t m) => routeData -> Text -> Maybe [Inline] -> Maybe (NeuronWebT t m ()),
     -- | Custom action during route write. Return True if a file was written.
     -- TODO: This is not used!
-    _plugin_afterRouteWrite :: forall m. MonadIO m => Zettel -> routeData -> m Bool,
+    _plugin_afterRouteWrite ::
+      forall m t m1.
+      MonadIO m =>
+      RouteConfig t m1 ->
+      (ZettelData -> Pandoc -> IO ByteString) ->
+      DMap Route Identity ->
+      Slug ->
+      FeedData ->
+      m (Either Text [(Text, FilePath, LText)]),
     -- | Strip data you don't want in JSON dumps
     _plugin_preJsonStrip :: Zettel -> Zettel
   }
@@ -70,6 +80,6 @@ instance Default (Plugin a) where
         _plugin_renderPanel = \_ _ -> blank,
         _plugin_css = mempty,
         _plugin_renderHandleLink = \_ _ _ -> Nothing,
-        _plugin_afterRouteWrite = \_ _ -> pure False,
+        _plugin_afterRouteWrite = \_ _ _ _ _ -> pure (Right mempty),
         _plugin_preJsonStrip = id
       }

@@ -65,6 +65,7 @@ import System.FilePath (takeExtension, (</>))
 
 writeRoutes :: GenCommand -> DMap Route Identity -> NonEmpty (DSum Route Identity) -> App Int
 writeRoutes genCmd allRoutes new = do
+  let routeCfg = neuronRouteConfig genCmd
   log D $ "Rendering routes (" <> show (length new) <> " slugs) ..."
   -- TODO: Reflex static renderer is our main bottleneck. Memoize it using route data.
   -- Second bottleneck is graph building.
@@ -76,7 +77,7 @@ writeRoutes genCmd allRoutes new = do
         -- Write plugin specific content associated with a zettel
         cnt <- fmap sum $
           forM (DMap.toList routePluginData) $ \rpd -> do
-            Plugin.afterRouteWrite renderZettel allRoutes slug rpd >>= \case
+            Plugin.afterRouteWrite routeCfg renderZettel allRoutes slug rpd >>= \case
               Left e -> do
                 log EE e
                 pure 0
@@ -115,8 +116,14 @@ copyStaticFiles fileTree = do
     _ ->
       pure 0
 
-buildRouteData :: (MonadIO m, MonadApp m, WithLog env Message m) => DC.DirTree FilePath -> [ZettelC] -> NeuronCache -> m [DSum Route Identity]
-buildRouteData fileTree zs cache = do
+buildRouteData ::
+  (MonadIO m, MonadApp m, WithLog env Message m) =>
+  Z.RouteConfig t m ->
+  DC.DirTree FilePath ->
+  [ZettelC] ->
+  NeuronCache ->
+  m [DSum Route Identity]
+buildRouteData routeCfg fileTree zs cache = do
   log D "Building route data ..."
   headHtml <- HeadHtml.getHeadHtmlFromTree fileTree
   let manifest = Manifest.mkManifestFromTree fileTree
@@ -125,7 +132,7 @@ buildRouteData fileTree zs cache = do
       impulseRouteData = (siteData, impulseData)
       mkZettelRoute zC =
         let z = Z.sansContent zC
-            zettelData = RD.mkZettelData zs cache siteData zC
+            zettelData = RD.mkZettelData routeCfg zs cache siteData zC
          in Z.Route_Zettel (Z.zettelSlug z) :=> Identity (siteData, zettelData)
       !routes =
         (Z.Route_Impulse :=> Identity impulseRouteData) :

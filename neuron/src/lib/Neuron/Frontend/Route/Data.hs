@@ -18,6 +18,7 @@ import Neuron.Cache.Type (NeuronCache (..))
 import qualified Neuron.Config.Type as Config
 import Neuron.Frontend.CSS (neuronStyleForTheme)
 import Neuron.Frontend.Manifest (Manifest)
+import Neuron.Frontend.Route (RouteConfig)
 import Neuron.Frontend.Route.Data.Types
 import qualified Neuron.Frontend.Theme as Theme
 import qualified Neuron.Plugin as Plugin
@@ -28,12 +29,12 @@ import Neuron.Zettelkasten.ID (indexZid)
 import Neuron.Zettelkasten.Zettel
 import Relude hiding (traceShowId)
 
-mkZettelData :: [ZettelC] -> NeuronCache -> SiteData -> ZettelC -> ZettelData
-mkZettelData zs NeuronCache {..} siteData zC = do
+mkZettelData :: RouteConfig t m -> [ZettelC] -> NeuronCache -> SiteData -> ZettelC -> ZettelData
+mkZettelData routeCfg zs NeuronCache {..} siteData zC = do
   let z = sansContent zC
       pluginData =
         DMap.fromList $
-          Plugin.routePluginData siteData zs neuroncacheGraph zC <$> maybe mempty DMap.toList (zettelPluginData z)
+          Plugin.routePluginData routeCfg siteData zs neuroncacheGraph zC <$> maybe mempty DMap.toList (zettelPluginData z)
   ZettelData zC pluginData
 
 mkImpulseData :: NeuronCache -> ImpulseData
