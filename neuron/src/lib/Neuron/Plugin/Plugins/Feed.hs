@@ -116,7 +116,8 @@ writeFeed elZettel allRoutes slug FeedData {..} = do
                 (Atom.TextString feedDataTitle)
                 (DMT.formatDateMayTime lastUpdated)
             )
-              { Atom.feedEntries = entries
+              { Atom.feedEntries = entries,
+                Atom.feedLinks = one $ Atom.nullLink (URI.render feedDataUrl)
               }
           feedText = fromMaybe (error "Feed malformed?") $ Export.textFeed feed
       pure $ Right $ one ("feed", feedPath slug, feedText)
