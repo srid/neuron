@@ -9,6 +9,7 @@ module Neuron.Frontend.Manifest
     manifestPatterns,
     mkManifest,
     mkManifestFromTree,
+    getIconPath,
     renderManifest,
   )
 where
@@ -67,6 +68,11 @@ mkManifest (Set.fromList -> files) =
       if Set.member x s
         then Just x
         else Nothing
+
+getIconPath :: Manifest -> Maybe FilePath
+getIconPath m = do
+  icos <- manifestFavicons m
+  pure $ faviconsDefault icos
 
 renderManifest :: DomBuilder t m => Manifest -> m ()
 renderManifest Manifest {..} = do

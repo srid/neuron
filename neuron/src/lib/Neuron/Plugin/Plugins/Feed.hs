@@ -17,6 +17,7 @@ import qualified Data.Map.Strict as Map
 import Data.Some (Some (Some))
 import qualified Data.Time.DateMayTime as DMT
 import GHC.Natural (naturalToInt)
+import qualified Neuron.Frontend.Manifest as Manifest
 import Neuron.Frontend.Route (Route)
 import qualified Neuron.Frontend.Route as R
 import Neuron.Frontend.Route.Data.Types
@@ -54,19 +55,25 @@ routePluginData routeCfg siteData zs g (sansContent -> z) FeedMeta {..} =
         Map.fromList $
           rights zs <&> \z'@Zettel {..} ->
             (zettelID, z')
-      baseUrl = fromMaybe (error "You must specify a base url in neuron.dhall to use feed plugin") $ siteDataSiteBaseUrl siteData
-      permaLink = R.routeUri baseUrl $ R.routeConfigRouteURL routeCfg (Some $ R.Route_Zettel $ zettelSlug z)
-      entries =
+      feedDataBaseUri = fromMaybe (error "You must specify a base url in neuron.dhall to use feed plugin") $ siteDataSiteBaseUrl siteData
+      feedDataUrl = R.routeUri feedDataBaseUri $ R.routeConfigRouteURL routeCfg (Some $ R.Route_Zettel $ zettelSlug z)
+      feedDataEntries =
         -- Limit to user-chosen count
         take (naturalToInt feedmetaCount) $
           -- In reverse chronologial order
           sortOn (Down . feedItemDate) $
             -- Only those with date assigned
-            fmapMaybe (mkFeedItem baseUrl) $
+            fmapMaybe (mkFeedItem feedDataBaseUri) $
               -- Get all downlinks of this zettel
               downlinksWithContent zettels z g
-      title = zettelTitle z <> " - " <> siteDataSiteTitle siteData
-   in FeedData title (zettelSlug z) baseUrl permaLink entries
+      feedDataTitle = zettelTitle z <> " - " <> siteDataSiteTitle siteData
+      feedDataSlug = zettelSlug z
+      feedDataIcon = do
+        faviconPath <- Manifest.getIconPath $ siteDataManifest siteData
+        -- Since faviconPath can contain slashes, we don't want to embed it in
+        -- URI (as it will encode the / chars)
+        pure $ URI.render feedDataBaseUri <> toText faviconPath
+   in FeedData {..}
   where
     downlinksWithContent zettels zettel graph =
       fforMaybe (G.downlinks zettel graph) $ \dz ->
@@ -116,7 +123,8 @@ writeFeed elZettel allRoutes slug FeedData {..} = do
                 (Atom.TextString feedDataTitle)
                 (DMT.formatDateMayTime lastUpdated)
             )
-              { Atom.feedEntries = entries,
+              { Atom.feedIcon = feedDataIcon,
+                Atom.feedEntries = entries,
                 Atom.feedLinks = one $ Atom.nullLink (URI.render feedDataUrl)
               }
           feedText = fromMaybe (error "Feed malformed?") $ Export.textFeed feed

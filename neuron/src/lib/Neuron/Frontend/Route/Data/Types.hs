@@ -121,6 +121,7 @@ data FeedData = FeedData
     feedDataSlug :: Slug,
     feedDataBaseUri :: URI,
     feedDataUrl :: URI,
+    feedDataIcon :: Maybe Text,
     feedDataEntries :: [FeedItem]
   }
   deriving (Eq, Show)

@@ -12,10 +12,6 @@ For example, to link to all zettels with the "science" tag (from the example at 
 
 When neuron encounters an [URI] with the `z:` protocol such as the above, it treats it as a link query. The `z:zettels` query in particular will link to all zettels tagged with the tag specified in the `tag` query parameter.
 
-:::{.ui .message}
-**Tip**: You can use the CLI to see which zettels will be included in a given query; see [[Querying with JSON output]].
-:::
-
 ## Demo
 
 Here is a list of zettels tagged "walkthrough" on this very Zettelkasten:
@@ -23,6 +19,10 @@ Here is a list of zettels tagged "walkthrough" on this very Zettelkasten:
 [[z:zettels?tag=walkthrough]]
 
 The above list was produced by the link query `[[z:zettels?tag=walkthrough]]`.
+
+## Folgezettel connections
+
+Like [[Folgezettel Links]], you can use `#` to specify whether the links should be a folgezettel.
 
 ## Hierarchical tags
 
