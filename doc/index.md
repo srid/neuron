@@ -18,5 +18,6 @@ dirtree:
 ## External links
 
 * [Source Code](https://github.com/srid/neuron)
+* [News feed](https://www.srid.ca/neuron.xml)
 * [Community Chat](https://app.element.io/#/room/#neuron:matrix.org)
 * [Donate](https://github.com/sponsors/srid)
