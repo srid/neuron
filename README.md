@@ -5,7 +5,7 @@
 [![AGPL](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://en.wikipedia.org/wiki/Affero_General_Public_License)
 [![built with nix](https://img.shields.io/badge/Built_With-Nix-5277C3.svg?logo=nixos&labelColor=73C3D5)](https://builtwithnix.org)
 [![Matrix](https://img.shields.io/matrix/neuron:matrix.org)](https://app.element.io/#/room/#neuron:matrix.org)
-<a href="https://liberapay.com/srid/donate"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
+<img src="https://img.shields.io/liberapay/patrons/srid.svg?logo=liberapay" title="Donate using liberapay">
 
 neuron is a **future-proof** app for managing your plain-text notes in [Zettelkasten](https://neuron.zettel.page/zettelkasten) style, as well as for **publishing** them on the web. Read its [philosophy](https://neuron.zettel.page/philosophy).
 
