@@ -16,7 +16,6 @@ function buildIndex() {
           ID: id,
           Title: title,
           Slug: slug,
-          Date: date,
           Meta: {
             tags
           }
@@ -25,7 +24,6 @@ function buildIndex() {
         window.NEURON_SEARCH_INDEX.addDoc({
           id,
           title,
-          date,
           tags,
           slug
         })
@@ -45,32 +43,20 @@ function configureIndex() {
   })
 }
 
-function insertSearchBar() {
-  const zettelContainerNode = document.querySelector('.container.universe')
-  const firstChild = zettelContainerNode.firstElementChild
+function bindToSearchBox() {
+  const searchBox = document.querySelector('#search-box')
 
-  const searchContainerNode = document.createElement('div')
-  searchContainerNode.setAttribute('id', 'search-bar')
-  searchContainerNode.setAttribute('class', 'zettel-view')
-  searchContainerNode.setAttribute('style', 'margin-bottom: 20px;')
+  if (searchBox === null)
+    return
 
-  const searchBar = document.createElement('div')
-  searchBar.setAttribute('class', 'ui input')
+  const searchInput = searchBox.querySelector('#search-input')
+  const resultsContainer = searchBox.querySelector('#search-results')
 
-  searchContainerNode.appendChild(searchBar)
+  searchInput.addEventListener('input', debounce(event => handleSearch(event, resultsContainer)))
 
-  const searchInput = document.createElement('input')
-  searchInput.setAttribute('type', 'text')
-  searchInput.setAttribute('placeholder', 'search')
-
-  searchBar.appendChild(searchInput)
-
-  zettelContainerNode.insertBefore(searchContainerNode, firstChild)
-
-  searchInput.addEventListener('input', debounce(event => handleSearch(event)))
 }
 
-function handleSearch(event) {
+function handleSearch(event, resultsContainer) {
   const searchParam = event.target.value
 
   if (typeof searchParam !== 'string' || searchParam.length < 3)
@@ -78,7 +64,70 @@ function handleSearch(event) {
 
   const results = window.NEURON_SEARCH_INDEX.search(event.target.value)
 
-  console.log(results)
+  displayResults(results, resultsContainer)
+}
+
+/***
+ * This is not very efficient, especially I think for large
+ * lists of results.
+ *
+ * An improvement would be to take an approach similar
+ * to D3's enter/exit paradigm, and only render new HTML
+ * nodes for *new* entries in the result list, and only
+ * remove HTML for those entries that have fallen out.
+ *
+ * It might even just be best to use D3, or a limited import
+ * if not the entire project.
+ *
+ * Same goes for React/Vue/etc, though given the small
+ * scope here D3 seems more appropriate and lightweight,
+ * though hand-rolled may still be best.
+ */
+function displayResults(newResults, resultsContainer) {
+  const children = newResults.map(createResultHtml)
+
+  resultsContainer.replaceChildren(...children)
+}
+
+function createResultHtml(result) {
+  const { doc } = result
+  console.log(result)
+
+  const li = document.createElement('li')
+  li.setAttribute('class', 'search-result-entry')
+
+  const title = document.createElement('h3')
+  title.setAttribute('class', 'search-result-entry--title')
+  const titleLink = document.createElement('a')
+  titleLink.setAttribute('href', `/${ doc.slug }.html`)
+  titleLink.innerText = doc.title
+  title.appendChild(titleLink)
+
+  li.appendChild(title)
+
+  const relevancyScore = document.createElement('div')
+  relevancyScore.setAttribute('class', 'search-result-entry--relevancy-score')
+  relevancyScore.innerHTML = `Relevancy: <strong>${ Number(result.score).toFixed(1) }`
+
+  li.appendChild(relevancyScore)
+
+  const tags = document.createElement('div')
+  tags.setAttribute('class', 'search-result-entry--tags')
+  const tagsTitle = document.createElement('h5')
+  tagsTitle.innerText = 'Tags'
+  tags.appendChild(tagsTitle)
+  const tagsList = document.createElement('ul')
+  tags.appendChild(tagsList)
+  doc.tags.forEach(tag => {
+    const tagItem = document.createElement('li')
+    tagItem.innerText = tag
+
+    tagsList.appendChild(tagItem)
+  })
+
+  li.appendChild(tags)
+
+  return li
 }
 
 function debounce(handler, timeout = 300){
@@ -94,4 +143,4 @@ function debounce(handler, timeout = 300){
 }
 
 document.addEventListener('DOMContentLoaded', buildIndex)
-document.addEventListener('DOMContentLoaded', insertSearchBar)
+document.addEventListener('DOMContentLoaded', bindToSearchBox)
