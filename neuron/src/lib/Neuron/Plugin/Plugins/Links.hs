@@ -174,7 +174,7 @@ renderPanel ::
   NeuronWebT t m ()
 renderPanel elNeuronPandoc LinksData {..} = do
   whenNotNull linksDataBacklinks $ \backlinks -> do
-    elClass "nav" "ui attached segment deemphasized backlinksPane" $ do
+    elAttr "nav" ("id" =: "neuron-backlinks-pane" <> "class" =: "ui attached segment deemphasized backlinksPane") $ do
       renderBacklinks backlinks
   where
     renderBacklinks ::

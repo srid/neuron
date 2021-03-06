@@ -179,7 +179,7 @@ renderPanel ::
   NeuronWebT t m ()
 renderPanel _elNeuronPandoc z _routeData = do
   whenNotNull (Set.toList $ getZettelTags z) $ \tags -> do
-    elClass "nav" "ui attached segment deemphasized bottomPane" $ do
+    elAttr "nav" ("id" =: "neuron-tags-pane" <> "class" =: "ui attached segment deemphasized bottomPane") $ do
       renderTags tags
   where
     renderTags :: (DomBuilder t m, PostBuild t m) => NonEmpty Tag -> NeuronWebT t m ()

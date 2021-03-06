@@ -96,9 +96,10 @@ renderBottomMenu ::
   Maybe Text ->
   NeuronWebT t m ()
 renderBottomMenu themeDyn mIndexZettel mEditUrl = do
-  let divAttrs = ffor themeDyn $ \theme ->
+  let attrs = ffor themeDyn $ \theme ->
         "class" =: ("ui bottom attached icon compact inverted menu " <> Theme.semanticColor theme)
-  elDynAttr "div" divAttrs $ do
+          <> "id" =: "neuron-nav-bar"
+  elDynAttr "nav" attrs $ do
     -- Home
     x <- maybeDyn mIndexZettel
     dyn_ $
