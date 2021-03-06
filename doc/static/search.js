@@ -93,7 +93,6 @@ function displayResults(newResults, resultsContainer) {
 
 function createResultHtml(result) {
   const { doc } = result
-  console.log(result)
 
   const li = document.createElement('li')
   li.setAttribute('class', 'ui list search-result-entry')
