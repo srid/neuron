@@ -156,5 +156,30 @@ function debounce(handler, timeout = 300){
   }
 }
 
+function handleUrlSearchParams() {
+  const searchParams = new URLSearchParams(window.location.search)
+
+  if (searchParams.keys().length === 0)
+    return
+
+  const searchParamsKeys = [ ...searchParams.keys() ]
+  const resultsContainer = document.querySelector('#search-results')
+
+  if (searchParamsKeys.includes('search')) {
+    const param = searchParams.get('search')
+    const searchInput = document.querySelector('#search-input')
+    searchInput.value = param
+    handleSearch(param, resultsContainer)
+  }
+  else if (searchParamsKeys.includes('search[tags]'))
+    handleTagSearch(searchParams.get('search[tags]'), resultsContainer)
+  else
+    return
+}
+
+function handleTagSearch(tags, resultsContainer) {
+  console.log(tags)
+}
+
 document.addEventListener('DOMContentLoaded', buildIndex)
 document.addEventListener('DOMContentLoaded', bindToSearchBox)
