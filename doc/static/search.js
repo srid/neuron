@@ -52,17 +52,18 @@ function bindToSearchBox() {
   const searchInput = searchBox.querySelector('#search-input')
   const resultsContainer = searchBox.querySelector('#search-results')
 
-  searchInput.addEventListener('input', debounce(event => handleSearch(event, resultsContainer)))
-
+  searchInput.addEventListener('input', debounce(event => handleSearchEvent(event, resultsContainer)))
 }
 
-function handleSearch(event, resultsContainer) {
-  const searchParam = event.target.value
+function handleSearchEvent(event, resultsContainer) {
+  handleSearch(event.target.value, resultsContainer)
+}
 
+function handleSearch(searchParam, resultsContainer) {
   if (typeof searchParam !== 'string' || searchParam.length < 3)
     return
 
-  const results = window.NEURON_SEARCH_INDEX.search(event.target.value)
+  const results = window.NEURON_SEARCH_INDEX.search(searchParam)
 
   displayResults(results, resultsContainer)
 }
