@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: neuron
-version: 1.9.23.1
+version: 1.9.24.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -64,7 +64,7 @@ common library-common
     data-default,
     reflex,
     reflex-dom-core,
-    reflex-dom-pandoc >= 0.7.8.0,
+    reflex-dom-pandoc >= 0.7.9.0,
     clay,
     tagged,
     shower,

@@ -1,13 +1,8 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Frontend.Zettel.View
@@ -110,8 +105,8 @@ renderBottomMenu themeDyn mIndexZettel mEditUrl = do
             semanticIcon "home"
     -- Edit url
     forM_ mEditUrl $ \editUrl -> do
-      let attrs = "href" =: editUrl <> "title" =: "Edit this page"
-      elAttr "a" ("class" =: "item" <> attrs) $ do
+      let linkAttrs = "href" =: editUrl <> "title" =: "Edit this page"
+      elAttr "a" ("class" =: "item" <> linkAttrs) $ do
         semanticIcon "edit"
     -- Impulse
     R.neuronRouteLink (Some Route_Impulse) ("class" =: "right item" <> "title" =: "Open Impulse") $ do
