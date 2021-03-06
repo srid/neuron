@@ -29,6 +29,7 @@ function buildIndex() {
         })
       })
     })
+    .then(handleUrlSearchParams)
 }
 
 function configureIndex() {
