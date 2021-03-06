@@ -9,8 +9,7 @@ function buildIndex() {
     .then(cache => {
       configureIndex()
 
-      const { Graph: graph } = cache
-      const { vertices: documents } = graph
+      const { Graph: { vertices: documents } } = cache
 
       Object.values(documents).forEach(doc => {
         const {
