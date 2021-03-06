@@ -22,9 +22,23 @@ Forked version of the vim plugin below that has been updated to support Neuron v
 
 ## Emacs 
 
-Emacs support is available via [neuron-mode](https://github.com/felko/neuron-mode), which supports nifty editor features like opening a zettel by title, linking to other zettels by title, as well as displaying the title of the zettel next to the link (see screenshot below).
+You can use one of the following modes to edit neuron notes in Emacs. `neuron-mode` supports more neuron-specific functionality than `markdown-mode`.
+
+### Editing with `neuron-mode`
+
+[neuron-mode](https://github.com/felko/neuron-mode) supports nifty editor features like opening a zettel by title, linking to other zettels by title, as well as displaying the title of the zettel next to the link (see screenshot below).
 
 ![screenshot](https://user-images.githubusercontent.com/3998/80873287-6fa75e00-8c85-11ea-9cf7-6e03db001d00.png){.ui .centered .large .image}
+
+### Editing with `markdown-mode`
+
+[markdown-mode](https://github.com/jrblevin/markdown-mode) may be desirable to those that want only basic Zettelkasten functionality. In order to be able to open wiki-links (`markdown-follow-thing-at-point`) you must use the following settings:
+
+```elisp
+(setq markdown-enable-wiki-links t)
+(setq markdown-link-space-sub-char " ")
+(setq markdown-wiki-link-search-type '(project))
+```
 
 ## Editors known to work with v1
 
