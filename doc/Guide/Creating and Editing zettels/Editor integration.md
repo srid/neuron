@@ -20,15 +20,15 @@ Forked version of the vim plugin below that has been updated to support Neuron v
 
 [neuron-v2.vim](https://github.com/chiefnoah/neuron-v2.vim)
 
-## Editors known to work with v1
-
-These editors are known to work with version 1 of neuron. Your mileage may vary with the latest development version (version 2) of neuron.
-
-### Emacs 
+## Emacs 
 
 Emacs support is available via [neuron-mode](https://github.com/felko/neuron-mode), which supports nifty editor features like opening a zettel by title, linking to other zettels by title, as well as displaying the title of the zettel next to the link (see screenshot below).
 
 ![screenshot](https://user-images.githubusercontent.com/3998/80873287-6fa75e00-8c85-11ea-9cf7-6e03db001d00.png){.ui .centered .large .image}
+
+## Editors known to work with v1
+
+These editors are known to work with version 1 of neuron. Your mileage may vary with the latest development version (version 2) of neuron.
 
 ### Vim
 
