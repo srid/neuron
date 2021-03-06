@@ -94,10 +94,10 @@ function createResultHtml(result) {
   console.log(result)
 
   const li = document.createElement('li')
-  li.setAttribute('class', 'search-result-entry')
+  li.setAttribute('class', 'ui list search-result-entry')
 
   const title = document.createElement('h3')
-  title.setAttribute('class', 'search-result-entry--title')
+  title.setAttribute('class', 'ui header search-result-entry--title')
   const titleLink = document.createElement('a')
   titleLink.setAttribute('href', `/${ doc.slug }.html`)
   titleLink.innerText = doc.title
@@ -114,13 +114,16 @@ function createResultHtml(result) {
   const tags = document.createElement('div')
   tags.setAttribute('class', 'search-result-entry--tags')
   const tagsTitle = document.createElement('h5')
+  //tagsTitle.setAttribute('class', 'ui header')
   tagsTitle.innerText = 'Tags'
   tags.appendChild(tagsTitle)
-  const tagsList = document.createElement('ul')
+  const tagsList = document.createElement('div')
+  tagsList.setAttribute('class', 'ui horizontal list')
   tags.appendChild(tagsList)
   doc.tags.forEach(tag => {
-    const tagItem = document.createElement('li')
-    tagItem.innerText = tag
+    const tagItem = document.createElement('div')
+    tagItem.setAttribute('class', 'item')
+    tagItem.innerText = `#${ tag }`
 
     tagsList.appendChild(tagItem)
   })
