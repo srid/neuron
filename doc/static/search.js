@@ -177,8 +177,21 @@ function handleUrlSearchParams() {
     return
 }
 
-function handleTagSearch(tags, resultsContainer) {
-  console.log(tags)
+function handleTagSearch(tagsParam, resultsContainer) {
+  const tags = JSON.parse(tagsParam)
+
+  const result = window.NEURON_SEARCH_INDEX.fieldSearch(tags, 'tags', {
+    tags: {}
+  })
+  //const result = window.NEURON_SEARCH_INDEX.search(tags.join(' '), {
+    //fields: {
+      //tags: {
+        //boost: 2
+      //}
+    //}
+  //})
+
+  console.log(tags, result)
 }
 
 document.addEventListener('DOMContentLoaded', buildIndex)
