@@ -123,7 +123,17 @@ function createResultHtml(result) {
   doc.tags.forEach(tag => {
     const tagItem = document.createElement('div')
     tagItem.setAttribute('class', 'item')
-    tagItem.innerText = `#${ tag }`
+
+    const tagItemLink = document.createElement('a')
+
+    const searchParam = new URLSearchParams()
+    searchParam.set('search[tags]', `["${ tag }"]`)
+    const paramString = searchParam.toString()
+
+    tagItemLink.setAttribute('href', `${ window.location.pathname }?${ paramString }`)
+    tagItemLink.innerText = `#${ tag }`
+
+    tagItem.appendChild(tagItemLink)
 
     tagsList.appendChild(tagItem)
   })
