@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: neuron
-version: 1.9.24.0
+version: 1.9.24.1
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -11,7 +11,7 @@ bug-reports: https://github.com/srid/neuron/issues
 synopsis:
   Future-proof system for plain-text notes.
 description:
-  neuron is a future-proof system for managing your plain-text Zettelkasten notes.
+  neuron is a future-proof system for managing and publishing your plain-text Zettelkasten notes.
 data-files:
   src-bash/neuron-search
 
@@ -69,6 +69,43 @@ common library-common
     tagged,
     shower,
     uri-encode,
+    aeson,
+    clay -any,
+    mtl,
+    containers,
+    directory,
+    exceptions,
+    file-embed,
+    optparse-applicative,
+    pandoc-types,
+    relude,
+    iso8601-time,
+    time,
+    text,
+    modern-uri,
+    foldl,
+    filepath,
+    dhall >= 1.30,
+    which,
+    unix,
+    megaparsec,
+    dependent-sum,
+    dependent-sum-template,
+    data-default,
+    uuid,
+    with-utf8,
+    either,
+    timeit,
+    reflex,
+    reflex-fsnotify,
+    fsnotify,
+    wai-app-static,
+    wai-extra,
+    warp,
+    async,
+    co-log,
+    ansi-terminal,
+    lsp,
     directory-contents
 
 library
@@ -122,65 +159,6 @@ library
     Data.Time.DateMayTime
     Data.YAML.ToJSON
     Data.Structured.Breadcrumb
-
--- Everything below this marker should be deleted when using neuron.cabal in
--- GHCJS as a library.
--- ---------
--- LIBMARKER
-
-common app-common
-  import: library-common
-  default-language: Haskell2010
-  build-depends:
-    base >=4.12 && < 4.15,
-    aeson,
-    clay -any,
-    mtl,
-    containers,
-    directory,
-    exceptions,
-    file-embed,
-    optparse-applicative,
-    pandoc-types,
-    relude,
-    iso8601-time,
-    time,
-    text,
-    modern-uri,
-    foldl,
-    filepath,
-    dhall >= 1.30,
-    which,
-    unix,
-    megaparsec,
-    dependent-sum,
-    dependent-sum-template,
-    data-default,
-    uuid,
-    with-utf8,
-    either,
-    timeit,
-    reflex,
-    reflex-fsnotify,
-    fsnotify,
-    wai-app-static,
-    wai-extra,
-    warp,
-    async,
-    co-log,
-    ansi-terminal,
-    lsp
-
--- Everything below will have to be stripped away, if whoever uses this repo
--- will want to avoid non-core dependencies. Cabal doesn't seem to provide a way
--- to selectively dependent on a library without pulling in every stanza defined
--- here.
--- cf. https://www.srid.ca/2012605.html
-
-library neuron-app-lib
-  import: app-common
-  hs-source-dirs: src/app
-  exposed-modules:
     Data.Structured.OpenGraph
     Data.Structured.OpenGraph.Render
     System.Directory.Contents.Extra
@@ -208,15 +186,9 @@ library neuron-app-lib
     Paths_neuron
   other-modules:
     Paths_neuron
-  -- A trick to make ghcid reload if library dependencies change
-  -- https://www.srid.ca/2012605.html
-  if flag(ghcid)
-    hs-source-dirs: src/lib
-  else
-    build-depends: neuron
 
 test-suite neuron-test
-  import: app-common
+  import: library-common
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Spec.hs
@@ -227,9 +199,9 @@ test-suite neuron-test
     time
   default-language:    Haskell2010
   if (flag(ghcid))
-    hs-source-dirs: src/lib src/app
+    hs-source-dirs: src/lib
   else
-    build-depends: neuron, neuron-app-lib
+    build-depends: neuron
     other-modules:
       Data.PathTreeSpec
       Data.TagTreeSpec
@@ -241,12 +213,12 @@ test-suite neuron-test
 
 -- To profile: ghc-options: -fexternal-interpreter -prof -fprof-auto -rtsopts
 executable neuron
-  import: app-common
+  import: library-common
   hs-source-dirs: src/exe
   main-is: Main.hs
   -- FIXME: Threaded runtime causes high cpu usage when using reflex headless 
   -- ghc-options: -threaded -rtsopts -with-rtsopts=-N
   if (flag(ghcid))
-    hs-source-dirs: src/lib src/app
+    hs-source-dirs: src/lib
   else
-    build-depends: neuron, neuron-app-lib
+    build-depends: neuron
