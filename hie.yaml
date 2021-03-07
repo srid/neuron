@@ -1,10 +1,8 @@
 cradle:
   cabal:
-    - path: "./neuron/src/lib"
+    - path: "./src"
       component: "lib:neuron"
-    - path: "./neuron/src/app"
-      component: "lib:neuron-app-lib"
-    - path: "./neuron/src/exe"
+    - path: "./exe"
       component: "exe:neuron"
-    - path: "./neuron/test"
+    - path: "./test"
       component: "test:neuron-test"
