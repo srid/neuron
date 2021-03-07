@@ -5,8 +5,8 @@ module Data.PathTreeSpec
   )
 where
 
-import Data.Tree (Forest, Tree (..))
 import Data.PathTree
+import Data.Tree (Forest, Tree (..))
 import Relude
 import System.FilePath ((</>))
 import Test.Hspec

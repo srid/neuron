@@ -34,7 +34,7 @@ let
   });
 
   sources = {
-    neuron = gitignoreSource ./neuron;
+    neuron = gitignoreSource ./.;
     reflex-dom-pandoc = thunkSource ./dep/reflex-dom-pandoc;
     pandoc-link-context = thunkSource ./dep/pandoc-link-context;
     directory-contents = thunkSource ./dep/directory-contents;
