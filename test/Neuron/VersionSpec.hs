@@ -7,9 +7,9 @@ module Neuron.VersionSpec
   )
 where
 
+import Data.Tagged
 import qualified Data.Text as T
 import Neuron.Version (neuronVersion)
-import Data.Tagged
 import Relude
 import Test.Hspec
 
