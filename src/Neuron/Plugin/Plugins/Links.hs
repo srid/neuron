@@ -158,6 +158,7 @@ queryConnections z = do
         forM xs $ \((zid, conn), ctx) -> do
           case find ((== zid) . Z.zettelID) zs of
             Nothing -> do
+              -- Linked zettel not found; report as missing.
               tell $ one $ Tagged zid
               pure mempty
             Just z2 -> do

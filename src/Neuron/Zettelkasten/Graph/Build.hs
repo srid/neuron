@@ -11,7 +11,7 @@ module Neuron.Zettelkasten.Graph.Build
   )
 where
 
-import Control.Monad.Writer.Strict
+import Control.Monad.Writer.Strict (Writer, mapWriter, runWriterT, tell)
 import qualified Data.Graph.Labelled as G
 import qualified Data.Map.Strict as Map
 import Neuron.Markdown (lookupZettelMeta)
@@ -20,13 +20,7 @@ import qualified Neuron.Plugin as Plugin
 import Neuron.Zettelkasten.Connection (ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (Slug, ZettelID)
-import Neuron.Zettelkasten.Zettel
-  ( MissingZettel,
-    Zettel,
-    ZettelC,
-    ZettelT (..),
-    sansContent,
-  )
+import Neuron.Zettelkasten.Zettel (MissingZettel, Zettel, ZettelC, ZettelT (..), sansContent)
 import Neuron.Zettelkasten.Zettel.Error (ZettelError (..), ZettelIssue (..))
 import Relude
 
@@ -73,12 +67,15 @@ buildZettelkasten plugins parsedZettels = do
 
 -- | Build the Zettelkasten graph from a list of zettels
 --
--- If there are any errors during parsing of queries (to determine connections),
--- return them as well.
+-- Report missing connections if any.
 mkZettelGraph ::
   PluginRegistry ->
   [Zettel] ->
-  Writer (Map ZettelID (Slug, NonEmpty MissingZettel)) ZettelGraph
+  Writer
+    -- All zettels that have 1 or more missing wiki-links (indexed by containing zettel's ID)
+    (Map ZettelID (Slug, NonEmpty MissingZettel))
+    -- Zettel graph built from valid connections (pointing to existing zettels)
+    ZettelGraph
 mkZettelGraph plugins zettels = do
   let res :: [(Zettel, ([(ContextualConnection, Zettel)], [MissingZettel]))] =
         flip fmap zettels $ \z ->
@@ -92,10 +89,17 @@ mkZettelGraph plugins zettels = do
       flip concatMap res $ \(z1, fst -> conns) ->
         edgeFromConnection z1 <$> conns
 
-runQueryConnections :: PluginRegistry -> [Zettel] -> Zettel -> ([(ContextualConnection, Zettel)], [MissingZettel])
+runQueryConnections ::
+  PluginRegistry ->
+  [Zettel] ->
+  Zettel ->
+  ( [(ContextualConnection, Zettel)],
+    [MissingZettel]
+  )
 runQueryConnections plugins zettels z =
   flip runReader zettels $ do
     runWriterT $ do
+      -- NOTE: Only the Links.hs plugin currently writes MissingZettel's.
       Plugin.graphConnections plugins z
 
 edgeFromConnection :: Zettel -> (e, Zettel) -> (Maybe e, Zettel, Zettel)

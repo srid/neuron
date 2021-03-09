@@ -24,7 +24,12 @@ import Relude
 -- post-resolved zettels (either unparsed, or parsed but with bad queries)
 data ZettelIssue
   = ZettelIssue_Error ZettelError
-  | ZettelIssue_MissingLinks (Slug, NonEmpty MissingZettel)
+  | ZettelIssue_MissingLinks
+      ( -- Slug of the zettel which has 1 or more missing wiki-links
+        Slug,
+        -- List of missing wiki-links
+        NonEmpty MissingZettel
+      )
   deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data ZettelError

@@ -31,7 +31,6 @@ import Commonmark.TokParsers (noneOfToks, symbol)
 import Commonmark.Tokens
   ( TokType (LineEnd, Spaces, Symbol, UnicodeSpace),
   )
-import Control.Monad.Writer (MonadWriter)
 import Data.Dependent.Sum (DSum (..))
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
@@ -102,9 +101,7 @@ routePluginData g z _qs =
 queryConnections ::
   forall m.
   ( -- Running queries requires the zettels list.
-    MonadReader [Zettel] m,
-    -- Track missing zettel links in writer
-    MonadWriter [MissingZettel] m
+    MonadReader [Zettel] m
   ) =>
   Zettel ->
   m [(ContextualConnection, Zettel)]
