@@ -46,11 +46,11 @@ renderRoutePage routeCfg r val = do
       W.loadingWidget' val blank (const blank) $ \valDyn ->
         dyn_ $
           ffor valDyn $ \v -> do
-            renderHeadHtml $ R.siteDataHeadHtml (R.routeSiteData v r)
             renderManifest $ R.siteDataManifest (R.routeSiteData v r)
             renderStructuredData routeCfg r v
             elAttr "style" ("type" =: "text/css") $ do
               text $ R.siteDataBodyCss (R.routeSiteData v r)
+            renderHeadHtml $ R.siteDataHeadHtml (R.routeSiteData v r)
       pure ()
     el "body" $ do
       () <- case r of
