@@ -15,18 +15,10 @@ dirtree:
 
 ## External links
 
-* [Source Code](https://github.com/srid/neuron)
-* [News feed](https://www.srid.ca/neuron.xml)
-* [Community Chat](https://app.element.io/#/room/#neuron:matrix.org)
-
-:::{.ui .left .floated .basic .segment}
+:::{.ui .right .floated .basic .segment}
 <a href="https://liberapay.com/srid/donate" title="Donate using Liberapay"><img alt="Donate using Liberapay" src="https://liberapay.com/assets/widgets/donate.svg"></a>
 :::
 
-:::{.ui .right .floated .basic .segment}
-<div title="Donate on GitHub">
-<iframe src="https://github.com/sponsors/srid/button" title="Donate on GitHub" height="35" width="107" style="border: 0;"></iframe>
-</div>
-:::
-
-![Neuron logo](https://raw.githubusercontent.com/srid/neuron/master/assets/neuron.svg "Neuron logo"){.ui .small .centered .image}
+* [Source Code](https://github.com/srid/neuron)
+* [News feed](https://www.srid.ca/neuron.xml)
+* [Community Chat](https://app.element.io/#/room/#neuron:matrix.org)

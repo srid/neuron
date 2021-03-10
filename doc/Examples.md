@@ -6,7 +6,8 @@ Here are some public Zettelkastens managed by neuron:
 
 - [neuron.zettel.page](https://neuron.zettel.page/) ([source](https://github.com/srid/neuron/tree/master/doc)): This very site you are viewing.
 - [www.srid.ca](https://www.srid.ca) ([source](https://github.com/srid/www.srid.ca)): Author's website & microblog
-- [alexsoto.dev](https://alexsoto.dev/) ([source](https://github.com/alex-a-soto/zettelkasten)): demonstrates social share buttons and embedded comments.
+- [alexsoto.dev](https://alexsoto.dev/) ([source](https://github.com/alex-a-soto/zettelkasten)): demonstrates social share buttons and embedded comments (via [[Custom JavaScript and CSS]])
+- [EyebrowHairs](https://www.eyebrowhairs.com/) ([source](https://github.com/EyebrowHairs/garden)): demonstrates CSS styling (via [[Custom JavaScript and CSS]])
 - [lost-frequencies.eu](https://lost-frequencies.eu/) (very large Zettelkasten)
 - [Alien Psychology](https://alien-psychology.zettel.page/) ([source](https://github.com/srid/alien-psychology)) (TV series cataloging)
 - [zk.zettel.page](https://zk.zettel.page/) ([source](https://github.com/Kuratoro/zk.zettel.page)): Public Zettelkasten for the r/Zettelkasten subreddit
