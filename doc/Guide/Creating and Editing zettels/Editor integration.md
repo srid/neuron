@@ -7,7 +7,7 @@ While you may use any text editor with neuron, the following extensions enable c
 ## VSCode
 
 :::{.ui .message}
-VSCode is recommended for new users of neuron.
+VSCode is recommended for new users of neuron. Though you may also use other Zettelkasten apps that supports wiki-links (see [[Linking]]) like [Obsidian](https://obsidian.md/).
 :::
 
 Use the [vscode-memo](https://github.com/svsool/vscode-memo#memo) extension when editing your Neuron notes in [Visual Studio Code](https://code.visualstudio.com/). For other useful extensions, consult the template repo ([`.vscode/extensions.json`](https://github.com/srid/neuron-template/blob/master/.vscode/extensions.json)) in [[Automatic Publishing]].
