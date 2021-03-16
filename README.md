@@ -18,7 +18,7 @@ neuron is a **future-proof** app for managing your plain-text notes in [Zettelka
 
 ## Getting started
 
-See [neuron.zettel.page](https://neuron.zettel.page/) for installing and using neuron locally. Or start from [neuron-template](https://github.com/srid/neuron-template) if you just want to publish a neuron site using GitHub Pages.
+See https://neuron.zettel.page/install to install and use neuron locally. Or start from [neuron-template](https://github.com/srid/neuron-template) if you just want to publish a neuron site using GitHub Pages.
 
 ## Developing
 
