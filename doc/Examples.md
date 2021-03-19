@@ -16,6 +16,7 @@ Here are some public Zettelkastens managed by neuron:
 - [politicalnotes.org](https://politicalnotes.org/): demonstrates use of title IDs
 - [brain.jaredweakly.com](https://brain.jaredweakly.com/)
 - [inariksit.github.io/cclaw-zettelkasten](https://inariksit.github.io/cclaw-zettelkasten/) ([source](https://github.com/inariksit/cclaw-zettelkasten)): Zettelkasten for the reading list of CCLAW@SMU
+- - [devonmorris.dev](https://devonmorris.dev) ([source](https://github.com/DevonMorris/zettelkasten))
 
 :::{.ui .message}
 If you are hosting your own Zettelkasten publicly and would like to be included this list, edit this page (using the link below) to open a pull request.
