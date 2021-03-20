@@ -1,0 +1,38 @@
+resolver: lts-17.6
+allow-newer: true
+extra-deps:
+- github: srid/directory-contents
+  commit: 0d3f1d5c86063232a3ccf081d9be143eb2ff1466
+- github: srid/pandoc-link-context
+  commit: ff8d1de662d4b2d3be0553d93f51a67a1696ced7
+# Use Reflex ghc-810 branch
+- github: reflex-frp/reflex
+  commit: 157e8eb314d5bb2adab14852f58e617c7db409d0
+- github: reflex-frp/reflex-fsnotify
+  commit: cca674623b797dd423421dec0f1da952a1d1f36d
+- github: srid/reflex-dom-pandoc
+  commit: 63ff62ee9c7f4a8c231db16bb91b858c8a39aebd
+# Use levirs565's Shelly.hs fix-windows branch
+- github: levirs565/Shelly.hs
+  commit: 407c070247e1fba5c71d77ce022122727436df0a
+- aeson-gadt-th-0.2.5.0
+- ghcjs-dom-jsaddle-0.9.4.0
+- constraints-extras-0.3.0.2@sha256:013b8d0392582c6ca068e226718a4fe8be8e22321cc0634f6115505bf377ad26,1853
+- dependent-map-0.4.0.0@sha256:ca2b131046f4340a1c35d138c5a003fe4a5be96b14efc26291ed35fd08c62221,1657
+- dependent-sum-0.7.1.0@sha256:5599aa89637db434431b1dd3fa7c34bc3d565ee44f0519bfbc877be1927c2531,2068
+- dependent-sum-aeson-orphans-0.3.0.0@sha256:b04231a3a7a3d49b499d3f97073547cb0ec068be9669eca1cf5e32c383142bc5,893
+- dependent-sum-template-0.1.0.3@sha256:0bbbacdfbd3abf2a15aaf0cf2c27e5bdd159b519441fec39e1e6f2f54424adde,1682
+- ghcjs-dom-0.9.4.0@sha256:c2b3d25145e24b66a8a5078c0d750305b577aeff05957cf282d74f6e8d2424dd,32082
+- jsaddle-0.9.7.1@sha256:711e48fa92c04d373fc18f058743dd9a53aecd048c851a47c932ff7d9bff2c82,4418
+- lsp-1.1.1.0@sha256:c8856e5fc71bc9834301731b5ba8786159e1d7e2d2d8ee07aec4f5421f2cf847,5568
+- monoidal-containers-0.6.0.1@sha256:ffdfae0fde7a08e9e314667a78d86454d2d23137d85f226ec6e757c190fb28ad,2583
+- patch-0.0.3.2@sha256:b4d3a60db88a04030392a06076defb9fe310a79577df7ff63ea2bb0298817b8d,2452
+- prim-uniq-0.2@sha256:7bfd8a729812bf212610b63459b76a086ecd5ce48f48d785c288e082d055d47b,1403
+- shower-0.2.0.2@sha256:2c2b1cd25e4330f03ba68631b37d4346bf42644bc8e9a7a819ce605acc72bb34,1473
+- which-0.2@sha256:db82ca7d83d64cce8ad579756f02d27c5bd289806ee02474726f7fafb87318e8,858
+- witherable-0.4.1@sha256:5b4840efe20d16cab6b13fa2f39ed383703cccbc246f5b710591069fcc6884c0,2249
+- zenc-0.1.1@sha256:e4be3e5e9fe1a1ade05910909c6e5b5a8eff72e697868b03955c9781b0443947,964
+- indexed-traversable-instances-0.1@sha256:3aaf97040001bbe583e29c2b9c7d41660df265e6565a0d2ac09a3ed5b8bc21be,2874
+- jsaddle-dom-0.9.4.1@sha256:c769ab7d568c6fa9d0ecc9fa1c83091bfd3277c48e7f109a056cd088f399505f,75700
+- lsp-types-1.1.0.0@sha256:04af950c0a45034f7f2c0826e853fdbb3e50b7d67bd5ac570d3bc19089e62e46,4359
+- reflex-dom-core-0.6.1.0@sha256:ab10422cb9d445c5aa589d7acdbebfc937c5a084977818ec2c4855195719b892,7501
