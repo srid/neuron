@@ -29,8 +29,8 @@ import Neuron.Zettelkasten.Zettel (zettelID)
 import Relude
 import System.Directory (setCurrentDirectory)
 import System.FilePath ((</>))
-import qualified System.Posix.Env as Env
-import System.Posix.Process (executeFile)
+import qualified System.Environment as Env
+import System.Process
 
 -- | Create a new zettel file and open it in editor if requested
 --
@@ -74,9 +74,9 @@ newZettelFile NewCommand {..} = do
       putStrLn $ notesDir </> zettelFile
     -- Like `executeFile` but takes a shell command.
     executeShellCommand cmd =
-      executeFile "bash" True ["-c", cmd] Nothing
+      callProcess "bash" ["-c", cmd]
     getEnvNonEmpty name =
-      Env.getEnv name >>= \case
+      Env.lookupEnv name >>= \case
         Nothing -> pure Nothing
         Just (toString . strip . toText -> v) ->
           if null v then pure Nothing else pure (Just v)

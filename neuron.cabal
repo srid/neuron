@@ -92,6 +92,7 @@ common library-common
     warp,
     which,
     with-utf8,
+    process,
 
 library
   import: library-common
