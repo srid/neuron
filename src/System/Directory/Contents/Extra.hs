@@ -18,7 +18,7 @@ import Relude
 import System.Directory (copyFile, createDirectoryIfMissing)
 import qualified System.Directory.Contents as DC
 import System.FilePath ((</>))
-import System.Posix (fileExist, getFileStatus, modificationTime)
+import System.PosixCompat (fileExist, getFileStatus, modificationTime)
 
 -- | Copy the given directory tree from @src@ as base directory, to @dest@
 rsyncDir :: (MonadIO m, WithLog env Message m) => FilePath -> FilePath -> DC.DirTree FilePath -> m Int
