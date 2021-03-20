@@ -40,7 +40,4 @@ See [[Automatic Publishing]]#
 
 ## Features 
 
-* [[Configuration file]]#
-* [[Customizing the generated website]]#
-* [[Graph visualization]]#
-
+(See the links below)
