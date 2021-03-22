@@ -45,7 +45,7 @@ import Neuron.Zettelkasten.Zettel
 import Reflex.Dom.Core
 import Relude
 import qualified System.Directory.Contents as DC
-import System.FilePath (takeDirectory, takeFileName)
+import System.FilePath (takeDirectory, takeFileName, splitDirectories)
 import qualified Text.Pandoc.Definition as P
 
 -- Directory zettels using this plugin are associated with a `Tag` that
@@ -188,24 +188,25 @@ injectDirectoryZettels = \case
     pure ()
 
 parentDirTag :: HasCallStack => FilePath -> Maybe Tag
-parentDirTag = \case
-  "./" ->
-    Nothing
-  "./index.md" ->
-    Nothing
-  relPath ->
-    Just $ tagFromPath $ takeDirectory relPath
+parentDirTag relPath =
+  let paths = splitDirectories relPath
+   in case paths of
+      ["."]-> Nothing
+      [".", "index.md"] -> Nothing
+      _ -> Just $ tagFromPath $ takeDirectory relPath
 
 tagFromPath :: HasCallStack => FilePath -> Tag
-tagFromPath = \case
-  "." ->
-    -- Root file
-    Tag.constructTag (rootTag :| [])
-  ('.' : '/' : dirPath) ->
-    let tagNodes = TagNode <$> T.splitOn "/" (T.replace " " "-" $ toText dirPath)
-     in Tag.constructTag $ rootTag :| tagNodes
-  relPath ->
-    error $ "Invalid relPath passed to parseZettel: " <> toText relPath
+tagFromPath relPath = 
+  let paths = splitDirectories relPath
+  in case paths of
+    ["."] ->
+      -- Root file
+      Tag.constructTag (rootTag :| [])
+    (".":dirPaths) ->
+      let tagNodes = TagNode <$> map (\p -> T.replace " " "-" $ toText p) dirPaths
+      in Tag.constructTag $ rootTag :| tagNodes
+    _ ->
+      error $ "Invalid relPath passed to parseZettel: " <> toText relPath
 
 rootTag :: TagNode
 rootTag = TagNode "root"
