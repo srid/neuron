@@ -10,3 +10,6 @@ neuron.prof
 # CI
 tmp
 neuron-linux-bundle
+
+# Others
+.ionide
