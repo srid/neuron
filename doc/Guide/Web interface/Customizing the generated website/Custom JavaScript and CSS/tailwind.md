@@ -12,8 +12,7 @@ First, activate Tailwind using [`twind/shim`](https://twind.dev/docs/modules/twi
 <!-- 
 cf. https://github.com/tw-in-js/twind/discussions/161#discussioncomment-535632
 -->
-<script type="text/javascript" crossorigin="anonymous" src="https://unpkg.com/twind@0.16.9/twind.umd.js"> </script>
-<script type="text/javascript" crossorigin="anonymous" src="https://unpkg.com/twind@0.16.9/observe/observe.umd.js"> </script>
+<script crossorigin="anonymous" src="https://cdn.jsdelivr.net/combine/npm/twind/twind.umd.min.js,npm/twind/observe/observe.umd.min.js"></script>
 <script type="text/javascript">
   twind.setup(
     {
