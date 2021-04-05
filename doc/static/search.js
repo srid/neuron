@@ -1,5 +1,16 @@
 'use strict';
 
+const searchOptions = {
+  bool: "AND",
+  expand: true,
+  fields: {
+    title: { boost: 2 },
+    tags: { boost: 2 },
+    id: { boost: 1 },
+    slug: { boost: 0 }
+  }
+}
+
 function buildIndex() {
   if (window.NEURON_SEARCH_INDEX)
     return
@@ -67,7 +78,7 @@ function handleSearch(searchParam, resultsContainer) {
   if (typeof searchParam !== 'string')
     return
 
-  const results = window.NEURON_SEARCH_INDEX.search(searchParam)
+  const results = window.NEURON_SEARCH_INDEX.search(searchParam, searchOptions)
 
   displayResults(results, resultsContainer)
 }
