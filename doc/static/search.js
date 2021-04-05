@@ -33,6 +33,9 @@ function buildIndex() {
 }
 
 function configureIndex() {
+  if (window.NEURON_SEARCH_INDEX !== undefined)
+    return
+
   window.NEURON_SEARCH_INDEX = elasticlunr(function() {
     this.addField('id')
     this.addField('slug')
@@ -61,7 +64,7 @@ function handleSearchEvent(event, resultsContainer) {
 }
 
 function handleSearch(searchParam, resultsContainer) {
-  if (typeof searchParam !== 'string' || searchParam.length < 3)
+  if (typeof searchParam !== 'string')
     return
 
   const results = window.NEURON_SEARCH_INDEX.search(searchParam)
