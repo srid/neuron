@@ -24,7 +24,7 @@ function buildIndex() {
   if (window.NEURON_SEARCH_INDEX)
     return
 
-  window.fetch('/cache.json')
+  window.fetch('/static/large-cache.json')
     .then(r => r.json())
     .then(cache => {
       configureIndex()
