@@ -67,6 +67,60 @@ function configureIndex() {
   })
 }
 
+function insertSearchBar() {
+  const pageContainer = document.querySelector('#zettel-container').parentElement
+  const firstChild = pageContainer.firstElementChild
+
+  const searchBarContainer = document.createElement('div')
+  searchBarContainer.setAttribute('class', 'text ui container')
+
+  const searchBar = document.createElement('div')
+  searchBar.setAttribute('class', 'zettel-view events-container')
+  searchBar.setAttribute('style', 'margin-bottom: 20px')
+
+  searchBarContainer.appendChild(searchBar)
+
+  const article = document.createElement('article')
+  article.setAttribute('class', 'ui raised attached segment zettel-content')
+
+  searchBar.appendChild(article)
+
+  const pandocContainer = document.createElement('div')
+  pandocContainer.setAttribute('class', 'pandoc')
+
+  article.appendChild(pandocContainer)
+
+  const searchBox = document.createElement('div')
+  searchBox.setAttribute('id', 'search-box')
+
+  const inputContainer = document.createElement('div')
+  inputContainer.setAttribute('class', 'ui fluid icon input')
+
+  const input = document.createElement('input')
+  input.setAttribute('type', 'text')
+  input.setAttribute('placeholder', 'Search...')
+  input.setAttribute('id', 'search-input')
+
+  const searchIcon = document.createElement('i')
+  searchIcon.setAttribute('class', 'search icon')
+
+  inputContainer.appendChild(input)
+  inputContainer.appendChild(searchIcon)
+
+  searchBox.appendChild(inputContainer)
+
+  const searchResults = document.createElement('ul')
+  searchResults.setAttribute('id', 'search-results')
+
+  searchBox.appendChild(searchResults)
+
+  pandocContainer.appendChild(searchBox)
+
+  pageContainer.insertBefore(searchBarContainer, firstChild)
+
+  bindToSearchBox()
+}
+
 function bindToSearchBox() {
   const searchBox = document.querySelector('#search-box')
 
@@ -227,4 +281,4 @@ function handleTagSearch(tagsParam, resultsContainer) {
 }
 
 document.addEventListener('DOMContentLoaded', buildIndex)
-document.addEventListener('DOMContentLoaded', bindToSearchBox)
+document.addEventListener('DOMContentLoaded', insertSearchBar)
