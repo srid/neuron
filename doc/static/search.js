@@ -11,6 +11,15 @@ const searchOptions = {
   }
 }
 
+const tagSearchOptions = Object.assign({}, searchOptions, {
+  fields: {
+    title: { boost: 0 },
+    tags: { boost: 1 },
+    id: { boost: 0 },
+    slug: { boost: 0 }
+  }
+})
+
 function buildIndex() {
   if (window.NEURON_SEARCH_INDEX)
     return
@@ -74,11 +83,20 @@ function handleSearchEvent(event, resultsContainer) {
   handleSearch(event.target.value, resultsContainer)
 }
 
-function handleSearch(searchParam, resultsContainer) {
-  if (typeof searchParam !== 'string')
+// Currently only handles single tag, or general search
+function handleSearch(query, resultsContainer) {
+  if (typeof query !== 'string')
     return
 
-  const results = window.NEURON_SEARCH_INDEX.search(searchParam, searchOptions)
+  const tagSearchRegexp = /tag:([\w-/]+)/
+  const tagQuery = query.match(tagSearchRegexp)
+
+  let results
+
+  if (tagQuery === null)
+    results = window.NEURON_SEARCH_INDEX.search(query, searchOptions)
+  else
+    results = window.NEURON_SEARCH_INDEX.search(tagQuery[1], tagSearchOptions)
 
   displayResults(results, resultsContainer)
 }
@@ -179,15 +197,15 @@ function handleUrlSearchParams() {
   const searchParamsKeys = [ ...searchParams.keys() ]
   const resultsContainer = document.querySelector('#search-results')
 
-  if (searchParamsKeys.includes('search')) {
-    const param = searchParams.get('search')
+  if (searchParamsKeys.includes('q')) {
+    const query = searchParams.get('q')
+
     const searchInput = document.querySelector('#search-input')
-    searchInput.value = param
-    handleSearch(param, resultsContainer)
-  }
-  else if (searchParamsKeys.includes('search[tags]'))
-    handleTagSearch(searchParams.get('search[tags]'), resultsContainer)
-  else
+
+    searchInput.value = query
+
+    handleSearch(query, resultsContainer)
+  } else
     return
 }
 
