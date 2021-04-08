@@ -218,13 +218,13 @@ renderQueryResult = \case
               forM_ zettelGrp $ \z ->
                 el "li" $
                   Links.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z
-        else divClass "ui list" $ do
+        else divClass "ui list listing" $ do
           let resToDisplay =
                 case zettelsviewLimit view of
                   Nothing -> res
                   Just (naturalToInt -> limit) -> take limit res
           forM_ resToDisplay $ \z -> do
-            divClass "item" $
+            divClass "item listing-item" $
               Links.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z
           when (length resToDisplay /= length res) $ do
             divClass "item" $

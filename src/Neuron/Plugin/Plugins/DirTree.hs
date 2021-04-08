@@ -97,7 +97,7 @@ renderPanel DirZettelVal {..} = do
   when (dirtreemetaDisplay dirZettelValMeta) $ do
     unless (null dirZettelValChildren) $ do
       elClass "nav" "ui attached segment dirfolge" $ do
-        divClass "ui list" $ do
+        divClass "ui list listing" $ do
           whenJust dirZettelValParent $ \parZ ->
             listItem ListItem_Folder $
               Links.renderZettelLink (Just $ elClass "i" "level up alternate icon" blank) Nothing Nothing parZ

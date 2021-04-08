@@ -61,7 +61,7 @@ listItemIconClass = \case
 
 listItem :: DomBuilder t m => ListItem -> m a -> m a
 listItem x w = do
-  divClass "item" $ do
+  divClass "item listing-item" $ do
     elClass "i" (listItemIconClass x) blank
     divClass "content" $
       divClass "description" w
