@@ -25,6 +25,10 @@ cf. https://github.com/tw-in-js/twind/discussions/161#discussioncomment-535632
 <!-- End of Twind script -->
 ```
 
+:::{.ui .warning}
+`twind` may adversely impact neuron's builtin CSS if you globally enable it in `head.html`. To mitigate this, may consider including it only in the .md files that require it. 
+:::
+
 That's it; now you can use any of the Tailwind CSS classes in your Markdown files. Here's an example:
 
 ```markdown
