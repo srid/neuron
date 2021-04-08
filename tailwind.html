@@ -11,7 +11,7 @@ cf. https://github.com/tw-in-js/twind/discussions/161#discussioncomment-535632
   );
   twindObserve.observe(document.documentElement)
 &lt;/script&gt;
-&lt;!-- End of Twind script --&gt;</code></pre><p>That’s it; now you can use any of the Tailwind CSS classes in your Markdown files. Here’s an example:</p><pre><code class="markdown language-markdown">## Highlights of the day:
+&lt;!-- End of Twind script --&gt;</code></pre><div class="ui warning"><p><code>twind</code> may adversely impact neuron’s builtin CSS if you globally enable it in <code>head.html</code>. To mitigate this, may consider including it only in the .md files that require it.</p></div><p>That’s it; now you can use any of the Tailwind CSS classes in your Markdown files. Here’s an example:</p><pre><code class="markdown language-markdown">## Highlights of the day:
 
 :::{.rounded .shadow-2xl .border-2 .border-solid .border-pink-400 .text-xl .mb-4}
 - Drank a new type of *coffee*
