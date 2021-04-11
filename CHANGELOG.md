@@ -18,6 +18,9 @@
 - Plugin:links
   - Labelled directional links (#514): `[[foo]]#` and `#[[foo]]`
   - Backlinks panel now groups entries by connection type
+- Plugin:neuronigonre
+  - Ignore `.neuron` and `.git` in any subdirectories
+  - Ignore watching `.neuron` and `.git` directories in file watcher (-w)
 - Atom feed support (#73)
 - Reduce error verbosity (CLI & web) in the scenario of there being innumerous broken wiki-links.
 - CLI

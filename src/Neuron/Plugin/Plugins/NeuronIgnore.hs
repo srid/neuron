@@ -71,6 +71,6 @@ shouldIgnore (fmap ("./" <>) -> pats) fp =
 
 mandatoryIgnorePats :: [FilePattern]
 mandatoryIgnorePats =
-  [ ".neuron/**",
-    ".git/**"
+  [ "**/.neuron/**",
+    "**/.git/**"
   ]

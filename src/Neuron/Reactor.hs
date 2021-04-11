@@ -158,7 +158,8 @@ buildDirTreeDyn appEnv = do
       run a = liftIO $ runApp appEnv a
   (notesDir, tree0) <-
     run $ (,) <$> getNotesDir <*> RB.locateZettelFiles
-  fsEventsE <- watchDirWithDebounce 0.1 notesDir
+  fsEventsE' <- watchDirWithDebounce 0.1 notesDir
+  let fsEventsE = fforMaybe fsEventsE' $ fmap toList . nonEmpty . filter (not . ignoreEvent)
   treeE <- performEvent $
     ffor fsEventsE $ \fsEvents ->
       run $ do
@@ -172,6 +173,11 @@ buildDirTreeDyn appEnv = do
         -- with changed paths.
         RB.locateZettelFiles
   holdDyn tree0 treeE
+  where
+    -- HACK: Apply neuronignore plugin, only the mandatory patterns (ideally we
+    -- should ignore the patterns in .neuronignore as well)
+    ignoreEvent (FSN.eventPath -> path) =
+      NeuronIgnore.shouldIgnore NeuronIgnore.mandatoryIgnorePats path
 
 -- | Like `watchDir` but batches file events
 --
