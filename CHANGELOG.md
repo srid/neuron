@@ -9,7 +9,7 @@
   - Use Prism.js for syntax highlighting, and allow users to use their own syntax highlighter (#560)
   - Allow level-1 headers as non-title heading (#412)
 - Remove (experimental) support for org-mode in v2 (use `v1` branch if you need org-mode)
-- Timeline queries (`z:zettels?...&timeline`) now automatically exclude zettels without a date set. 
+- Timeline queries (`z:zettels?...&timeline`) now automatically exclude zettels without a date set.
 - Plugin support
   - dirtree: Treat directories as zettels, forming automatic folgezettel connections to their children. (#497)
   - neuronignore: Exclude directories and markdown files via `.neuronignore`. (#499)
@@ -24,7 +24,7 @@
   - `neuron rib` is renamed to `neuron gen` (neuron has migrated from rib/shake to reflex)
   - `neuron search`: full-text search uses exact matching (#526)
   - `neuron search`: highlight and focus matching line in `bat` preview (#556)
-  - `neuron query`: 
+  - `neuron query`:
     - query CLI interface has been changed (see docs)
     - JSON output is now pretty printed (using `aeson-pretty`)
   - `neuron gen`: Add `--pretty-urls` to remove `.html` suffix in generated URLs (#562)
@@ -34,6 +34,7 @@
 - Bug fixes
   - Fix a bug where folgezettel relationship is not established if a note also has non-folgezettel links to the same target
 - Clean HTML output when zettels are deleted (#141)
+- Added '§' character in whitelist (#595)
 
 ## Unreleased (v1 + v2)
 
