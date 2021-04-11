@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: neuron
-version: 1.9.25.2
+version: 1.9.26.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -201,7 +201,7 @@ executable neuron
   import: library-common
   hs-source-dirs: exe
   main-is: Main.hs
-  -- FIXME: Threaded runtime causes high cpu usage when using reflex headless 
+  -- FIXME: Threaded runtime causes high cpu usage when using reflex headless
   -- ghc-options: -threaded -rtsopts -with-rtsopts=-N
   if (flag(ghcid))
     hs-source-dirs: src

@@ -95,7 +95,8 @@ allowedSpecialChars =
     ':',
     '"',
     '\'',
-    '@'
+    '@',
+    '§'
   ]
 
 idParser :: Parser ZettelID
