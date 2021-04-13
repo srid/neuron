@@ -1,5 +1,5 @@
 let
-  nixpkgs = import ./dep/nixpkgs {};
+  nixpkgs = import ./nixpkgs.nix {};
 in {
   pkgs ? nixpkgs,
   pkgsForBins ? null,

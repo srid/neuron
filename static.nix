@@ -1,7 +1,7 @@
 args@{...}:
 let 
   # FIXME: Use a nixpkgs that works with static builds
-  nixpkgs = import ./dep/nixpkgs args;
+  nixpkgs = import ./nixpkgs.nix args;
   pkgs = nixpkgs.pkgsMusl;
 in 
   (import ./project.nix { 
