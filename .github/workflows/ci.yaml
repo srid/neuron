@@ -13,7 +13,10 @@ jobs:
       DOCKERTAG: latest
     steps:
       - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v12
+      - uses: cachix/install-nix-action@v13
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
       # This also runs nix-build.
       - uses: cachix/cachix-action@v8
         with:
@@ -25,7 +28,13 @@ jobs:
       - name: Build 🔧
         run: |
           nix-build -j4 --no-out-link ci.nix
+          # Test default.nix
           nix-build -j4
+          # Test flake.nix
+          nix build --out-link flake-result
+      - name: Verify output of default.nix & flake.nix
+        run: |
+          [ $(readlink result) = $(readlink flake-result) ]
       - name: Retrieve neuron version
         run: |
           echo "NEURONVER=$(./result/bin/neuron --version)" >> $GITHUB_ENV
