@@ -8,7 +8,7 @@
 #   )
 let
   pkgs = import ./nixpkgs.nix {};
-  neuron = import ./.;
+  neuron = (import ./project.nix {}).neuron;
 in {
   name ? "sridca/neuron"
 , tag ? "dev"
