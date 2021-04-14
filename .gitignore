@@ -3,6 +3,7 @@ dist-*
 .ghc.environment.*
 result
 result-2
+result-data
 .shake
 .neuron
 neuron.prof
