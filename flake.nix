@@ -16,7 +16,8 @@
         pkgs = import nixpkgs { inherit system; };
         project = import ./project.nix { inherit pkgs; };
 
-      in rec {
+      in
+      rec {
         packages = { neuron = project.neuron; };
         defaultPackage = packages.neuron;
 

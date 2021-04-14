@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 set -xe
 nix-shell --pure --run "find {src,exe,test} -name \*.hs | xargs ormolu -m inplace"
+nix-shell --pure --run "nixpkgs-fmt *.nix"

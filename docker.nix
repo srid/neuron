@@ -7,24 +7,24 @@
 #       --argstr tag <image-tag>
 #   )
 let
-  pkgs = import ./nixpkgs.nix {};
-  neuron = (import ./project.nix {}).neuron;
-in {
-  name ? "sridca/neuron"
+  pkgs = import ./nixpkgs.nix { };
+  neuron = (import ./project.nix { }).neuron;
+in
+{ name ? "sridca/neuron"
 , tag ? "dev"
 }: pkgs.dockerTools.buildImage {
   inherit name tag;
-  contents = [ 
+  contents = [
     neuron
     # These are required for the GitLab CI runner
-    pkgs.coreutils 
-    pkgs.bash_5 
+    pkgs.coreutils
+    pkgs.bash_5
   ];
 
   config = {
     WorkingDir = "/notes";
     Volumes = {
-      "/notes" = {};
+      "/notes" = { };
     };
   };
 }

@@ -4,6 +4,7 @@
 	"recommendations": [
 		"haskell.haskell",
 		"arrterian.nix-env-selector",
-		"bbenoist.nix"
+		"bbenoist.nix",
+		"b4dm4n.nixpkgs-fmt"
 	]
 }
