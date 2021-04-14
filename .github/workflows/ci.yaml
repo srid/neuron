@@ -47,20 +47,3 @@ jobs:
           set -x
           docker push "sridca/neuron:${{ env.DOCKERTAG }}"
           docker push "sridca/neuron:${{ env.NEURONVER }}"
-      # macOS is not supported: https://github.com/matthewbauer/nix-bundle/issues/17
-      - name: Bundle up
-        if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
-        run: |
-          git clone -b neuron-stable https://github.com/srid/nix-bundle.git tmp/nix-bundle
-          cd tmp/nix-bundle
-          NIX_PATH=nixpkgs=https://github.com/NixOS/nixpkgs/tarball/ab5863afada3c1b50fc43bf774b75ea71b287cde ./nix-bundle.sh '(import ../.. {})' /bin/neuron > ../../neuron-linux-bundle
-          cd -
-          mkdir ~/bundle
-          cp neuron-linux-bundle ~/bundle/neuron
-          chmod a+x neuron-linux-bundle ~/bundle/neuron
-      - name: Upload bundle as artifact
-        uses: actions/upload-artifact@v2
-        if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
-        with:
-          name: neuron-bundle-linux
-          path: ~/bundle/neuron
