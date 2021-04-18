@@ -6,7 +6,7 @@ tags: [custom-head-recipe]
 
 Neuron provides [Semantic UI](https://fomantic-ui.com/) already, however you can use other CSS toolkits as well. [Tailwind](https://tailwindcss.com/) in particular is a note-worthy one as it allows you to style elements using pre-defined *semantically defined* classes. 
 
-First, activate Tailwind using [`twind/shim`](https://twind.dev/docs/modules/twind_shim.html), in your `head.html` (see [[Custom JavaScript and CSS]]):
+First, activate Tailwind using [`twind/shim`](https://twind.dev/handbook/the-shim.html), in your `head.html` (see [[Custom JavaScript and CSS]]):
 
 ```html
 <!-- 
