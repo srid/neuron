@@ -6,8 +6,10 @@ If you use [NixOS](https://nixos.org/), add the following to your `environment.s
 
 
 ```nix
-(let neuronSrc = builtins.fetchTarball "https://github.com/srid/neuron/archive/master.tar.gz";
-  in import neuronSrc {})
+(let
+   neuronSrc = builtins.fetchTarball "https://github.com/srid/neuron/archive/master.tar.gz";
+   neuronPkg = import neuronSrc {};
+ in neuronPkg.default)
 ```
 
 If you use [home-manager](https://github.com/rycee/home-manager), add the above to your `home.packages` list.
@@ -19,8 +21,9 @@ It is generally recommended to pin your imports in Nix. The above expression wil
 ```nix
 # Use this for neuron 0.5 or above only.
 (let neuronRev = "GITREVHERE";
-     neuronSrc = builtins.fetchTarball "https://github.com/srid/neuron/archive/${neuronRev}.tar.gz";
-  in import neuronSrc {})
+   neuronSrc = builtins.fetchTarball "https://github.com/srid/neuron/archive/${neuronRev}.tar.gz";
+   neuronPkg = import neuronSrc {};
+ in neuronPkg.default)
 ```
 
 In the future if you decide to upgrade neuron, simply change the revision hash to a newer one.
