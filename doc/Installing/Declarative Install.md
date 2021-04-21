@@ -28,6 +28,10 @@ It is generally recommended to pin your imports in Nix. The above expression wil
 
 In the future if you decide to upgrade neuron, simply change the revision hash to a newer one.
 
+## Flakes
+
+[Flakes](https://nixos.wiki/wiki/Flakes) is supported, and you can use neuron via the URL `github:srid/neuron`. For eg., `nix run github:srid/neuron` will run neuron off the master branch on GitHub.
+
 ## Systemd service
 
 If you use [home-manager](https://github.com/rycee/home-manager), you can also
