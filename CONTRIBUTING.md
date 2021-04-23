@@ -2,9 +2,13 @@
 
 This document describes how to develop neuron, as well as some guidelines when it comes to submiting a PR.
 
-## Developing
+## Developing locally
 
 We recommend [VSCode] for developing Neuron, but any text editor supporting [haskell-language-server] will do. When opening the project in VSCode, install the two extensions ([Haskell](https://marketplace.visualstudio.com/items?itemName=haskell.haskell) and [Nix Environment Selector](https://marketplace.visualstudio.com/items?itemName=arrterian.nix-env-selector)) it recommends.
+
+**Note**: Nix Environment Selector should automatically select the `shell.nix` environment; if it doesn't, you can hit <kbd>Ctrl+Shift+P</kbd> in VSCode and run the command "Nix-Env: Select Environment" to select `shell.nix` manually. The extension will ask you to reload VSCode at the end.
+
+You can expect full IDE support for Haskell in VSCode from this point.
 
 [VSCode]: https://code.visualstudio.com/
 [haskell-language-server]: https://github.com/haskell/haskell-language-server#editor-integration
