@@ -96,6 +96,7 @@ commandParser defaultNotesDir now = do
             (strOption (long "slug" <> help "Open the zettel HTML page" <> metavar "SLUG"))
     queryCommand = do
       cached <- switch (long "cached" <> help "Use cached zettelkasten graph (faster)")
+      jsonl <- switch (long "jsonl" <> help "output JSONL format (better for tool processing)")
       query <-
         fmap CliQuery_ById (option zettelIDReader (long "id" <> metavar "ID" <> help "Get a zettel by its ID"))
           <|> fmap (const CliQuery_Zettels) (switch $ long "zettels" <> help "Get all zettels")

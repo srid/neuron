@@ -14,6 +14,7 @@ where
 
 import Colog (WithLog)
 import Data.Aeson (ToJSON)
+import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encode.Pretty as AesonPretty
 import qualified Data.Set as Set
 import Data.Some (withSome)
@@ -41,25 +42,33 @@ runQuery QueryCommand {..} = do
   case query of
     CliQuery_ById zid -> do
       let result = G.getZettel zid neuroncacheGraph
-      printJson result
+      printJson jsonl $ m2s result
     CliQuery_Zettels -> do
       let result = G.getZettels neuroncacheGraph
-      printJson result
+      printJson jsonl $ Set.fromList result
     CliQuery_Tags -> do
       let result = Set.unions $ Tags.getZettelTags <$> G.getZettels neuroncacheGraph
-      printJson result
+      printJson jsonl result
     CliQuery_ByTag tag -> do
       let q = TagTree.mkDefaultTagQuery $ one $ TagTree.mkTagPatternFromTag tag
           zs = G.getZettels neuroncacheGraph
           result = Tags.zettelsByTag Tags.getZettelTags zs q
-      printJson result
+      printJson jsonl $ Set.fromList result
     CliQuery_Graph someQ ->
       withSome someQ $ \q -> do
         result <- either (fail . show) pure $ Q.runGraphQuery neuroncacheGraph q
-        printJson $ Q.graphQueryResultJson q result neuroncacheErrors
+        printJson jsonl $ Set.singleton $ Q.graphQueryResultJson q result neuroncacheErrors
   where
-    printJson :: ToJSON a => a -> m ()
-    printJson =
+    m2s :: Maybe a -> Set a
+    m2s Nothing = Set.empty
+    m2s (Just a) = Set.singleton a
+    printJson :: ToJSON a => Bool -> Set a -> m ()
+    printJson True = printJsonLine
+    printJson False = printPrettyJson
+    printJsonLine :: ToJSON a => Set a -> m ()
+    printJsonLine = mapM_ (putLBSLn . Aeson.encode)
+    printPrettyJson :: ToJSON a => Set a -> m ()
+    printPrettyJson =
       putTextLn . decodeUtf8
         . AesonPretty.encodePretty'
           AesonPretty.defConfig

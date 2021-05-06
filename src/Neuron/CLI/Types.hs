@@ -8,7 +8,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.CLI.Types
@@ -42,9 +41,7 @@ import Colog
   )
 import Data.Some (Some (..))
 import Data.TagTree (Tag)
-import Data.Time.DateMayTime
-  ( DateMayTime,
-  )
+import Data.Time.DateMayTime (DateMayTime)
 import Neuron.CLI.Logging
 import qualified Neuron.Frontend.Route as R
 import Neuron.Zettelkasten.ID (ZettelID)
@@ -143,6 +140,7 @@ data CliQuery
 data QueryCommand = QueryCommand
   { -- Use cache instead of building the zettelkasten from scratch
     cached :: Bool,
+    jsonl :: Bool,
     query :: CliQuery
   }
   deriving (Eq, Show)
