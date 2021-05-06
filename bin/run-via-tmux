@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -xe
+PROJECT=$(basename `pwd`)
+exec tmux new-session -A -s $PROJECT bin/run -d ./doc gen -ws :9003

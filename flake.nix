@@ -2,7 +2,7 @@
   description = "Future-proof note-taking and publishing based on Zettelkasten";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/4c87cb87a2db6b9eb43541c1cf83f2a2f725fa25";
+    nixpkgs.url = "github:nixos/nixpkgs/123db833485edf8df83f95ef2888113390768686";
     flake-utils.url = "github:numtide/flake-utils";
     flake-compat = {
       url = "github:edolstra/flake-compat";
