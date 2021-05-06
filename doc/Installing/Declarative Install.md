@@ -8,7 +8,7 @@ If you use [NixOS](https://nixos.org/), add the following to your `environment.s
 ```nix
 (let
    neuronSrc = builtins.fetchTarball "https://github.com/srid/neuron/archive/master.tar.gz";
-   neuronPkg = import neuronSrc {};
+   neuronPkg = import neuronSrc;
  in neuronPkg.default)
 ```
 
@@ -22,7 +22,7 @@ It is generally recommended to pin your imports in Nix. The above expression wil
 # Use this for neuron 0.5 or above only.
 (let neuronRev = "GITREVHERE";
    neuronSrc = builtins.fetchTarball "https://github.com/srid/neuron/archive/${neuronRev}.tar.gz";
-   neuronPkg = import neuronSrc {};
+   neuronPkg = import neuronSrc;
  in neuronPkg.default)
 ```
 
