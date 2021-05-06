@@ -2,7 +2,9 @@
 slug: id
 ---
 
-A Zettel ID is a [[Zettel Markdown]] file's filename without the extension. Zettel IDs must be unique across the Zettelkasten.
+A Zettel ID is a [[Zettel Markdown]] file's filename[^unicode] without the extension. Zettel IDs must be unique across the Zettelkasten.
+
+[^unicode]: Neuron will [NFC normalize](https://www.unicode.org/faq/normalization.html) the Zettel ID derived from filename or link so that they work reliably when using non-ascii characters in filename or links (see [[Linking]]).
 
 By default, `neuron new`[^new] will use random alphanumeric IDs of length 8, called a "random ID". But you may use arbitrary text as ID as well, called a "title ID".
 

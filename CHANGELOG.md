@@ -38,6 +38,7 @@
   - Fix a bug where folgezettel relationship is not established if a note also has non-folgezettel links to the same target
 - Clean HTML output when zettels are deleted (#141)
 - Added '§' character in whitelist (#595)
+- Normalize unicode filenames to NFC, fixing broken wiki links.
 
 ## Unreleased (v1 + v2)
 

@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Neuron.Zettelkasten.ID
@@ -29,6 +30,7 @@ import Data.Aeson
     ToJSONKey (toJSONKey),
   )
 import Data.Aeson.Types (toJSONKeyText)
+import qualified Data.Text.Normalize as UT
 import Relude hiding (traceShowId)
 import System.FilePath (splitExtension, takeFileName)
 import qualified Text.Megaparsec as M
@@ -110,6 +112,11 @@ idParser' cs = do
 -- | Parse the ZettelID if the given filepath is a Markdown zettel.
 getZettelID :: FilePath -> Maybe ZettelID
 getZettelID fp = do
-  let (fileName, ext) = splitExtension $ takeFileName fp
+  let ( -- Apply unicode normalization per https://github.com/srid/neuron/issues/611
+        UT.normalize UT.NFC . toText ->
+          fileName,
+        ext
+        ) =
+          splitExtension $ takeFileName fp
   guard $ ".md" == toText ext
-  rightToMaybe $ parseZettelID (toText fileName)
+  rightToMaybe $ parseZettelID fileName
