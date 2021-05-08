@@ -17,3 +17,7 @@ docker run --rm -t -i -p 8080:8080 -v $(pwd):/notes sridca/neuron neuron gen -ws
 ```
 
 This will run the neuron server on the current directory which can be accessed at <http://localhost:8080>. The docker image operates on `/notes` as the current working directory, which is where you are expected to mount your notes directory.
+
+## Whalebrew
+
+macOS users may want to [try the Whalebrew package](https://github.com/srid/neuron/issues/528), but note that it may not be up to date.
