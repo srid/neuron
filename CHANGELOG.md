@@ -39,8 +39,10 @@
 - Clean HTML output when zettels are deleted (#141)
 - Added '§' character in whitelist (#595)
 - Normalize unicode filenames to NFC, fixing broken wiki links.
-- Added `<meta>` element to each page's HTML head, containing the zettel page's slug ID
-  - will be of the form: `<meta content="my-slug-id" property="neuron:zettel-id">`
+- Added `<meta>` element to each page's HTML head, containing certain useful metadata
+  - can take the following forms:
+    - `<meta content="my page id" property="neuron:zettel-id">`
+    - `<meta content="my-slug-id" property="neuron:zettel-slug">`
 
 ## Unreleased (v1 + v2)
 
