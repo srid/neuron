@@ -28,7 +28,7 @@ import qualified Neuron.Plugin as Plugin
 import Neuron.Zettelkasten.Zettel
   ( ZettelT (..),
   )
-import Reflex.Dom.Core (DomBuilder, blank)
+import Reflex.Dom.Core
 import Relude
 import Text.Pandoc.Definition (Inline (Image), Pandoc (..))
 import Text.Pandoc.Util (getFirstParagraphText, plainify)
@@ -39,9 +39,11 @@ renderStructuredData :: DomBuilder t m => R.RouteConfig t m -> Route a -> a -> m
 renderStructuredData routeCfg route val = do
   renderOpenGraph $ routeOpenGraph routeCfg val route
   case route of
-    R.Route_Zettel _ ->
-      forM_ (DMap.toList (R.zettelDataPlugin (snd val))) $
-        Plugin.renderZettelHead routeCfg val
+    R.Route_Zettel zid ->
+      do
+        elAttr "meta" ("property" =: "neuron:zettel-id" <> "content" =: zid) blank
+        forM_ (DMap.toList (R.zettelDataPlugin (snd val))) $
+          Plugin.renderZettelHead routeCfg val
     _ -> blank
 
 routeOpenGraph :: R.RouteConfig t m -> a -> Route a -> OpenGraph
