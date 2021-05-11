@@ -23,8 +23,10 @@ import Data.Structured.OpenGraph.Render (renderOpenGraph)
 import qualified Data.Text as T
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
+import Neuron.Frontend.Route.Data.Types (zettelDataZettel)
 import qualified Neuron.Frontend.Route.Data.Types as R
 import qualified Neuron.Plugin as Plugin
+import Neuron.Zettelkasten.ID (unZettelID)
 import Neuron.Zettelkasten.Zettel
   ( ZettelT (..),
   )
@@ -39,9 +41,12 @@ renderStructuredData :: DomBuilder t m => R.RouteConfig t m -> Route a -> a -> m
 renderStructuredData routeCfg route val = do
   renderOpenGraph $ routeOpenGraph routeCfg val route
   case route of
-    R.Route_Zettel zid ->
+    R.Route_Zettel zslug ->
       do
+        let zdata = zettelDataZettel (snd val)
+        let zid = unZettelID (either zettelID zettelID zdata)
         elAttr "meta" ("property" =: "neuron:zettel-id" <> "content" =: zid) blank
+        elAttr "meta" ("property" =: "neuron:zettel-slug" <> "content" =: zslug) blank
         forM_ (DMap.toList (R.zettelDataPlugin (snd val))) $
           Plugin.renderZettelHead routeCfg val
     _ -> blank
