@@ -46,17 +46,16 @@ renderStructuredData :: DomBuilder t m => R.RouteConfig t m -> Route a -> a -> m
 renderStructuredData routeCfg route val = do
   renderOpenGraph $ routeOpenGraph routeCfg val route
   case route of
-    R.Route_Zettel zslug ->
-      do
-        let z :: Zettel = sansContent $ R.zettelDataZettel $ snd val
-        let zid = unZettelID $ zettelID z
-        let tags = Tags.getZettelTags z
-        elAttr "meta" ("property" =: "neuron:zettel-id" <> "content" =: zid) blank
-        elAttr "meta" ("property" =: "neuron:zettel-slug" <> "content" =: zslug) blank
-        forM_ tags $
-          \ztag -> elAttr "meta" ("property" =: "neuron:zettel-tag" <> "content" =: unTag ztag) blank
-        forM_ (DMap.toList (R.zettelDataPlugin (snd val))) $
-          Plugin.renderZettelHead routeCfg val
+    R.Route_Zettel zslug -> do
+      let z :: Zettel = sansContent $ R.zettelDataZettel $ snd val
+          zid = zettelID z
+          tags = Tags.getZettelTags z
+      elAttr "meta" ("property" =: "neuron:zettel-id" <> "content" =: unZettelID zid) blank
+      elAttr "meta" ("property" =: "neuron:zettel-slug" <> "content" =: zslug) blank
+      forM_ tags $ \tag -> 
+        elAttr "meta" ("property" =: "neuron:zettel-tag" <> "content" =: unTag tag) blank
+      forM_ (DMap.toList (R.zettelDataPlugin (snd val))) $
+        Plugin.renderZettelHead routeCfg val
     _ -> blank
 
 routeOpenGraph :: R.RouteConfig t m -> a -> Route a -> OpenGraph
