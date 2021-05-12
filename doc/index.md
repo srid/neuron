@@ -20,6 +20,6 @@ dirtree:
 :::
 
 * [Source Code](https://github.com/srid/neuron)
-* [News feed](https://www.srid.ca/neuron.xml)
+* [News feed](https://notes.srid.ca/neuron.xml)
 * [Discussion Forum](https://github.com/srid/neuron/discussions)
 * [Community Chat](https://app.element.io/#/room/#neuron:matrix.org)
