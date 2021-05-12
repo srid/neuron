@@ -20,15 +20,22 @@ import Data.Structured.OpenGraph
     OpenGraph (..),
   )
 import Data.Structured.OpenGraph.Render (renderOpenGraph)
+import Data.TagTree (unTag)
 import qualified Data.Text as T
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
+import Neuron.Frontend.Route.Data.Types (zettelDataZettel)
 import qualified Neuron.Frontend.Route.Data.Types as R
 import qualified Neuron.Plugin as Plugin
+import qualified Neuron.Plugin.Plugins.Tags as Tags
+import Neuron.Zettelkasten.ID (unZettelID)
 import Neuron.Zettelkasten.Zettel
-  ( ZettelT (..),
+  ( PluginZettelData (Links),
+    Zettel,
+    ZettelT (..),
+    sansContent,
   )
-import Reflex.Dom.Core (DomBuilder, blank)
+import Reflex.Dom.Core
 import Relude
 import Text.Pandoc.Definition (Inline (Image), Pandoc (..))
 import Text.Pandoc.Util (getFirstParagraphText, plainify)
@@ -39,7 +46,14 @@ renderStructuredData :: DomBuilder t m => R.RouteConfig t m -> Route a -> a -> m
 renderStructuredData routeCfg route val = do
   renderOpenGraph $ routeOpenGraph routeCfg val route
   case route of
-    R.Route_Zettel _ ->
+    R.Route_Zettel zslug -> do
+      let z :: Zettel = sansContent $ R.zettelDataZettel $ snd val
+          zid = zettelID z
+          tags = Tags.getZettelTags z
+      elAttr "meta" ("property" =: "neuron:zettel-id" <> "content" =: unZettelID zid) blank
+      elAttr "meta" ("property" =: "neuron:zettel-slug" <> "content" =: zslug) blank
+      forM_ tags $ \tag -> 
+        elAttr "meta" ("property" =: "neuron:zettel-tag" <> "content" =: unTag tag) blank
       forM_ (DMap.toList (R.zettelDataPlugin (snd val))) $
         Plugin.renderZettelHead routeCfg val
     _ -> blank

@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: neuron
-version: 1.9.28.0
+version: 1.9.29.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
