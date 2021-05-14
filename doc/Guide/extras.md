@@ -10,3 +10,6 @@ Some neuron users have developed scripts and tools to improve on the base functi
 
 [zk](https://github.com/mickael-menu/zk) by Mickaël Menu
 : a command-line tool to manage a Zettelkasten with advanced filtering and note generation capabilities, [compatible with neuron](https://github.com/mickael-menu/zk/blob/main/docs/neuron.md).
+
+[neuron-citation](https://github.com/samwalls/neuron-citation) by Sam Walls
+: allows pages to specify `reference` data, and for citations to be made in various formats. 
