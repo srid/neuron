@@ -42,34 +42,28 @@ runQuery QueryCommand {..} = do
   case query of
     CliQuery_ById zid -> do
       let result = G.getZettel zid neuroncacheGraph
-      printJson jsonl $ m2s result
+      bool printPrettyJson (printJsonLine . maybeToList) jsonl result
     CliQuery_Zettels -> do
       let result = G.getZettels neuroncacheGraph
-      printJson jsonl $ Set.fromList result
+      bool printPrettyJson printJsonLine jsonl result
     CliQuery_Tags -> do
       let result = Set.unions $ Tags.getZettelTags <$> G.getZettels neuroncacheGraph
-      printJson jsonl result
+      bool printPrettyJson (printJsonLine . Set.toList) jsonl result
     CliQuery_ByTag tag -> do
       let q = TagTree.mkDefaultTagQuery $ one $ TagTree.mkTagPatternFromTag tag
           zs = G.getZettels neuroncacheGraph
           result = Tags.zettelsByTag Tags.getZettelTags zs q
-      printJson jsonl $ Set.fromList result
+      bool printPrettyJson printJsonLine jsonl result
     CliQuery_Graph someQ ->
       withSome someQ $ \q -> do
         result <- either (fail . show) pure $ Q.runGraphQuery neuroncacheGraph q
-        printJson jsonl $ Set.singleton $ Q.graphQueryResultJson q result neuroncacheErrors
+        bool printPrettyJson printJsonLine jsonl [Q.graphQueryResultJson q result neuroncacheErrors]
   where
-    m2s :: Maybe a -> Set a
-    m2s Nothing = Set.empty
-    m2s (Just a) = Set.singleton a
-    printJson :: ToJSON a => Bool -> Set a -> m ()
-    printJson True = printJsonLine
-    printJson False = printPrettyJson
-    printJsonLine :: ToJSON a => Set a -> m ()
+    printJsonLine :: ToJSON a => [a] -> m ()
     printJsonLine = mapM_ (putLBSLn . Aeson.encode)
-    printPrettyJson :: ToJSON a => Set a -> m ()
+    printPrettyJson :: ToJSON a => a -> m ()
     printPrettyJson =
-      putTextLn . decodeUtf8
+      putLBSLn
         . AesonPretty.encodePretty'
           AesonPretty.defConfig
             { -- Sort hash map by keys for consistency
