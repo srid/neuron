@@ -30,6 +30,7 @@
   - `neuron query`:
     - query CLI interface has been changed (see docs)
     - JSON output is now pretty printed (using `aeson-pretty`)
+    - option to choose pretty printed JSON (default) or JSONL format (#612)
   - `neuron gen`: Add `--pretty-urls` to remove `.html` suffix in generated URLs (#562)
   - Supress colors if output is not a terminal with color support (#561)
 - Performance improvements:
