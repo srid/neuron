@@ -79,6 +79,7 @@ common library-common
     reflex-fsnotify,
     reflex,
     relude,
+    split,
     shower,
     tagged,
     text,
