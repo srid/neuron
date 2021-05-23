@@ -18,6 +18,7 @@
 - Plugin:links
   - Labelled directional links (#514): `[[foo]]#` and `#[[foo]]`
   - Backlinks panel now groups entries by connection type
+  - Support explicit link text using pipes, as in `[[link|text to display]]`
 - Plugin:neuronigonre
   - Ignore `.neuron` and `.git` in any subdirectories
   - Ignore watching `.neuron` and `.git` directories in file watcher (-w)
