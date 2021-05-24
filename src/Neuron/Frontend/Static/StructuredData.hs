@@ -24,14 +24,12 @@ import Data.TagTree (unTag)
 import qualified Data.Text as T
 import Neuron.Frontend.Route (Route (..))
 import qualified Neuron.Frontend.Route as R
-import Neuron.Frontend.Route.Data.Types (zettelDataZettel)
 import qualified Neuron.Frontend.Route.Data.Types as R
 import qualified Neuron.Plugin as Plugin
 import qualified Neuron.Plugin.Plugins.Tags as Tags
 import Neuron.Zettelkasten.ID (unZettelID)
 import Neuron.Zettelkasten.Zettel
-  ( PluginZettelData (Links),
-    Zettel,
+  ( Zettel,
     ZettelT (..),
     sansContent,
   )
@@ -52,8 +50,8 @@ renderStructuredData routeCfg route val = do
           tags = Tags.getZettelTags z
       elAttr "meta" ("property" =: "neuron:zettel-id" <> "content" =: unZettelID zid) blank
       elAttr "meta" ("property" =: "neuron:zettel-slug" <> "content" =: zslug) blank
-      forM_ tags $ \tag -> 
-        elAttr "meta" ("property" =: "neuron:zettel-tag" <> "content" =: unTag tag) blank
+      forM_ tags $ \(unTag -> s) ->
+        elAttr "meta" ("property" =: "neuron:zettel-tag" <> "content" =: s) blank
       forM_ (DMap.toList (R.zettelDataPlugin (snd val))) $
         Plugin.renderZettelHead routeCfg val
     _ -> blank
