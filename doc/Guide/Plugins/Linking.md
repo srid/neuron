@@ -11,6 +11,8 @@ Place that zettel's [[id]] inside `[[..]]`.
 In [[Web interface]], neuron will automatically display the title of the
 linked zettel.
 
+Alternate link text can also be given using a pipe, as in `[[link|text to display]]`.
+
 ## Folgezettel links
 
 Wiki-links may be labelled as "folgezettel" if you are writing a "structure note" (or hub note, or index note). See [[Folgezettel Links]].

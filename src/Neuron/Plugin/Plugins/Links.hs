@@ -29,6 +29,7 @@ import qualified Commonmark as CM
 import qualified Commonmark.Inlines as CM
 import Commonmark.TokParsers (noneOfToks, symbol)
 import Control.Monad.Writer (MonadWriter, tell)
+import Data.List.Split (wordsBy)
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import Data.Some (Some (Some))
@@ -327,15 +328,20 @@ wikiLinkSpec =
             -- Cf link: [[...]]
             cmAutoLink OrdinaryConnection <$> P.try (wikiLinkP 2)
           ]
-    wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m Text
+    wikiLinkP :: Monad m => Int -> P.ParsecT [CM.Tok] s m (Text, Maybe Text)
     wikiLinkP n = do
       void $ M.count n $ symbol '['
-      s <- fmap CM.untokenize $ some $ noneOfToks [CM.Symbol ']', CM.Symbol '[', CM.LineEnd]
+      toks <- some $ noneOfToks [CM.Symbol ']', CM.Symbol '[', CM.LineEnd]
       void $ M.count n $ symbol ']'
-      pure s
-    cmAutoLink :: CM.IsInline a => Connection -> Text -> a
-    cmAutoLink conn url =
-      CM.link url title $ CM.str url
+      let parts = CM.untokenize <$> wordsBy (\x -> CM.tokType x == CM.Symbol '|') toks
+      case parts of
+        [url] -> pure (url, Nothing)
+        [url, name] -> pure (url, Just name)
+        [] -> fail "Empty wiki-link encountered"
+        _ -> fail ("Multiple pipe ('|') characters encountered; here are the parts: " ++ T.unpack (T.intercalate ", " parts))
+    cmAutoLink :: CM.IsInline a => Connection -> (Text, Maybe Text) -> a
+    cmAutoLink conn (url, name) =
+      CM.link url title $ CM.str (url `fromMaybe` name)
       where
         -- Store connetion type in 'title' attribute
         -- TODO: Put it in attrs instead; requires PR to commonmark
