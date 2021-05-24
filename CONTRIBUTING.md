@@ -64,6 +64,11 @@ git add dep/reflex-dom-pandoc
 
 ## Guidelines when submitting a PR
 
+### Update ChangeLog and version
+
+- If your PR is adding a feature or fixing a user-facing bug, add a casual entry to CHANGELOG.md mentioning the PR number.
+- Update the `version` field in neuron.cabal. Change `a.b.c.d` to `a.b.(c+1).0`.
+
 ### Autoformatting
 
 Run the `bin/format` script to auto-format your Haskell source changes using [ormolu](https://github.com/tweag/ormolu). You don't need to do this when using VSCode which is configured to auto-format on save.
