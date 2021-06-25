@@ -14,11 +14,12 @@ Use the [vscode-memo](https://github.com/svsool/vscode-memo#memo) extension when
 
 ![VSCode Gif Demo](./static/vscode-title-id.gif "Demo of editing neuron notes in VSCode"){.ui .centered .large .image}
 
-## Vim 8/Neovim
+## Vim/Neovim
 
-Forked version of the vim plugin below that has been updated to support Neuron v2:
 
-[neuron-v2.vim](https://github.com/chiefnoah/neuron-v2.vim)
+- [neuron-v2.vim](https://github.com/chiefnoah/neuron-v2.vim) 
+- [neuron.nvim](https://github.com/oberblastmeister/neuron.nvim) (neovim only)
+- [nerveux.nvim](https://github.com/pyrho/nerveux.nvim) (neovim only)
 
 ## Emacs 
 
