@@ -19,8 +19,8 @@ The generated feed will be of the filename `${slug}.xml` (it is an Atom feed), w
 
 Feed items are determined from the graph, by looking for the folgezettel children of the zettel, which may be established in one of the following ways:
 
-- [[Tag Queries]] with folgezettel label ([example](https://www.srid.ca/microblog))
-- Wiki-links using [[Folgezettel Links]] ([example](https://www.srid.ca/blog))
+- [[Tag Queries]] with folgezettel label
+- Wiki-links using [[Folgezettel Links]]
 - Adding to a subfolder, with the [[Directory Tree]] plugin enabled
 
 A link to the feed will be added to the `<head>` element of the generated HTML.
