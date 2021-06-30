@@ -28,10 +28,11 @@ import Data.Foldable (maximum)
 import qualified Data.Graph.Labelled as G
 import qualified Data.Set as Set
 import Data.Tree (Forest, flatten)
+import qualified Data.Tree as Tree
 import Neuron.Zettelkasten.Connection (Connection (..), ContextualConnection)
 import Neuron.Zettelkasten.Graph.Type (ZettelGraph)
 import Neuron.Zettelkasten.ID (ZettelID)
-import Neuron.Zettelkasten.Zettel (Zettel, ZettelT (zettelID))
+import Neuron.Zettelkasten.Zettel (Zettel)
 import Relude
 
 -- | TOD: move to Links
@@ -90,12 +91,10 @@ categoryClusters g =
       clusteredZettels :: [Zettel] =
         (flatten `concatMap`) `concatMap` cleanClusters
       unclustered =
-        Set.map zettelID $
-          Set.fromList (getZettels g)
-            `Set.difference` Set.fromList clusteredZettels
+        Set.fromList (getZettels g)
+          `Set.difference` Set.fromList clusteredZettels
       uncleanCluster =
-        G.dfsForest $
-          G.induce (`Set.member` unclustered) g
+        toList unclustered <&> \z -> Tree.Node z mempty
    in cleanClusters
         <> if null uncleanCluster
           then mempty
