@@ -93,12 +93,10 @@ categoryClusters g =
       unclustered =
         Set.fromList (getZettels g)
           `Set.difference` Set.fromList clusteredZettels
-      uncleanCluster =
-        toList unclustered <&> \z -> Tree.Node z mempty
+      uncleanClusters =
+        toList unclustered <&> \z -> one $ Tree.Node z mempty
    in cleanClusters
-        <> if null uncleanCluster
-          then mempty
-          else pure uncleanCluster
+        <> uncleanClusters
   where
     -- Sort clusters with newer mother zettels appearing first.
     sortMothers :: [NonEmpty Zettel] -> [[Zettel]]

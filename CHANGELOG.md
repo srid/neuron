@@ -8,7 +8,7 @@
   - Support alt text in images (#434)
   - Use Prism.js for syntax highlighting, and allow users to use their own syntax highlighter (#560)
   - Allow level-1 headers as non-title heading (#412)
-  - Fix impulse clustering on non-folgezettel notebooks
+  - Fix impulse clustering of non-folgezettel zettels
 - Remove (experimental) support for org-mode in v2 (use `v1` branch if you need org-mode)
 - Timeline queries (`z:zettels?...&timeline`) now automatically exclude zettels without a date set.
 - Plugin support
