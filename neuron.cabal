@@ -42,7 +42,7 @@ common library-common
     async,
     clay,
     co-log,
-    commonmark ^>= 0.1.0.2,
+    commonmark >= 0.1.0.2 && < 0.3,
     commonmark-extensions ^>= 0.2.0.4,
     commonmark-pandoc >= 0.1.0.0 && < 0.3,
     constraints-extras,
