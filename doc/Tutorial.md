@@ -21,7 +21,7 @@ Now run the neuron [[Web interface]] on the `./doc` Zettelkasten:
 
 ```shell
 cd ./doc
-neuron gen -wS
+neuron gen -wS  # Use 'neuron rib' if using neuron v1
 ```
 
 It can be accessed at [localhost:8080](http://localhost:8080). It should match what you see at [neuron.zettel.page](https://neuron.zettel.page).
@@ -73,7 +73,7 @@ From here, you can visit: [[6479cd5e]]
 Your Zettelkasten directory should now contain two zettels--named `6479cd5e.md` and `index.md`.  Now it is time to run the neuron [[Web interface]]:
 
 ```shell
-neuron gen -wS
+neuron gen -wS # Use 'neuron rib' if using neuron v1
 ```
 
 * The `-w` option will watch your Zettelkasten directory and regenerate HTML files.
