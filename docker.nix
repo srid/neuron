@@ -22,6 +22,11 @@ in
   ];
 
   config = {
+    Env = [
+      # For i18n to work (with filenames, etc.)
+      "LANG=en_US.UTF-8"
+      "LOCALE_ARCHIVE=${pkgs.glibcLocales}/lib/locale/locale-archive"
+    ];
     WorkingDir = "/notes";
     Volumes = {
       "/notes" = { };

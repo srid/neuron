@@ -35,6 +35,7 @@
     - option to choose pretty printed JSON (default) or JSONL format (#612)
   - `neuron gen`: Add `--pretty-urls` to remove `.html` suffix in generated URLs (#562)
   - Supress colors if output is not a terminal with color support (#561)
+  - Fix unicode filenames being ignored in Docker image (#636)
 - Performance improvements:
   - Improve incremental generation performance (`-w`) (#522)
 - Bug fixes
