@@ -22,3 +22,5 @@ dirtree:
 * [Source Code](https://github.com/srid/neuron)
 * [Neuron news](https://www.srid.ca/neuron)
 * [Discussion Forum](https://github.com/srid/neuron/discussions)
+* [Community Chat](https://app.element.io/#/room/#neuron:matrix.org)
+* [Sponsor the project](https://github.com/sponsors/srid)
