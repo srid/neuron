@@ -4,7 +4,6 @@ in
 { pkgs ? nixpkgs
 , pkgsForBins ? null
 , neuronFlags ? [ ]
-, disableHsLuaTests ? false
 , withHoogle ? false
 , ...
 }:
@@ -63,10 +62,6 @@ let
     reflex-fsnotify =
       # Jailbreak to allow newer base
       doJailbreak (self.callCabal2nix "reflex-fsnotify" sources.reflex-fsnotify { });
-
-    # Test fails on pkgsMusl
-    # https://github.com/hslua/hslua/issues/67
-    hslua = if disableHsLuaTests then (dontCheck super.hslua) else super.hslua;
 
     directory-contents = self.callCabal2nix "directory-contents" sources.directory-contents { };
 
