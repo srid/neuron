@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Request a feature
+    url: https://github.com/srid/neuron/discussions/new?category=Ideas
+    about: Features requests are managed in the Discussions area
+  - name: Other
+    url: https://github.com/srid/neuron/discussions/new
+    about: General discussions are managed in the Discussions area
