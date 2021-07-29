@@ -1,6 +1,7 @@
 args@{ ... }:
 let
-  nixpkgs = import ./nixpkgs.nix {
+  nixpkgs = import ./nixpkgs.nix { };
+  nixpkgsStatic = import ./nixpkgs.nix {
     overlays = [
       (self: super: {
         # https://github.com/NixOS/nixpkgs/issues/131557
@@ -11,12 +12,13 @@ let
             # hslua = dontCheck super.hslua;
             # Tests are flaky
             time-compat = dontCheck hsuper.time-compat;
+            # neuron = dontCheck hsuper.neuron;
           };
         };
       })
     ];
   };
-  pkgs = nixpkgs.pkgsMusl;
+  pkgs = nixpkgsStatic.pkgsMusl;
 in
 (import ./project.nix {
   inherit pkgs;
