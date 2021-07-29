@@ -3,6 +3,7 @@ let
 in
 { pkgs ? nixpkgs
 , pkgsForBins ? null
+, static ? false
 , neuronFlags ? [ ]
 , withHoogle ? false
 , ...
@@ -64,6 +65,9 @@ let
       doJailbreak (self.callCabal2nix "reflex-fsnotify" sources.reflex-fsnotify { });
 
     directory-contents = self.callCabal2nix "directory-contents" sources.directory-contents { };
+
+    # Test fails on pkgsMusl
+    time-compat = if static then (dontCheck super.time-compat) else super.time-compat;
 
     neuron = appendConfigureFlags
       ((justStaticExecutables

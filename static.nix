@@ -6,15 +6,6 @@ let
       (self: super: {
         # https://github.com/NixOS/nixpkgs/issues/131557
         python3 = super.python3.override { enableLTO = false; };
-        haskellPackages = super.haskellPackages.override {
-          overrides = hself: hsuper: with pkgs.haskell.lib; {
-            # https://github.com/hslua/hslua/issues/67
-            # hslua = dontCheck super.hslua;
-            # Tests are flaky
-            time-compat = dontCheck hsuper.time-compat;
-            # neuron = dontCheck hsuper.neuron;
-          };
-        };
       })
     ];
   };
