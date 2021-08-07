@@ -6,6 +6,10 @@ dirtree:
 
 [Neuron](https://github.com/srid/neuron) is a future-proof open-source app for managing your plain-text notes in [[Zettelkasten]]# style, as well as for publishing them as a static site on the web. Read its [[Philosophy]]#.
 
+:::{.ui .center .aligned .message .grey}
+**Note**: Neuron will soon be superceded by a [[next|next-gen successor]].
+:::
+
 ## Getting started
 
 * [[Installing]]#
