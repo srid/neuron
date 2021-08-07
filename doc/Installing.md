@@ -29,7 +29,7 @@ As an alternative to Nix, you may try the [[Docker workflow]]#.
 
 [staticbin]: https://github.com/srid/neuron/releases/download/1.0.1.0/neuron-1.0.1.0-linux.tar.gz
  
-### Enable cache (optional)
+### Enable cache
 
 Enable the [Nix cache](https://srid.cachix.org/) for neuron.
 
@@ -38,7 +38,7 @@ nix-env -iA cachix -f https://cachix.org/api/v1/install
 cachix use srid
 ```
 
-If you skip this step, your machine will spend some time compiling the neuron source code.
+If you skip this step, your machine will spend some time compiling the neuron source code, as well as take more disk space.
 
 ## Install neuron
 
