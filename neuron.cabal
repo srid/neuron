@@ -151,7 +151,6 @@ library
     System.Directory.Contents.Extra
     Options.Applicative.Extra
     Neuron.Backend
-    Neuron.LSP
     Neuron.Reactor
     Neuron.Reactor.Build
     Neuron.CLI.App

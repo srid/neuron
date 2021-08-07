@@ -26,7 +26,6 @@ import Neuron.CLI.Parser (commandParser)
 import Neuron.CLI.Query (runQuery)
 import Neuron.CLI.Search (interactiveSearch)
 import Neuron.CLI.Types
-import qualified Neuron.LSP as LSP
 import qualified Neuron.Version as Version
 import Options.Applicative
 import Relude
@@ -59,7 +58,8 @@ runAppCommand :: (GenCommand -> App ()) -> App ()
 runAppCommand genAct = do
   getCommand >>= \case
     LSP -> do
-      LSP.lspServer
+      -- LSP.lspServer
+      putStrLn "Not Implemented"
     Gen (mserve, gen) -> do
       case mserve of
         Just (ServeCommand host port) -> do
