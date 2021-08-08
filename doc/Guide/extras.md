@@ -13,3 +13,6 @@ Some neuron users have developed scripts and tools to improve on the base functi
 
 [neuron-citation](https://github.com/samwalls/neuron-citation) by Sam Walls
 : allows pages to specify `reference` data, and for citations to be made in various formats. 
+
+[ox-neuron](https://github.com/vedang/ox-neuron) by Vedang Manerikar
+: A Neuron Zettel Markdown back-end for Org Export Engine (see [anouncement](https://github.com/srid/neuron/discussions/644)).
