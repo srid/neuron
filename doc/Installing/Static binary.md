@@ -2,6 +2,10 @@
 slug: install-static
 ---
 
+There is no [static binary](https://github.com/srid/neuron/issues/626) for current version of neuron, but a self-contained Linux executable is available [here](https://github.com/srid/neuron/releases/tag/1.9.35.0). As this was produced by the experimental [nix bundle](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-bundle.html) feature, your mileage with it may vary.
+
+## v1.0
+
 :::{.ui .warning .message}
 **IMPORTANT**: These instructions for an *older version* of neuron. Static builds are currently unavailable[^why] for latest versions of neuron.
 :::
