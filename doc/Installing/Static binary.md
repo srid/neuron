@@ -4,7 +4,7 @@ slug: install-static
 
 There is no [static binary](https://github.com/srid/neuron/issues/626) for current version of neuron, but a self-contained Linux executable is available [here](https://github.com/srid/neuron/releases/tag/1.9.35.0). As this was produced by the experimental [nix bundle](https://nixos.org/manual/nix/unstable/command-ref/new-cli/nix3-bundle.html) feature, your mileage with it may vary[^bug].
 
-[^bug]: One known bug, on the likes of Arch Linux, necessitates the use of `-d <absolute path>` when invoking the neuron binary. See [here](https://github.com/srid/neuron/issues/626#issuecomment-897575923).
+Due to a [limitation](https://github.com/srid/neuron/issues/626#issuecomment-897575923) in nix-bundle you must *always* pass the absolute path to your notebook in the command line. For example, instead of running `neuron gen -wS`, run `neuron -d $(pwd) gen -wS`.
 
 ## v1.0
 
