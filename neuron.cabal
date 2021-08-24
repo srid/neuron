@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: neuron
-version: 1.9.35.0
+version: 1.9.35.1
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -36,7 +36,7 @@ common library-common
     base >=4.12 && < 4.15,
     aeson-gadt-th >= 0.2.5.0,
     aeson-pretty,
-    aeson,
+    aeson >= 1.5.2.0,
     algebraic-graphs >= 0.5,
     ansi-terminal,
     async,
