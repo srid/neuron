@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: neuron
-version: 1.9.35.2
+version: 1.9.35.3
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -70,12 +70,12 @@ common library-common
     modern-uri,
     mtl,
     optparse-applicative,
-    pandoc-link-context >= 1.0.2,
+    pandoc-link-context >= 1.2.0,
     pandoc-types >= 1.21,
     parsec,
     parser-combinators,
     reflex-dom-core,
-    reflex-dom-pandoc >= 0.7.9.0,
+    reflex-dom-pandoc >= 1.0.0.0,
     reflex-fsnotify,
     reflex,
     relude >= 0.7.0.0 && < 1.0.0.0,
