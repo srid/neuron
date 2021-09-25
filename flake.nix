@@ -21,9 +21,6 @@
         packages = { neuron = project.neuron; };
         defaultPackage = packages.neuron;
 
-        apps = { neuron = flake-utils.lib.mkApp { drv = packages.neuron; }; };
-        defaultApp = apps.neuron;
-
         devShell = project.shell;
       });
 }
