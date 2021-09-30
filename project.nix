@@ -12,8 +12,8 @@ in
 let
   inherit (pkgs.haskell.lib)
     overrideCabal doJailbreak dontCheck justStaticExecutables appendConfigureFlags;
-  inherit (import ./dep/gitignore { inherit (pkgs) lib; })
-    gitignoreSource;
+  nix-filter = import ./dep/nix-filter;
+  inherit (nix-filter) inDirectory;
   inherit (import ./dep/nix-thunk { })
     thunkSource;
   # Deal with non-Nix Haskellers allowing broken symlinks in an otherwise
@@ -34,7 +34,17 @@ let
   });
 
   sources = {
-    neuron = gitignoreSource ./.;
+    neuron = nix-filter {
+      root = ./.;
+      name = "neuron";
+      include = [
+        "neuron-search"
+        "neuron.cabal"
+        (inDirectory "exe")
+        (inDirectory "src")
+        (inDirectory "test")
+      ];
+    };
     reflex-dom-pandoc = thunkSource ./dep/reflex-dom-pandoc;
     pandoc-link-context = thunkSource ./dep/pandoc-link-context;
     directory-contents = thunkSource ./dep/directory-contents;
