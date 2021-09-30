@@ -11,7 +11,9 @@
   };
 
   outputs = { self, nixpkgs, flake-utils, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+    {
+      homeManagerModule = import ./home-manager-module.nix;
+    } // flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
         project = import ./project.nix { inherit pkgs; };
