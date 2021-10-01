@@ -10,6 +10,11 @@
 
 neuron is a **future-proof** app for managing your plain-text notes in [Zettelkasten](https://neuron.zettel.page/zettelkasten) style, as well as for **publishing** them on the web. Read its [philosophy](https://neuron.zettel.page/philosophy).
 
+<details>
+  <summary><i>Checkout <b>Emanote</b>, neuron's successor!</i></summary>
+  https://github.com/srid/emanote
+</details>
+
 **Highlights**
 
 - Work with a directory of markdown files
