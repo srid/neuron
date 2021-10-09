@@ -12,7 +12,7 @@ neuron is a **future-proof** app for managing your plain-text notes in [Zettelka
 
 <details>
   <summary><i>Checkout <b>Emanote</b>, neuron's successor!</i></summary>
-  https://github.com/srid/emanote
+  Neuron is being superceded by Emanote: https://github.com/srid/emanote
 </details>
 
 **Highlights**
