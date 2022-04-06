@@ -25,13 +25,13 @@ import Relude
 
 -- | Render the given route
 renderRoutePage ::
-  forall t m a.
+  forall t m js a.
   ( DomBuilder t m,
     RawBuilder m,
     MonadHold t m,
     PostBuild t m,
     MonadFix m,
-    Prerender t m,
+    Prerender js t m,
     PerformEvent t m,
     TriggerEvent t m
   ) =>

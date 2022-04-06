@@ -67,7 +67,7 @@ treeMatches :: Tree (Maybe a, b) -> Bool
 treeMatches (Node (mm, _) _) = isJust mm
 
 renderImpulse ::
-  (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender t m) =>
+  (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
   Dynamic t (LoadableData (SiteData, ImpulseData)) ->
   NeuronWebT t m ()
 renderImpulse dataLDyn = do
