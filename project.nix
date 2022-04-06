@@ -109,7 +109,7 @@ let
       neuronFlags;
   };
 
-  haskellPackages = pkgs.haskellPackages.override {
+  haskellPackages = pkgs.haskell.packages.ghc8107.override {
     overrides = haskellOverrides;
   };
 
