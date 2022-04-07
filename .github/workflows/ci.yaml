@@ -13,12 +13,12 @@ jobs:
       DOCKERTAG: latest
     steps:
       - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v13
+      - uses: cachix/install-nix-action@v16
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
       # This also runs nix-build.
-      - uses: cachix/cachix-action@v8
+      - uses: cachix/cachix-action@v10
         with:
           name: srid
           signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
