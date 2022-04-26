@@ -67,7 +67,7 @@ let
   };
 
   haskellOverrides = self: super: with pkgs.haskell.lib; {
-    pandoc-link-context = self.callCabal2nix "pandoc-link-context" sources.pandoc-link-context { };
+    pandoc-link-context = doJailbreak (self.callCabal2nix "pandoc-link-context" sources.pandoc-link-context { });
     reflex-dom-pandoc =
       dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
     reflex-fsnotify =
