@@ -1,8 +1,8 @@
 {
   "owner": "srid",
   "repo": "directory-contents",
-  "branch": "sans-tests--pathaIsSymbolicLinkFix--witherable04",
+  "branch": "master",
   "private": false,
-  "rev": "684ddb23e4093a8b49c151d48a7f28559127b3c1",
-  "sha256": "00sfbnm2ab90z11klx01sy0qj641zw7bkbr41ksld4pmryfsqnyr"
+  "rev": "f8c7148121adcf5bae2f41b8265ce9cc4ed0556b",
+  "sha256": "026in1v0njj53wx60nkbarspw917n4jnh03ss6nk2b2n3kcnx35g"
 }
