@@ -1,6 +1,6 @@
 ---
 dirtree:
-  display: False
+  display: True
 ---
 # Neuron Zettelkasten
 
