@@ -1,6 +1,11 @@
 {
   description = "Future-proof note-taking and publishing based on Zettelkasten";
 
+  nixConfig = {
+    extra-substituters = [ "https://srid.cachix.org" ];
+    extra-trusted-public-keys = [ "srid.cachix.org-1:MTQ6hBfSLVJ7E0MXBYNf1MHhAPJWIjno6K7ECCnFMVc=" ];
+  };
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";

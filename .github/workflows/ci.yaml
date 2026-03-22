@@ -2,6 +2,7 @@ name: "CI"
 on:
   pull_request:
   push:
+    branches: [master]
 concurrency:
   group: ci-${{ github.event_name }}-${{ github.ref }}
 jobs:
@@ -10,9 +11,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-    env:
-      MAINLINE: refs/heads/master
-      DOCKERTAG: latest
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v31
@@ -29,12 +27,3 @@ jobs:
       - name: Retrieve neuron version
         run: |
           echo "NEURONVER=$(./result/bin/neuron --version)" >> $GITHUB_ENV
-      - name: Publish Docker image to Docker Hub
-        if: ${{ github.ref == env.MAINLINE && runner.os == 'Linux' }}
-        run: |
-          docker load -i $(nix-build docker.nix --argstr tag "${{ env.DOCKERTAG }}")
-          docker tag "sridca/neuron:${{ env.DOCKERTAG }}" "sridca/neuron:${{env.NEURONVER}}"
-          echo ${{ secrets.DOCKER_PASS }} | docker login -u sridca --password-stdin
-          set -x
-          docker push "sridca/neuron:${{ env.DOCKERTAG }}"
-          docker push "sridca/neuron:${{ env.NEURONVER }}"
