@@ -2,7 +2,7 @@
   description = "Future-proof note-taking and publishing based on Zettelkasten";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/08ef0f28e3a41424b92ba1d203de64257a9fca6a";
+    nixpkgs.url = "github:nixos/nixpkgs/eabc38219184cc3e04a974fe31857d8e0eac098d";
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     nix-filter.url = "github:numtide/nix-filter/3c9e33ed627e009428197b07216613206f06ed80";
@@ -37,7 +37,7 @@
         homeManagerModule = import ./home-manager-module.nix;
       };
 
-      systems = [ "x86_64-linux" "x86_64-darwin" ];
+      systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
 
       perSystem = { pkgs, system, ... }:
         let
