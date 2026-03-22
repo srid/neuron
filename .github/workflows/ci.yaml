@@ -27,3 +27,13 @@ jobs:
       - name: Retrieve neuron version
         run: |
           echo "NEURONVER=$(./result/bin/neuron --version)" >> $GITHUB_ENV
+      - name: Publish Docker image to Docker Hub
+        if: ${{ github.ref == 'refs/heads/master' && runner.os == 'Linux' }}
+        run: |
+          docker load -i $(nix build .#dockerImage --print-out-paths)
+          docker tag "sridca/neuron:dev" "sridca/neuron:latest"
+          docker tag "sridca/neuron:dev" "sridca/neuron:${{ env.NEURONVER }}"
+          echo ${{ secrets.DOCKER_PASS }} | docker login -u sridca --password-stdin
+          set -x
+          docker push "sridca/neuron:latest"
+          docker push "sridca/neuron:${{ env.NEURONVER }}"

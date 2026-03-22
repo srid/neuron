@@ -157,6 +157,29 @@
 
           formatter = pkgs.nixpkgs-fmt;
           packages.default = self'.packages.neuron;
+          packages.dockerImage = pkgs.dockerTools.buildImage {
+            name = "sridca/neuron";
+            tag = "dev";
+            copyToRoot = pkgs.buildEnv {
+              name = "neuron-docker-root";
+              paths = [
+                self'.packages.neuron
+                pkgs.coreutils
+                pkgs.bashInteractive
+              ];
+              pathsToLink = [ "/bin" ];
+            };
+            config = {
+              Env = [
+                "LANG=en_US.UTF-8"
+                "LOCALE_ARCHIVE=${pkgs.glibcLocales}/lib/locale/locale-archive"
+              ];
+              WorkingDir = "/notes";
+              Volumes = {
+                "/notes" = { };
+              };
+            };
+          };
         };
     };
 }
