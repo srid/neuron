@@ -13,7 +13,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -31,8 +30,6 @@ import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
-import Data.GADT.Compare (GEq(..), GCompare(..), GOrdering(..))
-import Data.Type.Equality ((:~:)(Refl))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
@@ -104,32 +101,11 @@ data TagQuery r where
   TagQuery_Tags :: TagTree.Query -> TagQuery (Map Tag Natural)
   TagQuery_TagZettel :: Tag -> TagQuery ()
 
-instance GEq TagQuery where
-  geq (TagQuery_ZettelsByTag _ _ _) (TagQuery_ZettelsByTag _ _ _) = Just Refl
-  geq (TagQuery_Tags _) (TagQuery_Tags _) = Just Refl
-  geq (TagQuery_TagZettel _) (TagQuery_TagZettel _) = Just Refl
-  geq _ _ = Nothing
-
-instance GCompare TagQuery where
-  gcompare (TagQuery_ZettelsByTag _ _ _) (TagQuery_ZettelsByTag _ _ _) = GEQ
-  gcompare (TagQuery_ZettelsByTag _ _ _) _ = GLT
-  gcompare _ (TagQuery_ZettelsByTag _ _ _) = GGT
-  gcompare (TagQuery_Tags _) (TagQuery_Tags _) = GEQ
-  gcompare (TagQuery_Tags _) _ = GLT
-  gcompare _ (TagQuery_Tags _) = GGT
-  gcompare (TagQuery_TagZettel _) (TagQuery_TagZettel _) = GEQ
-
 data FeedMeta = FeedMeta
   {feedmetaCount :: Natural}
   deriving (Eq, Ord, Show, Generic)
 
 -- | Plugin-specific data stored in `ZettelT`
---
--- See also `PluginZettelRouteData` which corresponds to post-graph data (used
--- in rendering).
---
--- NOTE: The constructors deliberately are kept short, so as to have shorter
--- JSON
 data PluginZettelData a where
   DirTree :: PluginZettelData DirZettel
   Links :: PluginZettelData [((ZettelID, Connection), [Block])]
@@ -138,59 +114,18 @@ data PluginZettelData a where
   UpTree :: PluginZettelData ()
   Feed :: PluginZettelData FeedMeta
 
-instance GEq PluginZettelData where
-  geq DirTree DirTree = Just Refl
-  geq Links Links = Just Refl
-  geq Tags Tags = Just Refl
-  geq NeuronIgnore NeuronIgnore = Just Refl
-  geq UpTree UpTree = Just Refl
-  geq Feed Feed = Just Refl
-  geq _ _ = Nothing
-
-instance GCompare PluginZettelData where
-  gcompare DirTree DirTree = GEQ
-  gcompare DirTree _ = GLT
-  gcompare _ DirTree = GGT
-  gcompare Links Links = GEQ
-  gcompare Links _ = GLT
-  gcompare _ Links = GGT
-  gcompare Tags Tags = GEQ
-  gcompare Tags _ = GLT
-  gcompare _ Tags = GGT
-  gcompare NeuronIgnore NeuronIgnore = GEQ
-  gcompare NeuronIgnore _ = GLT
-  gcompare _ NeuronIgnore = GGT
-  gcompare UpTree UpTree = GEQ
-  gcompare UpTree _ = GLT
-  gcompare _ UpTree = GGT
-  gcompare Feed Feed = GEQ
-
--- ------------
--- Zettel types
--- ------------
-
 -- | A zettel ID doesn't refer to an existing zettel
 type MissingZettel = Tagged "MissingZettel" ZettelID
 
 -- | A zettel note
---
--- The metadata could have been inferred from the content.
 data ZettelT c = Zettel
   { zettelID :: ZettelID,
     zettelMeta :: ZettelMeta,
-    -- Slug is non-changing - so, although inferred from zettelMeta, we must
-    -- put it here as a data type field.
-    zettelSlug :: Slug, -- inferred from zettelMeta
-    -- Since date is used as a sort key, we parse it once from zettelMeta for
-    -- performance reasons.
-    zettelDate :: Maybe DateMayTime, -- inferred from zettelMeta
-
-    -- | Relative path to this zettel in the zettelkasten directory
+    zettelSlug :: Slug,
+    zettelDate :: Maybe DateMayTime,
     zettelPath :: FilePath,
     zettelTitle :: Text,
     zettelContent :: c,
-    -- This type is a Maybe only so that we can use omitNothingFields to strip
-    -- it off the output JSON.
     zettelPluginData :: Maybe (DMap PluginZettelData Identity)
   }
   deriving (Generic)
@@ -199,6 +134,10 @@ type MetadataOnly = (Maybe ZettelParseError)
 
 -- | Zettel without its content
 type Zettel = ZettelT MetadataOnly
+
+-- TH splices: must come after all type definitions but before DMap usage
+deriveGEq ''PluginZettelData
+deriveGCompare ''PluginZettelData
 
 -- | Zettel that has either failed to parse, or has been parsed.
 type ZettelC = Either (ZettelT (Text, ZettelParseError)) (ZettelT Pandoc)
@@ -245,6 +184,8 @@ sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
   sortOn (Down . zettelDate)
 
+deriveGEq ''TagQuery
+deriveGCompare ''TagQuery
 deriveJSONGADT ''TagQuery
 deriveGShow ''TagQuery
 deriveArgDict ''TagQuery
