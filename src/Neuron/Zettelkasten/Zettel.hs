@@ -13,6 +13,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -30,6 +31,8 @@ import Data.Dependent.Map (DMap)
 import qualified Data.Dependent.Map as DMap
 import Data.Dependent.Sum.Orphans ()
 import Data.GADT.Compare.TH
+import Data.GADT.Compare (GEq(..), GCompare(..), GOrdering(..))
+import Data.Type.Equality ((:~:)(Refl))
 import Data.GADT.Show.TH (DeriveGShow (deriveGShow))
 import Data.Graph.Labelled (Vertex (..))
 import Data.Some (Some)
@@ -101,6 +104,21 @@ data TagQuery r where
   TagQuery_Tags :: TagTree.Query -> TagQuery (Map Tag Natural)
   TagQuery_TagZettel :: Tag -> TagQuery ()
 
+instance GEq TagQuery where
+  geq (TagQuery_ZettelsByTag _ _ _) (TagQuery_ZettelsByTag _ _ _) = Just Refl
+  geq (TagQuery_Tags _) (TagQuery_Tags _) = Just Refl
+  geq (TagQuery_TagZettel _) (TagQuery_TagZettel _) = Just Refl
+  geq _ _ = Nothing
+
+instance GCompare TagQuery where
+  gcompare (TagQuery_ZettelsByTag _ _ _) (TagQuery_ZettelsByTag _ _ _) = GEQ
+  gcompare (TagQuery_ZettelsByTag _ _ _) _ = GLT
+  gcompare _ (TagQuery_ZettelsByTag _ _ _) = GGT
+  gcompare (TagQuery_Tags _) (TagQuery_Tags _) = GEQ
+  gcompare (TagQuery_Tags _) _ = GLT
+  gcompare _ (TagQuery_Tags _) = GGT
+  gcompare (TagQuery_TagZettel _) (TagQuery_TagZettel _) = GEQ
+
 data FeedMeta = FeedMeta
   {feedmetaCount :: Natural}
   deriving (Eq, Ord, Show, Generic)
@@ -119,6 +137,33 @@ data PluginZettelData a where
   NeuronIgnore :: PluginZettelData ()
   UpTree :: PluginZettelData ()
   Feed :: PluginZettelData FeedMeta
+
+instance GEq PluginZettelData where
+  geq DirTree DirTree = Just Refl
+  geq Links Links = Just Refl
+  geq Tags Tags = Just Refl
+  geq NeuronIgnore NeuronIgnore = Just Refl
+  geq UpTree UpTree = Just Refl
+  geq Feed Feed = Just Refl
+  geq _ _ = Nothing
+
+instance GCompare PluginZettelData where
+  gcompare DirTree DirTree = GEQ
+  gcompare DirTree _ = GLT
+  gcompare _ DirTree = GGT
+  gcompare Links Links = GEQ
+  gcompare Links _ = GLT
+  gcompare _ Links = GGT
+  gcompare Tags Tags = GEQ
+  gcompare Tags _ = GLT
+  gcompare _ Tags = GGT
+  gcompare NeuronIgnore NeuronIgnore = GEQ
+  gcompare NeuronIgnore _ = GLT
+  gcompare _ NeuronIgnore = GGT
+  gcompare UpTree UpTree = GEQ
+  gcompare UpTree _ = GLT
+  gcompare _ UpTree = GGT
+  gcompare Feed Feed = GEQ
 
 -- ------------
 -- Zettel types
@@ -201,16 +246,12 @@ sortZettelsReverseChronological =
   sortOn (Down . zettelDate)
 
 deriveJSONGADT ''TagQuery
-deriveGEq ''TagQuery
 deriveGShow ''TagQuery
-deriveGCompare ''TagQuery
 deriveArgDict ''TagQuery
 
 deriveArgDict ''PluginZettelData
 deriveJSONGADT ''PluginZettelData
-deriveGEq ''PluginZettelData
 deriveGShow ''PluginZettelData
-deriveGCompare ''PluginZettelData
 
 deriving instance Eq (ZettelT Pandoc)
 

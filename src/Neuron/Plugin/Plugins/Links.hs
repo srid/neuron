@@ -297,7 +297,7 @@ zettelLinkCss theme = do
   "span.zettel-link-container span.extra" ? do
     C.color C.auto
   "span.zettel-link-container.errors" ? do
-    C.border C.solid (C.px 1) C.red
+    C.border (C.px 1) C.solid C.red
   "span.zettel-link-container.errors span.zettel-link a:hover" ? do
     C.important $ C.textDecoration C.none
     C.cursor C.notAllowed

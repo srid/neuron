@@ -70,8 +70,8 @@ bodyTemplate neuronVersionM w = do
     renderBrandFooter neuronVersionM
 
 renderRouteImpulse ::
-  forall t m js.
-  (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender js t m) =>
+  forall t m.
+  (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m, Prerender t m) =>
   Dynamic t (LoadableData (SiteData, ImpulseData)) ->
   NeuronWebT t m ()
 renderRouteImpulse dataLDyn = do
@@ -83,13 +83,13 @@ renderRouteImpulse dataLDyn = do
       Impulse.renderImpulse dataLDyn
 
 renderRouteZettel ::
-  forall t m js.
+  forall t m.
   ( DomBuilder t m,
     RawBuilder m,
     PostBuild t m,
     MonadHold t m,
     MonadFix m,
-    Prerender js t m
+    Prerender t m
   ) =>
   Dynamic t (LoadableData (SiteData, ZettelData)) ->
   NeuronWebT t m ()

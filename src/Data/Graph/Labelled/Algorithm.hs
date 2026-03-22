@@ -113,7 +113,7 @@ dfsForest g =
 -- | Compute the dfsForest from the given vertices.
 dfsForestFrom :: (Vertex v, Ord (VertexID v)) => [v] -> LabelledGraph v e -> Forest v
 dfsForestFrom (fmap vertexID -> vs) g =
-  fmap (fmap $ getVertex g) $ Algo.dfsForestFrom vs $ LAM.skeleton $ graph g
+  fmap (fmap $ getVertex g) $ Algo.dfsForestFrom (LAM.skeleton $ graph g) vs
 
 -- | Compute the dfsForest ending in the given vertex.
 --
@@ -128,7 +128,7 @@ bfsForestBackwards fromV (LabelledGraph g' v') =
 
 bfsForestFrom :: (Vertex v, Ord (VertexID v)) => [v] -> LabelledGraph v e -> Forest v
 bfsForestFrom (fmap vertexID -> vs) g =
-  fmap (fmap $ getVertex g) $ Algo.bfsForest vs $ LAM.skeleton $ graph g
+  fmap (fmap $ getVertex g) $ Algo.bfsForest (LAM.skeleton $ graph g) vs
 
 --------------------------
 --- More general utilities
@@ -172,7 +172,7 @@ mothers g =
          in go ((v :| Set.toList covered) : acc) (Set.toList rest)
     -- Vertices reachable from `v` regardless of direction.
     reachableUndirected v =
-      Set.fromList $ Algo.reachable v gUndirected
+      Set.fromList $ Algo.reachable gUndirected v
     -- The undirected version of g
     gUndirected = AM.overlay g $ AM.transpose g
 

@@ -3,17 +3,17 @@
     "directory-contents": {
       "flake": false,
       "locked": {
-        "lastModified": 1611697927,
-        "narHash": "sha256-AmGziwCVsEDqhDjGpH4LzvNbYcx6CmMvb9AGyZTQvf4=",
+        "lastModified": 1657247118,
+        "narHash": "sha256-r4xu2RxWLDGt0XoAaCWxJyR+dVZrWmA6H0VKC3aw0Qg=",
         "owner": "srid",
         "repo": "directory-contents",
-        "rev": "0d3f1d5c86063232a3ccf081d9be143eb2ff1466",
+        "rev": "f8c7148121adcf5bae2f41b8265ce9cc4ed0556b",
         "type": "github"
       },
       "original": {
         "owner": "srid",
         "repo": "directory-contents",
-        "rev": "0d3f1d5c86063232a3ccf081d9be143eb2ff1466",
+        "rev": "f8c7148121adcf5bae2f41b8265ce9cc4ed0556b",
         "type": "github"
       }
     },
@@ -70,17 +70,17 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1659446231,
-        "narHash": "sha256-hekabNdTdgR/iLsgce5TGWmfIDZ86qjPhxDg/8TlzhE=",
+        "lastModified": 1773840656,
+        "narHash": "sha256-9tpvMGFteZnd3gRQZFlRCohVpqooygFuy9yjuyRL2C0=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "eabc38219184cc3e04a974fe31857d8e0eac098d",
+        "rev": "9cf7092bdd603554bd8b63c216e8943cf9b12512",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
+        "ref": "nixpkgs-unstable",
         "repo": "nixpkgs",
-        "rev": "eabc38219184cc3e04a974fe31857d8e0eac098d",
         "type": "github"
       }
     },
@@ -102,17 +102,17 @@
     "pandoc-link-context": {
       "flake": false,
       "locked": {
-        "lastModified": 1629759974,
-        "narHash": "sha256-jJeZajdPpfLo+oq6cMhzQlluULMxhKSzpKjXVjVjgfM=",
+        "lastModified": 1650932770,
+        "narHash": "sha256-/WzE4O23B1OcL3WF8Saz5TRQj0tGH7FtbgRLRson2Mc=",
         "owner": "srid",
         "repo": "pandoc-link-context",
-        "rev": "71e4061789884bc3030a9686add9b7fa58aea14e",
+        "rev": "85bd204339aafd309b8a3dd99ebffa6a50776cb6",
         "type": "github"
       },
       "original": {
         "owner": "srid",
         "repo": "pandoc-link-context",
-        "rev": "71e4061789884bc3030a9686add9b7fa58aea14e",
+        "rev": "85bd204339aafd309b8a3dd99ebffa6a50776cb6",
         "type": "github"
       }
     },

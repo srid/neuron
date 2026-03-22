@@ -2,7 +2,7 @@
   description = "Future-proof note-taking and publishing based on Zettelkasten";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/eabc38219184cc3e04a974fe31857d8e0eac098d";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
 
     nix-filter.url = "github:numtide/nix-filter/3c9e33ed627e009428197b07216613206f06ed80";
@@ -13,11 +13,11 @@
       flake = false;
     };
     pandoc-link-context = {
-      url = "github:srid/pandoc-link-context/71e4061789884bc3030a9686add9b7fa58aea14e";
+      url = "github:srid/pandoc-link-context/85bd204339aafd309b8a3dd99ebffa6a50776cb6";
       flake = false;
     };
     directory-contents = {
-      url = "github:srid/directory-contents/0d3f1d5c86063232a3ccf081d9be143eb2ff1466";
+      url = "github:srid/directory-contents/f8c7148121adcf5bae2f41b8265ce9cc4ed0556b";
       flake = false;
     };
     reflex-fsnotify = {
@@ -80,17 +80,34 @@
             overrideCabal doJailbreak dontCheck dontHaddock justStaticExecutables appendConfigureFlags;
 
           haskellOverrides = self: super: {
-            pandoc-link-context = self.callCabal2nix "pandoc-link-context" sources.pandoc-link-context { };
+            pandoc-link-context = doJailbreak (self.callCabal2nix "pandoc-link-context" sources.pandoc-link-context { });
             reflex-dom-pandoc =
-              dontHaddock (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { });
+              dontHaddock (doJailbreak (overrideCabal (self.callCabal2nix "reflex-dom-pandoc" sources.reflex-dom-pandoc { }) (old: {
+                postPatch = (old.postPatch or "") + ''
+                  # GHC 9.10: forM no longer in scope, add explicit import
+                  sed -i '/^import Control.Monad.Reader/a import Data.Traversable (forM)' src/Reflex/Dom/Pandoc/Footnotes.hs
+                  # GHC 9.10: ~ requires TypeOperators
+                  sed -i '1s/^/{-# LANGUAGE TypeOperators #-}\n/' src/Reflex/Dom/Pandoc/Raw.hs
+                  # pandoc-types >= 1.23: Null constructor removed, replace with blank pattern
+                  sed -i '/^  Null ->$/,/^    blank >> pure mempty$/d' src/Reflex/Dom/Pandoc/Document.hs
+                '';
+              })));
             reflex-fsnotify =
               doJailbreak (self.callCabal2nix "reflex-fsnotify" sources.reflex-fsnotify { });
-            directory-contents = self.callCabal2nix "directory-contents" sources.directory-contents { };
+
+
+            # witherable 0.4.x (has Data.Witherable module that directory-contents needs)
+            witherable = doJailbreak (self.callHackageDirect {
+              pkg = "witherable";
+              ver = "0.4.2";
+              sha256 = "sha256-M5KOI2qKqf4qdfKUwQ2h+3pF5PfPhtz0dozPUAZVRL0=";
+            } { });
+            directory-contents = doJailbreak (self.callCabal2nix "directory-contents" sources.directory-contents { });
 
             neuron = appendConfigureFlags
               ((justStaticExecutables
-                (overrideCabal (self.callCabal2nix "neuron" sources.neuron { })
-                  wrapSearchScript)).overrideDerivation (drv: {
+                (doJailbreak (overrideCabal (self.callCabal2nix "neuron" sources.neuron { })
+                  wrapSearchScript))).overrideDerivation (drv: {
                 disallowedReferences = [
                   self.pandoc-types
                   self.warp
@@ -136,7 +153,6 @@
               pkgs.nixpkgs-fmt
               haskellPackages.ghcid
               haskellPackages.cabal-install
-              haskellPackages.haskell-language-server
               haskellPackages.hlint
               haskellPackages.ormolu
               nixShellSearchScript

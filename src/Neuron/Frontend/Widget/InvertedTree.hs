@@ -97,13 +97,13 @@ pureCssTreeDiagram = do
           C.position absolute
           C.top $ px 0
           C.right $ pct 50
-          C.borderTop solid cellBorderWidth "#ccc"
+          C.borderTop cellBorderWidth solid "#ccc"
           C.width $ pct 50
           C.height $ em 1.2
       C.after & do
         C.right auto
         C.left $ pct 50
-        C.borderLeft solid cellBorderWidth "#ccc"
+        C.borderLeft cellBorderWidth solid "#ccc"
       C.onlyChild & do
         C.paddingTop $ em 0
         forM_ [C.after, C.before] $ \sel ->
@@ -120,19 +120,19 @@ pureCssTreeDiagram = do
           C.borderStyle none
           C.borderWidth $ px 0
         C.before & do
-          C.borderRight solid cellBorderWidth "#ccc"
+          C.borderRight cellBorderWidth solid "#ccc"
           C.borderRadius 0 (px 5) 0 0
     "ul ul::before" ? do
       C.content $ stringContent ""
       C.position absolute
       C.top $ px 0
       C.left $ pct 50
-      C.borderLeft solid cellBorderWidth "#ccc"
+      C.borderLeft cellBorderWidth solid "#ccc"
       C.width $ px 0
       C.height $ em 1.2
     "li" ? do
       "div.forest-link" ? do
-        border solid cellBorderWidth "#ccc"
+        border cellBorderWidth solid "#ccc"
         sym2 C.padding (em 0.2) (em 0.3)
         C.textDecoration none
         C.display inlineBlock

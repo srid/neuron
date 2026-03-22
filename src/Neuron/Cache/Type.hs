@@ -43,7 +43,7 @@ instance FromJSON NeuronCache where
 
 reflexDomGetCache ::
   ( DomBuilder t m,
-    Prerender js t m,
+    Prerender t m,
     TriggerEvent t m,
     PerformEvent t m,
     PostBuild t m,

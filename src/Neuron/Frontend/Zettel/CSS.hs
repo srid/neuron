@@ -68,7 +68,7 @@ zettelContentCss = do
       C.paddingBottom $ em 0.2
       C.textAlign C.center
     C.h2 ? do
-      C.borderBottom C.solid (px 1) C.steelblue
+      C.borderBottom (px 1) C.solid C.steelblue
       C.marginBottom $ em 0.5
     C.h3 ? do
       C.margin (px 0) (px 0) (em 0.4) (px 0)
@@ -124,7 +124,7 @@ zettelContentCss = do
     blockquoteStyle =
       C.blockquote ? do
         C.backgroundColor "#f9f9f9"
-        C.borderLeft C.solid (px 10) "#ccc"
+        C.borderLeft (px 10) C.solid "#ccc"
         sym2 C.margin (em 1.5) (px 0)
         sym2 C.padding (em 0.5) (px 10)
 
