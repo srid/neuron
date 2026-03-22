@@ -12,11 +12,12 @@ module Data.YAML.ToJSON where
 import Data.Aeson
 import qualified Data.Aeson as Aeson
 import qualified Data.Aeson.Encoding as AesonEncoding
+import qualified Data.Aeson.Key as AesonKey
 import qualified Data.YAML as Y
 import Relude
 
 instance Aeson.ToJSONKey (Y.Node Y.Pos) where
-  toJSONKey = ToJSONKeyText f (AesonEncoding.text . f)
+  toJSONKey = ToJSONKeyText (AesonKey.fromText . f) (AesonEncoding.text . f)
     where
       f = \case
         Y.Scalar _ x -> scalarToText x

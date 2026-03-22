@@ -40,7 +40,7 @@ import qualified Data.TagTree as Tag
 import qualified Data.TagTree as TagTree
 import qualified Data.Text as T
 import Data.Tree (Forest, Tree (Node))
-import GHC.Natural (naturalToInt)
+-- naturalToInt removed in GHC 9.10; using fromIntegral
 import Neuron.Frontend.Route (NeuronWebT)
 import Neuron.Frontend.Route.Data.Types (TagQueryCache)
 import Neuron.Frontend.Widget (semanticIcon)
@@ -222,7 +222,7 @@ renderQueryResult = \case
           let resToDisplay =
                 case zettelsviewLimit view of
                   Nothing -> res
-                  Just (naturalToInt -> limit) -> take limit res
+                  Just (fromIntegral -> limit) -> take limit res
           forM_ resToDisplay $ \z -> do
             divClass "item listing-item" $
               Links.renderZettelLink Nothing (Just conn) (Just $ zettelsviewLinkView view) z

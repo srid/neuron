@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: neuron
-version: 1.9.35.3
+version: 1.9.36.0
 license: AGPL-3.0-only
 copyright: 2020 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -52,6 +52,7 @@ common library-common
     dependent-sum-aeson-orphans >= 0.2.1.0,
     dependent-sum-template,
     dependent-sum,
+    some,
     dhall >= 1.30,
     directory-contents,
     directory,
@@ -70,7 +71,7 @@ common library-common
     modern-uri,
     mtl,
     optparse-applicative,
-    pandoc-link-context >= 1.2.0,
+    pandoc-link-context >= 1.4.0,
     pandoc-types >= 1.21,
     parsec,
     parser-combinators,
@@ -78,7 +79,7 @@ common library-common
     reflex-dom-pandoc >= 1.0.0.0,
     reflex-fsnotify,
     reflex,
-    relude >= 0.7.0.0 && < 1.0.0.0,
+    relude >= 0.7.0.0,
     split,
     shower,
     tagged,

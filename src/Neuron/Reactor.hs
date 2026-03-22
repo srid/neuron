@@ -198,7 +198,7 @@ watchDirWithDebounce ::
 watchDirWithDebounce ms dirPath' = do
   -- Make absolute herte, so the relative function below works.
   dirPath <- liftIO $ makeAbsolute dirPath'
-  let cfg = FSN.defaultConfig {FSN.confDebounce = FSN.Debounce ms}
+  let cfg = FSN.defaultConfig
   pb <- getPostBuild
   fsEvt <- watchTree cfg (dirPath <$ pb) (const True)
   let evt2 = fforMaybe fsEvt $ \fse' -> do
@@ -223,8 +223,8 @@ watchDirWithDebounce ms dirPath' = do
         mkR fp <&> \p -> FSN.Modified p t d
       FSN.Removed fp t d ->
         mkR fp <&> \p -> FSN.Removed p t d
-      FSN.Unknown fp t d ->
-        mkR fp <&> \p -> FSN.Unknown p t d
+      FSN.Unknown fp t d e ->
+        mkR fp <&> \p -> FSN.Unknown p t d e
       where
         mkR fp = do
           let rel = makeRelative baseDir fp

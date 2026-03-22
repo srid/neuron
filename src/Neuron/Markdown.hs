@@ -35,6 +35,8 @@ import qualified Commonmark.Pandoc as CP
 import Control.Monad.Combinators (manyTill)
 import Data.Aeson (ToJSON (toJSON))
 import qualified Data.Aeson as Aeson
+import qualified Data.Aeson.Key as AesonKey
+import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (FromJSON)
 import Data.Default
 import Data.Tagged (Tagged (..))
@@ -81,25 +83,26 @@ zettelMetaFromYamlFrontmatter myaml =
 lookupZettelMeta :: forall a. FromJSON a => Text -> ZettelMeta -> Maybe a
 lookupZettelMeta k (ZettelMeta mobj) = do
   Aeson.Object m <- mobj
-  Aeson.Success v <- Aeson.fromJSON @a <$> M.lookup k m
+  Aeson.Success v <- Aeson.fromJSON @a <$> KM.lookup (AesonKey.fromText k) m
   pure v
 
 insertZettelMeta :: forall a. ToJSON a => Text -> a -> ZettelMeta -> ZettelMeta
 insertZettelMeta k v (ZettelMeta mobj) = ZettelMeta $
   Just $
     Aeson.Object $
-      case mobj of
-        Nothing ->
-          fromList [(k, Aeson.toJSON v)]
-        Just (Aeson.Object m) ->
-          M.insert k (Aeson.toJSON v) m
-        Just other ->
-          -- We don't expect top-level object to be anything but a map. But just
-          -- in case, let's retain the original value anyway.
-          fromList
-            [ ("other", other),
-              (k, Aeson.toJSON v)
-            ]
+      let k' = AesonKey.fromText k
+       in case mobj of
+            Nothing ->
+              KM.fromList [(k', Aeson.toJSON v)]
+            Just (Aeson.Object m) ->
+              KM.insert k' (Aeson.toJSON v) m
+            Just other ->
+              -- We don't expect top-level object to be anything but a map. But just
+              -- in case, let's retain the original value anyway.
+              KM.fromList
+                [ (AesonKey.fromText "other", other),
+                  (k', Aeson.toJSON v)
+                ]
 
 -- | Parse Markdown document, along with the YAML metadata block in it.
 --
@@ -125,9 +128,11 @@ parseMarkdown extraSpec fn s = do
 withJsonAlias :: (Text, Text) -> Aeson.Value -> Aeson.Value
 withJsonAlias (alias, target) = \case
   x@(Aeson.Object m) -> fromMaybe x $ do
-    guard $ not $ M.member target m
-    kw <- M.lookup alias m
-    pure $ Aeson.Object (M.insert target kw m)
+    let alias' = AesonKey.fromText alias
+        target' = AesonKey.fromText target
+    guard $ not $ KM.member target' m
+    kw <- KM.lookup alias' m
+    pure $ Aeson.Object (KM.insert target' kw m)
   x -> x
 
 -- NOTE: HsYAML parsing is rather slow due to its use of DList.

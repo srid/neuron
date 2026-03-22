@@ -1,6 +1,5 @@
 name: "Publish Neuron site"
 on:
-  # Run only when pushing to master branch
   push:
     branches:
       - master
@@ -8,22 +7,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v16
-      - uses: cachix/cachix-action@v10
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v16
         with:
           name: srid
-      # This builds neuron, as well as run tests
       - name: Install neuron
-        run: nix-env -if .
+        run: nix profile install .
       - name: Build neuron site 🔧
         run: |
           neuron --version
           neuron -d doc/ gen --pretty-urls
       - name: Deploy to GitHub Pages 🚀
-        uses: JamesIves/github-pages-deploy-action@3.7.1
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: doc/.neuron/output
-          CLEAN: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          folder: doc/.neuron/output
+          clean: true

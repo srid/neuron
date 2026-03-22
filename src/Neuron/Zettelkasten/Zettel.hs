@@ -106,12 +106,6 @@ data FeedMeta = FeedMeta
   deriving (Eq, Ord, Show, Generic)
 
 -- | Plugin-specific data stored in `ZettelT`
---
--- See also `PluginZettelRouteData` which corresponds to post-graph data (used
--- in rendering).
---
--- NOTE: The constructors deliberately are kept short, so as to have shorter
--- JSON
 data PluginZettelData a where
   DirTree :: PluginZettelData DirZettel
   Links :: PluginZettelData [((ZettelID, Connection), [Block])]
@@ -119,10 +113,6 @@ data PluginZettelData a where
   NeuronIgnore :: PluginZettelData ()
   UpTree :: PluginZettelData ()
   Feed :: PluginZettelData FeedMeta
-
--- ------------
--- Zettel types
--- ------------
 
 -- | A zettel ID doesn't refer to an existing zettel
 type MissingZettel = Tagged "MissingZettel" ZettelID
@@ -154,6 +144,10 @@ type MetadataOnly = (Maybe ZettelParseError)
 
 -- | Zettel without its content
 type Zettel = ZettelT MetadataOnly
+
+-- TH splices: must come after all type definitions but before DMap usage
+deriveGEq ''PluginZettelData
+deriveGCompare ''PluginZettelData
 
 -- | Zettel that has either failed to parse, or has been parsed.
 type ZettelC = Either (ZettelT (Text, ZettelParseError)) (ZettelT Pandoc)
@@ -200,17 +194,15 @@ sortZettelsReverseChronological :: [Zettel] -> [Zettel]
 sortZettelsReverseChronological =
   sortOn (Down . zettelDate)
 
-deriveJSONGADT ''TagQuery
 deriveGEq ''TagQuery
-deriveGShow ''TagQuery
 deriveGCompare ''TagQuery
+deriveJSONGADT ''TagQuery
+deriveGShow ''TagQuery
 deriveArgDict ''TagQuery
 
 deriveArgDict ''PluginZettelData
 deriveJSONGADT ''PluginZettelData
-deriveGEq ''PluginZettelData
 deriveGShow ''PluginZettelData
-deriveGCompare ''PluginZettelData
 
 deriving instance Eq (ZettelT Pandoc)
 

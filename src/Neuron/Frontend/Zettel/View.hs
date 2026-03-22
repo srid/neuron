@@ -45,7 +45,7 @@ renderZettel ::
     PostBuild t m,
     MonadHold t m,
     MonadFix m,
-    Prerender js t m
+    Prerender t m
   ) =>
   SiteData ->
   ZettelData ->

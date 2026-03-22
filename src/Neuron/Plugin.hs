@@ -230,7 +230,7 @@ stripSurroundingContext =
 
 -- | Render a zettel Pandoc content given its zettel data.
 elZettel ::
-  (DomBuilder t m, RawBuilder m, PostBuild t m, Prerender js t m) =>
+  (DomBuilder t m, RawBuilder m, PostBuild t m, Prerender t m) =>
   ZettelData ->
   Pandoc ->
   NeuronWebT t m ()
@@ -238,8 +238,8 @@ elZettel zData =
   elPandoc (mkReflexDomPandocConfig zData)
 
 mkReflexDomPandocConfig ::
-  forall js t m.
-  (DomBuilder t m, RawBuilder m, PostBuild t m, Prerender js t m) =>
+  forall t m.
+  (DomBuilder t m, RawBuilder m, PostBuild t m, Prerender t m) =>
   ZettelData ->
   Config t (NeuronWebT t m) ()
 mkReflexDomPandocConfig x =

@@ -16,7 +16,7 @@ import qualified Data.Dependent.Map as DMap
 import qualified Data.Map.Strict as Map
 import Data.Some (Some (Some))
 import qualified Data.Time.DateMayTime as DMT
-import GHC.Natural (naturalToInt)
+-- fromIntegral removed in GHC 9.10; use fromIntegral
 import qualified Neuron.Frontend.Manifest as Manifest
 import Neuron.Frontend.Route (Route)
 import qualified Neuron.Frontend.Route as R
@@ -59,7 +59,7 @@ routePluginData routeCfg siteData zs g (sansContent -> z) FeedMeta {..} =
       feedDataUrl = R.routeUri feedDataBaseUri $ R.routeConfigRouteURL routeCfg (Some $ R.Route_Zettel $ zettelSlug z)
       feedDataEntries =
         -- Limit to user-chosen count
-        take (naturalToInt feedmetaCount) $
+        take (fromIntegral feedmetaCount) $
           -- In reverse chronologial order
           sortOn (Down . feedItemDate) $
             -- Only those with date assigned
