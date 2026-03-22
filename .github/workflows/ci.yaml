@@ -2,6 +2,9 @@ name: "CI"
 on:
   pull_request:
   push:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ${{ matrix.os }}
