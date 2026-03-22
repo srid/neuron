@@ -3,7 +3,7 @@ on:
   pull_request:
   push:
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   build:
