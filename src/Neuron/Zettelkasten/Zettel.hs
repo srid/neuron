@@ -118,14 +118,24 @@ data PluginZettelData a where
 type MissingZettel = Tagged "MissingZettel" ZettelID
 
 -- | A zettel note
+--
+-- The metadata could have been inferred from the content.
 data ZettelT c = Zettel
   { zettelID :: ZettelID,
     zettelMeta :: ZettelMeta,
-    zettelSlug :: Slug,
-    zettelDate :: Maybe DateMayTime,
+    -- Slug is non-changing - so, although inferred from zettelMeta, we must
+    -- put it here as a data type field.
+    zettelSlug :: Slug, -- inferred from zettelMeta
+    -- Since date is used as a sort key, we parse it once from zettelMeta for
+    -- performance reasons.
+    zettelDate :: Maybe DateMayTime, -- inferred from zettelMeta
+
+    -- | Relative path to this zettel in the zettelkasten directory
     zettelPath :: FilePath,
     zettelTitle :: Text,
     zettelContent :: c,
+    -- This type is a Maybe only so that we can use omitNothingFields to strip
+    -- it off the output JSON.
     zettelPluginData :: Maybe (DMap PluginZettelData Identity)
   }
   deriving (Generic)
