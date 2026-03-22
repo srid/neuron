@@ -92,6 +92,7 @@
                   sed -i '/^  Null ->$/,/^    blank >> pure mempty$/d' src/Reflex/Dom/Pandoc/Document.hs
                 '';
               })));
+            fsnotify = dontCheck super.fsnotify;
             reflex-fsnotify =
               doJailbreak (self.callCabal2nix "reflex-fsnotify" sources.reflex-fsnotify { });
 
