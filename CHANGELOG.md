@@ -2,6 +2,8 @@
 
 ## Unreleased (v2)
 
+- Add Apple Silicon (aarch64-darwin) support (#677)
+- Upgrade to GHC 9.10 (#677)
 - Web interface
   - Introducing *impulse* -- foundation for upcoming advanced search, replacing both z-index and legacy JS search (#108)
   - Remove autoscroll behaviour (which had questionable value to begin with)
