@@ -109,6 +109,7 @@
                   '';
                 });
                 fsnotify = dontCheck hsuper.fsnotify;
+                tls = dontCheck hsuper.tls;
                 # witherable 0.4.x (has Data.Witherable module)
                 witherable = doJailbreak (hself.callHackageDirect {
                   pkg = "witherable";
