@@ -216,15 +216,10 @@ watchDirWithDebounce ms dirPath' = do
     nubByKeepLast f =
       reverse . nubBy f . reverse
     mkEventPathRelative :: FilePath -> FSN.Event -> Maybe FSN.Event
-    mkEventPathRelative baseDir = \case
-      FSN.Added fp t d ->
-        mkR fp <&> \p -> FSN.Added p t d
-      FSN.Modified fp t d ->
-        mkR fp <&> \p -> FSN.Modified p t d
-      FSN.Removed fp t d ->
-        mkR fp <&> \p -> FSN.Removed p t d
-      FSN.Unknown fp t d e ->
-        mkR fp <&> \p -> FSN.Unknown p t d e
+    mkEventPathRelative baseDir fse =
+      -- Use record update (rather than matching on each constructor), so that
+      -- new constructors in fsnotify (eg: CloseWrite) are handled. See #679.
+      mkR (FSN.eventPath fse) <&> \p -> fse {FSN.eventPath = p}
       where
         mkR fp = do
           let rel = makeRelative baseDir fp

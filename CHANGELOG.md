@@ -4,6 +4,7 @@
 
 - Add Apple Silicon (aarch64-darwin) support (#677)
 - Upgrade to GHC 9.10 (#677)
+- Fix `gen --watch` crashing with "Non-exhaustive patterns" on file save (#679)
 - Web interface
   - Introducing *impulse* -- foundation for upcoming advanced search, replacing both z-index and legacy JS search (#108)
   - Remove autoscroll behaviour (which had questionable value to begin with)
